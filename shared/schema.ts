@@ -1,0 +1,152 @@
+import { pgTable, text, serial, integer, boolean, json, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Usuarios
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  nombre: text("nombre").notNull(),
+  cedula: text("cedula").notNull(),
+  telefono: text("telefono").notNull(),
+  unidad: text("unidad").notNull(),
+  rol: text("rol").notNull(), // admin, investigador, agente
+});
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  email: true,
+  password: true,
+  nombre: true,
+  cedula: true,
+  telefono: true,
+  unidad: true,
+  rol: true,
+});
+
+// Personas
+export const personas = pgTable("personas", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  identificacion: text("identificacion").notNull(),
+  alias: json("alias").$type<string[]>(),
+  telefonos: json("telefonos").$type<string[]>(),
+  domicilios: json("domicilios").$type<string[]>(),
+  observaciones: text("observaciones"),
+  foto: text("foto"), // URL to photo
+});
+
+export const insertPersonaSchema = createInsertSchema(personas).pick({
+  nombre: true,
+  identificacion: true,
+  alias: true,
+  telefonos: true,
+  domicilios: true,
+  observaciones: true,
+  foto: true,
+});
+
+// Vehículos
+export const vehiculos = pgTable("vehiculos", {
+  id: serial("id").primaryKey(),
+  marca: text("marca").notNull(),
+  tipo: text("tipo").notNull(),
+  color: text("color").notNull(),
+  placa: text("placa").notNull(),
+  modelo: text("modelo"), // año
+  observaciones: text("observaciones"),
+  foto: text("foto"), // URL to photo
+});
+
+export const insertVehiculoSchema = createInsertSchema(vehiculos).pick({
+  marca: true,
+  tipo: true,
+  color: true,
+  placa: true,
+  modelo: true,
+  observaciones: true,
+  foto: true,
+});
+
+// Inmuebles
+export const inmuebles = pgTable("inmuebles", {
+  id: serial("id").primaryKey(),
+  tipo: text("tipo").notNull(), // casa, apartamento, etc
+  propietario: text("propietario").notNull(),
+  direccion: text("direccion").notNull(),
+  observaciones: text("observaciones"),
+  foto: text("foto"), // URL to photo
+});
+
+export const insertInmuebleSchema = createInsertSchema(inmuebles).pick({
+  tipo: true,
+  propietario: true,
+  direccion: true,
+  observaciones: true,
+  foto: true,
+});
+
+// Ubicaciones
+export const ubicaciones = pgTable("ubicaciones", {
+  id: serial("id").primaryKey(),
+  latitud: doublePrecision("latitud").notNull(),
+  longitud: doublePrecision("longitud").notNull(),
+  tipo: text("tipo").notNull(), // domicilio, avistamiento, etc
+  fecha: timestamp("fecha").notNull().defaultNow(),
+  observaciones: text("observaciones"),
+});
+
+export const insertUbicacionSchema = createInsertSchema(ubicaciones).pick({
+  latitud: true,
+  longitud: true,
+  tipo: true,
+  fecha: true,
+  observaciones: true,
+});
+
+// Relaciones muchos a muchos
+export const personasVehiculos = pgTable("personas_vehiculos", {
+  personaId: integer("persona_id").notNull().references(() => personas.id),
+  vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
+});
+
+export const personasInmuebles = pgTable("personas_inmuebles", {
+  personaId: integer("persona_id").notNull().references(() => personas.id),
+  inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
+});
+
+export const personasUbicaciones = pgTable("personas_ubicaciones", {
+  personaId: integer("persona_id").notNull().references(() => personas.id),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+});
+
+export const vehiculosInmuebles = pgTable("vehiculos_inmuebles", {
+  vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
+  inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
+});
+
+export const vehiculosUbicaciones = pgTable("vehiculos_ubicaciones", {
+  vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+});
+
+export const inmueblesUbicaciones = pgTable("inmuebles_ubicaciones", {
+  inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+});
+
+// Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Persona = typeof personas.$inferSelect;
+export type InsertPersona = z.infer<typeof insertPersonaSchema>;
+
+export type Vehiculo = typeof vehiculos.$inferSelect;
+export type InsertVehiculo = z.infer<typeof insertVehiculoSchema>;
+
+export type Inmueble = typeof inmuebles.$inferSelect;
+export type InsertInmueble = z.infer<typeof insertInmuebleSchema>;
+
+export type Ubicacion = typeof ubicaciones.$inferSelect;
+export type InsertUbicacion = z.infer<typeof insertUbicacionSchema>;

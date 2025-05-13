@@ -1,0 +1,212 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { setupAuth } from "./auth";
+import { storage } from "./storage";
+import { z } from "zod";
+import { insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema } from "@shared/schema";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // setup auth routes
+  setupAuth(app);
+
+  // Middleware to check user role
+  const requireRole = (roles: string[]) => (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autorizado" });
+    }
+    
+    if (!roles.includes(req.user.rol)) {
+      return res.status(403).json({ message: "Acceso denegado" });
+    }
+    
+    next();
+  };
+
+  // API routes
+  // Personas
+  app.get("/api/personas", async (req, res) => {
+    try {
+      const personas = await storage.getAllPersonas();
+      res.json(personas);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener personas" });
+    }
+  });
+
+  app.get("/api/personas/:id", async (req, res) => {
+    try {
+      const persona = await storage.getPersona(parseInt(req.params.id));
+      if (!persona) {
+        return res.status(404).json({ message: "Persona no encontrada" });
+      }
+      res.json(persona);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener persona" });
+    }
+  });
+
+  app.post("/api/personas", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const personaData = insertPersonaSchema.parse(req.body);
+      const persona = await storage.createPersona(personaData);
+      res.status(201).json(persona);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear persona" });
+    }
+  });
+
+  // Vehículos
+  app.get("/api/vehiculos", async (req, res) => {
+    try {
+      const vehiculos = await storage.getAllVehiculos();
+      res.json(vehiculos);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener vehículos" });
+    }
+  });
+
+  app.get("/api/vehiculos/:id", async (req, res) => {
+    try {
+      const vehiculo = await storage.getVehiculo(parseInt(req.params.id));
+      if (!vehiculo) {
+        return res.status(404).json({ message: "Vehículo no encontrado" });
+      }
+      res.json(vehiculo);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener vehículo" });
+    }
+  });
+
+  app.post("/api/vehiculos", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const vehiculoData = insertVehiculoSchema.parse(req.body);
+      const vehiculo = await storage.createVehiculo(vehiculoData);
+      res.status(201).json(vehiculo);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear vehículo" });
+    }
+  });
+
+  // Inmuebles
+  app.get("/api/inmuebles", async (req, res) => {
+    try {
+      const inmuebles = await storage.getAllInmuebles();
+      res.json(inmuebles);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener inmuebles" });
+    }
+  });
+
+  app.get("/api/inmuebles/:id", async (req, res) => {
+    try {
+      const inmueble = await storage.getInmueble(parseInt(req.params.id));
+      if (!inmueble) {
+        return res.status(404).json({ message: "Inmueble no encontrado" });
+      }
+      res.json(inmueble);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener inmueble" });
+    }
+  });
+
+  app.post("/api/inmuebles", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const inmuebleData = insertInmuebleSchema.parse(req.body);
+      const inmueble = await storage.createInmueble(inmuebleData);
+      res.status(201).json(inmueble);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear inmueble" });
+    }
+  });
+
+  // Ubicaciones
+  app.get("/api/ubicaciones", async (req, res) => {
+    try {
+      const ubicaciones = await storage.getAllUbicaciones();
+      res.json(ubicaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener ubicaciones" });
+    }
+  });
+
+  app.get("/api/ubicaciones/:id", async (req, res) => {
+    try {
+      const ubicacion = await storage.getUbicacion(parseInt(req.params.id));
+      if (!ubicacion) {
+        return res.status(404).json({ message: "Ubicación no encontrada" });
+      }
+      res.json(ubicacion);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener ubicación" });
+    }
+  });
+
+  app.post("/api/ubicaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const ubicacionData = insertUbicacionSchema.parse(req.body);
+      const ubicacion = await storage.createUbicacion(ubicacionData);
+      res.status(201).json(ubicacion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear ubicación" });
+    }
+  });
+
+  // Búsqueda
+  app.get("/api/buscar", async (req, res) => {
+    try {
+      const { query, tipos } = req.query;
+      if (!query) {
+        return res.status(400).json({ message: "Se requiere un término de búsqueda" });
+      }
+      
+      const tiposArray = Array.isArray(tipos) 
+        ? tipos 
+        : tipos ? [tipos] : ["personas", "vehiculos", "inmuebles"];
+      
+      const resultados = await storage.buscar(query.toString(), tiposArray as string[]);
+      res.json(resultados);
+    } catch (error) {
+      res.status(500).json({ message: "Error al realizar la búsqueda" });
+    }
+  });
+
+  // Relaciones
+  app.post("/api/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const { tipo1, id1, tipo2, id2 } = req.body;
+      if (!tipo1 || !id1 || !tipo2 || !id2) {
+        return res.status(400).json({ message: "Datos incompletos para la relación" });
+      }
+      
+      const relacion = await storage.crearRelacion(tipo1, parseInt(id1), tipo2, parseInt(id2));
+      res.status(201).json(relacion);
+    } catch (error) {
+      res.status(500).json({ message: "Error al crear relación" });
+    }
+  });
+
+  app.get("/api/relaciones/:tipo/:id", async (req, res) => {
+    try {
+      const { tipo, id } = req.params;
+      const relaciones = await storage.getRelaciones(tipo, parseInt(id));
+      res.json(relaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener relaciones" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
