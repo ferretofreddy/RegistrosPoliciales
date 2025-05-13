@@ -42,63 +42,58 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </div>
               <div className="hidden md:block">
                 <div className="ml-10 flex items-baseline space-x-4">
-                  <Link href="/consulta">
-                    <a
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        location === "/consulta" || location === "/"
-                          ? "bg-primary-900 text-white"
-                          : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                      }`}
-                    >
-                      Consulta
-                    </a>
+                  <Link 
+                    href="/consulta"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      location === "/consulta" || location === "/"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                  >
+                    Consulta
                   </Link>
                   {(user?.rol === "admin" || user?.rol === "investigador") && (
-                    <Link href="/registros">
-                      <a
-                        className={`px-3 py-2 rounded-md text-sm font-medium ${
-                          location === "/registros"
-                            ? "bg-primary-900 text-white"
-                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                        }`}
-                      >
-                        Registros
-                      </a>
+                    <Link
+                      href="/registros"
+                      className={`px-3 py-2 rounded-md text-sm font-medium ${
+                        location === "/registros"
+                          ? "bg-primary-900 text-white"
+                          : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                      }`}
+                    >
+                      Registros
                     </Link>
                   )}
-                  <Link href="/ubicaciones">
-                    <a
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        location === "/ubicaciones"
-                          ? "bg-primary-900 text-white"
-                          : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                      }`}
-                    >
-                      Ubicaciones
-                    </a>
+                  <Link
+                    href="/ubicaciones"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      location === "/ubicaciones"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                  >
+                    Ubicaciones
                   </Link>
-                  <Link href="/estructuras">
-                    <a
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        location === "/estructuras"
-                          ? "bg-primary-900 text-white"
-                          : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                      }`}
-                    >
-                      Estructuras
-                    </a>
+                  <Link
+                    href="/estructuras"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      location === "/estructuras"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                  >
+                    Estructuras
                   </Link>
                   {user?.rol === "admin" && (
-                    <Link href="/admin">
-                      <a
-                        className={`px-3 py-2 rounded-md text-sm font-medium ${
-                          location === "/admin"
-                            ? "bg-primary-900 text-white"
-                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                        }`}
-                      >
-                        Administración
-                      </a>
+                    <Link
+                      href="/admin"
+                      className={`px-3 py-2 rounded-md text-sm font-medium ${
+                        location === "/admin"
+                          ? "bg-primary-900 text-white"
+                          : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                      }`}
+                    >
+                      Administración
                     </Link>
                   )}
                 </div>
@@ -152,68 +147,63 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <Link href="/consulta">
-                <a
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location === "/consulta" || location === "/"
-                      ? "bg-primary-900 text-white"
-                      : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Consulta
-                </a>
+              <Link 
+                href="/consulta"
+                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  location === "/consulta" || location === "/"
+                    ? "bg-primary-900 text-white"
+                    : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Consulta
               </Link>
               {(user?.rol === "admin" || user?.rol === "investigador") && (
-                <Link href="/registros">
-                  <a
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      location === "/registros"
-                        ? "bg-primary-900 text-white"
-                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                    }`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Registros
-                  </a>
+                <Link
+                  href="/registros"
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${
+                    location === "/registros"
+                      ? "bg-primary-900 text-white"
+                      : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Registros
                 </Link>
               )}
-              <Link href="/ubicaciones">
-                <a
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location === "/ubicaciones"
-                      ? "bg-primary-900 text-white"
-                      : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Ubicaciones
-                </a>
+              <Link
+                href="/ubicaciones"
+                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  location === "/ubicaciones"
+                    ? "bg-primary-900 text-white"
+                    : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Ubicaciones
               </Link>
-              <Link href="/estructuras">
-                <a
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location === "/estructuras"
-                      ? "bg-primary-900 text-white"
-                      : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Estructuras
-                </a>
+              <Link
+                href="/estructuras"
+                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  location === "/estructuras"
+                    ? "bg-primary-900 text-white"
+                    : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Estructuras
               </Link>
               {user?.rol === "admin" && (
-                <Link href="/admin">
-                  <a
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      location === "/admin"
-                        ? "bg-primary-900 text-white"
-                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                    }`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Administración
-                  </a>
+                <Link
+                  href="/admin"
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${
+                    location === "/admin"
+                      ? "bg-primary-900 text-white"
+                      : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Administración
                 </Link>
               )}
             </div>
@@ -226,10 +216,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </div>
                 <div className="ml-3">
                   <div className="text-base font-medium leading-none text-white">
-                    {user?.nombre}
+                    {user?.nombre || 'Usuario'}
                   </div>
                   <div className="text-sm font-medium leading-none text-gray-300 mt-1">
-                    {user?.rol.charAt(0).toUpperCase() + user?.rol.slice(1)}
+                    {user?.rol ? user.rol.charAt(0).toUpperCase() + user.rol.slice(1) : 'Usuario'}
                   </div>
                 </div>
               </div>
