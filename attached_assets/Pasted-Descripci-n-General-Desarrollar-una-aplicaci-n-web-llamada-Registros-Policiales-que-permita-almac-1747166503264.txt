@@ -1,0 +1,347 @@
+Descripción General
+
+Desarrollar una aplicación web llamada "Registros Policiales" que permita almacenar y gestionar datos de personas, vehículos, inmuebles y ubicaciones, con relaciones muchos a muchos entre ellos. La aplicación debe incluir autenticación de usuarios mediante login y registro, con acceso restringido a ciertas páginas según el rol del usuario (Admin, Investigador, Agente). Debe ser 100% responsive, estar en español y permitir el uso de la cámara, almacenamiento y ubicación del dispositivo móvil cuando sea necesario.
+
+Características Indispensables
+
+
+
+
+
+Responsividad: La aplicación debe ser completamente responsive y visualmente amigable en dispositivos móviles.
+
+
+
+Acceso a Dispositivos: Debe poder acceder a la cámara, almacenamiento y ubicación del dispositivo para ingresar datos como fotografías, ubicaciones o archivos.
+
+
+
+Autenticación y Autorización: Solo se puede acceder mediante login o registro de usuario. El acceso a ciertas páginas está restringido según el rol (Admin, Investigador, Agente).
+
+
+
+Idioma: Toda la aplicación debe estar en español.
+
+
+
+Roles de Usuario: Admin, Investigador, Agente.
+
+Estructura de la Aplicación
+
+
+
+
+
+Página Principal:
+
+
+
+
+
+Página de login y registro de usuario.
+
+
+
+Página de Consulta de Datos:
+
+
+
+
+
+Accesible por todos los roles.
+
+
+
+Incluye un input de texto y botón de búsqueda, con checkboxes para seleccionar el tipo de dato a buscar (personas, vehículos, inmuebles).
+
+
+
+Página de Registros:
+
+
+
+
+
+Accesible solo por Admin e Investigador.
+
+
+
+Contiene formularios en pestañas para crear nuevos registros: una pestaña para personas, otra para vehículos, otra para inmuebles y otra para ubicaciones.
+
+
+
+Página de Ubicaciones:
+
+
+
+
+
+Muestra ubicaciones relacionadas con personas, vehículos o inmuebles consultados en un mapa con punteros.
+
+
+
+Incluye un input de texto y botón de búsqueda, con checkboxes para seleccionar el tipo de dato (personas, vehículos, inmuebles).
+
+
+
+Página de Estructuras:
+
+
+
+
+
+Muestra todos los registros relacionados con la consulta (personas, vehículos, inmuebles, ubicaciones).
+
+
+
+Permite acceder a detalles de cada campo relacionado y exportar la información en formato PDF tipo markdown.
+
+Base de Datos
+
+
+
+
+
+Tabla Usuarios:
+
+
+
+
+
+Campos obligatorios (ej., email, contraseña) + Nombre completo, Cédula, Teléfono, Unidad.
+
+
+
+Tabla Personas:
+
+
+
+
+
+Relaciones muchos a muchos con vehículos, inmuebles, ubicaciones.
+
+
+
+Campos: Nombre, Identificación, Alias (múltiples), Teléfono (múltiples), Domicilio (múltiples), Observaciones (múltiples).
+
+
+
+Tabla Vehículos:
+
+
+
+
+
+Relaciones muchos a muchos con personas, inmuebles, ubicaciones.
+
+
+
+Campos: Marca, Tipo, Color, Placa, Observaciones (múltiples).
+
+
+
+Tabla Inmuebles:
+
+
+
+
+
+Relaciones muchos a muchos con personas, vehículos, ubicaciones.
+
+
+
+Campos: Tipo inmueble, Propietario, Ubicación, Observaciones (múltiples).
+
+
+
+Tabla Ubicaciones:
+
+
+
+
+
+Relaciones muchos a muchos con personas, vehículos, inmuebles.
+
+
+
+Campos: Coordenadas (latitud y longitud), Tipo de ubicación, Observaciones (múltiples).
+
+Detalles Técnicos
+
+
+
+
+
+Frontend:
+
+
+
+
+
+HTML, CSS (usar Bootstrap para responsividad), JavaScript.
+
+
+
+Integrar Leaflet para mapas y manejo dinámico de formularios.
+
+
+
+Backend:
+
+
+
+
+
+Framework como Flask (Python) o Express (Node.js) para rutas, autenticación y lógica.
+
+
+
+Base de Datos:
+
+
+
+
+
+SQLite para desarrollo en Replit (migrable a PostgreSQL/MySQL si es necesario).
+
+
+
+Autenticación:
+
+
+
+
+
+Usar tokens JWT o sesiones.
+
+
+
+Permisos:
+
+
+
+
+
+Restringir rutas y funcionalidades según el rol del usuario.
+
+
+
+Funcionalidades Móviles:
+
+
+
+
+
+Usar <input type="file"> para fotos/archivos, y la API de geolocalización para coordenadas.
+
+Pasos para Implementar
+
+
+
+
+
+Configurar Entorno en Replit:
+
+
+
+
+
+Crear un Repl con Flask o Express.
+
+
+
+Instalar dependencias (ej., Flask, SQLAlchemy, Bootstrap).
+
+
+
+Diseñar la Base de Datos:
+
+
+
+
+
+Crear modelos con relaciones muchos a muchos usando tablas intermedias.
+
+
+
+Permitir múltiples entradas en campos como Alias, Teléfono, etc.
+
+
+
+Implementar Autenticación:
+
+
+
+
+
+Formularios de login/registro.
+
+
+
+Middleware para restringir acceso por roles.
+
+
+
+Desarrollar Páginas:
+
+
+
+
+
+Página Principal: Login y registro.
+
+
+
+Consulta de Datos: Búsqueda con checkboxes.
+
+
+
+Registros: Formularios en pestañas.
+
+
+
+Ubicaciones: Mapa con punteros.
+
+
+
+Estructuras: Detalles relacionados y exportación a PDF.
+
+
+
+Integrar Funcionalidades Móviles:
+
+
+
+
+
+Acceso a cámara, almacenamiento y geolocalización.
+
+
+
+Asegurar responsividad.
+
+
+
+Pruebas:
+
+
+
+
+
+Verificar funcionamiento en móviles y restricciones de roles.
+
+Consideraciones Adicionales
+
+
+
+
+
+Seguridad: Hashing de contraseñas, protección contra CSRF.
+
+
+
+Exportación a PDF: Usar bibliotecas como pdfkit.
+
+
+
+Idioma: Mantener todo en español.
