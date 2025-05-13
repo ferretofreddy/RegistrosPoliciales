@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import {
   Form,
   FormControl,
@@ -24,7 +25,14 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ onToggle }: { onToggle: () => void }) {
-  const { loginMutation } = useAuth();
+  const { user, loginMutation } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -39,6 +47,10 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
     loginMutation.mutate({
       email: data.email,
       password: data.password,
+    }, {
+      onSuccess: () => {
+        // La redirección ocurrirá en el useEffect cuando el usuario se actualice
+      }
     });
   };
 
