@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera } from "lucide-react";
+import { X, Plus, Upload, Camera, MapPin } from "lucide-react";
 
 // Extender el esquema para el formulario con validaciones adicionales
 const personaFormSchema = insertPersonaSchema.extend({
