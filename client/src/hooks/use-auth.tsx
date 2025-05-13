@@ -15,6 +15,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  refetchUser: () => Promise<any>;
 };
 
 type LoginData = Pick<InsertUser, "email" | "password">;
@@ -26,9 +27,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch,
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 0,
   });
 
   const loginMutation = useMutation({
@@ -38,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      refetch(); // Forzar la recarga de los datos del usuario
       toast({
         title: "Inicio de sesión exitoso",
         description: `Bienvenido, ${user.nombre}`,
@@ -59,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      refetch(); // Forzar la recarga de los datos del usuario
       toast({
         title: "Registro exitoso",
         description: `Bienvenido, ${user.nombre}`,
@@ -79,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      refetch(); // Forzar la recarga del estado de usuario (ahora será null)
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente",
@@ -93,6 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Función auxiliar para refrescar datos de usuario
+  const refetchUser = async () => {
+    return await refetch();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -102,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        refetchUser,
       }}
     >
       {children}

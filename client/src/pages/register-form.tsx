@@ -33,7 +33,14 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm({ onToggle }: { onToggle: () => void }) {
-  const { registerMutation } = useAuth();
+  const { user, registerMutation } = useAuth();
+  const [location, setLocation] = useLocation();
+  
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
