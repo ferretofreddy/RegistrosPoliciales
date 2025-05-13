@@ -254,7 +254,8 @@ export default function AuthPage() {
                         <Input
                           type="email"
                           placeholder="correo@ejemplo.com"
-                          {...field}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          value={field.value}
                         />
                       </FormControl>
                       <FormMessage />
@@ -270,7 +271,12 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Teléfono</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="Número de teléfono" {...field} />
+                          <Input 
+                            type="tel" 
+                            placeholder="Número de teléfono" 
+                            onChange={(e) => field.onChange(e.target.value)}
+                            value={field.value}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
