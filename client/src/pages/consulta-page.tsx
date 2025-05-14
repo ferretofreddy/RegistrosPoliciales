@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Persona, Vehiculo, Inmueble } from "@shared/schema";
+import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
-import { Search, User, Car, Home, Eye, Edit, Trash2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Search, User, Car, Home, Eye, Edit, Trash2, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import DetalleDialog from "@/components/detalle-dialog";
 
 export default function ConsultaPage() {
   const { user } = useAuth();
@@ -118,7 +120,7 @@ export default function ConsultaPage() {
                     </div>
                     <div className="overflow-x-auto">
                       {data?.personas?.length ? (
-                        <table className="min-w-full divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 responsive-table">
                           <thead className="bg-gray-50">
                             <tr>
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
