@@ -852,6 +852,71 @@ export default function PersonaForm() {
           </div>
         </div>
         
+        {/* Sección de relaciones con Personas */}
+        <div className="mt-4">
+          <FormLabel>Relaciones con Personas</FormLabel>
+          <div className="space-y-2">
+            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+              <div className="flex-grow">
+                <FormField
+                  control={form.control}
+                  name="personaSeleccionada"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar persona" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {personas && personas.map((persona: any) => (
+                            <SelectItem key={persona.id} value={persona.id.toString()}>
+                              {persona.nombre} ({persona.identificacion})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRelacionPersona}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Vincular persona
+              </Button>
+            </div>
+            
+            {relacionPersonas.length > 0 && (
+              <div className="mt-2">
+                {relacionPersonas.map((persona) => (
+                  <div 
+                    key={persona.id} 
+                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
+                  >
+                    <span className="text-sm">{persona.nombre}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeRelacionPersona(persona.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="flex justify-end space-x-3">
           <Button
             type="button"

@@ -32,6 +32,7 @@ const observacionSchema = z.object({
 const vehiculoFormSchema = insertVehiculoSchema.extend({
   personaSeleccionada: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),
+  vehiculoSeleccionado: z.string().optional(),
   nuevaObservacion: z.string().optional(),
 });
 
@@ -40,6 +41,8 @@ type VehiculoFormValues = z.infer<typeof vehiculoFormSchema>;
 export default function VehiculoForm() {
   const { toast } = useToast();
   const [relacionPersonas, setRelacionPersonas] = useState<{ id: number; nombre: string }[]>([]);
+  const [relacionInmuebles, setRelacionInmuebles] = useState<{ id: number; nombre: string }[]>([]);
+  const [relacionVehiculos, setRelacionVehiculos] = useState<{ id: number; nombre: string }[]>([]);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
 
@@ -59,6 +62,16 @@ export default function VehiculoForm() {
     queryFn: async () => {
       const res = await fetch('/api/inmuebles');
       if (!res.ok) throw new Error('Error al cargar inmuebles');
+      return res.json();
+    }
+  });
+  
+  // Obtener lista de vehículos para las relaciones
+  const { data: vehiculos } = useQuery({
+    queryKey: ['/api/vehiculos'],
+    queryFn: async () => {
+      const res = await fetch('/api/vehiculos');
+      if (!res.ok) throw new Error('Error al cargar vehículos');
       return res.json();
     }
   });
