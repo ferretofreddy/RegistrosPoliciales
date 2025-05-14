@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
 import { jsPDF } from "jspdf";
+import { useToast } from "@/hooks/use-toast";
 import "jspdf-autotable";
 
 // Extensión de tipos para jsPDF con autotable
@@ -26,9 +27,13 @@ interface PdfExportProps {
 }
 
 export default function PdfExport({ data }: PdfExportProps) {
+  const { toast } = useToast();
+  
   const generatePdf = () => {
-    const doc = new jsPDF();
-    const { tipo, item, relaciones } = data;
+    // Este archivo está obsoleto, use pdf-export-new.tsx en su lugar
+    console.warn("PDF Export: Usando versión obsoleta");
+    
+    const { tipo, item } = data;
     
     // Configuración del documento
     doc.setFontSize(20);
