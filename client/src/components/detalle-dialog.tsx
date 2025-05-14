@@ -18,8 +18,15 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Componente para mostrar observaciones
-function TablaObservaciones({ observaciones }: { observaciones: any[] }) {
-  if (!observaciones || observaciones.length === 0) {
+function TablaObservaciones({ 
+  observaciones 
+}: { 
+  observaciones: (PersonaObservacion | VehiculoObservacion | InmuebleObservacion)[] 
+}) {
+  // Aseguramos que observaciones siempre sea un array
+  const items = Array.isArray(observaciones) ? observaciones : [];
+  
+  if (items.length === 0) {
     return (
       <Alert variant="default" className="bg-muted">
         <AlertCircle className="h-4 w-4" />
@@ -41,7 +48,7 @@ function TablaObservaciones({ observaciones }: { observaciones: any[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {observaciones.map((obs) => (
+          {items.map((obs) => (
             <TableRow key={obs.id}>
               <TableCell className="whitespace-nowrap">
                 {format(new Date(obs.fecha), 'dd/MM/yyyy HH:mm')}
@@ -146,7 +153,7 @@ export default function DetalleDialog({
         </div>
         <div className="mt-4">
           <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
-          <TablaObservaciones observaciones={observacionesPersona || []} />
+          <TablaObservaciones observaciones={observacionesPersona} />
         </div>
       </>
     );
@@ -178,7 +185,7 @@ export default function DetalleDialog({
         </div>
         <div className="mt-4">
           <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
-          <TablaObservaciones observaciones={observacionesVehiculo || []} />
+          <TablaObservaciones observaciones={observacionesVehiculo} />
         </div>
       </>
     );
@@ -206,7 +213,7 @@ export default function DetalleDialog({
         </div>
         <div className="mt-4">
           <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
-          <TablaObservaciones observaciones={observacionesInmueble || []} />
+          <TablaObservaciones observaciones={observacionesInmueble} />
         </div>
       </>
     );
