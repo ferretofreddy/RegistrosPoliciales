@@ -53,12 +53,20 @@ export interface IStorage {
   getRelaciones(tipo: string, id: number): Promise<any>;
 }
 
+// Clase para usar en desarrollo (usa memoria en lugar de base de datos)
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private personas: Map<number, Persona>;
   private vehiculos: Map<number, Vehiculo>;
   private inmuebles: Map<number, Inmueble>;
   private ubicaciones: Map<number, Ubicacion>;
+  
+  // Observaciones
+  private personasObservaciones: Map<number, PersonaObservacion[]>; // personaId -> observaciones
+  private vehiculosObservaciones: Map<number, VehiculoObservacion[]>; // vehiculoId -> observaciones
+  private inmueblesObservaciones: Map<number, InmuebleObservacion[]>; // inmuebleId -> observaciones
+  
+  // Relaciones
   private relacionesPersonasVehiculos: Map<number, Set<number>>; // personaId -> Set<vehiculoId>
   private relacionesPersonasInmuebles: Map<number, Set<number>>; // personaId -> Set<inmuebleId>
   private relacionesPersonasUbicaciones: Map<number, Set<number>>; // personaId -> Set<ubicacionId>
@@ -72,6 +80,9 @@ export class MemStorage implements IStorage {
   private currentVehiculoId: number;
   private currentInmuebleId: number;
   private currentUbicacionId: number;
+  private currentPersonaObservacionId: number;
+  private currentVehiculoObservacionId: number;
+  private currentInmuebleObservacionId: number;
 
   constructor() {
     this.users = new Map();
@@ -80,6 +91,12 @@ export class MemStorage implements IStorage {
     this.inmuebles = new Map();
     this.ubicaciones = new Map();
     
+    // Inicializar mapas de observaciones
+    this.personasObservaciones = new Map();
+    this.vehiculosObservaciones = new Map();
+    this.inmueblesObservaciones = new Map();
+    
+    // Inicializar mapas de relaciones
     this.relacionesPersonasVehiculos = new Map();
     this.relacionesPersonasInmuebles = new Map();
     this.relacionesPersonasUbicaciones = new Map();
@@ -87,11 +104,15 @@ export class MemStorage implements IStorage {
     this.relacionesVehiculosUbicaciones = new Map();
     this.relacionesInmueblesUbicaciones = new Map();
     
+    // Inicializar contadores de ID
     this.currentUserId = 1;
     this.currentPersonaId = 1;
     this.currentVehiculoId = 1;
     this.currentInmuebleId = 1;
     this.currentUbicacionId = 1;
+    this.currentPersonaObservacionId = 1;
+    this.currentVehiculoObservacionId = 1;
+    this.currentInmuebleObservacionId = 1;
     
     // Create admin user
     this.createUser({
@@ -134,9 +155,40 @@ export class MemStorage implements IStorage {
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
     const id = this.currentPersonaId++;
-    const persona: Persona = { ...insertPersona, id };
+    const persona: Persona = { 
+      ...insertPersona, 
+      id,
+      alias: insertPersona.alias || null,
+      telefonos: insertPersona.telefonos || null,
+      domicilios: insertPersona.domicilios || null,
+      foto: insertPersona.foto || null
+    };
     this.personas.set(id, persona);
     return persona;
+  }
+  
+  // Implementación de métodos para observaciones de personas
+  async getPersonaObservaciones(personaId: number): Promise<PersonaObservacion[]> {
+    return this.personasObservaciones.get(personaId) || [];
+  }
+  
+  async createPersonaObservacion(observacion: InsertPersonaObservacion): Promise<PersonaObservacion> {
+    const id = this.currentPersonaObservacionId++;
+    const nuevaObservacion: PersonaObservacion = {
+      ...observacion,
+      id,
+      fecha: new Date(),
+    };
+    
+    const personaId = observacion.personaId;
+    if (!this.personasObservaciones.has(personaId)) {
+      this.personasObservaciones.set(personaId, []);
+    }
+    
+    const observaciones = this.personasObservaciones.get(personaId)!;
+    observaciones.push(nuevaObservacion);
+    
+    return nuevaObservacion;
   }
 
   // Vehiculos methods
@@ -150,9 +202,38 @@ export class MemStorage implements IStorage {
 
   async createVehiculo(insertVehiculo: InsertVehiculo): Promise<Vehiculo> {
     const id = this.currentVehiculoId++;
-    const vehiculo: Vehiculo = { ...insertVehiculo, id };
+    const vehiculo: Vehiculo = { 
+      ...insertVehiculo, 
+      id,
+      foto: insertVehiculo.foto || null,
+      modelo: insertVehiculo.modelo || null
+    };
     this.vehiculos.set(id, vehiculo);
     return vehiculo;
+  }
+  
+  // Implementación de métodos para observaciones de vehículos
+  async getVehiculoObservaciones(vehiculoId: number): Promise<VehiculoObservacion[]> {
+    return this.vehiculosObservaciones.get(vehiculoId) || [];
+  }
+  
+  async createVehiculoObservacion(observacion: InsertVehiculoObservacion): Promise<VehiculoObservacion> {
+    const id = this.currentVehiculoObservacionId++;
+    const nuevaObservacion: VehiculoObservacion = {
+      ...observacion,
+      id,
+      fecha: new Date(),
+    };
+    
+    const vehiculoId = observacion.vehiculoId;
+    if (!this.vehiculosObservaciones.has(vehiculoId)) {
+      this.vehiculosObservaciones.set(vehiculoId, []);
+    }
+    
+    const observaciones = this.vehiculosObservaciones.get(vehiculoId)!;
+    observaciones.push(nuevaObservacion);
+    
+    return nuevaObservacion;
   }
 
   // Inmuebles methods
@@ -166,9 +247,37 @@ export class MemStorage implements IStorage {
 
   async createInmueble(insertInmueble: InsertInmueble): Promise<Inmueble> {
     const id = this.currentInmuebleId++;
-    const inmueble: Inmueble = { ...insertInmueble, id };
+    const inmueble: Inmueble = { 
+      ...insertInmueble, 
+      id,
+      foto: insertInmueble.foto || null
+    };
     this.inmuebles.set(id, inmueble);
     return inmueble;
+  }
+  
+  // Implementación de métodos para observaciones de inmuebles
+  async getInmuebleObservaciones(inmuebleId: number): Promise<InmuebleObservacion[]> {
+    return this.inmueblesObservaciones.get(inmuebleId) || [];
+  }
+  
+  async createInmuebleObservacion(observacion: InsertInmuebleObservacion): Promise<InmuebleObservacion> {
+    const id = this.currentInmuebleObservacionId++;
+    const nuevaObservacion: InmuebleObservacion = {
+      ...observacion,
+      id,
+      fecha: new Date(),
+    };
+    
+    const inmuebleId = observacion.inmuebleId;
+    if (!this.inmueblesObservaciones.has(inmuebleId)) {
+      this.inmueblesObservaciones.set(inmuebleId, []);
+    }
+    
+    const observaciones = this.inmueblesObservaciones.get(inmuebleId)!;
+    observaciones.push(nuevaObservacion);
+    
+    return nuevaObservacion;
   }
 
   // Ubicaciones methods
@@ -182,7 +291,12 @@ export class MemStorage implements IStorage {
 
   async createUbicacion(insertUbicacion: InsertUbicacion): Promise<Ubicacion> {
     const id = this.currentUbicacionId++;
-    const ubicacion: Ubicacion = { ...insertUbicacion, id };
+    const ubicacion: Ubicacion = {
+      ...insertUbicacion,
+      id,
+      fecha: insertUbicacion.fecha || new Date(),
+      observaciones: insertUbicacion.observaciones || null
+    };
     this.ubicaciones.set(id, ubicacion);
     return ubicacion;
   }

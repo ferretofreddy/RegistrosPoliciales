@@ -10,9 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Car, Home, User, MapPin } from "lucide-react";
-import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
+import { Persona, Vehiculo, Inmueble, Ubicacion, PersonaObservacion, VehiculoObservacion, InmuebleObservacion } from "@shared/schema";
 import PdfExport from "@/components/pdf-export-new";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 interface DetalleDialogProps {
   open: boolean;
