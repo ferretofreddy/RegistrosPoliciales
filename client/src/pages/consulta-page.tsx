@@ -234,36 +234,6 @@ export default function ConsultaPage() {
                                         </TooltipContent>
                                       </Tooltip>
                                     </TooltipProvider>
-
-                                    {(user?.rol === "admin" || user?.rol === "investigador") && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                              <Edit className="h-4 w-4 text-secondary-600" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Editar</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
-
-                                    {user?.rol === "admin" && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                              <Trash2 className="h-4 w-4 text-red-600" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Eliminar</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
                                   </div>
                                 </td>
                               </tr>
