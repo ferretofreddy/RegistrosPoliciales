@@ -34,6 +34,7 @@ import { format } from "date-fns";
 const inmuebleFormSchema = insertInmuebleSchema.extend({
   personaSeleccionada: z.string().optional(),
   vehiculoSeleccionado: z.string().optional(),
+  inmuebleSeleccionado: z.string().optional(),
   latitud: z.string().optional(),
   longitud: z.string().optional(),
   nuevaObservacion: z.string().optional(),
@@ -45,6 +46,7 @@ export default function InmuebleForm() {
   const { toast } = useToast();
   const [relacionPersonas, setRelacionPersonas] = useState<{ id: number; nombre: string }[]>([]);
   const [relacionVehiculos, setRelacionVehiculos] = useState<{ id: number; nombre: string }[]>([]);
+  const [relacionInmuebles, setRelacionInmuebles] = useState<{ id: number; nombre: string }[]>([]);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
 
@@ -67,6 +69,16 @@ export default function InmuebleForm() {
       return res.json();
     }
   });
+  
+  // Obtener lista de inmuebles para las relaciones
+  const { data: inmuebles } = useQuery({
+    queryKey: ['/api/inmuebles'],
+    queryFn: async () => {
+      const res = await fetch('/api/inmuebles');
+      if (!res.ok) throw new Error('Error al cargar inmuebles');
+      return res.json();
+    }
+  });
 
   // Configurar el formulario
   const form = useForm<InmuebleFormValues>({
@@ -77,6 +89,7 @@ export default function InmuebleForm() {
       direccion: "",
       personaSeleccionada: "",
       vehiculoSeleccionado: "",
+      inmuebleSeleccionado: "",
       latitud: "",
       longitud: "",
       nuevaObservacion: "",
@@ -141,6 +154,22 @@ export default function InmuebleForm() {
             });
           } catch (error) {
             console.error("Error al crear relación con vehículo:", error);
+          }
+        });
+      }
+      
+      // Crear relaciones con otros inmuebles si existen
+      if (relacionInmuebles.length > 0) {
+        relacionInmuebles.forEach(async (inmueble) => {
+          try {
+            await apiRequest("POST", "/api/relaciones", {
+              tipo1: "inmuebles",
+              id1: data.id,
+              tipo2: "inmuebles",
+              id2: inmueble.id
+            });
+          } catch (error) {
+            console.error("Error al crear relación con inmueble:", error);
           }
         });
       }
@@ -229,6 +258,25 @@ export default function InmuebleForm() {
 
   const removeRelacionVehiculo = (id: number) => {
     setRelacionVehiculos(relacionVehiculos.filter(v => v.id !== id));
+  };
+  
+  // Funciones para manejar relaciones con otros inmuebles
+  const addRelacionInmueble = () => {
+    const inmuebleId = form.getValues("inmuebleSeleccionado");
+    if (inmuebleId && inmuebles) {
+      const inmueble = inmuebles.find((i: any) => i.id.toString() === inmuebleId);
+      if (inmueble && !relacionInmuebles.some(ri => ri.id === inmueble.id)) {
+        setRelacionInmuebles([...relacionInmuebles, { 
+          id: inmueble.id,
+          nombre: `${inmueble.tipo}: ${inmueble.direccion}`
+        }]);
+        form.setValue("inmuebleSeleccionado", "");
+      }
+    }
+  };
+
+  const removeRelacionInmueble = (id: number) => {
+    setRelacionInmuebles(relacionInmuebles.filter(i => i.id !== id));
   };
 
   // Función para capturar la ubicación actual
