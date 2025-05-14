@@ -440,21 +440,21 @@ export class DatabaseStorage implements IStorage {
       
       // Buscar personas que coincidan
       if (tipos.includes('personas')) {
-        const personasEncontradas = await db
-          .select()
-          .from(personas)
-          .where(
-            or(
-              like(personas.nombre, searchPattern),
-              like(personas.identificacion, searchPattern),
-              sql`${personas.alias}::text LIKE ${searchPattern}`
-            )
-          );
+        // Cambiamos a consulta SQL directa para verificar que el LIKE funcione correctamente
+        // y evitar cualquier problema con la sintaxis de Drizzle
+        const personasEncontradas = await db.execute(
+          sql`SELECT * FROM personas WHERE 
+              LOWER(nombre) LIKE LOWER(${searchPattern}) OR 
+              LOWER(identificacion) LIKE LOWER(${searchPattern}) OR 
+              alias::text LIKE LOWER(${searchPattern})`
+        );
         
-        console.log(`Personas encontradas por búsqueda: ${personasEncontradas.length}`);
+        // Los resultados de db.execute() vienen en formato diferente
+        const personasResultados = personasEncontradas.rows || [];
+        console.log(`Personas encontradas por búsqueda: ${personasResultados.length}`, personasResultados);
         
         // Para cada persona encontrada, buscar sus ubicaciones relacionadas
-        for (const persona of personasEncontradas) {
+        for (const persona of personasResultados) {
           console.log(`Buscando ubicaciones para persona (ID ${persona.id}): ${persona.nombre}`);
           
           const relacionesPersona = await db
