@@ -27,12 +27,14 @@ export default function DetalleDialog({
   tipo,
   dato,
 }: DetalleDialogProps) {
-  if (!dato) return null;
+  // Si no hay datos o el diálogo no está abierto, no renderizamos nada
+  if (!dato || !open) return null;
 
-  let icon;
-  let color;
-  let titulo;
-  let contenido;
+  // Valores por defecto
+  let icon = <User className="h-6 w-6 text-gray-500" />;
+  let color = "bg-gray-100";
+  let titulo = "Detalles";
+  let contenido = <p>No hay datos disponibles</p>;
 
   switch (tipo) {
     case "persona":
