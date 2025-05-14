@@ -128,9 +128,9 @@ export default function VehiculoForm() {
         relacionPersonas.forEach(async (persona) => {
           try {
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "vehiculo",
+              tipo1: "vehiculos",
               id1: data.id,
-              tipo2: "persona",
+              tipo2: "personas",
               id2: persona.id
             });
           } catch (error) {
@@ -155,10 +155,27 @@ export default function VehiculoForm() {
         });
       }
       
+      // Crear relaciones con inmuebles si existen
+      if (relacionInmuebles.length > 0) {
+        relacionInmuebles.forEach(async (inmueble) => {
+          try {
+            await apiRequest("POST", "/api/relaciones", {
+              tipo1: "vehiculo",
+              id1: data.id,
+              tipo2: "inmueble",
+              id2: inmueble.id
+            });
+          } catch (error) {
+            console.error("Error al crear relación con inmueble:", error);
+          }
+        });
+      }
+      
       // Reiniciar formulario
       form.reset();
       setRelacionPersonas([]);
       setRelacionVehiculos([]);
+      setRelacionInmuebles([]);
       setObservaciones([]);
       setShowObservacionForm(false);
       // Invalidar queries para actualizar los datos
@@ -213,6 +230,25 @@ export default function VehiculoForm() {
 
   const removeRelacionVehiculo = (id: number) => {
     setRelacionVehiculos(relacionVehiculos.filter(v => v.id !== id));
+  };
+  
+  // Funciones para manejar relaciones con inmuebles
+  const addRelacionInmueble = () => {
+    const inmuebleId = form.getValues("inmuebleSeleccionado");
+    if (inmuebleId && inmuebles) {
+      const inmueble = inmuebles.find((i: any) => i.id.toString() === inmuebleId);
+      if (inmueble && !relacionInmuebles.some(ri => ri.id === inmueble.id)) {
+        setRelacionInmuebles([...relacionInmuebles, { 
+          id: inmueble.id,
+          nombre: `${inmueble.tipo}: ${inmueble.direccion}`
+        }]);
+        form.setValue("inmuebleSeleccionado", "");
+      }
+    }
+  };
+
+  const removeRelacionInmueble = (id: number) => {
+    setRelacionInmuebles(relacionInmuebles.filter(i => i.id !== id));
   };
 
   // Función para capturar imágenes con la cámara
@@ -592,32 +628,65 @@ export default function VehiculoForm() {
         
         <div>
           <FormLabel>Relaciones con Inmuebles</FormLabel>
-          <FormField
-            control={form.control}
-            name="inmuebleSeleccionado"
-            render={({ field }) => (
-              <FormItem>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar inmueble" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {inmuebles && inmuebles.map((inmueble: any) => (
-                      <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
-                        {inmueble.tipo} ({inmueble.direccion})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
+          <div className="mt-1">
+            <FormField
+              control={form.control}
+              name="inmuebleSeleccionado"
+              render={({ field }) => (
+                <FormItem>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar inmueble" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {inmuebles && inmuebles.map((inmueble: any) => (
+                        <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
+                          {inmueble.tipo} ({inmueble.direccion})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="flex justify-end mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRelacionInmueble}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Vincular inmueble
+              </Button>
+            </div>
+            
+            {relacionInmuebles.length > 0 && (
+              <div className="mt-2">
+                {relacionInmuebles.map((inmueble) => (
+                  <div 
+                    key={inmueble.id} 
+                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
+                  >
+                    <span className="text-sm">{inmueble.nombre}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeRelacionInmueble(inmueble.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
-          />
+          </div>
         </div>
         
         <div className="flex justify-end space-x-3">
