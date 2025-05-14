@@ -373,6 +373,8 @@ export class DatabaseStorage implements IStorage {
     };
     
     try {
+      console.log(`Buscando ubicaciones con query: "${query}", patrón: "${searchPattern}" y tipos: ${tipos.join(', ')}`);
+      
       // 1. Primero, buscar ubicaciones directas con coordenadas válidas
       const ubicacionesDirectas = await db
         .select()
@@ -387,15 +389,23 @@ export class DatabaseStorage implements IStorage {
           )
         );
       
+      console.log(`Ubicaciones directas encontradas: ${ubicacionesDirectas.length}`);
       resultado.ubicacionesDirectas = ubicacionesDirectas;
       
       // Procesar cada ubicación encontrada
       for (const ubicacion of ubicacionesDirectas) {
+        console.log(`Procesando ubicación ID ${ubicacion.id}: ${ubicacion.tipo}`);
+        
         // Buscar entidades relacionadas con cada ubicación
         const relaciones = await this.getRelaciones('ubicacion', ubicacion.id);
+        console.log(`Relaciones encontradas para ubicación ${ubicacion.id}:`, {
+          personas: relaciones.personas?.length || 0,
+          vehiculos: relaciones.vehiculos?.length || 0,
+          inmuebles: relaciones.inmuebles?.length || 0
+        });
         
         // Agregar las relaciones al resultado
-        if (tipos.includes('personas') && relaciones.personas.length > 0) {
+        if (tipos.includes('personas') && relaciones.personas && relaciones.personas.length > 0) {
           for (const persona of relaciones.personas) {
             resultado.entidadesRelacionadas.push({
               tipo: 'persona',
@@ -405,7 +415,7 @@ export class DatabaseStorage implements IStorage {
           }
         }
         
-        if (tipos.includes('vehiculos') && relaciones.vehiculos.length > 0) {
+        if (tipos.includes('vehiculos') && relaciones.vehiculos && relaciones.vehiculos.length > 0) {
           for (const vehiculo of relaciones.vehiculos) {
             resultado.entidadesRelacionadas.push({
               tipo: 'vehiculo',
@@ -415,7 +425,7 @@ export class DatabaseStorage implements IStorage {
           }
         }
         
-        if (tipos.includes('inmuebles') && relaciones.inmuebles.length > 0) {
+        if (tipos.includes('inmuebles') && relaciones.inmuebles && relaciones.inmuebles.length > 0) {
           for (const inmueble of relaciones.inmuebles) {
             resultado.entidadesRelacionadas.push({
               tipo: 'inmueble',
@@ -436,12 +446,17 @@ export class DatabaseStorage implements IStorage {
           .where(
             or(
               like(personas.nombre, searchPattern),
-              like(personas.identificacion, searchPattern)
+              like(personas.identificacion, searchPattern),
+              sql`${personas.alias}::text LIKE ${searchPattern}`
             )
           );
         
+        console.log(`Personas encontradas por búsqueda: ${personasEncontradas.length}`);
+        
         // Para cada persona encontrada, buscar sus ubicaciones relacionadas
         for (const persona of personasEncontradas) {
+          console.log(`Buscando ubicaciones para persona (ID ${persona.id}): ${persona.nombre}`);
+          
           const relacionesPersona = await db
             .select({
               ubicacion: ubicaciones
@@ -454,6 +469,8 @@ export class DatabaseStorage implements IStorage {
                 sql`${ubicaciones.latitud} IS NOT NULL AND ${ubicaciones.longitud} IS NOT NULL`
               )
             );
+          
+          console.log(`Ubicaciones encontradas para persona (ID ${persona.id}): ${relacionesPersona.length}`);
           
           for (const rel of relacionesPersona) {
             resultado.ubicacionesRelacionadas.push({
