@@ -347,8 +347,12 @@ export class DatabaseStorage implements IStorage {
       // Normalize tipo
       const t = tipo.replace(/s$/, ''); // remove trailing 's' if present
       
+      // Buscamos relaciones bidireccionales independientemente del tipo
+      // Para cada consulta, primero buscamos relaciones directas y luego inversas
+      
+      // 1. RELACIONES DE PERSONAS
       if (t === 'persona') {
-        // Obtener vehículos relacionados con esta persona
+        // Obtener vehículos relacionados con esta persona (directa)
         const vehiculosRelacionados = await db
           .select({
             vehiculo: vehiculos
@@ -359,7 +363,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
         
-        // Obtener inmuebles relacionados con esta persona
+        // Obtener inmuebles relacionados con esta persona (directa)
         const inmueblesRelacionados = await db
           .select({
             inmueble: inmuebles
@@ -370,7 +374,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
         
-        // Obtener ubicaciones relacionadas con esta persona
+        // Obtener ubicaciones relacionadas con esta persona (directa)
         const ubicacionesRelacionadas = await db
           .select({
             ubicacion: ubicaciones
