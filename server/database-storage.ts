@@ -9,7 +9,8 @@ import {
   inmueblesObservaciones, InmuebleObservacion, InsertInmuebleObservacion,
   ubicaciones, Ubicacion, InsertUbicacion,
   personasVehiculos, personasInmuebles, personasUbicaciones,
-  vehiculosInmuebles, vehiculosUbicaciones, inmueblesUbicaciones
+  vehiculosInmuebles, vehiculosUbicaciones, inmueblesUbicaciones,
+  personasPersonas, vehiculosVehiculos, inmueblesInmuebles
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, ilike, or, and, sql, desc } from "drizzle-orm";
@@ -282,7 +283,28 @@ export class DatabaseStorage implements IStorage {
       const t1 = tipo1.replace(/s$/, ''); // remove trailing 's' if present
       const t2 = tipo2.replace(/s$/, '');
       
-      if (t1 === 'persona' && t2 === 'vehiculo') {
+      // Relaciones entre entidades del mismo tipo
+      if (t1 === 'persona' && t2 === 'persona') {
+        await db.insert(personasPersonas).values({
+          personaId1: id1,
+          personaId2: id2
+        });
+        return { success: true };
+      } else if (t1 === 'vehiculo' && t2 === 'vehiculo') {
+        await db.insert(vehiculosVehiculos).values({
+          vehiculoId1: id1,
+          vehiculoId2: id2
+        });
+        return { success: true };
+      } else if (t1 === 'inmueble' && t2 === 'inmueble') {
+        await db.insert(inmueblesInmuebles).values({
+          inmuebleId1: id1,
+          inmuebleId2: id2
+        });
+        return { success: true };
+      }
+      // Relaciones entre diferentes tipos de entidades
+      else if (t1 === 'persona' && t2 === 'vehiculo') {
         await db.insert(personasVehiculos).values({
           personaId: id1,
           vehiculoId: id2
@@ -352,6 +374,28 @@ export class DatabaseStorage implements IStorage {
       
       // 1. BUSCAR RELACIONES CON PERSONAS
       if (t === 'persona') {
+        // Buscar otras personas relacionadas
+        const personasRelacionadas1 = await db
+          .select({
+            persona: personas
+          })
+          .from(personasPersonas)
+          .innerJoin(personas, eq(personasPersonas.personaId2, personas.id))
+          .where(eq(personasPersonas.personaId1, id));
+        
+        const personasRelacionadas2 = await db
+          .select({
+            persona: personas
+          })
+          .from(personasPersonas)
+          .innerJoin(personas, eq(personasPersonas.personaId1, personas.id))
+          .where(eq(personasPersonas.personaId2, id));
+        
+        resultado.personas = [
+          ...personasRelacionadas1.map(r => r.persona),
+          ...personasRelacionadas2.map(r => r.persona)
+        ];
+        
         // Estamos viendo una persona, buscar vehículos relacionados
         const vehiculosRelacionados = await db
           .select({
@@ -385,6 +429,28 @@ export class DatabaseStorage implements IStorage {
         
         resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
       } else if (t === 'vehiculo') {
+        // Buscar otros vehículos relacionados
+        const vehiculosRelacionados1 = await db
+          .select({
+            vehiculo: vehiculos
+          })
+          .from(vehiculosVehiculos)
+          .innerJoin(vehiculos, eq(vehiculosVehiculos.vehiculoId2, vehiculos.id))
+          .where(eq(vehiculosVehiculos.vehiculoId1, id));
+        
+        const vehiculosRelacionados2 = await db
+          .select({
+            vehiculo: vehiculos
+          })
+          .from(vehiculosVehiculos)
+          .innerJoin(vehiculos, eq(vehiculosVehiculos.vehiculoId1, vehiculos.id))
+          .where(eq(vehiculosVehiculos.vehiculoId2, id));
+        
+        resultado.vehiculos = [
+          ...vehiculosRelacionados1.map(r => r.vehiculo),
+          ...vehiculosRelacionados2.map(r => r.vehiculo)
+        ];
+        
         // 1. Obtener personas relacionadas con este vehículo
         const personasRelacionadas = await db
           .select({
@@ -418,6 +484,28 @@ export class DatabaseStorage implements IStorage {
         
         resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
       } else if (t === 'inmueble') {
+        // Buscar otros inmuebles relacionados
+        const inmueblesRelacionados1 = await db
+          .select({
+            inmueble: inmuebles
+          })
+          .from(inmueblesInmuebles)
+          .innerJoin(inmuebles, eq(inmueblesInmuebles.inmuebleId2, inmuebles.id))
+          .where(eq(inmueblesInmuebles.inmuebleId1, id));
+        
+        const inmueblesRelacionados2 = await db
+          .select({
+            inmueble: inmuebles
+          })
+          .from(inmueblesInmuebles)
+          .innerJoin(inmuebles, eq(inmueblesInmuebles.inmuebleId1, inmuebles.id))
+          .where(eq(inmueblesInmuebles.inmuebleId2, id));
+        
+        resultado.inmuebles = [
+          ...inmueblesRelacionados1.map(r => r.inmueble),
+          ...inmueblesRelacionados2.map(r => r.inmueble)
+        ];
+        
         // 1. Obtener personas relacionadas con este inmueble
         const personasRelacionadas = await db
           .select({
