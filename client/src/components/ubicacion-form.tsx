@@ -105,31 +105,57 @@ export default function UbicacionForm() {
           const mapElement = document.getElementById('location-map');
           
           if (mapElement) {
-            const newMap = leaflet.map('location-map').setView([-34.603722, -58.381592], 13);
+            // Coordenadas iniciales (puedes cambiarlas según tu ubicación principal)
+            const initialCoords = [-34.603722, -58.381592];
             
+            // Crear el mapa y configurarlo
+            const newMap = leaflet.map('location-map').setView(initialCoords, 13);
+            
+            // Agregar la capa de mapa (OpenStreetMap)
             leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(newMap);
             
-            const newMarker = leaflet.marker([-34.603722, -58.381592], {
-              draggable: true
+            // Crear un marcador en la posición inicial con icono personalizado
+            const newMarker = leaflet.marker(initialCoords, {
+              draggable: true,
+              icon: leaflet.icon({
+                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                iconSize: [25, 41], // tamaño del icono
+                iconAnchor: [12, 41], // punto del icono que corresponderá a la ubicación del marcador
+                popupAnchor: [1, -34], // punto desde donde se debe abrir el popup en relación con el iconAnchor
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                shadowSize: [41, 41]
+              })
             }).addTo(newMap);
             
+            // Al arrastrar el marcador, actualizar los valores del formulario
             newMarker.on('dragend', function() {
               const position = newMarker.getLatLng();
               form.setValue("latitud", position.lat);
               form.setValue("longitud", position.lng);
             });
             
+            // Al hacer clic en el mapa, mover el marcador y actualizar los valores
             newMap.on('click', function(e: any) {
               newMarker.setLatLng(e.latlng);
               form.setValue("latitud", e.latlng.lat);
               form.setValue("longitud", e.latlng.lng);
             });
             
+            // Guardar referencias al mapa y marcador en el estado
             setMap(newMap);
             setMarker(newMarker);
             setMapInitialized(true);
+            
+            // Si ya hay valores de latitud y longitud en el formulario, mover el marcador allí
+            const lat = form.getValues("latitud");
+            const lng = form.getValues("longitud");
+            if (lat && lng && lat !== 0 && lng !== 0) {
+              const coords = [lat, lng];
+              newMarker.setLatLng(coords);
+              newMap.setView(coords, 15);
+            }
           }
         } catch (error) {
           console.error("Error al inicializar el mapa:", error);
@@ -250,15 +276,37 @@ export default function UbicacionForm() {
   // Función para capturar la ubicación actual
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
+      toast({
+        title: "Obteniendo ubicación",
+        description: "Por favor espere mientras obtenemos su ubicación...",
+      });
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          // Actualizar valores del formulario
           form.setValue("latitud", position.coords.latitude);
           form.setValue("longitud", position.coords.longitude);
           
+          // Si el mapa está inicializado, actualizar la vista y el marcador
           if (map && marker) {
             const newLatLng = [position.coords.latitude, position.coords.longitude];
+            
+            // Mover el marcador a la nueva posición
             marker.setLatLng(newLatLng);
-            map.setView(newLatLng, 15);
+            
+            // Centrar el mapa en la nueva posición con zoom
+            map.setView(newLatLng, 16);
+            
+            // Opcional: agregar una animación de rebote al marcador para hacerlo más visible
+            if (marker.bounce) {
+              marker.bounce(3); // Si se ha añadido algún plugin de animación
+            } else {
+              // Alternativa: mostrar un popup temporal en el marcador
+              marker.bindPopup("<b>¡Su ubicación actual!</b>").openPopup();
+              setTimeout(() => {
+                marker.closePopup();
+              }, 3000);
+            }
           }
           
           toast({
@@ -267,11 +315,31 @@ export default function UbicacionForm() {
           });
         },
         (error) => {
+          let errorMsg = "Error desconocido";
+          
+          // Mensajes de error más descriptivos
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg = "Permiso denegado para acceder a la ubicación";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg = "La información de ubicación no está disponible";
+              break;
+            case error.TIMEOUT:
+              errorMsg = "La solicitud de ubicación ha expirado";
+              break;
+          }
+          
           toast({
             title: "Error de geolocalización",
-            description: `No se pudo obtener la ubicación: ${error.message}`,
+            description: errorMsg,
             variant: "destructive",
           });
+        },
+        {
+          enableHighAccuracy: true,   // Solicitar la mejor precisión posible
+          timeout: 10000,             // Tiempo máximo de espera (10 segundos)
+          maximumAge: 0               // No usar ubicaciones en caché
         }
       );
     } else {
@@ -344,8 +412,11 @@ export default function UbicacionForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div>
-          <FormLabel>Seleccione la ubicación en el mapa o introduzca las coordenadas</FormLabel>
-          <div id="location-map" className="leaflet-container mt-2 rounded-md border border-gray-300"></div>
+          <FormLabel className="mb-2 block font-semibold">Seleccione la ubicación en el mapa o introduzca las coordenadas</FormLabel>
+          <div id="location-map" className="leaflet-container h-[400px] mt-2 rounded-lg border-2 border-gray-300 shadow-md"></div>
+          <p className="text-xs text-gray-500 mt-1">
+            <span className="font-medium">Tip:</span> Haga clic en el mapa para seleccionar una ubicación o arrastre el marcador.
+          </p>
         </div>
         
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -354,21 +425,32 @@ export default function UbicacionForm() {
             name="latitud"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Latitud</FormLabel>
+                <FormLabel className="flex items-center">
+                  <span>Latitud</span>
+                  <span className="ml-1 text-xs text-gray-500">(coordenada norte/sur)</span>
+                </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.000001" 
-                    placeholder="Latitud de la ubicación" 
-                    {...field} 
-                    onChange={(e) => {
-                      field.onChange(parseFloat(e.target.value));
-                      if (marker) {
-                        const lng = form.getValues("longitud");
-                        marker.setLatLng([parseFloat(e.target.value), lng]);
-                      }
-                    }}
-                  />
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      step="0.000001" 
+                      placeholder="Ej: -34.603722" 
+                      className="pl-8"
+                      {...field} 
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        field.onChange(value);
+                        if (marker && !isNaN(value)) {
+                          const lng = form.getValues("longitud");
+                          marker.setLatLng([value, lng]);
+                          map?.panTo([value, lng]);
+                        }
+                      }}
+                    />
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                      N/S
+                    </span>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -380,21 +462,32 @@ export default function UbicacionForm() {
             name="longitud"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Longitud</FormLabel>
+                <FormLabel className="flex items-center">
+                  <span>Longitud</span>
+                  <span className="ml-1 text-xs text-gray-500">(coordenada este/oeste)</span>
+                </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.000001" 
-                    placeholder="Longitud de la ubicación" 
-                    {...field} 
-                    onChange={(e) => {
-                      field.onChange(parseFloat(e.target.value));
-                      if (marker) {
-                        const lat = form.getValues("latitud");
-                        marker.setLatLng([lat, parseFloat(e.target.value)]);
-                      }
-                    }}
-                  />
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      step="0.000001" 
+                      placeholder="Ej: -58.381592" 
+                      className="pl-8"
+                      {...field} 
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        field.onChange(value);
+                        if (marker && !isNaN(value)) {
+                          const lat = form.getValues("latitud");
+                          marker.setLatLng([lat, value]);
+                          map?.panTo([lat, value]);
+                        }
+                      }}
+                    />
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                      E/O
+                    </span>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -402,15 +495,33 @@ export default function UbicacionForm() {
           />
         </div>
         
-        <div className="flex justify-start">
+        <div className="flex justify-start py-2">
           <Button 
             type="button" 
-            variant="outline" 
+            variant="default" 
             onClick={getCurrentLocation}
-            className="flex items-center"
+            className="flex items-center bg-blue-600 hover:bg-blue-700 transition-colors"
           >
-            <MapPin className="h-4 w-4 mr-1" /> Obtener ubicación actual
+            <MapPin className="h-4 w-4 mr-2" /> Obtener mi ubicación actual
           </Button>
+          <div className="ml-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                if (map) {
+                  map.setView([-34.603722, -58.381592], 13);
+                  if (marker) {
+                    marker.setLatLng([-34.603722, -58.381592]);
+                  }
+                }
+              }}
+              className="flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> 
+              Volver al centro
+            </Button>
+          </div>
         </div>
         
         <FormField
