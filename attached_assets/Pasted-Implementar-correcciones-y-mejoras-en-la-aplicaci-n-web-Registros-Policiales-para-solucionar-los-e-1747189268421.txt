@@ -1,0 +1,33 @@
+Implementar correcciones y mejoras en la aplicación web "Registros Policiales" para solucionar los errores reportados y cumplir con los siguientes requerimientos:
+1. Mejora del modo responsivo
+•	Descripción: Ajustar el diseño para que sea compatible con tablets y teléfonos, ocultando el menú y mostrándolo mediante un icono en resoluciones inferiores a 1080px. Las tablas de datos deben adaptarse al tamaño del dispositivo, mostrando solo información básica y permitiendo ver detalles completos en un popup.
+•	Acciones:
+o	Implementar un menú hamburguesa que se active en resoluciones menores a 1080px con media queries en CSS.
+o	Ajustar botones, formularios y tablas para evitar superposiciones y garantizar legibilidad en pantallas pequeñas.
+o	Configurar las tablas para mostrar datos básicos (ej. nombre, ID) y añadir un icono por fila que abra un popup con la información completa.
+2. Integración con Base de datos
+•	Descripción: Eliminar toda la información DEMO y conectar la aplicación a la base de datos para habilitar operaciones CRUD (Crear, Leer, Actualizar, Eliminar).
+•	Acciones:
+o	Sustituir los datos DEMO por consultas a la API de la base de datos.
+o	Crear funciones asíncronas para las operaciones CRUD, con manejo de estados de carga y errores.
+o	Configurar políticas de seguridad (RLS) en la base de datos para gestionar permisos según roles de usuario.
+3. Corrección de formularios en la página de crear registro
+•	Descripción: Asegurar que los formularios en las pestañas de personas, vehículos, inmuebles y ubicaciones permitan crear nuevos registros y vincular registros existentes.
+•	Acciones:
+o	Revisar y corregir los formularios para incluir todos los campos necesarios por tipo de registro.
+o	Implementar campos dinámicos para datos múltiples (ej. alias, teléfonos).
+o	Añadir una interfaz de búsqueda y selección para consultar y relacionar registros existentes, manejando relaciones muchos a muchos.
+4. Verificación de importaciones de librerías
+•	Descripción: Confirmar que todas las librerías necesarias estén importadas en cada página y módulo.
+•	Acciones:
+o	Revisar el código de cada componente para detectar dependencias faltantes.
+o	Asegurar importaciones correctas para librerías de UI, formularios, Supabase y otras funcionalidades.
+5. Mejora en la exportación a PDF
+•	Descripción: Incluir en el PDF toda la información detallada, como registros múltiples (Alias, Teléfono, Observaciones) y toda la información relacionada, manteniendo el formato existente.
+•	Acciones:
+o	Actualizar la lógica de generación de PDF para incluir todos los campos, incluso los múltiples.
+o	Organizar el contenido en el PDF con tablas o secciones claras para diferentes tipos de datos.
+Instrucciones adicionales
+•	Probar la aplicación en distintos dispositivos y resoluciones para validar el diseño responsivo.
+•	Comprobar que los permisos de acceso en Supabase funcionen correctamente para las operaciones CRUD.
+•	Documentar los cambios realizados en el código para facilitar el mantenimiento futuro.
