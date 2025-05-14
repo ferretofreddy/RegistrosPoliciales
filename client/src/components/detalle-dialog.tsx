@@ -221,88 +221,90 @@ export default function DetalleDialog({
             <div className="mt-6">
               <h3 className="text-lg font-semibold mb-3">Entidades Relacionadas</h3>
               
-              {/* Personas relacionadas */}
-              {relaciones.personas && relaciones.personas.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-md font-medium mb-2 flex items-center">
-                    <User className="h-4 w-4 mr-2 text-blue-500" />
-                    Personas
-                  </h4>
-                  <div className="bg-blue-50 rounded-md p-3">
-                    {relaciones.personas.map((persona: Persona) => (
-                      <div key={persona.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-blue-100">
-                        <p className="font-medium">{persona.nombre}</p>
-                        <p className="text-sm text-gray-600">ID: {persona.identificacion}</p>
+              {/* Verificar si hay alguna relación */}
+              {(relaciones.personas?.length > 0 || 
+                relaciones.vehiculos?.length > 0 || 
+                relaciones.inmuebles?.length > 0 || 
+                relaciones.ubicaciones?.length > 0) ? (
+                <>
+                  {/* Personas relacionadas */}
+                  {relaciones.personas && relaciones.personas.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-md font-medium mb-2 flex items-center">
+                        <User className="h-4 w-4 mr-2 text-blue-500" />
+                        Personas
+                      </h4>
+                      <div className="bg-blue-50 rounded-md p-3">
+                        {relaciones.personas.map((persona: Persona) => (
+                          <div key={persona.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-blue-100">
+                            <p className="font-medium">{persona.nombre}</p>
+                            <p className="text-sm text-gray-600">ID: {persona.identificacion}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Vehículos relacionados */}
-              {relaciones.vehiculos && relaciones.vehiculos.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-md font-medium mb-2 flex items-center">
-                    <Car className="h-4 w-4 mr-2 text-green-500" />
-                    Vehículos
-                  </h4>
-                  <div className="bg-green-50 rounded-md p-3">
-                    {relaciones.vehiculos.map((vehiculo: Vehiculo) => (
-                      <div key={vehiculo.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-green-100">
-                        <p className="font-medium">{vehiculo.marca} {vehiculo.modelo}</p>
-                        <p className="text-sm text-gray-600">Placa: {vehiculo.placa}</p>
+                    </div>
+                  )}
+                  
+                  {/* Vehículos relacionados */}
+                  {relaciones.vehiculos && relaciones.vehiculos.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-md font-medium mb-2 flex items-center">
+                        <Car className="h-4 w-4 mr-2 text-green-500" />
+                        Vehículos
+                      </h4>
+                      <div className="bg-green-50 rounded-md p-3">
+                        {relaciones.vehiculos.map((vehiculo: Vehiculo) => (
+                          <div key={vehiculo.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-green-100">
+                            <p className="font-medium">{vehiculo.marca} {vehiculo.modelo}</p>
+                            <p className="text-sm text-gray-600">Placa: {vehiculo.placa}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Inmuebles relacionados */}
-              {relaciones.inmuebles && relaciones.inmuebles.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-md font-medium mb-2 flex items-center">
-                    <Home className="h-4 w-4 mr-2 text-purple-500" />
-                    Inmuebles
-                  </h4>
-                  <div className="bg-purple-50 rounded-md p-3">
-                    {relaciones.inmuebles.map((inmueble: Inmueble) => (
-                      <div key={inmueble.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-purple-100">
-                        <p className="font-medium">{inmueble.tipo}</p>
-                        <p className="text-sm text-gray-600">{inmueble.direccion}</p>
+                    </div>
+                  )}
+                  
+                  {/* Inmuebles relacionados */}
+                  {relaciones.inmuebles && relaciones.inmuebles.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-md font-medium mb-2 flex items-center">
+                        <Home className="h-4 w-4 mr-2 text-purple-500" />
+                        Inmuebles
+                      </h4>
+                      <div className="bg-purple-50 rounded-md p-3">
+                        {relaciones.inmuebles.map((inmueble: Inmueble) => (
+                          <div key={inmueble.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-purple-100">
+                            <p className="font-medium">{inmueble.tipo}</p>
+                            <p className="text-sm text-gray-600">{inmueble.direccion}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Ubicaciones relacionadas */}
-              {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-md font-medium mb-2 flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-amber-500" />
-                    Ubicaciones
-                  </h4>
-                  <div className="bg-amber-50 rounded-md p-3">
-                    {relaciones.ubicaciones.map((ubicacion: Ubicacion) => (
-                      <div key={ubicacion.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-amber-100">
-                        <p className="font-medium">{ubicacion.tipo || "Ubicación"}</p>
-                        <p className="text-sm text-gray-600">
-                          {ubicacion.fecha ? new Date(ubicacion.fecha).toLocaleDateString() : "Sin fecha"} - 
-                          Lat: {ubicacion.latitud}, Long: {ubicacion.longitud}
-                        </p>
+                    </div>
+                  )}
+                  
+                  {/* Ubicaciones relacionadas */}
+                  {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-md font-medium mb-2 flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-amber-500" />
+                        Ubicaciones
+                      </h4>
+                      <div className="bg-amber-50 rounded-md p-3">
+                        {relaciones.ubicaciones.map((ubicacion: Ubicacion) => (
+                          <div key={ubicacion.id} className="mb-2 last:mb-0 p-2 bg-white rounded border border-amber-100">
+                            <p className="font-medium">{ubicacion.tipo || "Ubicación"}</p>
+                            <p className="text-sm text-gray-600">
+                              {ubicacion.fecha ? new Date(ubicacion.fecha).toLocaleDateString() : "Sin fecha"} - 
+                              Lat: {ubicacion.latitud}, Long: {ubicacion.longitud}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Mensaje si no hay relaciones */}
-              {(!relaciones.personas || relaciones.personas.length === 0) &&
-               (!relaciones.vehiculos || relaciones.vehiculos.length === 0) &&
-               (!relaciones.inmuebles || relaciones.inmuebles.length === 0) &&
-               (!relaciones.ubicaciones || relaciones.ubicaciones.length === 0) && (
+                    </div>
+                  )}
+                </>
+              ) : (
                 <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-md">
-                  No hay entidades relacionadas
+                  No hay entidades relacionadas con este registro
                 </div>
               )}
             </div>
