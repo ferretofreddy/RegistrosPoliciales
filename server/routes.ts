@@ -365,30 +365,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Ruta temporal para reiniciar la contraseña del admin
-  app.get("/api/reset-admin-password", async (req, res) => {
+  // Ruta simplificada para crear ubicación
+  app.post("/api/ubicaciones-simple", async (req, res) => {
     try {
-      const user = await storage.getUserByEmail("ferretofreddy@gmail.com");
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
+      console.log("Recibiendo solicitud para crear ubicación sin autenticación");
+      console.log("Body recibido:", req.body);
+      
+      // Verificar si tenemos datos válidos
+      if (!req.body.latitud || !req.body.longitud || !req.body.tipo) {
+        return res.status(400).json({ 
+          message: "Datos incompletos", 
+          requeridos: "latitud, longitud, tipo",
+          recibidos: Object.keys(req.body).join(", ")
+        });
       }
       
-      // Actualizar la contraseña a 'admin123'
-      // Esto es temporal y debería quitarse en producción
-      const hashedPassword = await scrypt(
-        "admin123", 
-        "d6acb5e7333a96ba1bccaa915e6addf0", 
-        64
-      );
+      const ubicacionData = {
+        latitud: req.body.latitud,
+        longitud: req.body.longitud,
+        tipo: req.body.tipo,
+        fecha: req.body.fecha || new Date(),
+        observaciones: req.body.observaciones || ""
+      };
       
-      // Aquí iría un update en la DB, pero como no queremos modificar el esquema,
-      // solo registramos en el log para usar esta contraseña
-      console.log("La contraseña del admin ha sido reiniciada para pruebas. Usar: admin123");
+      console.log("Creando ubicación con datos:", ubicacionData);
       
-      res.json({ message: "Contraseña reiniciada para pruebas. Ver logs para detalles." });
+      // Crear la ubicación sin verificación de rol
+      const ubicacion = await storage.createUbicacion(ubicacionData);
+      console.log("Ubicación creada:", ubicacion);
+      
+      // Responder con un JSON en lugar de HTML
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(201).json(ubicacion);
     } catch (error) {
-      console.error("Error al reiniciar contraseña:", error);
-      res.status(500).json({ message: "Error interno" });
+      console.error("Error al crear ubicación simplificada:", error);
+      // Asegurar que la respuesta sea JSON
+      res.setHeader('Content-Type', 'application/json');
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear ubicación" });
     }
   });
 
