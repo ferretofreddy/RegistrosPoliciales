@@ -436,7 +436,13 @@ export default function InmuebleForm() {
               <FormItem>
                 <FormLabel>Latitud</FormLabel>
                 <FormControl>
-                  <Input placeholder="Latitud de la ubicación" {...field} />
+                  <Input 
+                    placeholder="Latitud de la ubicación" 
+                    readOnly 
+                    {...field} 
+                    className="bg-gray-50"
+                    title="Este campo se completa automáticamente al usar 'Obtener ubicación actual'"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -450,7 +456,13 @@ export default function InmuebleForm() {
               <FormItem>
                 <FormLabel>Longitud</FormLabel>
                 <FormControl>
-                  <Input placeholder="Longitud de la ubicación" {...field} />
+                  <Input 
+                    placeholder="Longitud de la ubicación" 
+                    readOnly 
+                    {...field} 
+                    className="bg-gray-50"
+                    title="Este campo se completa automáticamente al usar 'Obtener ubicación actual'"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -461,13 +473,16 @@ export default function InmuebleForm() {
         <div className="flex justify-start">
           <Button 
             type="button" 
-            variant="outline" 
+            variant="default" 
             size="sm" 
             onClick={getCurrentLocation}
-            className="flex items-center"
+            className="flex items-center bg-blue-600 hover:bg-blue-700"
           >
-            <MapPin className="h-4 w-4 mr-1" /> Obtener ubicación actual
+            <MapPin className="h-4 w-4 mr-2" /> Obtener ubicación actual
           </Button>
+          <div className="ml-2 text-xs text-gray-500">
+            (Presiona este botón para obtener las coordenadas de tu ubicación actual)
+          </div>
         </div>
         
         <div>

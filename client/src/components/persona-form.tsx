@@ -604,7 +604,13 @@ export default function PersonaForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <Input placeholder="Latitud" {...field} />
+                          <Input 
+                            placeholder="Latitud" 
+                            readOnly 
+                            {...field} 
+                            className="bg-gray-50"
+                            title="Este campo se completa automáticamente al usar 'Obtener ubicación actual'"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -616,7 +622,13 @@ export default function PersonaForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <Input placeholder="Longitud" {...field} />
+                          <Input 
+                            placeholder="Longitud" 
+                            readOnly
+                            {...field} 
+                            className="bg-gray-50"
+                            title="Este campo se completa automáticamente al usar 'Obtener ubicación actual'"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -626,13 +638,16 @@ export default function PersonaForm() {
                 <div className="flex justify-between">
                   <Button 
                     type="button" 
-                    variant="outline" 
+                    variant="default" 
                     size="sm" 
                     onClick={getCurrentLocation}
-                    className="text-xs"
+                    className="text-xs bg-blue-600 hover:bg-blue-700"
                   >
                     <MapPin className="h-3 w-3 mr-1" /> Obtener ubicación actual
                   </Button>
+                  <div className="text-xs text-gray-500 mb-2 ml-1">
+                    (Presiona para obtener coordenadas automáticamente)
+                  </div>
                   <Button 
                     type="button" 
                     size="sm" 
