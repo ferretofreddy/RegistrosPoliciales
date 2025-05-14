@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Search, User, Car, Home, Eye, Edit, Trash2, Info } from "lucide-react";
+import { Search, User, Car, Home, Eye, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DetalleDialog from "@/components/detalle-dialog";
 
@@ -301,7 +301,15 @@ export default function ConsultaPage() {
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <Button variant="ghost" size="icon">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon"
+                                            onClick={() => {
+                                              setItemSeleccionado(vehiculo);
+                                              setTipoSeleccionado("vehiculo");
+                                              setDetalleDialogOpen(true);
+                                            }}
+                                          >
                                             <Eye className="h-4 w-4 text-secondary-600" />
                                           </Button>
                                         </TooltipTrigger>
@@ -310,36 +318,6 @@ export default function ConsultaPage() {
                                         </TooltipContent>
                                       </Tooltip>
                                     </TooltipProvider>
-
-                                    {(user?.rol === "admin" || user?.rol === "investigador") && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                              <Edit className="h-4 w-4 text-secondary-600" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Editar</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
-
-                                    {user?.rol === "admin" && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                              <Trash2 className="h-4 w-4 text-red-600" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Eliminar</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -406,7 +384,15 @@ export default function ConsultaPage() {
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <Button variant="ghost" size="icon">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon"
+                                            onClick={() => {
+                                              setItemSeleccionado(inmueble);
+                                              setTipoSeleccionado("inmueble");
+                                              setDetalleDialogOpen(true);
+                                            }}
+                                          >
                                             <Eye className="h-4 w-4 text-secondary-600" />
                                           </Button>
                                         </TooltipTrigger>
@@ -415,36 +401,6 @@ export default function ConsultaPage() {
                                         </TooltipContent>
                                       </Tooltip>
                                     </TooltipProvider>
-
-                                    {(user?.rol === "admin" || user?.rol === "investigador") && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                              <Edit className="h-4 w-4 text-secondary-600" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Editar</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
-
-                                    {user?.rol === "admin" && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                              <Trash2 className="h-4 w-4 text-red-600" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Eliminar</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -464,8 +420,7 @@ export default function ConsultaPage() {
           </CardContent>
         </Card>
       </div>
-      
-      {/* Diálogo de detalles */}
+
       <DetalleDialog 
         open={detalleDialogOpen} 
         onOpenChange={setDetalleDialogOpen}
