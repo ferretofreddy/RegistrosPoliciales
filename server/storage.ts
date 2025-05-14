@@ -536,6 +536,12 @@ export class MemStorage implements IStorage {
     
     return relaciones;
   }
+  
+  // MemStorage implementation of buscarUbicacionesConCoordenadas
+  async buscarUbicacionesConCoordenadas(query: string, tipos: string[]): Promise<any> {
+    // Esta función no se utiliza porque estamos usando DatabaseStorage
+    throw new Error("Método no implementado en MemStorage");
+  }
 }
 
 import { DatabaseStorage } from "./database-storage";

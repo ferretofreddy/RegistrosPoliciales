@@ -29,6 +29,17 @@ export default function UbicacionesPage() {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["/api/ubicaciones", searchTerm, selectedTypes],
+    queryFn: async () => {
+      const tipos = Object.entries(selectedTypes)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
+      
+      const response = await fetch(`/api/ubicaciones?buscar=${encodeURIComponent(searchTerm)}&tipos=${tipos.join(',')}`);
+      if (!response.ok) {
+        throw new Error('Error al buscar ubicaciones');
+      }
+      return await response.json();
+    },
     enabled: false,
   });
 
