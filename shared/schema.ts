@@ -32,7 +32,6 @@ export const personas = pgTable("personas", {
   alias: json("alias").$type<string[]>(),
   telefonos: json("telefonos").$type<string[]>(),
   domicilios: json("domicilios").$type<string[]>(),
-  observaciones: text("observaciones"),
   foto: text("foto"), // URL to photo
 });
 
@@ -42,8 +41,22 @@ export const insertPersonaSchema = createInsertSchema(personas).pick({
   alias: true,
   telefonos: true,
   domicilios: true,
-  observaciones: true,
   foto: true,
+});
+
+// Observaciones de Personas
+export const personasObservaciones = pgTable("personas_observaciones", {
+  id: serial("id").primaryKey(),
+  personaId: integer("persona_id").notNull().references(() => personas.id),
+  fecha: timestamp("fecha").notNull().defaultNow(),
+  usuario: text("usuario").notNull(),
+  detalle: text("detalle").notNull(),
+});
+
+export const insertPersonaObservacionSchema = createInsertSchema(personasObservaciones).pick({
+  personaId: true,
+  usuario: true,
+  detalle: true,
 });
 
 // Vehículos
@@ -54,7 +67,6 @@ export const vehiculos = pgTable("vehiculos", {
   color: text("color").notNull(),
   placa: text("placa").notNull(),
   modelo: text("modelo"), // año
-  observaciones: text("observaciones"),
   foto: text("foto"), // URL to photo
 });
 
@@ -64,8 +76,22 @@ export const insertVehiculoSchema = createInsertSchema(vehiculos).pick({
   color: true,
   placa: true,
   modelo: true,
-  observaciones: true,
   foto: true,
+});
+
+// Observaciones de Vehículos
+export const vehiculosObservaciones = pgTable("vehiculos_observaciones", {
+  id: serial("id").primaryKey(),
+  vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
+  fecha: timestamp("fecha").notNull().defaultNow(),
+  usuario: text("usuario").notNull(),
+  detalle: text("detalle").notNull(),
+});
+
+export const insertVehiculoObservacionSchema = createInsertSchema(vehiculosObservaciones).pick({
+  vehiculoId: true,
+  usuario: true,
+  detalle: true,
 });
 
 // Inmuebles
@@ -74,7 +100,6 @@ export const inmuebles = pgTable("inmuebles", {
   tipo: text("tipo").notNull(), // casa, apartamento, etc
   propietario: text("propietario").notNull(),
   direccion: text("direccion").notNull(),
-  observaciones: text("observaciones"),
   foto: text("foto"), // URL to photo
 });
 
@@ -82,8 +107,22 @@ export const insertInmuebleSchema = createInsertSchema(inmuebles).pick({
   tipo: true,
   propietario: true,
   direccion: true,
-  observaciones: true,
   foto: true,
+});
+
+// Observaciones de Inmuebles
+export const inmueblesObservaciones = pgTable("inmuebles_observaciones", {
+  id: serial("id").primaryKey(),
+  inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
+  fecha: timestamp("fecha").notNull().defaultNow(),
+  usuario: text("usuario").notNull(),
+  detalle: text("detalle").notNull(),
+});
+
+export const insertInmuebleObservacionSchema = createInsertSchema(inmueblesObservaciones).pick({
+  inmuebleId: true,
+  usuario: true,
+  detalle: true,
 });
 
 // Ubicaciones
@@ -142,11 +181,20 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Persona = typeof personas.$inferSelect;
 export type InsertPersona = z.infer<typeof insertPersonaSchema>;
 
+export type PersonaObservacion = typeof personasObservaciones.$inferSelect;
+export type InsertPersonaObservacion = z.infer<typeof insertPersonaObservacionSchema>;
+
 export type Vehiculo = typeof vehiculos.$inferSelect;
 export type InsertVehiculo = z.infer<typeof insertVehiculoSchema>;
 
+export type VehiculoObservacion = typeof vehiculosObservaciones.$inferSelect;
+export type InsertVehiculoObservacion = z.infer<typeof insertVehiculoObservacionSchema>;
+
 export type Inmueble = typeof inmuebles.$inferSelect;
 export type InsertInmueble = z.infer<typeof insertInmuebleSchema>;
+
+export type InmuebleObservacion = typeof inmueblesObservaciones.$inferSelect;
+export type InsertInmuebleObservacion = z.infer<typeof insertInmuebleObservacionSchema>;
 
 export type Ubicacion = typeof ubicaciones.$inferSelect;
 export type InsertUbicacion = z.infer<typeof insertUbicacionSchema>;

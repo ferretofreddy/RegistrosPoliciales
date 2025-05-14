@@ -2,14 +2,17 @@ import { IStorage } from './storage';
 import { 
   users, User, InsertUser, 
   personas, Persona, InsertPersona,
+  personasObservaciones, PersonaObservacion, InsertPersonaObservacion,
   vehiculos, Vehiculo, InsertVehiculo,
+  vehiculosObservaciones, VehiculoObservacion, InsertVehiculoObservacion,
   inmuebles, Inmueble, InsertInmueble,
+  inmueblesObservaciones, InmuebleObservacion, InsertInmuebleObservacion,
   ubicaciones, Ubicacion, InsertUbicacion,
   personasVehiculos, personasInmuebles, personasUbicaciones,
   vehiculosInmuebles, vehiculosUbicaciones, inmueblesUbicaciones
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, ilike, or, and, sql } from "drizzle-orm";
+import { eq, like, ilike, or, and, sql, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
