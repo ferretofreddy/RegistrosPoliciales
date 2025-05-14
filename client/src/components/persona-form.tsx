@@ -119,6 +119,37 @@ export default function PersonaForm() {
       const res = await apiRequest("POST", "/api/personas", personaData);
       const persona = await res.json();
       
+      // Si hay domicilios con coordenadas, creamos ubicaciones y relaciones
+      if (domicilios.length > 0) {
+        for (const domicilio of domicilios) {
+          if (domicilio.latitud && domicilio.longitud) {
+            // Crear una ubicación para el domicilio
+            try {
+              const ubicacionRes = await apiRequest("POST", "/api/ubicaciones", {
+                latitud: parseFloat(domicilio.latitud),
+                longitud: parseFloat(domicilio.longitud),
+                tipo: "Domicilio",
+                observaciones: `Domicilio de ${persona.nombre}: ${domicilio.direccion}`
+              });
+              
+              const ubicacion = await ubicacionRes.json();
+              
+              // Crear relación entre persona y ubicación
+              await apiRequest("POST", `/api/relaciones`, {
+                tipo1: "personas",
+                id1: persona.id,
+                tipo2: "ubicaciones",
+                id2: ubicacion.id
+              });
+              
+              console.log(`Ubicación creada para domicilio: ${domicilio.direccion} (${domicilio.latitud}, ${domicilio.longitud})`);
+            } catch (error) {
+              console.error("Error al crear ubicación para domicilio:", error);
+            }
+          }
+        }
+      }
+      
       // Si hay observaciones, las agregamos a la persona creada
       if (observaciones.length > 0) {
         for (const obs of observaciones) {
