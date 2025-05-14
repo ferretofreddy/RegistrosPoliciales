@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { insertVehiculoSchema } from "@shared/schema";
+import { insertVehiculoSchema, insertVehiculoObservacionSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -18,12 +18,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera } from "lucide-react";
+import { X, Plus, Upload, Camera, CalendarClock, AlertCircle } from "lucide-react";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { format } from "date-fns";
+
+// Esquema para observaciones
+const observacionSchema = z.object({
+  detalle: z.string().min(1, "La observación no puede estar vacía"),
+});
 
 // Extender el esquema para el formulario
 const vehiculoFormSchema = insertVehiculoSchema.extend({
   personaSeleccionada: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),
+  nuevaObservacion: z.string().optional(),
 });
 
 type VehiculoFormValues = z.infer<typeof vehiculoFormSchema>;
@@ -31,6 +40,8 @@ type VehiculoFormValues = z.infer<typeof vehiculoFormSchema>;
 export default function VehiculoForm() {
   const { toast } = useToast();
   const [relacionPersonas, setRelacionPersonas] = useState<{ id: number; nombre: string }[]>([]);
+  const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
+  const [showObservacionForm, setShowObservacionForm] = useState(false);
 
   // Obtener lista de personas para las relaciones
   const { data: personas } = useQuery({
@@ -61,9 +72,9 @@ export default function VehiculoForm() {
       color: "",
       placa: "",
       modelo: "",
-      observaciones: "",
       personaSeleccionada: "",
       inmuebleSeleccionado: "",
+      nuevaObservacion: "",
     },
   });
 
@@ -77,11 +88,21 @@ export default function VehiculoForm() {
         color: values.color,
         placa: values.placa,
         modelo: values.modelo,
-        observaciones: values.observaciones,
       };
 
       const res = await apiRequest("POST", "/api/vehiculos", vehiculoData);
-      return await res.json();
+      const vehiculo = await res.json();
+      
+      // Si hay observaciones, las agregamos al vehículo creado
+      if (observaciones.length > 0) {
+        for (const obs of observaciones) {
+          await apiRequest("POST", `/api/vehiculos/${vehiculo.id}/observaciones`, {
+            detalle: obs.detalle
+          });
+        }
+      }
+      
+      return vehiculo;
     },
     onSuccess: (data) => {
       toast({
@@ -107,6 +128,8 @@ export default function VehiculoForm() {
       // Reiniciar formulario
       form.reset();
       setRelacionPersonas([]);
+      setObservaciones([]);
+      setShowObservacionForm(false);
       // Invalidar queries para actualizar los datos
       queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
     },
@@ -254,23 +277,110 @@ export default function VehiculoForm() {
           />
         </div>
         
-        <FormField
-          control={form.control}
-          name="observaciones"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observaciones</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Información adicional relevante" 
-                  className="min-h-[100px]"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <FormLabel>Observaciones</FormLabel>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => setShowObservacionForm(!showObservacionForm)}
+            >
+              <Plus className="h-4 w-4" />
+              {showObservacionForm ? "Cancelar" : "Agregar Observación"}
+            </Button>
+          </div>
+          
+          {showObservacionForm && (
+            <div className="border border-gray-200 rounded-md p-4 mb-4 bg-muted/30">
+              <FormField
+                control={form.control}
+                name="nuevaObservacion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nueva Observación</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Ingrese una observación relevante" 
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end mt-2">
+                <Button 
+                  type="button" 
+                  size="sm" 
+                  onClick={() => {
+                    const nuevaObservacion = form.getValues("nuevaObservacion");
+                    if (nuevaObservacion && nuevaObservacion.trim()) {
+                      setObservaciones([
+                        ...observaciones, 
+                        { 
+                          detalle: nuevaObservacion.trim(),
+                          fecha: new Date()
+                        }
+                      ]);
+                      form.setValue("nuevaObservacion", "");
+                      // Opcionalmente, podemos ocultar el formulario
+                      // setShowObservacionForm(false);
+                    }
+                  }}
+                >
+                  Guardar Observación
+                </Button>
+              </div>
+            </div>
           )}
-        />
+          
+          {/* Lista de observaciones */}
+          {observaciones.length > 0 ? (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">Fecha</TableHead>
+                    <TableHead>Detalle</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {observaciones.map((obs, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1 text-xs">
+                          <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                          {obs.fecha ? format(obs.fecha, "dd/MM/yyyy HH:mm") : "Ahora"}
+                        </div>
+                      </TableCell>
+                      <TableCell>{obs.detalle}</TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500"
+                          onClick={() => setObservaciones(observaciones.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <Alert variant="default" className="bg-muted">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>No hay observaciones registradas.</AlertDescription>
+            </Alert>
+          )}
+        </div>
         
         <div>
           <FormLabel>Fotografías</FormLabel>

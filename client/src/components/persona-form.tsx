@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera, MapPin, CalendarClock } from "lucide-react";
+import { X, Plus, Upload, Camera, MapPin, CalendarClock, AlertCircle } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
@@ -483,23 +483,110 @@ export default function PersonaForm() {
           </div>
         </div>
         
-        <FormField
-          control={form.control}
-          name="observaciones"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observaciones</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Información adicional relevante" 
-                  className="min-h-[100px]"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <FormLabel>Observaciones</FormLabel>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => setShowObservacionForm(!showObservacionForm)}
+            >
+              <Plus className="h-4 w-4" />
+              {showObservacionForm ? "Cancelar" : "Agregar Observación"}
+            </Button>
+          </div>
+          
+          {showObservacionForm && (
+            <div className="border border-gray-200 rounded-md p-4 mb-4 bg-muted/30">
+              <FormField
+                control={form.control}
+                name="nuevaObservacion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nueva Observación</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Ingrese una observación relevante" 
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end mt-2">
+                <Button 
+                  type="button" 
+                  size="sm" 
+                  onClick={() => {
+                    const nuevaObservacion = form.getValues("nuevaObservacion");
+                    if (nuevaObservacion && nuevaObservacion.trim()) {
+                      setObservaciones([
+                        ...observaciones, 
+                        { 
+                          detalle: nuevaObservacion.trim(),
+                          fecha: new Date()
+                        }
+                      ]);
+                      form.setValue("nuevaObservacion", "");
+                      // Opcionalmente, podemos ocultar el formulario
+                      // setShowObservacionForm(false);
+                    }
+                  }}
+                >
+                  Guardar Observación
+                </Button>
+              </div>
+            </div>
           )}
-        />
+          
+          {/* Lista de observaciones */}
+          {observaciones.length > 0 ? (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">Fecha</TableHead>
+                    <TableHead>Detalle</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {observaciones.map((obs, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1 text-xs">
+                          <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                          {obs.fecha ? format(obs.fecha, "dd/MM/yyyy HH:mm") : "Ahora"}
+                        </div>
+                      </TableCell>
+                      <TableCell>{obs.detalle}</TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500"
+                          onClick={() => setObservaciones(observaciones.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <Alert variant="default" className="bg-muted">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>No hay observaciones registradas.</AlertDescription>
+            </Alert>
+          )}
+        </div>
         
         <div>
           <FormLabel>Fotografías</FormLabel>
