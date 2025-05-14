@@ -51,16 +51,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
-    // Convert arrays to JSON strings or objects before inserting
-    const formattedData = {
-      ...insertPersona,
-      alias: Array.isArray(insertPersona.alias) ? insertPersona.alias : undefined,
-      telefonos: Array.isArray(insertPersona.telefonos) ? insertPersona.telefonos : undefined,
-      domicilios: Array.isArray(insertPersona.domicilios) ? insertPersona.domicilios : undefined
-    };
-    
-    const [persona] = await db.insert(personas).values(formattedData).returning();
-    return persona;
+    try {
+      // No necesitamos el formatting especial, drizzle-orm maneja correctamente los JSON arrays
+      const [persona] = await db.insert(personas).values(insertPersona).returning();
+      return persona;
+    } catch (error) {
+      console.error("Error al crear persona:", error);
+      throw error;
+    }
   }
 
   async getAllVehiculos(): Promise<Vehiculo[]> {
@@ -116,10 +114,7 @@ export class DatabaseStorage implements IStorage {
           or(
             like(personas.nombre, searchPattern),
             like(personas.identificacion, searchPattern),
-            sql`${personas.alias}::text ILIKE ${searchPattern}`,
-            sql`${personas.telefonos}::text ILIKE ${searchPattern}`,
-            sql`${personas.domicilios}::text ILIKE ${searchPattern}`,
-            like(personas.observaciones || '', searchPattern)
+            sql`${personas.observaciones} IS NOT NULL AND ${personas.observaciones} LIKE ${searchPattern}`
           )
         );
       }
@@ -129,11 +124,11 @@ export class DatabaseStorage implements IStorage {
         resultados.vehiculos = await db.select().from(vehiculos).where(
           or(
             like(vehiculos.marca, searchPattern),
-            like(vehiculos.modelo || '', searchPattern),
             like(vehiculos.placa, searchPattern),
             like(vehiculos.tipo, searchPattern),
             like(vehiculos.color, searchPattern),
-            like(vehiculos.observaciones || '', searchPattern)
+            sql`${vehiculos.modelo} IS NOT NULL AND ${vehiculos.modelo} LIKE ${searchPattern}`,
+            sql`${vehiculos.observaciones} IS NOT NULL AND ${vehiculos.observaciones} LIKE ${searchPattern}`
           )
         );
       }
@@ -145,7 +140,7 @@ export class DatabaseStorage implements IStorage {
             like(inmuebles.propietario, searchPattern),
             like(inmuebles.direccion, searchPattern),
             like(inmuebles.tipo, searchPattern),
-            like(inmuebles.observaciones || '', searchPattern)
+            sql`${inmuebles.observaciones} IS NOT NULL AND ${inmuebles.observaciones} LIKE ${searchPattern}`
           )
         );
       }
@@ -155,7 +150,7 @@ export class DatabaseStorage implements IStorage {
         resultados.ubicaciones = await db.select().from(ubicaciones).where(
           or(
             like(ubicaciones.tipo, searchPattern),
-            like(ubicaciones.observaciones || '', searchPattern),
+            sql`${ubicaciones.observaciones} IS NOT NULL AND ${ubicaciones.observaciones} LIKE ${searchPattern}`,
             sql`CAST(${ubicaciones.latitud} AS TEXT) LIKE ${searchPattern}`,
             sql`CAST(${ubicaciones.longitud} AS TEXT) LIKE ${searchPattern}`
           )
