@@ -55,23 +55,31 @@ export default function UbicacionesPage() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(newMap);
       
+      // Agregar control de escala
+      leaflet.control.scale({ imperial: false, metric: true }).addTo(newMap);
+      
+      // Agregar botón para resetear la vista
+      const resetViewControl = leaflet.control({ position: 'topright' });
+      resetViewControl.onAdd = function() {
+        const div = leaflet.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        div.innerHTML = `<a href="#" title="Resetear vista" role="button" 
+                            aria-label="Resetear vista del mapa" style="font-weight: bold; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                            <span>⌂</span>
+                          </a>`;
+        
+        div.onclick = function() {
+          newMap.setView([-34.603722, -58.381592], 13);
+          return false;
+        };
+        
+        return div;
+      };
+      resetViewControl.addTo(newMap);
+      
       mapRef.current = newMap;
       setMap(newMap);
-
-      // Add demo markers for visualization
-      const personMarker = leaflet.marker([-34.603722, -58.381592])
-        .addTo(newMap)
-        .bindPopup("Carlos Rodríguez - Domicilio Principal");
-          
-      const vehicleMarker = leaflet.marker([-34.595588, -58.373867])
-        .addTo(newMap)
-        .bindPopup("Toyota Corolla (ABC-123) - Última ubicación");
-          
-      const propertyMarker = leaflet.marker([-34.610987, -58.385941])
-        .addTo(newMap)
-        .bindPopup("Casa - Propiedad de Ana Martínez");
       
-      setMarkers([personMarker, vehicleMarker, propertyMarker]);
+      // No agregar marcadores iniciales, se agregarán después de la búsqueda
     }
 
     // Clean up map instance when component unmounts
@@ -83,16 +91,90 @@ export default function UbicacionesPage() {
     };
   }, []);
 
+  // Efecto para actualizar los marcadores cuando cambian los datos
+  useEffect(() => {
+    if (!map || !data) return;
+    
+    // Limpiar marcadores anteriores
+    markers.forEach(marker => marker.remove());
+    
+    const newMarkers: any[] = [];
+    const bounds = window.L.latLngBounds();
+    const leaflet = window.L;
+    
+    // Función para crear un icono personalizado según el tipo de entidad
+    const createIcon = (tipo: string) => {
+      const iconColor = tipo === 'persona' ? '#ef4444' : 
+                        tipo === 'vehiculo' ? '#3b82f6' : 
+                        tipo === 'inmueble' ? '#10b981' : '#6366f1';
+                        
+      const iconHtml = tipo === 'persona' ? '<i class="fas fa-user"></i>' : 
+                       tipo === 'vehiculo' ? '<i class="fas fa-car"></i>' : 
+                       tipo === 'inmueble' ? '<i class="fas fa-home"></i>' : 
+                       '<i class="fas fa-map-marker-alt"></i>';
+                       
+      return leaflet.divIcon({
+        html: `<div style="background-color: ${iconColor}; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center;">${iconHtml}</div>`,
+        className: '',
+        iconSize: [25, 25]
+      });
+    };
+    
+    // 1. Ubicaciones directas encontradas
+    if (data.ubicacionesDirectas && data.ubicacionesDirectas.length > 0) {
+      data.ubicacionesDirectas.forEach((ubicacion: any) => {
+        if (ubicacion.latitud && ubicacion.longitud) {
+          const marker = leaflet.marker([ubicacion.latitud, ubicacion.longitud], { 
+            icon: createIcon('ubicacion')
+          })
+          .addTo(map)
+          .bindPopup(`<b>${ubicacion.tipo}</b><br>${ubicacion.descripcion || 'Sin descripción'}`);
+          
+          newMarkers.push(marker);
+          bounds.extend([ubicacion.latitud, ubicacion.longitud]);
+        }
+      });
+    }
+    
+    // 2. Ubicaciones relacionadas con entidades encontradas
+    if (data.ubicacionesRelacionadas && data.ubicacionesRelacionadas.length > 0) {
+      data.ubicacionesRelacionadas.forEach((relacion: any) => {
+        if (relacion.ubicacion && relacion.ubicacion.latitud && relacion.ubicacion.longitud) {
+          const entidad = relacion.entidadRelacionada.entidad;
+          const tipo = relacion.entidadRelacionada.tipo;
+          
+          let title = '';
+          if (tipo === 'persona') {
+            title = entidad.nombre;
+          } else if (tipo === 'vehiculo') {
+            title = `${entidad.marca} ${entidad.modelo || ''} (${entidad.placa})`;
+          } else if (tipo === 'inmueble') {
+            title = `${entidad.tipo} - ${entidad.direccion}`;
+          }
+          
+          const marker = leaflet.marker([relacion.ubicacion.latitud, relacion.ubicacion.longitud], { 
+            icon: createIcon(tipo)
+          })
+          .addTo(map)
+          .bindPopup(`<b>${title}</b><br>Ubicación: ${relacion.ubicacion.descripcion || relacion.ubicacion.tipo || 'Sin descripción'}`);
+          
+          newMarkers.push(marker);
+          bounds.extend([relacion.ubicacion.latitud, relacion.ubicacion.longitud]);
+        }
+      });
+    }
+    
+    // Si se encontraron ubicaciones, ajustar el mapa para mostrarlas todas
+    if (newMarkers.length > 0) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+    
+    setMarkers(newMarkers);
+  }, [data, map]);
+
   const handleSearch = () => {
     if (searchTerm.trim()) {
-      const tipos = Object.entries(selectedTypes)
-        .filter(([_, value]) => value)
-        .map(([key]) => key);
-      
       refetch();
-      
-      // Here we would update markers based on search results
-      // For demo purposes, we'll just use the existing markers
     }
   };
 
@@ -168,26 +250,150 @@ export default function UbicacionesPage() {
               
               <div className="p-4 bg-gray-50 border-t">
                 <h4 className="font-medium text-gray-900 mb-2">Ubicaciones encontradas</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <div className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center mr-2">
-                      <User className="h-3 w-3 text-white" />
-                    </div>
-                    <span className="text-sm">Carlos Rodríguez - Domicilio (Av. Principal #123)</span>
+                
+                {isLoading ? (
+                  <div className="flex justify-center items-center p-4">
+                    <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <span className="ml-2 text-gray-600">Buscando ubicaciones...</span>
                   </div>
-                  <div className="flex items-center">
-                    <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center mr-2">
-                      <Car className="h-3 w-3 text-white" />
+                ) : data ? (
+                  <>
+                    {/* Contador de resultados */}
+                    {(
+                      (data.ubicacionesDirectas?.length || 0) + 
+                      (data.ubicacionesRelacionadas?.length || 0) +
+                      (data.entidadesRelacionadas?.length || 0) === 0
+                    ) ? (
+                      <div className="text-center py-3 text-gray-500">
+                        No se encontraron ubicaciones con los criterios especificados
+                      </div>
+                    ) : (
+                      <div className="text-right mb-2 text-sm text-gray-500">
+                        {data.ubicacionesDirectas?.length || 0} ubicaciones directas | 
+                        {data.ubicacionesRelacionadas?.length || 0} ubicaciones relacionadas
+                      </div>
+                    )}
+                    
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                      {/* Ubicaciones directas */}
+                      {data.ubicacionesDirectas?.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">Ubicaciones directas</h5>
+                          <div className="space-y-2 ml-2">
+                            {data.ubicacionesDirectas.map((ubicacion: any) => (
+                              <div key={`ubicacion-${ubicacion.id}`} className="flex items-center border-l-2 border-indigo-500 pl-2 hover:bg-gray-100 rounded-r py-1">
+                                <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center mr-2">
+                                  <MapPin className="h-3 w-3 text-white" />
+                                </div>
+                                <div className="text-sm flex-grow">
+                                  <div><strong>{ubicacion.tipo}</strong> {ubicacion.descripcion && `- ${ubicacion.descripcion}`}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {ubicacion.latitud && ubicacion.longitud 
+                                      ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
+                                      : 'Sin coordenadas'
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Entidades relacionadas */}
+                      {data.entidadesRelacionadas?.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">Entidades relacionadas con ubicaciones</h5>
+                          <div className="space-y-2 ml-2">
+                            {data.entidadesRelacionadas.map((relacion: any, index: number) => {
+                              const { tipo, entidad } = relacion;
+                              
+                              let icon = <MapPin className="h-3 w-3 text-white" />;
+                              let bgColor = 'bg-indigo-500';
+                              let text = '';
+                              
+                              if (tipo === 'persona') {
+                                icon = <User className="h-3 w-3 text-white" />;
+                                bgColor = 'bg-red-500';
+                                text = `${entidad.nombre} - ${entidad.identificacion}`;
+                              } else if (tipo === 'vehiculo') {
+                                icon = <Car className="h-3 w-3 text-white" />;
+                                bgColor = 'bg-blue-500';
+                                text = `${entidad.marca} ${entidad.modelo || ''} (${entidad.placa})`;
+                              } else if (tipo === 'inmueble') {
+                                icon = <Home className="h-3 w-3 text-white" />;
+                                bgColor = 'bg-green-500';
+                                text = `${entidad.tipo} - ${entidad.direccion}`;
+                              }
+                              
+                              return (
+                                <div key={`entidad-${tipo}-${entidad.id}-${index}`} className="flex items-center border-l-2 border-gray-300 pl-2 hover:bg-gray-100 rounded-r py-1">
+                                  <div className={`h-6 w-6 rounded-full ${bgColor} flex items-center justify-center mr-2`}>
+                                    {icon}
+                                  </div>
+                                  <span className="text-sm">{text}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Ubicaciones relacionadas */}
+                      {data.ubicacionesRelacionadas?.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">Ubicaciones relacionadas con entidades</h5>
+                          <div className="space-y-2 ml-2">
+                            {data.ubicacionesRelacionadas.map((relacion: any, index: number) => {
+                              const { ubicacion, entidadRelacionada } = relacion;
+                              const { tipo, entidad } = entidadRelacionada;
+                              
+                              let icon = <MapPin className="h-3 w-3 text-white" />;
+                              let bgColor = 'bg-indigo-500';
+                              let entityText = '';
+                              
+                              if (tipo === 'persona') {
+                                icon = <User className="h-3 w-3 text-white" />;
+                                bgColor = 'bg-red-500';
+                                entityText = `${entidad.nombre}`;
+                              } else if (tipo === 'vehiculo') {
+                                icon = <Car className="h-3 w-3 text-white" />;
+                                bgColor = 'bg-blue-500';
+                                entityText = `${entidad.marca} ${entidad.modelo || ''} (${entidad.placa})`;
+                              } else if (tipo === 'inmueble') {
+                                icon = <Home className="h-3 w-3 text-white" />;
+                                bgColor = 'bg-green-500';
+                                entityText = `${entidad.tipo} - ${entidad.direccion}`;
+                              }
+                              
+                              return (
+                                <div key={`ubicacion-rel-${tipo}-${index}`} className="flex items-center border-l-2 border-gray-300 pl-2 hover:bg-gray-100 rounded-r py-1">
+                                  <div className={`h-6 w-6 rounded-full ${bgColor} flex items-center justify-center mr-2`}>
+                                    {icon}
+                                  </div>
+                                  <div className="text-sm flex-grow">
+                                    <div>{entityText}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {ubicacion.tipo}{ubicacion.descripcion ? `: ${ubicacion.descripcion}` : ''} 
+                                      {ubicacion.latitud && ubicacion.longitud 
+                                        ? ` (${ubicacion.latitud.toFixed(5)}, ${ubicacion.longitud.toFixed(5)})`
+                                        : ''
+                                      }
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-sm">Toyota Corolla (ABC-123) - Última ubicación registrada</span>
+                  </>
+                ) : (
+                  <div className="text-center py-3 text-gray-500">
+                    Realice una búsqueda para ver ubicaciones en el mapa
                   </div>
-                  <div className="flex items-center">
-                    <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center mr-2">
-                      <Home className="h-3 w-3 text-white" />
-                    </div>
-                    <span className="text-sm">Casa - Propiedad de Ana Martínez</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </CardContent>
