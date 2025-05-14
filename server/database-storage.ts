@@ -106,49 +106,61 @@ export class DatabaseStorage implements IStorage {
   }
 
   async buscar(query: string, tipos: string[]): Promise<any> {
-    const lowerQuery = `%${query.toLowerCase()}%`;
+    const searchPattern = `%${query}%`;
     const resultados: any = {};
     
-    if (tipos.includes('personas')) {
-      resultados.personas = await db.select().from(personas).where(
-        or(
-          like(personas.nombre, lowerQuery),
-          like(personas.identificacion, lowerQuery)
-        )
-      );
+    try {
+      if (tipos.includes('personas')) {
+        resultados.personas = await db.select().from(personas).where(
+          or(
+            ilike(personas.nombre, searchPattern),
+            ilike(personas.apellido, searchPattern),
+            ilike(personas.identificacion, searchPattern),
+            sql`${personas.alias}::text ILIKE ${searchPattern}`
+          )
+        );
+      }
+      
+      if (tipos.includes('vehiculos')) {
+        resultados.vehiculos = await db.select().from(vehiculos).where(
+          or(
+            ilike(vehiculos.marca, searchPattern),
+            ilike(vehiculos.modelo, searchPattern),
+            ilike(vehiculos.placa, searchPattern),
+            ilike(vehiculos.tipo, searchPattern),
+            ilike(vehiculos.color, searchPattern)
+          )
+        );
+      }
+      
+      if (tipos.includes('inmuebles')) {
+        resultados.inmuebles = await db.select().from(inmuebles).where(
+          or(
+            ilike(inmuebles.propietario, searchPattern),
+            ilike(inmuebles.direccion, searchPattern),
+            ilike(inmuebles.tipo, searchPattern),
+            ilike(inmuebles.localidad, searchPattern)
+          )
+        );
+      }
+      
+      if (tipos.includes('ubicaciones')) {
+        resultados.ubicaciones = await db.select().from(ubicaciones).where(
+          or(
+            ilike(ubicaciones.nombre, searchPattern),
+            ilike(ubicaciones.direccion, searchPattern),
+            ilike(ubicaciones.tipo, searchPattern),
+            ilike(ubicaciones.observaciones || '', searchPattern)
+          )
+        );
+      }
+      
+      console.log("Resultados de búsqueda:", JSON.stringify(resultados));
+      return resultados;
+    } catch (error) {
+      console.error("Error en búsqueda:", error);
+      throw error;
     }
-    
-    if (tipos.includes('vehiculos')) {
-      resultados.vehiculos = await db.select().from(vehiculos).where(
-        or(
-          like(vehiculos.marca, lowerQuery),
-          like(vehiculos.placa, lowerQuery),
-          like(vehiculos.tipo, lowerQuery),
-          like(vehiculos.color, lowerQuery)
-        )
-      );
-    }
-    
-    if (tipos.includes('inmuebles')) {
-      resultados.inmuebles = await db.select().from(inmuebles).where(
-        or(
-          like(inmuebles.propietario, lowerQuery),
-          like(inmuebles.direccion, lowerQuery),
-          like(inmuebles.tipo, lowerQuery)
-        )
-      );
-    }
-    
-    if (tipos.includes('ubicaciones')) {
-      resultados.ubicaciones = await db.select().from(ubicaciones).where(
-        or(
-          like(ubicaciones.tipo, lowerQuery),
-          like(ubicaciones.observaciones || '', lowerQuery)
-        )
-      );
-    }
-    
-    return resultados;
   }
 
   async crearRelacion(tipo1: string, id1: number, tipo2: string, id2: number): Promise<any> {

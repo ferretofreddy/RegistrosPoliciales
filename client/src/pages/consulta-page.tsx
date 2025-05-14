@@ -34,15 +34,32 @@ export default function ConsultaPage() {
     inmuebles?: Inmueble[];
   }>({
     queryKey: ["/api/buscar", searchTerm, selectedTypes],
+    queryFn: async () => {
+      if (!searchTerm.trim()) {
+        throw new Error("Se requiere un término de búsqueda");
+      }
+      
+      const tipos = Object.entries(selectedTypes)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
+        
+      const params = new URLSearchParams();
+      params.append("query", searchTerm);
+      tipos.forEach(tipo => params.append("tipos", tipo));
+      
+      const response = await fetch(`/api/buscar?${params.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error en la búsqueda");
+      }
+      
+      return await response.json();
+    },
     enabled: false,
   });
 
   const handleSearch = () => {
     if (searchTerm.trim()) {
-      const tipos = Object.entries(selectedTypes)
-        .filter(([_, value]) => value)
-        .map(([key]) => key);
-      
       refetch();
     }
   };
