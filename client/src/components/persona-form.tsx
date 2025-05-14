@@ -156,9 +156,9 @@ export default function PersonaForm() {
       if (relacionPersonas.length > 0) {
         for (const otraPersona of relacionPersonas) {
           await apiRequest("POST", `/api/relaciones`, {
-            tipo1: "persona",
+            tipo1: "personas",
             id1: persona.id,
-            tipo2: "persona",
+            tipo2: "personas",
             id2: otraPersona.id
           });
         }
