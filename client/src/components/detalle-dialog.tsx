@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,13 +9,97 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Car, Home, User, MapPin, AlertCircle } from "lucide-react";
+import { Car, Home, User, MapPin, AlertCircle, Plus } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion, PersonaObservacion, VehiculoObservacion, InmuebleObservacion } from "@shared/schema";
 import PdfExport from "@/components/pdf-export-new";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+// Componente para agregar una nueva observación
+function AddObservacionForm({
+  tipo,
+  id,
+  onSuccess
+}: {
+  tipo: "persona" | "vehiculo" | "inmueble",
+  id: number,
+  onSuccess: () => void
+}) {
+  const [detalle, setDetalle] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const endpointMap = {
+    persona: `/api/personas/${id}/observaciones`,
+    vehiculo: `/api/vehiculos/${id}/observaciones`,
+    inmueble: `/api/inmuebles/${id}/observaciones`
+  };
+  
+  const mutation = useMutation({
+    mutationFn: async (data: { detalle: string }) => {
+      const response = await apiRequest("POST", endpointMap[tipo], data);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Limpiar el formulario
+      setDetalle("");
+      // Invalidar la consulta para refrescar los datos
+      queryClient.invalidateQueries({ queryKey: [endpointMap[tipo]] });
+      toast({
+        title: "Observación agregada",
+        description: "La observación ha sido agregada exitosamente.",
+      });
+      // Notificar al componente padre
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo agregar la observación: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detalle.trim()) return;
+    
+    mutation.mutate({ detalle });
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 mt-4 border rounded-md p-4 bg-muted/30">
+      <div className="space-y-2">
+        <Label htmlFor="detalle">Nueva observación</Label>
+        <Textarea
+          id="detalle"
+          placeholder="Ingrese la observación"
+          value={detalle}
+          onChange={(e) => setDetalle(e.target.value)}
+          required
+          className="min-h-[80px]"
+        />
+      </div>
+      <Button 
+        type="submit" 
+        size="sm"
+        disabled={mutation.isPending || !detalle.trim()}
+        className="flex items-center gap-1"
+      >
+        <Plus className="h-4 w-4" />
+        {mutation.isPending ? "Agregando..." : "Agregar observación"}
+      </Button>
+    </form>
+  );
+}
 
 // Componente para mostrar observaciones
 function TablaObservaciones({ 
@@ -79,21 +163,35 @@ export default function DetalleDialog({
   // Si no hay datos o el diálogo no está abierto, no renderizamos nada
   if (!dato || !open) return null;
   
+  const [showAddForm, setShowAddForm] = useState(false);
+  
   // Consultas para obtener las observaciones según el tipo de dato
-  const { data: observacionesPersona = [] } = useQuery<PersonaObservacion[]>({
+  const { data: observacionesPersona = [], refetch: refetchPersonaObs } = useQuery<PersonaObservacion[]>({
     queryKey: ['/api/personas', dato.id, 'observaciones'],
     enabled: tipo === 'persona' && open,
   });
   
-  const { data: observacionesVehiculo = [] } = useQuery<VehiculoObservacion[]>({
+  const { data: observacionesVehiculo = [], refetch: refetchVehiculoObs } = useQuery<VehiculoObservacion[]>({
     queryKey: ['/api/vehiculos', dato.id, 'observaciones'],
     enabled: tipo === 'vehiculo' && open,
   });
   
-  const { data: observacionesInmueble = [] } = useQuery<InmuebleObservacion[]>({
+  const { data: observacionesInmueble = [], refetch: refetchInmuebleObs } = useQuery<InmuebleObservacion[]>({
     queryKey: ['/api/inmuebles', dato.id, 'observaciones'],
     enabled: tipo === 'inmueble' && open,
   });
+  
+  // Función para refrescar las observaciones después de agregar una nueva
+  const handleObservacionAdded = () => {
+    if (tipo === 'persona') {
+      refetchPersonaObs();
+    } else if (tipo === 'vehiculo') {
+      refetchVehiculoObs();
+    } else if (tipo === 'inmueble') {
+      refetchInmuebleObs();
+    }
+    setShowAddForm(false);
+  };
 
   // Valores por defecto
   let icon = <User className="h-6 w-6 text-gray-500" />;
@@ -152,7 +250,27 @@ export default function DetalleDialog({
           </div>
         </div>
         <div className="mt-4">
-          <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-md font-semibold text-gray-800">Observaciones</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              <Plus className="h-4 w-4" />
+              {showAddForm ? "Cancelar" : "Agregar"}
+            </Button>
+          </div>
+          
+          {showAddForm && tipo === "persona" && (
+            <AddObservacionForm 
+              tipo="persona" 
+              id={persona.id} 
+              onSuccess={handleObservacionAdded} 
+            />
+          )}
+          
           <TablaObservaciones observaciones={observacionesPersona} />
         </div>
       </>
@@ -184,7 +302,27 @@ export default function DetalleDialog({
           </div>
         </div>
         <div className="mt-4">
-          <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-md font-semibold text-gray-800">Observaciones</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              <Plus className="h-4 w-4" />
+              {showAddForm ? "Cancelar" : "Agregar"}
+            </Button>
+          </div>
+          
+          {showAddForm && tipo === "vehiculo" && (
+            <AddObservacionForm 
+              tipo="vehiculo" 
+              id={vehiculo.id} 
+              onSuccess={handleObservacionAdded} 
+            />
+          )}
+          
           <TablaObservaciones observaciones={observacionesVehiculo} />
         </div>
       </>
@@ -212,7 +350,27 @@ export default function DetalleDialog({
           </div>
         </div>
         <div className="mt-4">
-          <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-md font-semibold text-gray-800">Observaciones</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              <Plus className="h-4 w-4" />
+              {showAddForm ? "Cancelar" : "Agregar"}
+            </Button>
+          </div>
+          
+          {showAddForm && tipo === "inmueble" && (
+            <AddObservacionForm 
+              tipo="inmueble" 
+              id={inmueble.id} 
+              onSuccess={handleObservacionAdded} 
+            />
+          )}
+          
           <TablaObservaciones observaciones={observacionesInmueble} />
         </div>
       </>
