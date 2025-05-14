@@ -56,8 +56,15 @@ export class DatabaseStorage implements IStorage {
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
     try {
-      // No necesitamos el formatting especial, drizzle-orm maneja correctamente los JSON arrays
-      const [persona] = await db.insert(personas).values(insertPersona).returning();
+      // Asegurarnos de que los arrays son del tipo correcto
+      const formattedData = {
+        ...insertPersona,
+        alias: Array.isArray(insertPersona.alias) ? insertPersona.alias : undefined,
+        telefonos: Array.isArray(insertPersona.telefonos) ? insertPersona.telefonos : undefined,
+        domicilios: Array.isArray(insertPersona.domicilios) ? insertPersona.domicilios : undefined
+      };
+      
+      const [persona] = await db.insert(personas).values(formattedData).returning();
       return persona;
     } catch (error) {
       console.error("Error al crear persona:", error);
