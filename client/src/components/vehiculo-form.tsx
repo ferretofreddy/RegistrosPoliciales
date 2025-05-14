@@ -87,6 +87,7 @@ export default function VehiculoForm() {
       modelo: "",
       personaSeleccionada: "",
       inmuebleSeleccionado: "",
+      vehiculoSeleccionado: "",
       nuevaObservacion: "",
     },
   });
@@ -127,13 +128,29 @@ export default function VehiculoForm() {
         relacionPersonas.forEach(async (persona) => {
           try {
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "vehiculos",
+              tipo1: "vehiculo",
               id1: data.id,
-              tipo2: "personas",
+              tipo2: "persona",
               id2: persona.id
             });
           } catch (error) {
-            console.error("Error al crear relación:", error);
+            console.error("Error al crear relación con persona:", error);
+          }
+        });
+      }
+      
+      // Crear relaciones con otros vehículos si existen
+      if (relacionVehiculos.length > 0) {
+        relacionVehiculos.forEach(async (vehiculo) => {
+          try {
+            await apiRequest("POST", "/api/relaciones", {
+              tipo1: "vehiculo",
+              id1: data.id,
+              tipo2: "vehiculo",
+              id2: vehiculo.id
+            });
+          } catch (error) {
+            console.error("Error al crear relación con vehículo:", error);
           }
         });
       }
@@ -141,6 +158,7 @@ export default function VehiculoForm() {
       // Reiniciar formulario
       form.reset();
       setRelacionPersonas([]);
+      setRelacionVehiculos([]);
       setObservaciones([]);
       setShowObservacionForm(false);
       // Invalidar queries para actualizar los datos
@@ -176,6 +194,25 @@ export default function VehiculoForm() {
 
   const removeRelacionPersona = (id: number) => {
     setRelacionPersonas(relacionPersonas.filter(p => p.id !== id));
+  };
+  
+  // Funciones para manejar relaciones con otros vehículos
+  const addRelacionVehiculo = () => {
+    const vehiculoId = form.getValues("vehiculoSeleccionado");
+    if (vehiculoId && vehiculos) {
+      const vehiculo = vehiculos.find((v: any) => v.id.toString() === vehiculoId);
+      if (vehiculo && !relacionVehiculos.some(rv => rv.id === vehiculo.id)) {
+        setRelacionVehiculos([...relacionVehiculos, { 
+          id: vehiculo.id,
+          nombre: `${vehiculo.marca} ${vehiculo.modelo || ''} (${vehiculo.placa})`
+        }]);
+        form.setValue("vehiculoSeleccionado", "");
+      }
+    }
+  };
+
+  const removeRelacionVehiculo = (id: number) => {
+    setRelacionVehiculos(relacionVehiculos.filter(v => v.id !== id));
   };
 
   // Función para capturar imágenes con la cámara
