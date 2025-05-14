@@ -43,6 +43,18 @@ export default function UbicacionesPage() {
     enabled: false,
   });
 
+  // Efecto para realizar búsqueda automática cuando cambia el término o los tipos seleccionados
+  useEffect(() => {
+    if (searchTerm.trim().length >= 3) {
+      // Debounce de 500ms para evitar peticiones excesivas mientras se escribe
+      const timer = setTimeout(() => {
+        refetch();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, selectedTypes]);
+
   useEffect(() => {
     // Initialize map when component mounts
     if (!mapRef.current && mapContainerRef.current) {
@@ -54,6 +66,32 @@ export default function UbicacionesPage() {
       leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(newMap);
+      
+      // Agregar estilos personalizados para popups
+      const style = document.createElement('style');
+      style.textContent = `
+        .leaflet-container {
+          height: 500px;
+          width: 100%;
+          border-radius: 4px;
+        }
+        .custom-popup .leaflet-popup-content-wrapper {
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+        }
+        .custom-popup .leaflet-popup-tip {
+          background: white;
+        }
+        .custom-popup .leaflet-popup-content {
+          margin: 12px;
+          line-height: 1.5;
+        }
+        .popup-content {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+      `;
+      document.head.appendChild(style);
       
       // Agregar control de escala
       leaflet.control.scale({ imperial: false, metric: true }).addTo(newMap);
@@ -107,16 +145,41 @@ export default function UbicacionesPage() {
       const iconColor = tipo === 'persona' ? '#ef4444' : 
                         tipo === 'vehiculo' ? '#3b82f6' : 
                         tipo === 'inmueble' ? '#10b981' : '#6366f1';
-                        
+      
       const iconHtml = tipo === 'persona' ? '<i class="fas fa-user"></i>' : 
                        tipo === 'vehiculo' ? '<i class="fas fa-car"></i>' : 
                        tipo === 'inmueble' ? '<i class="fas fa-home"></i>' : 
                        '<i class="fas fa-map-marker-alt"></i>';
-                       
+      
+      // Estilo mejorado con sombra y animación al añadirse
       return leaflet.divIcon({
-        html: `<div style="background-color: ${iconColor}; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center;">${iconHtml}</div>`,
+        html: `
+          <div style="
+            background-color: ${iconColor}; 
+            color: white; 
+            border-radius: 50%; 
+            width: 30px; 
+            height: 30px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            border: 2px solid white;
+            font-size: 14px;
+            animation: markerPulse 0.5s ease-out;
+          ">
+            ${iconHtml}
+          </div>
+          <style>
+            @keyframes markerPulse {
+              0% { transform: scale(0); opacity: 0; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+          </style>
+        `,
         className: '',
-        iconSize: [25, 25]
+        iconSize: [30, 30],
+        iconAnchor: [15, 15] // Centrar el icono en la ubicación exacta
       });
     };
     
@@ -128,7 +191,19 @@ export default function UbicacionesPage() {
             icon: createIcon('ubicacion')
           })
           .addTo(map)
-          .bindPopup(`<b>${ubicacion.tipo}</b><br>${ubicacion.observaciones || 'Sin descripción'}`);
+          .bindPopup(`
+            <div class="popup-content">
+              <div style="font-weight: bold; font-size: 14px; color: #6366f1; margin-bottom: 5px;">${ubicacion.tipo}</div>
+              <div>${ubicacion.observaciones || 'Sin descripción'}</div>
+              <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}
+              </div>
+            </div>
+          `, {
+            className: 'custom-popup',
+            maxWidth: 300,
+            minWidth: 200
+          });
           
           newMarkers.push(marker);
           bounds.extend([ubicacion.latitud, ubicacion.longitud]);
@@ -156,7 +231,30 @@ export default function UbicacionesPage() {
             icon: createIcon(tipo)
           })
           .addTo(map)
-          .bindPopup(`<b>${title}</b><br>Ubicación: ${relacion.ubicacion.observaciones || relacion.ubicacion.tipo || 'Sin descripción'}`);
+          .bindPopup(`
+            <div class="popup-content">
+              <div style="font-weight: bold; font-size: 14px; color: ${
+                tipo === 'persona' ? '#ef4444' : 
+                tipo === 'vehiculo' ? '#3b82f6' : 
+                tipo === 'inmueble' ? '#10b981' : '#6366f1'
+              }; margin-bottom: 5px;">
+                ${title}
+              </div>
+              <div>
+                <span style="font-weight: 500;">Tipo:</span> ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+              </div>
+              <div>
+                <span style="font-weight: 500;">Ubicación:</span> ${relacion.ubicacion.observaciones || relacion.ubicacion.tipo || 'Sin descripción'}
+              </div>
+              <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}
+              </div>
+            </div>
+          `, {
+            className: 'custom-popup',
+            maxWidth: 300,
+            minWidth: 200
+          });
           
           newMarkers.push(marker);
           bounds.extend([relacion.ubicacion.latitud, relacion.ubicacion.longitud]);
@@ -194,56 +292,85 @@ export default function UbicacionesPage() {
           <CardContent>
             <div className="mb-6">
               <div className="flex flex-col md:flex-row gap-3">
-                <div className="flex-grow">
+                <div className="flex-grow relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Buscar por nombre, placa, dirección, etc."
+                    placeholder="Buscar por nombre, placa, dirección... (mínimo 3 caracteres)"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyPress={handleKeyPress}
+                    className="pl-10"
                   />
+                  {searchTerm.length > 0 && (
+                    <button 
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      onClick={() => setSearchTerm('')}
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
                 <div>
-                  <Button onClick={handleSearch} className="w-full md:w-auto">
+                  <Button 
+                    onClick={handleSearch} 
+                    className="w-full md:w-auto bg-blue-600 hover:bg-blue-700"
+                    disabled={searchTerm.trim().length < 3}
+                  >
                     <Search className="mr-2 h-4 w-4" />
                     Buscar
                   </Button>
                 </div>
               </div>
               
-              <div className="mt-3 flex flex-wrap gap-3">
-                <label className="flex items-center space-x-2">
-                  <Checkbox 
-                    checked={selectedTypes.personas}
-                    onCheckedChange={(checked) => 
-                      setSelectedTypes({ ...selectedTypes, personas: !!checked })
-                    }
-                  />
-                  <span className="text-gray-700">Personas</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <Checkbox 
-                    checked={selectedTypes.vehiculos}
-                    onCheckedChange={(checked) => 
-                      setSelectedTypes({ ...selectedTypes, vehiculos: !!checked })
-                    }
-                  />
-                  <span className="text-gray-700">Vehículos</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <Checkbox 
-                    checked={selectedTypes.inmuebles}
-                    onCheckedChange={(checked) => 
-                      setSelectedTypes({ ...selectedTypes, inmuebles: !!checked })
-                    }
-                  />
-                  <span className="text-gray-700">Inmuebles</span>
-                </label>
+              <div className="mt-3 bg-gray-50 p-3 rounded-md border border-gray-200">
+                <p className="text-sm text-gray-600 mb-2 font-medium">Filtrar por tipo de entidad:</p>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <Checkbox 
+                      checked={selectedTypes.personas}
+                      onCheckedChange={(checked) => 
+                        setSelectedTypes({ ...selectedTypes, personas: !!checked })
+                      }
+                      className="border-red-400 data-[state=checked]:bg-red-500"
+                    />
+                    <span className="text-gray-700 flex items-center">
+                      <User className="h-4 w-4 mr-1 text-red-500" /> 
+                      Personas
+                    </span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <Checkbox 
+                      checked={selectedTypes.vehiculos}
+                      onCheckedChange={(checked) => 
+                        setSelectedTypes({ ...selectedTypes, vehiculos: !!checked })
+                      }
+                      className="border-blue-400 data-[state=checked]:bg-blue-500"
+                    />
+                    <span className="text-gray-700 flex items-center">
+                      <Car className="h-4 w-4 mr-1 text-blue-500" /> 
+                      Vehículos
+                    </span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <Checkbox 
+                      checked={selectedTypes.inmuebles}
+                      onCheckedChange={(checked) => 
+                        setSelectedTypes({ ...selectedTypes, inmuebles: !!checked })
+                      }
+                      className="border-green-400 data-[state=checked]:bg-green-500"
+                    />
+                    <span className="text-gray-700 flex items-center">
+                      <Home className="h-4 w-4 mr-1 text-green-500" /> 
+                      Inmuebles
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
             
             {/* Map Container */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg overflow-hidden shadow-md">
               <div ref={mapContainerRef} className="leaflet-container">
                 {/* Map will be initialized here */}
               </div>
