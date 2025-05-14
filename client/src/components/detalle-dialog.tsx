@@ -9,12 +9,52 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Car, Home, User, MapPin } from "lucide-react";
+import { Car, Home, User, MapPin, AlertCircle } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion, PersonaObservacion, VehiculoObservacion, InmuebleObservacion } from "@shared/schema";
 import PdfExport from "@/components/pdf-export-new";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Componente para mostrar observaciones
+function TablaObservaciones({ observaciones }: { observaciones: any[] }) {
+  if (!observaciones || observaciones.length === 0) {
+    return (
+      <Alert variant="default" className="bg-muted">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No hay observaciones registradas.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="mt-4 border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Fecha</TableHead>
+            <TableHead>Usuario</TableHead>
+            <TableHead>Detalle</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {observaciones.map((obs) => (
+            <TableRow key={obs.id}>
+              <TableCell className="whitespace-nowrap">
+                {format(new Date(obs.fecha), 'dd/MM/yyyy HH:mm')}
+              </TableCell>
+              <TableCell>{obs.usuario}</TableCell>
+              <TableCell className="whitespace-pre-wrap">{obs.detalle}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 interface DetalleDialogProps {
   open: boolean;
@@ -31,6 +71,22 @@ export default function DetalleDialog({
 }: DetalleDialogProps) {
   // Si no hay datos o el diálogo no está abierto, no renderizamos nada
   if (!dato || !open) return null;
+  
+  // Consultas para obtener las observaciones según el tipo de dato
+  const { data: observacionesPersona = [] } = useQuery<PersonaObservacion[]>({
+    queryKey: ['/api/personas', dato.id, 'observaciones'],
+    enabled: tipo === 'persona' && open,
+  });
+  
+  const { data: observacionesVehiculo = [] } = useQuery<VehiculoObservacion[]>({
+    queryKey: ['/api/vehiculos', dato.id, 'observaciones'],
+    enabled: tipo === 'vehiculo' && open,
+  });
+  
+  const { data: observacionesInmueble = [] } = useQuery<InmuebleObservacion[]>({
+    queryKey: ['/api/inmuebles', dato.id, 'observaciones'],
+    enabled: tipo === 'inmueble' && open,
+  });
 
   // Valores por defecto
   let icon = <User className="h-6 w-6 text-gray-500" />;
@@ -88,12 +144,10 @@ export default function DetalleDialog({
             </div>
           </div>
         </div>
-        {persona.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{persona.observaciones}</p>
-          </div>
-        )}
+        <div className="mt-4">
+          <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
+          <TablaObservaciones observaciones={observacionesPersona || []} />
+        </div>
       </>
     );
   } 
@@ -122,12 +176,10 @@ export default function DetalleDialog({
             <p>{vehiculo.placa || "No disponible"}</p>
           </div>
         </div>
-        {vehiculo.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{vehiculo.observaciones}</p>
-          </div>
-        )}
+        <div className="mt-4">
+          <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
+          <TablaObservaciones observaciones={observacionesVehiculo || []} />
+        </div>
       </>
     );
   }
@@ -152,12 +204,10 @@ export default function DetalleDialog({
             <p>{inmueble.direccion || "No disponible"}</p>
           </div>
         </div>
-        {inmueble.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{inmueble.observaciones}</p>
-          </div>
-        )}
+        <div className="mt-4">
+          <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
+          <TablaObservaciones observaciones={observacionesInmueble || []} />
+        </div>
       </>
     );
   }
@@ -182,12 +232,19 @@ export default function DetalleDialog({
             <p>Lat: {ubicacion.latitud}, Long: {ubicacion.longitud}</p>
           </div>
         </div>
-        {ubicacion.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{ubicacion.observaciones}</p>
-          </div>
-        )}
+        <div className="mt-4">
+          <h3 className="text-md font-semibold text-gray-800 mb-2">Observaciones</h3>
+          {ubicacion.observaciones ? (
+            <p className="mt-1 whitespace-pre-wrap p-4 border rounded-md bg-muted">{ubicacion.observaciones}</p>
+          ) : (
+            <Alert variant="default" className="bg-muted">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No hay observaciones registradas.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       </>
     );
   }
