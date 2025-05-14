@@ -54,12 +54,24 @@ export function setupAuth(app: Express) {
       },
       async (email, password, done) => {
         try {
+          console.log(`Intento de inicio de sesión para: ${email}`);
           const user = await storage.getUserByEmail(email);
-          if (!user || !(await comparePasswords(password, user.password))) {
+          
+          if (!user) {
+            console.log(`Usuario no encontrado: ${email}`);
             return done(null, false, { message: "Email o contraseña incorrectos" });
           }
+          
+          const isValidPassword = await comparePasswords(password, user.password);
+          if (!isValidPassword) {
+            console.log(`Contraseña incorrecta para: ${email}`);
+            return done(null, false, { message: "Email o contraseña incorrectos" });
+          }
+          
+          console.log(`Inicio de sesión exitoso para: ${email} (ID: ${user.id}, Rol: ${user.rol})`);
           return done(null, user);
         } catch (err) {
+          console.error("Error en autenticación:", err);
           return done(err);
         }
       }
