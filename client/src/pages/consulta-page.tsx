@@ -15,12 +15,18 @@ import DetalleDialog from "@/components/detalle-dialog";
 
 export default function ConsultaPage() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTypes, setSelectedTypes] = useState({
     personas: true,
     vehiculos: true,
     inmuebles: true,
   });
+  
+  // Estado para el diálogo de detalles
+  const [detalleDialogOpen, setDetalleDialogOpen] = useState(false);
+  const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
+  const [tipoSeleccionado, setTipoSeleccionado] = useState<"persona" | "vehiculo" | "inmueble" | "ubicacion">("persona");
 
   const { data, isLoading, refetch } = useQuery<{
     personas?: Persona[];
@@ -166,11 +172,34 @@ export default function ConsultaPage() {
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <div className="flex space-x-3">
+                                  <div className="flex space-x-3 table-actions">
+                                    {isMobile && (
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="md:hidden visible"
+                                        onClick={() => {
+                                          setItemSeleccionado(persona);
+                                          setTipoSeleccionado("persona");
+                                          setDetalleDialogOpen(true);
+                                        }}
+                                      >
+                                        <Info className="h-4 w-4 text-primary-600" />
+                                      </Button>
+                                    )}
+                                    
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <Button variant="ghost" size="icon">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon"
+                                            onClick={() => {
+                                              setItemSeleccionado(persona);
+                                              setTipoSeleccionado("persona");
+                                              setDetalleDialogOpen(true);
+                                            }}
+                                          >
                                             <Eye className="h-4 w-4 text-secondary-600" />
                                           </Button>
                                         </TooltipTrigger>
@@ -232,7 +261,7 @@ export default function ConsultaPage() {
                     </div>
                     <div className="overflow-x-auto">
                       {data?.vehiculos?.length ? (
-                        <table className="min-w-full divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 responsive-table">
                           <thead className="bg-gray-50">
                             <tr>
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -439,6 +468,14 @@ export default function ConsultaPage() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Diálogo de detalles */}
+      <DetalleDialog 
+        open={detalleDialogOpen} 
+        onOpenChange={setDetalleDialogOpen}
+        tipo={tipoSeleccionado}
+        dato={itemSeleccionado}
+      />
     </MainLayout>
   );
 }
