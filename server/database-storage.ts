@@ -440,11 +440,16 @@ export class DatabaseStorage implements IStorage {
       
       // Buscar personas que coincidan
       if (tipos.includes('personas')) {
-        // Cambiamos a consulta SQL directa para verificar que el LIKE funcione correctamente
+        // Cambiamos a consulta SQL directa para verificar que funcione correctamente
         // y evitar cualquier problema con la sintaxis de Drizzle
+        const queryString = query.trim();
+        
+        // Para la identificación, intentamos primero una coincidencia exacta
+        // y luego una coincidencia parcial con LIKE
         const personasEncontradas = await db.execute(
           sql`SELECT * FROM personas WHERE 
               LOWER(nombre) LIKE LOWER(${searchPattern}) OR 
+              identificacion = ${queryString} OR 
               LOWER(identificacion) LIKE LOWER(${searchPattern}) OR 
               alias::text LIKE LOWER(${searchPattern})`
         );
@@ -453,10 +458,11 @@ export class DatabaseStorage implements IStorage {
         const personasResultados = personasEncontradas.rows || [];
         console.log(`Personas encontradas por búsqueda: ${personasResultados.length}`, personasResultados);
         
-        // Para cada persona encontrada, buscar sus ubicaciones relacionadas
+        // Para cada persona encontrada, buscar sus ubicaciones y relaciones bidireccionales
         for (const persona of personasResultados) {
-          console.log(`Buscando ubicaciones para persona (ID ${persona.id}): ${persona.nombre}`);
+          console.log(`Buscando ubicaciones para persona (ID ${persona.id}): ${persona.nombre || 'Sin nombre'}`);
           
+          // 1. Buscar ubicaciones directamente relacionadas con esta persona
           const relacionesPersona = await db
             .select({
               ubicacion: ubicaciones
@@ -470,7 +476,7 @@ export class DatabaseStorage implements IStorage {
               )
             );
           
-          console.log(`Ubicaciones encontradas para persona (ID ${persona.id}): ${relacionesPersona.length}`);
+          console.log(`Ubicaciones directas encontradas para persona (ID ${persona.id}): ${relacionesPersona.length}`);
           
           for (const rel of relacionesPersona) {
             resultado.ubicacionesRelacionadas.push({
@@ -481,26 +487,120 @@ export class DatabaseStorage implements IStorage {
               }
             });
           }
+          
+          // 2. Buscar relaciones con inmuebles y obtener sus ubicaciones
+          const inmueblesRelacionados = await db
+            .select({
+              inmueble: inmuebles
+            })
+            .from(personasInmuebles)
+            .innerJoin(inmuebles, eq(personasInmuebles.inmuebleId, inmuebles.id))
+            .where(eq(personasInmuebles.personaId, persona.id));
+            
+          console.log(`Inmuebles relacionados con persona (ID ${persona.id}): ${inmueblesRelacionados.length}`);
+          
+          // Para cada inmueble relacionado, buscar sus ubicaciones
+          for (const inmuebleRel of inmueblesRelacionados) {
+            const ubicacionesInmueble = await db
+              .select({
+                ubicacion: ubicaciones
+              })
+              .from(inmueblesUbicaciones)
+              .innerJoin(ubicaciones, eq(inmueblesUbicaciones.ubicacionId, ubicaciones.id))
+              .where(
+                and(
+                  eq(inmueblesUbicaciones.inmuebleId, inmuebleRel.inmueble.id),
+                  sql`${ubicaciones.latitud} IS NOT NULL AND ${ubicaciones.longitud} IS NOT NULL`
+                )
+              );
+              
+            console.log(`Ubicaciones encontradas para inmueble relacionado (ID ${inmuebleRel.inmueble.id}): ${ubicacionesInmueble.length}`);
+            
+            for (const ubiInmueble of ubicacionesInmueble) {
+              resultado.ubicacionesRelacionadas.push({
+                ubicacion: ubiInmueble.ubicacion,
+                entidadRelacionada: {
+                  tipo: 'inmueble',
+                  entidad: inmuebleRel.inmueble,
+                  vinculadoCon: {
+                    tipo: 'persona',
+                    entidad: persona
+                  }
+                }
+              });
+            }
+          }
+          
+          // 3. Buscar relaciones con vehículos y obtener sus ubicaciones
+          const vehiculosRelacionados = await db
+            .select({
+              vehiculo: vehiculos
+            })
+            .from(personasVehiculos)
+            .innerJoin(vehiculos, eq(personasVehiculos.vehiculoId, vehiculos.id))
+            .where(eq(personasVehiculos.personaId, persona.id));
+            
+          console.log(`Vehículos relacionados con persona (ID ${persona.id}): ${vehiculosRelacionados.length}`);
+          
+          // Para cada vehículo relacionado, buscar sus ubicaciones
+          for (const vehiculoRel of vehiculosRelacionados) {
+            const ubicacionesVehiculo = await db
+              .select({
+                ubicacion: ubicaciones
+              })
+              .from(vehiculosUbicaciones)
+              .innerJoin(ubicaciones, eq(vehiculosUbicaciones.ubicacionId, ubicaciones.id))
+              .where(
+                and(
+                  eq(vehiculosUbicaciones.vehiculoId, vehiculoRel.vehiculo.id),
+                  sql`${ubicaciones.latitud} IS NOT NULL AND ${ubicaciones.longitud} IS NOT NULL`
+                )
+              );
+              
+            console.log(`Ubicaciones encontradas para vehículo relacionado (ID ${vehiculoRel.vehiculo.id}): ${ubicacionesVehiculo.length}`);
+            
+            for (const ubiVehiculo of ubicacionesVehiculo) {
+              resultado.ubicacionesRelacionadas.push({
+                ubicacion: ubiVehiculo.ubicacion,
+                entidadRelacionada: {
+                  tipo: 'vehiculo',
+                  entidad: vehiculoRel.vehiculo,
+                  vinculadoCon: {
+                    tipo: 'persona',
+                    entidad: persona
+                  }
+                }
+              });
+            }
+          }
         }
       }
       
       // Buscar vehículos que coincidan
       if (tipos.includes('vehiculos')) {
-        const vehiculosEncontrados = await db
-          .select()
-          .from(vehiculos)
-          .where(
-            or(
-              like(vehiculos.placa, searchPattern),
-              like(vehiculos.marca, searchPattern),
-              like(vehiculos.modelo, searchPattern),
-              like(vehiculos.color, searchPattern),
-              like(vehiculos.tipo, searchPattern)
-            )
-          );
+        // Obtenemos el string literal de la consulta para búsquedas exactas
+        const queryString = query.trim();
+        
+        // Usamos SQL directo para poder hacer búsqueda exacta por placa
+        const vehiculosEncontrados = await db.execute(
+          sql`SELECT * FROM vehiculos WHERE 
+              placa = ${queryString} OR
+              LOWER(placa) LIKE LOWER(${searchPattern}) OR 
+              LOWER(marca) LIKE LOWER(${searchPattern}) OR 
+              LOWER(modelo) LIKE LOWER(${searchPattern}) OR 
+              LOWER(color) LIKE LOWER(${searchPattern}) OR
+              LOWER(tipo) LIKE LOWER(${searchPattern})`
+        );
+        
+        // Los resultados de db.execute() vienen en formato diferente
+        const vehiculosResultados = vehiculosEncontrados.rows || [];
+        
+        console.log(`Vehículos encontrados por búsqueda: ${vehiculosResultados.length}`);
         
         // Para cada vehículo encontrado, buscar sus ubicaciones relacionadas
-        for (const vehiculo of vehiculosEncontrados) {
+        for (const vehiculo of vehiculosResultados) {
+          console.log(`Buscando ubicaciones para vehículo (ID ${vehiculo.id}): ${vehiculo.placa || 'Sin placa'}`);
+          
           const relacionesVehiculo = await db
             .select({
               ubicacion: ubicaciones
@@ -528,19 +628,27 @@ export class DatabaseStorage implements IStorage {
       
       // Buscar inmuebles que coincidan
       if (tipos.includes('inmuebles')) {
-        const inmueblesEncontrados = await db
-          .select()
-          .from(inmuebles)
-          .where(
-            or(
-              like(inmuebles.direccion, searchPattern),
-              like(inmuebles.tipo, searchPattern),
-              like(inmuebles.propietario, searchPattern)
-            )
-          );
+        // Obtenemos el string literal de la consulta para búsquedas exactas
+        const queryString = query.trim();
+        
+        // Usamos SQL directo para poder hacer búsqueda exacta
+        const inmueblesEncontrados = await db.execute(
+          sql`SELECT * FROM inmuebles WHERE 
+              identificacion = ${queryString} OR
+              LOWER(identificacion) LIKE LOWER(${searchPattern}) OR 
+              LOWER(direccion) LIKE LOWER(${searchPattern}) OR 
+              LOWER(tipo) LIKE LOWER(${searchPattern}) OR 
+              LOWER(propietario) LIKE LOWER(${searchPattern})`
+        );
+        
+        // Los resultados de db.execute() vienen en formato diferente
+        const inmueblesResultados = inmueblesEncontrados.rows || [];
+        console.log(`Inmuebles encontrados por búsqueda: ${inmueblesResultados.length}`);
         
         // Para cada inmueble encontrado, buscar sus ubicaciones relacionadas
-        for (const inmueble of inmueblesEncontrados) {
+        for (const inmueble of inmueblesResultados) {
+          console.log(`Buscando ubicaciones para inmueble (ID ${inmueble.id}): ${inmueble.direccion || 'Sin dirección'}`);
+          
           const relacionesInmueble = await db
             .select({
               ubicacion: ubicaciones
