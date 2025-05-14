@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Car, Home, User, MapPin } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
+import PdfExport from "@/components/pdf-export";
+import { useQuery } from "@tanstack/react-query";
 
 interface DetalleDialogProps {
   open: boolean;
@@ -183,6 +185,18 @@ export default function DetalleDialog({
       contenido = <p>No hay datos disponibles</p>;
   }
 
+  // Obtener relaciones del elemento seleccionado
+  const { data: relaciones } = useQuery({
+    queryKey: [`/api/relaciones/${tipo}/${dato?.id}`],
+    queryFn: async () => {
+      if (!dato) return null;
+      const res = await fetch(`/api/relaciones/${tipo}/${dato.id}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!dato?.id
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -196,7 +210,14 @@ export default function DetalleDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">{contenido}</div>
-        <DialogFooter>
+        <DialogFooter className="flex justify-between">
+          <PdfExport 
+            data={{
+              tipo, 
+              item: dato,
+              relaciones: relaciones || undefined
+            }} 
+          />
           <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
         </DialogFooter>
       </DialogContent>
