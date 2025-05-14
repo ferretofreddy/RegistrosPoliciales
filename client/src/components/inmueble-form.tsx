@@ -207,8 +207,11 @@ export default function InmuebleForm() {
       setRelacionInmuebles([]);
       setObservaciones([]);
       setShowObservacionForm(false);
-      // Invalidar queries para actualizar los datos
+      // Invalidar queries para actualizar todos los datos relacionados
       queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/ubicaciones'] });
     },
     onError: (error) => {
       toast({

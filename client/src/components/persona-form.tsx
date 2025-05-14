@@ -132,9 +132,9 @@ export default function PersonaForm() {
       if (relacionVehiculos.length > 0) {
         for (const vehiculo of relacionVehiculos) {
           await apiRequest("POST", `/api/relaciones`, {
-            tipo1: "persona",
+            tipo1: "personas",
             id1: persona.id,
-            tipo2: "vehiculo",
+            tipo2: "vehiculos",
             id2: vehiculo.id
           });
         }
@@ -144,9 +144,9 @@ export default function PersonaForm() {
       if (relacionInmuebles.length > 0) {
         for (const inmueble of relacionInmuebles) {
           await apiRequest("POST", `/api/relaciones`, {
-            tipo1: "persona",
+            tipo1: "personas",
             id1: persona.id,
-            tipo2: "inmueble",
+            tipo2: "inmuebles",
             id2: inmueble.id
           });
         }
@@ -181,8 +181,11 @@ export default function PersonaForm() {
       setRelacionPersonas([]);
       setObservaciones([]);
       setShowObservacionForm(false);
-      // Invalidar queries para actualizar los datos
+      // Invalidar queries para actualizar todos los datos relacionados
       queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/ubicaciones'] });
     },
     onError: (error) => {
       toast({
