@@ -529,6 +529,68 @@ export default function VehiculoForm() {
         </div>
         
         <div>
+          <FormLabel>Relaciones con Otros Vehículos</FormLabel>
+          <div className="mt-1">
+            <FormField
+              control={form.control}
+              name="vehiculoSeleccionado"
+              render={({ field }) => (
+                <FormItem>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar vehículo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {vehiculos && vehiculos.map((vehiculo: any) => (
+                        <SelectItem key={vehiculo.id} value={vehiculo.id.toString()}>
+                          {vehiculo.marca} {vehiculo.modelo || ''} ({vehiculo.placa})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-end mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRelacionVehiculo}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Vincular vehículo
+              </Button>
+            </div>
+            
+            {relacionVehiculos.length > 0 && (
+              <div className="mt-2">
+                {relacionVehiculos.map((vehiculo) => (
+                  <div 
+                    key={vehiculo.id} 
+                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
+                  >
+                    <span className="text-sm">{vehiculo.nombre}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeRelacionVehiculo(vehiculo.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div>
           <FormLabel>Relaciones con Inmuebles</FormLabel>
           <FormField
             control={form.control}
