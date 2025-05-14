@@ -373,6 +373,7 @@ export class DatabaseStorage implements IStorage {
     };
     
     try {
+      console.log(`********** INICIO DE BÚSQUEDA **********`);
       console.log(`Buscando ubicaciones con query: "${query}", patrón: "${searchPattern}" y tipos: ${tipos.join(', ')}`);
       
       // 1. Primero, buscar ubicaciones directas con coordenadas válidas
@@ -455,6 +456,9 @@ export class DatabaseStorage implements IStorage {
           sql`SELECT * FROM personas WHERE identificacion = ${queryString}`
         );
         
+        console.log(`DEBUG - Búsqueda exacta por identificación: ${queryString}`, 
+                    personasPorIdentificacion.rows);
+        
         // Búsqueda por patrones en otros campos
         const personasPorPatron = await db.execute(
           sql`SELECT * FROM personas WHERE 
@@ -497,6 +501,16 @@ export class DatabaseStorage implements IStorage {
           console.log(`Buscando ubicaciones para persona (ID ${persona.id}): ${persona.nombre || 'Sin nombre'}`);
           
           // 1. Buscar ubicaciones directamente relacionadas con esta persona
+          console.log(`DEBUG - Buscando ubicaciones para persona con ID: ${persona.id}`);
+          
+          // Primero verificamos que la persona exista en la tabla de relaciones
+          const relacionesExistentes = await db
+            .select()
+            .from(personasUbicaciones)
+            .where(eq(personasUbicaciones.personaId, persona.id));
+            
+          console.log(`DEBUG - Relaciones encontradas para persona ID ${persona.id}:`, relacionesExistentes);
+          
           const relacionesPersona = await db
             .select({
               ubicacion: ubicaciones
@@ -509,6 +523,9 @@ export class DatabaseStorage implements IStorage {
                 sql`${ubicaciones.latitud} IS NOT NULL AND ${ubicaciones.longitud} IS NOT NULL`
               )
             );
+            
+          console.log(`DEBUG - Ubicaciones encontradas para persona ID ${persona.id}:`, 
+                      relacionesPersona.map(r => r.ubicacion));
           
           console.log(`Ubicaciones directas encontradas para persona (ID ${persona.id}): ${relacionesPersona.length}`);
           
