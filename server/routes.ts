@@ -365,47 +365,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Ruta simplificada para crear ubicación
-  app.post("/api/ubicaciones-simple", async (req, res) => {
-    try {
-      console.log("Recibiendo solicitud para crear ubicación sin autenticación");
-      console.log("Body recibido:", req.body);
-      
-      // Verificar si tenemos datos válidos
-      if (!req.body.latitud || !req.body.longitud || !req.body.tipo) {
-        return res.status(400).json({ 
-          message: "Datos incompletos", 
-          requeridos: "latitud, longitud, tipo",
-          recibidos: Object.keys(req.body).join(", ")
-        });
-      }
-      
-      const ubicacionData = {
-        latitud: req.body.latitud,
-        longitud: req.body.longitud,
-        tipo: req.body.tipo,
-        fecha: req.body.fecha || new Date(),
-        observaciones: req.body.observaciones || ""
-      };
-      
-      console.log("Creando ubicación con datos:", ubicacionData);
-      
-      // Crear la ubicación sin verificación de rol
-      const ubicacion = await storage.createUbicacion(ubicacionData);
-      console.log("Ubicación creada:", ubicacion);
-      
-      // Responder con un JSON en lugar de HTML
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(201).json(ubicacion);
-    } catch (error) {
-      console.error("Error al crear ubicación simplificada:", error);
-      // Asegurar que la respuesta sea JSON
-      res.setHeader('Content-Type', 'application/json');
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
-      }
-      res.status(500).json({ message: "Error al crear ubicación" });
+  // Ruta de API que solo maneja JSON
+  app.post("/api/ubicaciones-simple", (req, res, next) => {
+    // Nos aseguramos de que sea una petición de API
+    if (!req.headers['accept']?.includes('application/json') && !req.path.startsWith('/api/')) {
+      return next();
     }
+    
+    console.log("Recibiendo solicitud para crear ubicación sin autenticación");
+    console.log("Body recibido:", req.body);
+    
+    // Verificar si tenemos datos válidos
+    if (!req.body.latitud || !req.body.longitud || !req.body.tipo) {
+      return res.status(400).json({ 
+        message: "Datos incompletos", 
+        requeridos: "latitud, longitud, tipo",
+        recibidos: Object.keys(req.body).join(", ")
+      });
+    }
+    
+    const ubicacionData = {
+      latitud: req.body.latitud,
+      longitud: req.body.longitud,
+      tipo: req.body.tipo,
+      fecha: req.body.fecha || new Date(),
+      observaciones: req.body.observaciones || ""
+    };
+    
+    console.log("Creando ubicación con datos:", ubicacionData);
+    
+    // Crear la ubicación sin verificación de rol
+    storage.createUbicacion(ubicacionData)
+      .then(ubicacion => {
+        console.log("Ubicación creada:", ubicacion);
+        // Explícitamente enviar como JSON para evitar cualquier interceptación
+        res.status(201);
+        res.set('Content-Type', 'application/json');
+        res.send(JSON.stringify(ubicacion));
+      })
+      .catch(error => {
+        console.error("Error al crear ubicación simplificada:", error);
+        res.status(500);
+        res.set('Content-Type', 'application/json');
+        
+        if (error instanceof z.ZodError) {
+          res.send(JSON.stringify({ message: "Datos inválidos", errors: error.errors }));
+        } else {
+          res.send(JSON.stringify({ message: "Error al crear ubicación" }));
+        }
+      });
   });
 
   const httpServer = createServer(app);

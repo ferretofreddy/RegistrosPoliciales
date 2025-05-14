@@ -188,8 +188,30 @@ export default function UbicacionForm() {
       console.log("Enviando datos de ubicación:", ubicacionData);
       
       try {
-        // Usar la ruta simplificada sin verificación de rol
-        const res = await apiRequest("POST", "/api/ubicaciones-simple", ubicacionData);
+        // Usar la ruta simplificada sin verificación de rol con cabecera Accept: application/json
+        const res = await fetch("/api/ubicaciones-simple", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(ubicacionData),
+          credentials: "include"
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Error respuesta:", errorText);
+          throw new Error(`Error al crear ubicación: ${res.status} ${res.statusText}`);
+        }
+        
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await res.text();
+          console.error("Respuesta no JSON:", text);
+          throw new Error("La respuesta del servidor no es JSON válido");
+        }
+        
         return await res.json();
       } catch (error) {
         console.error("Error al crear ubicación:", error);
