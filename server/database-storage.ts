@@ -391,6 +391,7 @@ export class DatabaseStorage {
         console.log(`Buscando personas con ID/nombre: ${queryExacto}`);
         
         // Consulta SQL directa para personas
+        console.log(`Ejecutando consulta SQL con identificacion=${queryExacto} O nombre LIKE ${searchPattern}`);
         const personasResult = await db.execute(
           sql`SELECT * FROM personas 
               WHERE identificacion = ${queryExacto}
@@ -399,12 +400,14 @@ export class DatabaseStorage {
         
         const personas = personasResult.rows || [];
         console.log(`Personas encontradas: ${personas.length}`);
+        console.log(`DEBUG - Datos de personas:`, JSON.stringify(personas));
         
         // Para cada persona encontrada, buscar sus ubicaciones relacionadas
         for (const persona of personas) {
           console.log(`Buscando ubicaciones para persona ID: ${persona.id}`);
           
           // Buscar ubicaciones relacionadas con esta persona mediante SQL directo
+          console.log(`SQL - Buscando ubicaciones para persona ID=${persona.id}`);
           const ubicacionesResult = await db.execute(
             sql`SELECT u.* FROM ubicaciones u
                 JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
@@ -414,6 +417,7 @@ export class DatabaseStorage {
           
           const ubicacionesPersona = ubicacionesResult.rows || [];
           console.log(`Ubicaciones encontradas para persona ID ${persona.id}: ${ubicacionesPersona.length}`);
+          console.log(`DEBUG - Ubicaciones para persona ID ${persona.id}:`, JSON.stringify(ubicacionesPersona));
           
           // Agregar cada ubicación al resultado
           for (const ubicacion of ubicacionesPersona) {
@@ -442,6 +446,7 @@ export class DatabaseStorage {
       
       // Terminamos aquí y retornamos los resultados
       console.log(`Total de ubicaciones encontradas: ${resultado.ubicacionesDirectas.length + resultado.ubicacionesRelacionadas.length}`);
+      console.log(`DEBUG - Resultado final:`, JSON.stringify(resultado));
       return resultado;
     } catch (error) {
       console.error("Error en la búsqueda de ubicaciones:", error);
