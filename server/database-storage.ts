@@ -381,8 +381,6 @@ export class DatabaseStorage implements IStorage {
           and(
             or(
               like(ubicaciones.tipo, searchPattern),
-              like(ubicaciones.descripcion, searchPattern),
-              like(ubicaciones.referencia, searchPattern),
               sql`${ubicaciones.observaciones} IS NOT NULL AND ${ubicaciones.observaciones} LIKE ${searchPattern}`
             ),
             sql`${ubicaciones.latitud} IS NOT NULL AND ${ubicaciones.longitud} IS NOT NULL`

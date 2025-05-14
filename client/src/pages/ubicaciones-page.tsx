@@ -128,7 +128,7 @@ export default function UbicacionesPage() {
             icon: createIcon('ubicacion')
           })
           .addTo(map)
-          .bindPopup(`<b>${ubicacion.tipo}</b><br>${ubicacion.descripcion || 'Sin descripción'}`);
+          .bindPopup(`<b>${ubicacion.tipo}</b><br>${ubicacion.observaciones || 'Sin descripción'}`);
           
           newMarkers.push(marker);
           bounds.extend([ubicacion.latitud, ubicacion.longitud]);
@@ -156,7 +156,7 @@ export default function UbicacionesPage() {
             icon: createIcon(tipo)
           })
           .addTo(map)
-          .bindPopup(`<b>${title}</b><br>Ubicación: ${relacion.ubicacion.descripcion || relacion.ubicacion.tipo || 'Sin descripción'}`);
+          .bindPopup(`<b>${title}</b><br>Ubicación: ${relacion.ubicacion.observaciones || relacion.ubicacion.tipo || 'Sin descripción'}`);
           
           newMarkers.push(marker);
           bounds.extend([relacion.ubicacion.latitud, relacion.ubicacion.longitud]);
@@ -286,7 +286,7 @@ export default function UbicacionesPage() {
                                   <MapPin className="h-3 w-3 text-white" />
                                 </div>
                                 <div className="text-sm flex-grow">
-                                  <div><strong>{ubicacion.tipo}</strong> {ubicacion.descripcion && `- ${ubicacion.descripcion}`}</div>
+                                  <div><strong>{ubicacion.tipo}</strong> {ubicacion.observaciones && `- ${ubicacion.observaciones}`}</div>
                                   <div className="text-xs text-gray-500">
                                     {ubicacion.latitud && ubicacion.longitud 
                                       ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
@@ -374,7 +374,7 @@ export default function UbicacionesPage() {
                                   <div className="text-sm flex-grow">
                                     <div>{entityText}</div>
                                     <div className="text-xs text-gray-500">
-                                      {ubicacion.tipo}{ubicacion.descripcion ? `: ${ubicacion.descripcion}` : ''} 
+                                      {ubicacion.tipo}{ubicacion.observaciones ? `: ${ubicacion.observaciones}` : ''} 
                                       {ubicacion.latitud && ubicacion.longitud 
                                         ? ` (${ubicacion.latitud.toFixed(5)}, ${ubicacion.longitud.toFixed(5)})`
                                         : ''
