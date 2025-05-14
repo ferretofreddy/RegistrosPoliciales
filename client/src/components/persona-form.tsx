@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { insertPersonaSchema } from "@shared/schema";
+import { insertPersonaSchema, insertPersonaObservacionSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -19,7 +19,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera, MapPin } from "lucide-react";
+import { X, Plus, Upload, Camera, MapPin, CalendarClock } from "lucide-react";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { format } from "date-fns";
+
+// Esquema para observaciones
+const observacionSchema = z.object({
+  detalle: z.string().min(1, "La observación no puede estar vacía"),
+});
 
 // Extender el esquema para el formulario con validaciones adicionales
 const personaFormSchema = insertPersonaSchema.extend({
@@ -30,6 +38,7 @@ const personaFormSchema = insertPersonaSchema.extend({
   inmuebleSeleccionado: z.string().optional(),
   latitud: z.string().optional(),
   longitud: z.string().optional(),
+  nuevaObservacion: z.string().optional(),
 });
 
 type PersonaFormValues = z.infer<typeof personaFormSchema>;
@@ -40,7 +49,9 @@ export default function PersonaForm() {
   const [telefonos, setTelefonos] = useState<string[]>([]);
   const [domicilios, setDomicilios] = useState<{ direccion: string; latitud?: string; longitud?: string }[]>([]);
   const [relacionVehiculos, setRelacionVehiculos] = useState<{ id: number; nombre: string }[]>([]);
+  const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showNewDomicilio, setShowNewDomicilio] = useState(false);
+  const [showObservacionForm, setShowObservacionForm] = useState(false);
 
   // Obtener lista de vehículos disponibles para las relaciones
   const { data: vehiculos } = useQuery({
@@ -68,7 +79,6 @@ export default function PersonaForm() {
     defaultValues: {
       nombre: "",
       identificacion: "",
-      observaciones: "",
       nuevoAlias: "",
       nuevoTelefono: "",
       nuevoDomicilio: "",
@@ -76,6 +86,7 @@ export default function PersonaForm() {
       longitud: "",
       vehiculoSeleccionado: "",
       inmuebleSeleccionado: "",
+      nuevaObservacion: "",
     },
   });
 
@@ -89,11 +100,21 @@ export default function PersonaForm() {
         alias: aliases,
         telefonos: telefonos,
         domicilios: domicilios.map(d => d.direccion),
-        observaciones: values.observaciones,
       };
 
       const res = await apiRequest("POST", "/api/personas", personaData);
-      return await res.json();
+      const persona = await res.json();
+      
+      // Si hay observaciones, las agregamos a la persona creada
+      if (observaciones.length > 0) {
+        for (const obs of observaciones) {
+          await apiRequest("POST", `/api/personas/${persona.id}/observaciones`, {
+            detalle: obs.detalle
+          });
+        }
+      }
+      
+      return persona;
     },
     onSuccess: () => {
       toast({
@@ -106,6 +127,8 @@ export default function PersonaForm() {
       setTelefonos([]);
       setDomicilios([]);
       setRelacionVehiculos([]);
+      setObservaciones([]);
+      setShowObservacionForm(false);
       // Invalidar queries para actualizar los datos
       queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
     },
