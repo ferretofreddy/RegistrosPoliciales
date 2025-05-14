@@ -220,7 +220,7 @@ export default function UbicacionesPage() {
           
           let title = '';
           if (tipo === 'persona') {
-            title = entidad.nombre;
+            title = `${entidad.nombre}${entidad.identificacion ? ` - ${entidad.identificacion}` : ''}`;
           } else if (tipo === 'vehiculo') {
             title = `${entidad.marca} ${entidad.modelo || ''} (${entidad.placa})`;
           } else if (tipo === 'inmueble') {
@@ -296,7 +296,7 @@ export default function UbicacionesPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Buscar por nombre, placa, dirección... (mínimo 3 caracteres)"
+                    placeholder="Buscar por nombre de persona, identificación, placa, dirección... (mínimo 3 caracteres)"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyPress={handleKeyPress}
@@ -367,6 +367,12 @@ export default function UbicacionesPage() {
                   </label>
                 </div>
               </div>
+              
+              {searchTerm.trim().length > 0 && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded text-sm text-blue-700">
+                  <span className="font-medium">Consejo:</span> Para buscar personas escriba nombre o número de identificación (ejemplo: "Miguel" o "4044404444")
+                </div>
+              )}
             </div>
             
             {/* Map Container */}
@@ -442,7 +448,7 @@ export default function UbicacionesPage() {
                               if (tipo === 'persona') {
                                 icon = <User className="h-3 w-3 text-white" />;
                                 bgColor = 'bg-red-500';
-                                text = `${entidad.nombre} - ${entidad.identificacion}`;
+                                text = `${entidad.nombre} - ${entidad.identificacion || 'Sin ID'}`;
                               } else if (tipo === 'vehiculo') {
                                 icon = <Car className="h-3 w-3 text-white" />;
                                 bgColor = 'bg-blue-500';
@@ -482,7 +488,7 @@ export default function UbicacionesPage() {
                               if (tipo === 'persona') {
                                 icon = <User className="h-3 w-3 text-white" />;
                                 bgColor = 'bg-red-500';
-                                entityText = `${entidad.nombre}`;
+                                entityText = `${entidad.nombre} - ${entidad.identificacion || 'Sin ID'}`;
                               } else if (tipo === 'vehiculo') {
                                 icon = <Car className="h-3 w-3 text-white" />;
                                 bgColor = 'bg-blue-500';
