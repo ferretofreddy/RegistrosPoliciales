@@ -18,13 +18,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, MapPin } from "lucide-react";
+import { X, Plus, MapPin, CalendarClock, AlertCircle } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { format } from "date-fns";
 
 // Extender el esquema para el formulario
 const ubicacionFormSchema = insertUbicacionSchema.extend({
   personaSeleccionada: z.string().optional(),
   vehiculoSeleccionado: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),
+  nuevaObservacion: z.string().optional(),
 });
 
 type UbicacionFormValues = z.infer<typeof ubicacionFormSchema>;
@@ -37,6 +48,8 @@ export default function UbicacionForm() {
   const [mapInitialized, setMapInitialized] = useState(false);
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
+  const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
+  const [showObservacionForm, setShowObservacionForm] = useState(false);
 
   // Obtener lista de personas para las relaciones
   const { data: personas } = useQuery({
@@ -75,11 +88,11 @@ export default function UbicacionForm() {
       latitud: 0,
       longitud: 0,
       tipo: "",
-      observaciones: "",
       fecha: new Date(),
       personaSeleccionada: "",
       vehiculoSeleccionado: "",
       inmuebleSeleccionado: "",
+      nuevaObservacion: "",
     },
   });
 
@@ -133,7 +146,6 @@ export default function UbicacionForm() {
         latitud: values.latitud,
         longitud: values.longitud,
         tipo: values.tipo,
-        observaciones: values.observaciones,
         fecha: values.fecha,
       };
 
@@ -145,6 +157,21 @@ export default function UbicacionForm() {
         title: "Éxito",
         description: "Ubicación registrada correctamente",
       });
+      
+      // Crear observaciones
+      if (observaciones.length > 0) {
+        observaciones.forEach(async (observacion) => {
+          try {
+            await apiRequest("POST", "/api/ubicaciones/observaciones", {
+              ubicacionId: data.id,
+              detalle: observacion.detalle,
+              fecha: observacion.fecha || new Date()
+            });
+          } catch (error) {
+            console.error("Error al guardar observación:", error);
+          }
+        });
+      }
       
       // Crear relaciones con personas si existen
       if (relacionPersonas.length > 0) {
@@ -196,6 +223,8 @@ export default function UbicacionForm() {
       
       // Reiniciar formulario
       form.reset();
+      setObservaciones([]);
+      setShowObservacionForm(false);
       setRelacionPersonas([]);
       setRelacionVehiculos([]);
       setRelacionInmuebles([]);
@@ -410,23 +439,110 @@ export default function UbicacionForm() {
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="observaciones"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observaciones</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Información adicional relevante" 
-                  className="min-h-[100px]"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <FormLabel>Observaciones</FormLabel>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => setShowObservacionForm(!showObservacionForm)}
+            >
+              <Plus className="h-4 w-4" />
+              {showObservacionForm ? "Cancelar" : "Agregar Observación"}
+            </Button>
+          </div>
+          
+          {showObservacionForm && (
+            <div className="border border-gray-200 rounded-md p-4 mb-4 bg-muted/30">
+              <FormField
+                control={form.control}
+                name="nuevaObservacion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nueva Observación</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Ingrese una observación relevante" 
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end mt-2">
+                <Button 
+                  type="button" 
+                  size="sm" 
+                  onClick={() => {
+                    const nuevaObservacion = form.getValues("nuevaObservacion");
+                    if (nuevaObservacion && nuevaObservacion.trim()) {
+                      setObservaciones([
+                        ...observaciones, 
+                        { 
+                          detalle: nuevaObservacion.trim(),
+                          fecha: new Date()
+                        }
+                      ]);
+                      form.setValue("nuevaObservacion", "");
+                      // Opcionalmente, podemos ocultar el formulario
+                      // setShowObservacionForm(false);
+                    }
+                  }}
+                >
+                  Guardar Observación
+                </Button>
+              </div>
+            </div>
           )}
-        />
+          
+          {/* Lista de observaciones */}
+          {observaciones.length > 0 ? (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">Fecha</TableHead>
+                    <TableHead>Detalle</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {observaciones.map((obs, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1 text-xs">
+                          <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                          {obs.fecha ? format(obs.fecha, "dd/MM/yyyy HH:mm") : "Ahora"}
+                        </div>
+                      </TableCell>
+                      <TableCell>{obs.detalle}</TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500"
+                          onClick={() => setObservaciones(observaciones.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <Alert variant="default" className="bg-muted">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>No hay observaciones registradas.</AlertDescription>
+            </Alert>
+          )}
+        </div>
         
         <div>
           <FormLabel>Relaciones con Personas</FormLabel>
