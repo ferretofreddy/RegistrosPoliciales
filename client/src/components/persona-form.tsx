@@ -49,6 +49,7 @@ export default function PersonaForm() {
   const [telefonos, setTelefonos] = useState<string[]>([]);
   const [domicilios, setDomicilios] = useState<{ direccion: string; latitud?: string; longitud?: string }[]>([]);
   const [relacionVehiculos, setRelacionVehiculos] = useState<{ id: number; nombre: string }[]>([]);
+  const [relacionInmuebles, setRelacionInmuebles] = useState<{ id: number; nombre: string }[]>([]);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showNewDomicilio, setShowNewDomicilio] = useState(false);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
@@ -127,6 +128,7 @@ export default function PersonaForm() {
       setTelefonos([]);
       setDomicilios([]);
       setRelacionVehiculos([]);
+      setRelacionInmuebles([]);
       setObservaciones([]);
       setShowObservacionForm(false);
       // Invalidar queries para actualizar los datos
@@ -211,6 +213,32 @@ export default function PersonaForm() {
 
   const removeRelacionVehiculo = (id: number) => {
     setRelacionVehiculos(relacionVehiculos.filter(v => v.id !== id));
+  };
+  
+  // Funciones para relaciones con inmuebles
+  const addRelacionInmueble = () => {
+    const inmuebleId = form.getValues("inmuebleSeleccionado");
+    if (!inmuebleId) {
+      toast({
+        title: "Error",
+        description: "Debe seleccionar un inmueble",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const inmuebleSeleccionado = inmuebles?.find((i) => i.id.toString() === inmuebleId);
+    if (inmuebleSeleccionado && !relacionInmuebles.some(i => i.id === inmuebleSeleccionado.id)) {
+      setRelacionInmuebles([...relacionInmuebles, { 
+        id: inmuebleSeleccionado.id, 
+        nombre: `${inmuebleSeleccionado.tipo} (${inmuebleSeleccionado.direccion})`
+      }]);
+      form.setValue("inmuebleSeleccionado", "");
+    }
+  };
+
+  const removeRelacionInmueble = (id: number) => {
+    setRelacionInmuebles(relacionInmuebles.filter(i => i.id !== id));
   };
 
   // Función para capturar ubicación actual
@@ -686,32 +714,66 @@ export default function PersonaForm() {
         
         <div>
           <FormLabel>Relaciones con Inmuebles</FormLabel>
-          <FormField
-            control={form.control}
-            name="inmuebleSeleccionado"
-            render={({ field }) => (
-              <FormItem>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar inmueble" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {inmuebles && inmuebles.map((inmueble: any) => (
-                      <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
-                        {inmueble.tipo} ({inmueble.direccion})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+              <div className="flex-grow">
+                <FormField
+                  control={form.control}
+                  name="inmuebleSeleccionado"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar inmueble" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {inmuebles && inmuebles.map((inmueble: any) => (
+                            <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
+                              {inmueble.tipo} ({inmueble.direccion})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRelacionInmueble}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Vincular inmueble
+              </Button>
+            </div>
+            
+            {relacionInmuebles.length > 0 && (
+              <div className="mt-2">
+                {relacionInmuebles.map((inmueble) => (
+                  <div 
+                    key={inmueble.id} 
+                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
+                  >
+                    <span className="text-sm">{inmueble.nombre}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => removeRelacionInmueble(inmueble.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
-          />
+          </div>
         </div>
         
         <div className="flex justify-end space-x-3">
