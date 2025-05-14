@@ -162,7 +162,7 @@ export default function ConsultaPage() {
                 {isLoading ? (
                   <div className="p-6 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-500">Cargando resultados...</p>
+                    <p className="mt-2 text-sm text-gray-500">Buscando resultados...</p>
                   </div>
                 ) : (
                   <div>
@@ -219,7 +219,7 @@ export default function ConsultaPage() {
                                               size="icon" 
                                               className="md:hidden visible"
                                               onClick={() => abrirDetalleDialog(persona, "persona")}
-                                            >
+                                              >
                                               <Info className="h-4 w-4 text-primary-600" />
                                             </Button>
                                           )}
