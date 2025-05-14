@@ -251,8 +251,8 @@ export default function PersonaForm() {
       return;
     }
     
-    const inmuebleSeleccionado = inmuebles?.find((i) => i.id.toString() === inmuebleId);
-    if (inmuebleSeleccionado && !relacionInmuebles.some(i => i.id === inmuebleSeleccionado.id)) {
+    const inmuebleSeleccionado = inmuebles?.find((i: any) => i.id.toString() === inmuebleId);
+    if (inmuebleSeleccionado && !relacionInmuebles.some((i: {id: number}) => i.id === inmuebleSeleccionado.id)) {
       setRelacionInmuebles([...relacionInmuebles, { 
         id: inmuebleSeleccionado.id, 
         nombre: `${inmuebleSeleccionado.tipo} (${inmuebleSeleccionado.direccion})`

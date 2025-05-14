@@ -154,12 +154,7 @@ export default function DetalleDialog({
             <p>{inmueble.direccion || "No disponible"}</p>
           </div>
         </div>
-        {inmueble.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{inmueble.observaciones}</p>
-          </div>
-        )}
+        {/* Las observaciones ahora se muestran en la pestaña de observaciones */}
       </>
     );
   }
@@ -184,12 +179,7 @@ export default function DetalleDialog({
             <p>Lat: {ubicacion.latitud}, Long: {ubicacion.longitud}</p>
           </div>
         </div>
-        {ubicacion.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{ubicacion.observaciones}</p>
-          </div>
-        )}
+        {/* Las observaciones ahora se muestran en la pestaña de observaciones */}
       </>
     );
   }
