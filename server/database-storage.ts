@@ -9,7 +9,7 @@ import {
   vehiculosInmuebles, vehiculosUbicaciones, inmueblesUbicaciones
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, or, and } from "drizzle-orm";
+import { eq, like, ilike, or, and, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -110,47 +110,54 @@ export class DatabaseStorage implements IStorage {
     const resultados: any = {};
     
     try {
+      // Buscar personas
       if (tipos.includes('personas')) {
         resultados.personas = await db.select().from(personas).where(
           or(
-            ilike(personas.nombre, searchPattern),
-            ilike(personas.apellido, searchPattern),
-            ilike(personas.identificacion, searchPattern),
-            sql`${personas.alias}::text ILIKE ${searchPattern}`
+            like(personas.nombre, searchPattern),
+            like(personas.identificacion, searchPattern),
+            sql`${personas.alias}::text ILIKE ${searchPattern}`,
+            sql`${personas.telefonos}::text ILIKE ${searchPattern}`,
+            sql`${personas.domicilios}::text ILIKE ${searchPattern}`,
+            like(personas.observaciones || '', searchPattern)
           )
         );
       }
       
+      // Buscar vehículos
       if (tipos.includes('vehiculos')) {
         resultados.vehiculos = await db.select().from(vehiculos).where(
           or(
-            ilike(vehiculos.marca, searchPattern),
-            ilike(vehiculos.modelo, searchPattern),
-            ilike(vehiculos.placa, searchPattern),
-            ilike(vehiculos.tipo, searchPattern),
-            ilike(vehiculos.color, searchPattern)
+            like(vehiculos.marca, searchPattern),
+            like(vehiculos.modelo || '', searchPattern),
+            like(vehiculos.placa, searchPattern),
+            like(vehiculos.tipo, searchPattern),
+            like(vehiculos.color, searchPattern),
+            like(vehiculos.observaciones || '', searchPattern)
           )
         );
       }
       
+      // Buscar inmuebles
       if (tipos.includes('inmuebles')) {
         resultados.inmuebles = await db.select().from(inmuebles).where(
           or(
-            ilike(inmuebles.propietario, searchPattern),
-            ilike(inmuebles.direccion, searchPattern),
-            ilike(inmuebles.tipo, searchPattern),
-            ilike(inmuebles.localidad, searchPattern)
+            like(inmuebles.propietario, searchPattern),
+            like(inmuebles.direccion, searchPattern),
+            like(inmuebles.tipo, searchPattern),
+            like(inmuebles.observaciones || '', searchPattern)
           )
         );
       }
       
+      // Buscar ubicaciones
       if (tipos.includes('ubicaciones')) {
         resultados.ubicaciones = await db.select().from(ubicaciones).where(
           or(
-            ilike(ubicaciones.nombre, searchPattern),
-            ilike(ubicaciones.direccion, searchPattern),
-            ilike(ubicaciones.tipo, searchPattern),
-            ilike(ubicaciones.observaciones || '', searchPattern)
+            like(ubicaciones.tipo, searchPattern),
+            like(ubicaciones.observaciones || '', searchPattern),
+            sql`CAST(${ubicaciones.latitud} AS TEXT) LIKE ${searchPattern}`,
+            sql`CAST(${ubicaciones.longitud} AS TEXT) LIKE ${searchPattern}`
           )
         );
       }

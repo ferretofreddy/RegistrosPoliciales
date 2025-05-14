@@ -28,10 +28,11 @@ export default function ConsultaPage() {
   const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
   const [tipoSeleccionado, setTipoSeleccionado] = useState<"persona" | "vehiculo" | "inmueble" | "ubicacion">("persona");
 
-  const { data, isLoading, refetch } = useQuery<{
+  const { data, isLoading, refetch, error } = useQuery<{
     personas?: Persona[];
     vehiculos?: Vehiculo[];
     inmuebles?: Inmueble[];
+    ubicaciones?: Ubicacion[];
   }>({
     queryKey: ["/api/buscar", searchTerm, selectedTypes],
     queryFn: async () => {
@@ -47,20 +48,28 @@ export default function ConsultaPage() {
       params.append("query", searchTerm);
       tipos.forEach(tipo => params.append("tipos", tipo));
       
+      console.log("Realizando búsqueda con parámetros:", params.toString());
+      
       const response = await fetch(`/api/buscar?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Error en la búsqueda");
       }
       
-      return await response.json();
+      const resultado = await response.json();
+      console.log("Resultados de búsqueda:", resultado);
+      return resultado;
     },
     enabled: false,
   });
 
   const handleSearch = () => {
     if (searchTerm.trim()) {
-      refetch();
+      refetch().then(result => {
+        console.log("Búsqueda completada:", result.data);
+      }).catch(err => {
+        console.error("Error en la búsqueda:", err);
+      });
     }
   };
 
