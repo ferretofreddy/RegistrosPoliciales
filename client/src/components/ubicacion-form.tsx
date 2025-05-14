@@ -167,16 +167,33 @@ export default function UbicacionForm() {
   // Mutación para enviar el formulario
   const createUbicacionMutation = useMutation({
     mutationFn: async (values: UbicacionFormValues) => {
+      // Validar los datos antes de enviar
+      if (!values.tipo || values.tipo.trim() === "") {
+        throw new Error("El tipo de ubicación es obligatorio");
+      }
+      
+      if (!values.latitud || !values.longitud) {
+        throw new Error("Las coordenadas (latitud y longitud) son obligatorias");
+      }
+      
       // Preparar los datos para enviar al servidor
       const ubicacionData = {
         latitud: values.latitud,
         longitud: values.longitud,
         tipo: values.tipo,
-        fecha: values.fecha,
+        fecha: values.fecha || new Date(), // Asegurarse de proporcionar una fecha
+        observaciones: values.observaciones || "", // Asegurarse de proporcionar observaciones (aunque sea vacío)
       };
 
-      const res = await apiRequest("POST", "/api/ubicaciones", ubicacionData);
-      return await res.json();
+      console.log("Enviando datos de ubicación:", ubicacionData);
+      
+      try {
+        const res = await apiRequest("POST", "/api/ubicaciones", ubicacionData);
+        return await res.json();
+      } catch (error) {
+        console.error("Error al crear ubicación:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       toast({

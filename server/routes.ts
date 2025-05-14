@@ -15,11 +15,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware to check user role
   const requireRole = (roles: string[]) => (req: any, res: any, next: any) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "No autorizado" });
+      console.log("ERROR: Usuario no autenticado al intentar acceder a ruta protegida");
+      return res.status(401).json({ message: "No autorizado. Inicie sesión para continuar." });
     }
     
+    console.log(`Usuario autenticado: ID=${req.user.id}, Nombre=${req.user.nombre}, Rol=${req.user.rol}`);
+    
     if (!roles.includes(req.user.rol)) {
-      return res.status(403).json({ message: "Acceso denegado" });
+      console.log(`ERROR: Usuario con rol '${req.user.rol}' intenta acceder a ruta que requiere: ${roles.join(', ')}`);
+      return res.status(403).json({ message: `Acceso denegado. Se requiere rol: ${roles.join(' o ')}` });
     }
     
     next();
