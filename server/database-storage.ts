@@ -446,13 +446,47 @@ export class DatabaseStorage implements IStorage {
         
         // Para la identificación, intentamos primero una coincidencia exacta
         // y luego una coincidencia parcial con LIKE
-        const personasEncontradas = await db.execute(
+        // Realizamos dos búsquedas separadas para tener mejor control:
+        // 1. Búsqueda exacta por identificación
+        // 2. Búsqueda por patrones en otros campos
+        
+        // Búsqueda exacta por identificación
+        const personasPorIdentificacion = await db.execute(
+          sql`SELECT * FROM personas WHERE identificacion = ${queryString}`
+        );
+        
+        // Búsqueda por patrones en otros campos
+        const personasPorPatron = await db.execute(
           sql`SELECT * FROM personas WHERE 
-              LOWER(nombre) LIKE LOWER(${searchPattern}) OR 
-              identificacion = ${queryString} OR 
+              LOWER(nombre) LIKE LOWER(${searchPattern}) OR
               LOWER(identificacion) LIKE LOWER(${searchPattern}) OR 
               alias::text LIKE LOWER(${searchPattern})`
         );
+        
+        // Combinamos los resultados evitando duplicados por ID
+        const personasIds = new Set();
+        const personasEncontradas = { rows: [] };
+        
+        // Primero agregamos los resultados de la búsqueda exacta (mayor prioridad)
+        for (const persona of personasPorIdentificacion.rows || []) {
+          if (!personasIds.has(persona.id)) {
+            personasIds.add(persona.id);
+            personasEncontradas.rows.push(persona);
+          }
+        }
+        
+        // Luego agregamos los resultados de la búsqueda por patrón
+        for (const persona of personasPorPatron.rows || []) {
+          if (!personasIds.has(persona.id)) {
+            personasIds.add(persona.id);
+            personasEncontradas.rows.push(persona);
+          }
+        }
+        
+        console.log(`Personas por identificación exacta: ${personasPorIdentificacion.rows?.length || 0}`);
+        console.log(`Personas por patrón: ${personasPorPatron.rows?.length || 0}`);
+        console.log(`Total personas encontradas: ${personasEncontradas.rows.length}`);
+        
         
         // Los resultados de db.execute() vienen en formato diferente
         const personasResultados = personasEncontradas.rows || [];
