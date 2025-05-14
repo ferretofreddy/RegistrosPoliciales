@@ -86,6 +86,44 @@
   max-width: 100%;
 }
 
+/* Mejoras responsivas */
+.responsive-table {
+  @apply w-full;
+}
+
+@media (max-width: 1080px) {
+  .responsive-table th:not(:first-child):not(:nth-child(2)),
+  .responsive-table td:not(:first-child):not(:nth-child(2)) {
+    @apply hidden;
+  }
+  
+  .table-actions {
+    @apply static flex justify-end;
+  }
+  
+  .form-grid-cols-2 {
+    @apply grid-cols-1;
+  }
+
+  .form-container {
+    @apply px-4;
+  }
+}
+
+@media (max-width: 768px) {
+  .container-padding {
+    @apply px-4;
+  }
+  
+  .card-overflow {
+    @apply overflow-x-auto;
+  }
+  
+  .full-width-mobile {
+    @apply w-full;
+  }
+}
+
 @layer utilities {
   .bg-primary-50 {
     background-color: hsl(var(--primary-50));
