@@ -106,6 +106,57 @@ export class DatabaseStorage implements IStorage {
     return ubicacion;
   }
 
+  // Observaciones de personas
+  async getPersonaObservaciones(personaId: number): Promise<PersonaObservacion[]> {
+    return await db
+      .select()
+      .from(personasObservaciones)
+      .where(eq(personasObservaciones.personaId, personaId))
+      .orderBy(desc(personasObservaciones.fecha));
+  }
+
+  async createPersonaObservacion(observacion: InsertPersonaObservacion): Promise<PersonaObservacion> {
+    const [newObservacion] = await db
+      .insert(personasObservaciones)
+      .values(observacion)
+      .returning();
+    return newObservacion;
+  }
+
+  // Observaciones de vehículos
+  async getVehiculoObservaciones(vehiculoId: number): Promise<VehiculoObservacion[]> {
+    return await db
+      .select()
+      .from(vehiculosObservaciones)
+      .where(eq(vehiculosObservaciones.vehiculoId, vehiculoId))
+      .orderBy(desc(vehiculosObservaciones.fecha));
+  }
+
+  async createVehiculoObservacion(observacion: InsertVehiculoObservacion): Promise<VehiculoObservacion> {
+    const [newObservacion] = await db
+      .insert(vehiculosObservaciones)
+      .values(observacion)
+      .returning();
+    return newObservacion;
+  }
+
+  // Observaciones de inmuebles
+  async getInmuebleObservaciones(inmuebleId: number): Promise<InmuebleObservacion[]> {
+    return await db
+      .select()
+      .from(inmueblesObservaciones)
+      .where(eq(inmueblesObservaciones.inmuebleId, inmuebleId))
+      .orderBy(desc(inmueblesObservaciones.fecha));
+  }
+
+  async createInmuebleObservacion(observacion: InsertInmuebleObservacion): Promise<InmuebleObservacion> {
+    const [newObservacion] = await db
+      .insert(inmueblesObservaciones)
+      .values(observacion)
+      .returning();
+    return newObservacion;
+  }
+
   async buscar(query: string, tipos: string[]): Promise<any> {
     const searchPattern = `%${query}%`;
     const resultados: any = {};
@@ -113,39 +164,96 @@ export class DatabaseStorage implements IStorage {
     try {
       // Buscar personas
       if (tipos.includes('personas')) {
-        resultados.personas = await db.select().from(personas).where(
+        // Búsqueda básica en la tabla principal
+        const personasBasicas = await db.select().from(personas).where(
           or(
             like(personas.nombre, searchPattern),
-            like(personas.identificacion, searchPattern),
-            sql`${personas.observaciones} IS NOT NULL AND ${personas.observaciones} LIKE ${searchPattern}`
+            like(personas.identificacion, searchPattern)
           )
         );
+        
+        // Búsqueda en observaciones
+        const personasIds = new Set();
+        const personasDesdeObservaciones = await db
+          .select({
+            persona: personas
+          })
+          .from(personasObservaciones)
+          .innerJoin(personas, eq(personasObservaciones.personaId, personas.id))
+          .where(like(personasObservaciones.detalle, searchPattern));
+        
+        // Unir resultados
+        resultados.personas = [...personasBasicas];
+        for (const item of personasDesdeObservaciones) {
+          if (!personasIds.has(item.persona.id)) {
+            resultados.personas.push(item.persona);
+            personasIds.add(item.persona.id);
+          }
+        }
       }
       
       // Buscar vehículos
       if (tipos.includes('vehiculos')) {
-        resultados.vehiculos = await db.select().from(vehiculos).where(
+        // Búsqueda básica en la tabla principal
+        const vehiculosBasicos = await db.select().from(vehiculos).where(
           or(
             like(vehiculos.marca, searchPattern),
             like(vehiculos.placa, searchPattern),
             like(vehiculos.tipo, searchPattern),
             like(vehiculos.color, searchPattern),
-            sql`${vehiculos.modelo} IS NOT NULL AND ${vehiculos.modelo} LIKE ${searchPattern}`,
-            sql`${vehiculos.observaciones} IS NOT NULL AND ${vehiculos.observaciones} LIKE ${searchPattern}`
+            sql`${vehiculos.modelo} IS NOT NULL AND ${vehiculos.modelo} LIKE ${searchPattern}`
           )
         );
+        
+        // Búsqueda en observaciones
+        const vehiculosIds = new Set();
+        const vehiculosDesdeObservaciones = await db
+          .select({
+            vehiculo: vehiculos
+          })
+          .from(vehiculosObservaciones)
+          .innerJoin(vehiculos, eq(vehiculosObservaciones.vehiculoId, vehiculos.id))
+          .where(like(vehiculosObservaciones.detalle, searchPattern));
+        
+        // Unir resultados
+        resultados.vehiculos = [...vehiculosBasicos];
+        for (const item of vehiculosDesdeObservaciones) {
+          if (!vehiculosIds.has(item.vehiculo.id)) {
+            resultados.vehiculos.push(item.vehiculo);
+            vehiculosIds.add(item.vehiculo.id);
+          }
+        }
       }
       
       // Buscar inmuebles
       if (tipos.includes('inmuebles')) {
-        resultados.inmuebles = await db.select().from(inmuebles).where(
+        // Búsqueda básica en la tabla principal
+        const inmueblesBasicos = await db.select().from(inmuebles).where(
           or(
             like(inmuebles.propietario, searchPattern),
             like(inmuebles.direccion, searchPattern),
-            like(inmuebles.tipo, searchPattern),
-            sql`${inmuebles.observaciones} IS NOT NULL AND ${inmuebles.observaciones} LIKE ${searchPattern}`
+            like(inmuebles.tipo, searchPattern)
           )
         );
+        
+        // Búsqueda en observaciones
+        const inmueblesIds = new Set();
+        const inmueblesDesdeObservaciones = await db
+          .select({
+            inmueble: inmuebles
+          })
+          .from(inmueblesObservaciones)
+          .innerJoin(inmuebles, eq(inmueblesObservaciones.inmuebleId, inmuebles.id))
+          .where(like(inmueblesObservaciones.detalle, searchPattern));
+        
+        // Unir resultados
+        resultados.inmuebles = [...inmueblesBasicos];
+        for (const item of inmueblesDesdeObservaciones) {
+          if (!inmueblesIds.has(item.inmueble.id)) {
+            resultados.inmuebles.push(item.inmueble);
+            inmueblesIds.add(item.inmueble.id);
+          }
+        }
       }
       
       // Buscar ubicaciones

@@ -3,7 +3,10 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema } from "@shared/schema";
+import { 
+  insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema,
+  insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
@@ -57,6 +60,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al crear persona" });
     }
   });
+  
+  // Observaciones de personas
+  app.get("/api/personas/:id/observaciones", async (req, res) => {
+    try {
+      const observaciones = await storage.getPersonaObservaciones(parseInt(req.params.id));
+      res.json(observaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener observaciones" });
+    }
+  });
+  
+  app.post("/api/personas/:id/observaciones", requireRole(["admin", "investigador", "agente"]), async (req, res) => {
+    try {
+      const personaId = parseInt(req.params.id);
+      const usuario = req.user?.nombre || "Sistema"; // El nombre del usuario autenticado
+      
+      const observacionData = insertPersonaObservacionSchema.parse({
+        ...req.body,
+        personaId,
+        usuario
+      });
+      
+      const observacion = await storage.createPersonaObservacion(observacionData);
+      res.status(201).json(observacion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear observación" });
+    }
+  });
 
   // Vehículos
   app.get("/api/vehiculos", async (req, res) => {
@@ -92,6 +126,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al crear vehículo" });
     }
   });
+  
+  // Observaciones de vehículos
+  app.get("/api/vehiculos/:id/observaciones", async (req, res) => {
+    try {
+      const observaciones = await storage.getVehiculoObservaciones(parseInt(req.params.id));
+      res.json(observaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener observaciones" });
+    }
+  });
+  
+  app.post("/api/vehiculos/:id/observaciones", requireRole(["admin", "investigador", "agente"]), async (req, res) => {
+    try {
+      const vehiculoId = parseInt(req.params.id);
+      const usuario = req.user?.nombre || "Sistema"; // El nombre del usuario autenticado
+      
+      const observacionData = insertVehiculoObservacionSchema.parse({
+        ...req.body,
+        vehiculoId,
+        usuario
+      });
+      
+      const observacion = await storage.createVehiculoObservacion(observacionData);
+      res.status(201).json(observacion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear observación" });
+    }
+  });
 
   // Inmuebles
   app.get("/api/inmuebles", async (req, res) => {
@@ -125,6 +190,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
       }
       res.status(500).json({ message: "Error al crear inmueble" });
+    }
+  });
+  
+  // Observaciones de inmuebles
+  app.get("/api/inmuebles/:id/observaciones", async (req, res) => {
+    try {
+      const observaciones = await storage.getInmuebleObservaciones(parseInt(req.params.id));
+      res.json(observaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener observaciones" });
+    }
+  });
+  
+  app.post("/api/inmuebles/:id/observaciones", requireRole(["admin", "investigador", "agente"]), async (req, res) => {
+    try {
+      const inmuebleId = parseInt(req.params.id);
+      const usuario = req.user?.nombre || "Sistema"; // El nombre del usuario autenticado
+      
+      const observacionData = insertInmuebleObservacionSchema.parse({
+        ...req.body,
+        inmuebleId,
+        usuario
+      });
+      
+      const observacion = await storage.createInmuebleObservacion(observacionData);
+      res.status(201).json(observacion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear observación" });
     }
   });
 
