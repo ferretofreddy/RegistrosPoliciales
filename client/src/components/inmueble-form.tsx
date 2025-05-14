@@ -204,6 +204,7 @@ export default function InmuebleForm() {
       form.reset();
       setRelacionPersonas([]);
       setRelacionVehiculos([]);
+      setRelacionInmuebles([]);
       setObservaciones([]);
       setShowObservacionForm(false);
       // Invalidar queries para actualizar los datos
@@ -685,6 +686,69 @@ export default function InmuebleForm() {
                     <button 
                       type="button" 
                       onClick={() => removeRelacionVehiculo(vehiculo.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div>
+          <FormLabel>Relaciones con Otros Inmuebles</FormLabel>
+          <div className="mt-1">
+            <FormField
+              control={form.control}
+              name="inmuebleSeleccionado"
+              render={({ field }) => (
+                <FormItem>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar inmueble" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {inmuebles && inmuebles.map((inmueble: any) => (
+                        <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
+                          {inmueble.tipo}: {inmueble.direccion}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="mt-2 flex justify-end">
+              <Button 
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRelacionInmueble}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Vincular inmueble
+              </Button>
+            </div>
+            
+            {relacionInmuebles.length > 0 && (
+              <div className="mt-2">
+                {relacionInmuebles.map((inmueble) => (
+                  <div 
+                    key={inmueble.id} 
+                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
+                  >
+                    <span className="text-sm">{inmueble.nombre}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => removeRelacionInmueble(inmueble.id)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <X className="h-4 w-4" />
