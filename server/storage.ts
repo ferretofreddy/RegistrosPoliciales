@@ -49,6 +49,7 @@ export interface IStorage {
   
   // Search and relation methods
   buscar(query: string, tipos: string[]): Promise<any>;
+  buscarUbicacionesConCoordenadas(query: string, tipos: string[]): Promise<any>;
   crearRelacion(tipo1: string, id1: number, tipo2: string, id2: number): Promise<any>;
   getRelaciones(tipo: string, id: number): Promise<any>;
 }

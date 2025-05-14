@@ -227,6 +227,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ubicaciones
   app.get("/api/ubicaciones", async (req, res) => {
     try {
+      const { buscar, tipos } = req.query;
+      
+      if (buscar) {
+        // Si hay un parámetro de búsqueda, buscar ubicaciones con coordenadas
+        const tiposArray = Array.isArray(tipos) 
+          ? tipos 
+          : tipos ? [tipos] : ["personas", "vehiculos", "inmuebles"];
+        
+        const resultados = await storage.buscarUbicacionesConCoordenadas(buscar.toString(), tiposArray as string[]);
+        return res.json(resultados);
+      }
+      
+      // Si no hay parámetro de búsqueda, devolver todas las ubicaciones
       const ubicaciones = await storage.getAllUbicaciones();
       res.json(ubicaciones);
     } catch (error) {
