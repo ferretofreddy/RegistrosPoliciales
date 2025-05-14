@@ -354,27 +354,61 @@ export default function PersonaForm() {
   // Función para capturar ubicación actual
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
+      // Muestra un toast indicando que se está obteniendo la ubicación
+      toast({
+        title: "Obteniendo ubicación",
+        description: "Por favor espere mientras obtenemos sus coordenadas...",
+      });
+      
+      // Configuración mejorada para la geolocalización
+      const options = {
+        enableHighAccuracy: true,  // Intenta obtener la ubicación más precisa posible
+        timeout: 10000,           // Tiempo máximo para obtener la ubicación (10 segundos)
+        maximumAge: 0             // No usar ubicaciones en caché
+      };
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          // Si la geolocalización tiene éxito, actualizar los campos del formulario
           form.setValue("latitud", position.coords.latitude.toString());
           form.setValue("longitud", position.coords.longitude.toString());
+          console.log("Coordenadas obtenidas:", position.coords.latitude, position.coords.longitude);
+          
           toast({
             title: "Ubicación capturada",
-            description: "Las coordenadas han sido registradas correctamente",
+            description: `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}`,
           });
         },
         (error) => {
+          // Si hay un error, mostrar un mensaje específico según el tipo de error
+          let errorMessage = "Error desconocido al obtener la ubicación.";
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "Permiso denegado. Por favor habilite la geolocalización en su navegador y vuelva a intentarlo.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "La información de ubicación no está disponible en este momento.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "Se agotó el tiempo de espera para obtener la ubicación.";
+              break;
+          }
+          
+          console.error("Error de geolocalización:", error);
+          
           toast({
             title: "Error de geolocalización",
-            description: `No se pudo obtener la ubicación: ${error.message}`,
+            description: errorMessage,
             variant: "destructive",
           });
-        }
+        },
+        options
       );
     } else {
       toast({
         title: "Geolocalización no soportada",
-        description: "Su navegador no soporta la geolocalización",
+        description: "Su navegador no soporta la geolocalización. Intente con un navegador más reciente.",
         variant: "destructive",
       });
     }
