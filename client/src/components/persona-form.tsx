@@ -115,6 +115,30 @@ export default function PersonaForm() {
         }
       }
       
+      // Si hay vehículos relacionados, creamos las relaciones
+      if (relacionVehiculos.length > 0) {
+        for (const vehiculo of relacionVehiculos) {
+          await apiRequest("POST", `/api/relaciones`, {
+            tipo1: "persona",
+            id1: persona.id,
+            tipo2: "vehiculo",
+            id2: vehiculo.id
+          });
+        }
+      }
+      
+      // Si hay inmuebles relacionados, creamos las relaciones
+      if (relacionInmuebles.length > 0) {
+        for (const inmueble of relacionInmuebles) {
+          await apiRequest("POST", `/api/relaciones`, {
+            tipo1: "persona",
+            id1: persona.id,
+            tipo2: "inmueble",
+            id2: inmueble.id
+          });
+        }
+      }
+      
       return persona;
     },
     onSuccess: () => {

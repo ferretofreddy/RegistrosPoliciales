@@ -100,12 +100,7 @@ export default function DetalleDialog({
             </div>
           </div>
         </div>
-        {persona.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{persona.observaciones}</p>
-          </div>
-        )}
+        {/* Las observaciones ahora se muestran en la pestaña de observaciones */}
       </>
     );
   } 
@@ -134,12 +129,7 @@ export default function DetalleDialog({
             <p>{vehiculo.placa || "No disponible"}</p>
           </div>
         </div>
-        {vehiculo.observaciones && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-500">Observaciones</p>
-            <p className="mt-1 whitespace-pre-wrap">{vehiculo.observaciones}</p>
-          </div>
-        )}
+        {/* Las observaciones ahora se muestran en la pestaña de observaciones */}
       </>
     );
   }
