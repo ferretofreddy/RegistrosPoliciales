@@ -34,7 +34,7 @@ export default function DetalleDialog({
   let icon = <User className="h-6 w-6 text-gray-500" />;
   let color = "bg-gray-100";
   let titulo = "Detalles";
-  let contenido: React.ReactNode = <p>No hay datos disponibles</p>;
+  let contenido = <p>No hay datos disponibles</p>;
 
   // Procesamos el contenido según el tipo de dato
   if (tipo === "persona") {

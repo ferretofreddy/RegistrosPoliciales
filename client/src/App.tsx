@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
-import ConsultaPage from "@/pages/consulta-page";
+import ConsultaPage from "@/pages/consulta-page-new";
 import RegistrosPage from "@/pages/registros-page";
 import UbicacionesPage from "@/pages/ubicaciones-page";
 import EstructurasPage from "@/pages/estructuras-page";
