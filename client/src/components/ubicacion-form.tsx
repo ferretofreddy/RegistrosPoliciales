@@ -228,8 +228,11 @@ export default function UbicacionForm() {
       setRelacionPersonas([]);
       setRelacionVehiculos([]);
       setRelacionInmuebles([]);
-      // Invalidar queries para actualizar los datos
+      // Invalidar queries para actualizar todos los datos relacionados
       queryClient.invalidateQueries({ queryKey: ['/api/ubicaciones'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
     },
     onError: (error) => {
       toast({
