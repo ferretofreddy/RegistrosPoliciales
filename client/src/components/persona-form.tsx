@@ -152,6 +152,18 @@ export default function PersonaForm() {
         }
       }
       
+      // Si hay personas relacionadas, creamos las relaciones
+      if (relacionPersonas.length > 0) {
+        for (const otraPersona of relacionPersonas) {
+          await apiRequest("POST", `/api/relaciones`, {
+            tipo1: "persona",
+            id1: persona.id,
+            tipo2: "persona",
+            id2: otraPersona.id
+          });
+        }
+      }
+      
       return persona;
     },
     onSuccess: () => {
@@ -166,6 +178,7 @@ export default function PersonaForm() {
       setDomicilios([]);
       setRelacionVehiculos([]);
       setRelacionInmuebles([]);
+      setRelacionPersonas([]);
       setObservaciones([]);
       setShowObservacionForm(false);
       // Invalidar queries para actualizar los datos
@@ -276,6 +289,32 @@ export default function PersonaForm() {
 
   const removeRelacionInmueble = (id: number) => {
     setRelacionInmuebles(relacionInmuebles.filter(i => i.id !== id));
+  };
+  
+  // Funciones para relaciones con otras personas
+  const addRelacionPersona = () => {
+    const personaId = form.getValues("personaSeleccionada");
+    if (!personaId) {
+      toast({
+        title: "Error",
+        description: "Debe seleccionar una persona",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const personaSeleccionada = personas?.find((p: any) => p.id.toString() === personaId);
+    if (personaSeleccionada && !relacionPersonas.some((p: {id: number}) => p.id === personaSeleccionada.id)) {
+      setRelacionPersonas([...relacionPersonas, { 
+        id: personaSeleccionada.id, 
+        nombre: `${personaSeleccionada.nombre} (${personaSeleccionada.identificacion})`
+      }]);
+      form.setValue("personaSeleccionada", "");
+    }
+  };
+
+  const removeRelacionPersona = (id: number) => {
+    setRelacionPersonas(relacionPersonas.filter(p => p.id !== id));
   };
 
   // Función para capturar ubicación actual
