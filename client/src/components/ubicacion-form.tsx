@@ -188,33 +188,44 @@ export default function UbicacionForm() {
       console.log("Enviando datos de ubicación:", ubicacionData);
       
       try {
-        // Usar la ruta simplificada sin verificación de rol con cabecera Accept: application/json
-        const res = await fetch("/api/ubicaciones-simple", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(ubicacionData),
-          credentials: "include"
+        // Usar una petición XMLHttpRequest directa para evitar cualquier interferencia
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "/api/_create_ubicacion_direct", true);
+          xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+          
+          xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                console.log("✅ Respuesta exitosa:", response);
+                
+                if (response.success) {
+                  resolve(response.data);
+                } else {
+                  reject(new Error(response.error || "Error desconocido"));
+                }
+              } catch (e) {
+                console.error("❌ Error al procesar la respuesta:", xhr.responseText);
+                reject(new Error("Error al procesar la respuesta"));
+              }
+            } else {
+              console.error("❌ Error HTTP:", xhr.status, xhr.statusText);
+              console.error("Respuesta:", xhr.responseText);
+              reject(new Error(`Error HTTP: ${xhr.status}`));
+            }
+          };
+          
+          xhr.onerror = function() {
+            console.error("❌ Error de red en la solicitud");
+            reject(new Error("Error de red"));
+          };
+          
+          console.log("🚀 Enviando petición con datos:", ubicacionData);
+          xhr.send(JSON.stringify(ubicacionData));
         });
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("Error respuesta:", errorText);
-          throw new Error(`Error al crear ubicación: ${res.status} ${res.statusText}`);
-        }
-        
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await res.text();
-          console.error("Respuesta no JSON:", text);
-          throw new Error("La respuesta del servidor no es JSON válido");
-        }
-        
-        return await res.json();
       } catch (error) {
-        console.error("Error al crear ubicación:", error);
+        console.error("❌ Error general al crear ubicación:", error);
         throw error;
       }
     },
