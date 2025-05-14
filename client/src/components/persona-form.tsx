@@ -36,6 +36,7 @@ const personaFormSchema = insertPersonaSchema.extend({
   nuevoDomicilio: z.string().optional(),
   vehiculoSeleccionado: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),
+  personaSeleccionada: z.string().optional(),
   latitud: z.string().optional(),
   longitud: z.string().optional(),
   nuevaObservacion: z.string().optional(),
@@ -50,6 +51,7 @@ export default function PersonaForm() {
   const [domicilios, setDomicilios] = useState<{ direccion: string; latitud?: string; longitud?: string }[]>([]);
   const [relacionVehiculos, setRelacionVehiculos] = useState<{ id: number; nombre: string }[]>([]);
   const [relacionInmuebles, setRelacionInmuebles] = useState<{ id: number; nombre: string }[]>([]);
+  const [relacionPersonas, setRelacionPersonas] = useState<{ id: number; nombre: string }[]>([]);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showNewDomicilio, setShowNewDomicilio] = useState(false);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
@@ -73,6 +75,16 @@ export default function PersonaForm() {
       return res.json();
     }
   });
+  
+  // Obtener lista de personas disponibles para las relaciones
+  const { data: personas } = useQuery({
+    queryKey: ['/api/personas'],
+    queryFn: async () => {
+      const res = await fetch('/api/personas');
+      if (!res.ok) throw new Error('Error al cargar personas');
+      return res.json();
+    }
+  });
 
   // Configurar el formulario con React Hook Form
   const form = useForm<PersonaFormValues>({
@@ -87,6 +99,7 @@ export default function PersonaForm() {
       longitud: "",
       vehiculoSeleccionado: "",
       inmuebleSeleccionado: "",
+      personaSeleccionada: "",
       nuevaObservacion: "",
     },
   });
