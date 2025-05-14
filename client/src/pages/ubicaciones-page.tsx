@@ -27,18 +27,6 @@ export default function UbicacionesPage() {
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
 
-  // Para manejar la búsqueda automática después de escribir
-  useEffect(() => {
-    // Configurar un temporizador para evitar demasiadas solicitudes durante la escritura
-    if (searchTerm.trim().length >= 3) {
-      const searchTimer = setTimeout(() => {
-        refetch();
-      }, 500); // Esperar 500ms después de que el usuario deje de escribir
-      
-      return () => clearTimeout(searchTimer);
-    }
-  }, [searchTerm, selectedTypes, refetch]);
-
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["/api/ubicaciones", searchTerm, selectedTypes],
     queryFn: async () => {
