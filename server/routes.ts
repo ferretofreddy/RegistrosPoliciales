@@ -231,11 +231,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (buscar) {
         // Si hay un parámetro de búsqueda, buscar ubicaciones con coordenadas
-        const tiposArray = Array.isArray(tipos) 
-          ? tipos 
-          : tipos ? [tipos] : ["personas", "vehiculos", "inmuebles"];
+        // Mejorar el procesamiento de los tipos para manejar valores separados por comas
+        let tiposArray: string[] = [];
         
-        const resultados = await storage.buscarUbicacionesConCoordenadas(buscar.toString(), tiposArray as string[]);
+        // Si tipos es un string (común cuando viene como query param), dividirlo por comas
+        if (typeof tipos === 'string' && tipos.includes(',')) {
+          tiposArray = tipos.split(',').map(t => t.trim());
+          console.log(`DEBUG - Procesando tipos (string con comas): ${tipos} -> Array de ${tiposArray.length} elementos: [${tiposArray.join(', ')}]`);
+        } 
+        // Si tipos es un array, usarlo directamente
+        else if (Array.isArray(tipos)) {
+          tiposArray = tipos;
+          console.log(`DEBUG - Procesando tipos (array): Array de ${tiposArray.length} elementos`);
+        } 
+        // Si tipos es un string simple (sin comas), ponerlo en un array
+        else if (typeof tipos === 'string') {
+          tiposArray = [tipos];
+          console.log(`DEBUG - Procesando tipos (string simple): ${tipos}`);
+        } 
+        // Si no hay tipos, usar todos por defecto
+        else {
+          tiposArray = ["personas", "vehiculos", "inmuebles"];
+          console.log(`DEBUG - No se proporcionaron tipos, usando valores por defecto: [${tiposArray.join(', ')}]`);
+        }
+        
+        console.log(`DEBUG - Tipos finales para la búsqueda: [${tiposArray.join(', ')}]`);
+        
+        const resultados = await storage.buscarUbicacionesConCoordenadas(buscar.toString(), tiposArray);
         return res.json(resultados);
       }
       
@@ -243,6 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ubicaciones = await storage.getAllUbicaciones();
       res.json(ubicaciones);
     } catch (error) {
+      console.error("Error en búsqueda de ubicaciones:", error);
       res.status(500).json({ message: "Error al obtener ubicaciones" });
     }
   });
