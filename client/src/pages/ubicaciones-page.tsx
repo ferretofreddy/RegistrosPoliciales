@@ -27,6 +27,18 @@ export default function UbicacionesPage() {
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
 
+  // Para manejar la búsqueda automática después de escribir
+  useEffect(() => {
+    // Configurar un temporizador para evitar demasiadas solicitudes durante la escritura
+    if (searchTerm.trim().length >= 3) {
+      const searchTimer = setTimeout(() => {
+        refetch();
+      }, 500); // Esperar 500ms después de que el usuario deje de escribir
+      
+      return () => clearTimeout(searchTimer);
+    }
+  }, [searchTerm, selectedTypes, refetch]);
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["/api/ubicaciones", searchTerm, selectedTypes],
     queryFn: async () => {
@@ -40,7 +52,7 @@ export default function UbicacionesPage() {
       }
       return await response.json();
     },
-    enabled: false,
+    enabled: false, // Desactivamos la búsqueda automática y la manejamos con nuestro efecto
   });
 
   // Efecto para realizar búsqueda automática cuando cambia el término o los tipos seleccionados
@@ -240,6 +252,16 @@ export default function UbicacionesPage() {
               }; margin-bottom: 5px;">
                 ${title}
               </div>
+              <div style="font-size: 12px; color: #4b5563; margin-bottom: 5px;">
+                ${
+                  tipo === 'persona' && entidad.identificacion ? 
+                    `<span style="font-weight: 500;">Cédula:</span> ${entidad.identificacion}` : 
+                  tipo === 'vehiculo' && entidad.placa ? 
+                    `<span style="font-weight: 500;">Placa:</span> ${entidad.placa}` :
+                  tipo === 'inmueble' && entidad.identificacion ? 
+                    `<span style="font-weight: 500;">Identificación:</span> ${entidad.identificacion}` : ''
+                }
+              </div>
               <div>
                 <span style="font-weight: 500;">Tipo:</span> ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}
               </div>
@@ -323,6 +345,16 @@ export default function UbicacionesPage() {
                 </div>
               </div>
               
+              <div className="mt-3 bg-blue-50 p-3 rounded-md border border-blue-200 mb-3">
+                <p className="text-sm text-blue-700 mb-2 font-medium">Ayuda para la búsqueda:</p>
+                <ul className="text-xs text-blue-600 list-disc pl-4 space-y-1">
+                  <li>Para buscar personas, ingrese su nombre o número de identificación completo (ej: "Juan Pérez" o "404440444")</li>
+                  <li>Para buscar vehículos, ingrese la placa completa o parcial (ej: "ABC123" o "ABC")</li>
+                  <li>Para buscar inmuebles, ingrese la dirección o propietario (ej: "Calle 10" o "Oficina central")</li>
+                  <li>La búsqueda relacionará automáticamente las entidades vinculadas que tengan ubicaciones</li>
+                </ul>
+              </div>
+            
               <div className="mt-3 bg-gray-50 p-3 rounded-md border border-gray-200">
                 <p className="text-sm text-gray-600 mb-2 font-medium">Filtrar por tipo de entidad:</p>
                 <div className="flex flex-wrap gap-4">
