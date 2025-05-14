@@ -145,33 +145,58 @@ export const insertUbicacionSchema = createInsertSchema(ubicaciones).pick({
 
 // Relaciones muchos a muchos
 export const personasVehiculos = pgTable("personas_vehiculos", {
+  id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
 });
 
 export const personasInmuebles = pgTable("personas_inmuebles", {
+  id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
 });
 
 export const personasUbicaciones = pgTable("personas_ubicaciones", {
+  id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
 });
 
 export const vehiculosInmuebles = pgTable("vehiculos_inmuebles", {
+  id: serial("id").primaryKey(),
   vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
   inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
 });
 
 export const vehiculosUbicaciones = pgTable("vehiculos_ubicaciones", {
+  id: serial("id").primaryKey(),
   vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
   ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
 });
 
 export const inmueblesUbicaciones = pgTable("inmuebles_ubicaciones", {
+  id: serial("id").primaryKey(),
   inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
   ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+});
+
+// Relaciones adicionales entre entidades del mismo tipo
+export const personasPersonas = pgTable("personas_personas", {
+  id: serial("id").primaryKey(),
+  personaId1: integer("persona_id_1").notNull().references(() => personas.id),
+  personaId2: integer("persona_id_2").notNull().references(() => personas.id),
+});
+
+export const vehiculosVehiculos = pgTable("vehiculos_vehiculos", {
+  id: serial("id").primaryKey(),
+  vehiculoId1: integer("vehiculo_id_1").notNull().references(() => vehiculos.id),
+  vehiculoId2: integer("vehiculo_id_2").notNull().references(() => vehiculos.id),
+});
+
+export const inmueblesInmuebles = pgTable("inmuebles_inmuebles", {
+  id: serial("id").primaryKey(),
+  inmuebleId1: integer("inmueble_id_1").notNull().references(() => inmuebles.id),
+  inmuebleId2: integer("inmueble_id_2").notNull().references(() => inmuebles.id),
 });
 
 // Types
