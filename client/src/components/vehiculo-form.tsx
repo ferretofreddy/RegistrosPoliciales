@@ -144,9 +144,9 @@ export default function VehiculoForm() {
         relacionVehiculos.forEach(async (vehiculo) => {
           try {
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "vehiculo",
+              tipo1: "vehiculos",
               id1: data.id,
-              tipo2: "vehiculo",
+              tipo2: "vehiculos",
               id2: vehiculo.id
             });
           } catch (error) {
@@ -160,9 +160,9 @@ export default function VehiculoForm() {
         relacionInmuebles.forEach(async (inmueble) => {
           try {
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "vehiculo",
+              tipo1: "vehiculos",
               id1: data.id,
-              tipo2: "inmueble",
+              tipo2: "inmuebles",
               id2: inmueble.id
             });
           } catch (error) {
