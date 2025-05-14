@@ -347,12 +347,12 @@ export class DatabaseStorage implements IStorage {
       // Normalize tipo
       const t = tipo.replace(/s$/, ''); // remove trailing 's' if present
       
-      // Buscamos relaciones bidireccionales independientemente del tipo
-      // Para cada consulta, primero buscamos relaciones directas y luego inversas
+      // Vamos a buscar todas las relaciones relevantes para cada tipo de entidad
+      // independientemente del tipo que sea la entidad principal
       
-      // 1. RELACIONES DE PERSONAS
+      // 1. BUSCAR RELACIONES CON PERSONAS
       if (t === 'persona') {
-        // Obtener vehículos relacionados con esta persona (directa)
+        // Estamos viendo una persona, buscar vehículos relacionados
         const vehiculosRelacionados = await db
           .select({
             vehiculo: vehiculos
@@ -363,7 +363,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
         
-        // Obtener inmuebles relacionados con esta persona (directa)
+        // Buscar inmuebles relacionados
         const inmueblesRelacionados = await db
           .select({
             inmueble: inmuebles
@@ -374,7 +374,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
         
-        // Obtener ubicaciones relacionadas con esta persona (directa)
+        // Buscar ubicaciones relacionadas
         const ubicacionesRelacionadas = await db
           .select({
             ubicacion: ubicaciones
@@ -385,7 +385,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
       } else if (t === 'vehiculo') {
-        // Obtener personas relacionadas con este vehículo
+        // 1. Obtener personas relacionadas con este vehículo
         const personasRelacionadas = await db
           .select({
             persona: personas
@@ -396,7 +396,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.personas = personasRelacionadas.map(r => r.persona);
         
-        // Obtener inmuebles relacionados con este vehículo
+        // 2. Obtener inmuebles relacionados con este vehículo
         const inmueblesRelacionados = await db
           .select({
             inmueble: inmuebles
@@ -407,7 +407,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
         
-        // Obtener ubicaciones relacionadas con este vehículo
+        // 3. Obtener ubicaciones relacionadas con este vehículo
         const ubicacionesRelacionadas = await db
           .select({
             ubicacion: ubicaciones
@@ -418,7 +418,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
       } else if (t === 'inmueble') {
-        // Obtener personas relacionadas con este inmueble
+        // 1. Obtener personas relacionadas con este inmueble
         const personasRelacionadas = await db
           .select({
             persona: personas
@@ -429,7 +429,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.personas = personasRelacionadas.map(r => r.persona);
         
-        // Obtener vehículos relacionados con este inmueble
+        // 2. Obtener vehículos relacionados con este inmueble
         const vehiculosRelacionados = await db
           .select({
             vehiculo: vehiculos
@@ -440,7 +440,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
         
-        // Obtener ubicaciones relacionadas con este inmueble
+        // 3. Obtener ubicaciones relacionadas con este inmueble
         const ubicacionesRelacionadas = await db
           .select({
             ubicacion: ubicaciones
@@ -451,7 +451,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
       } else if (t === 'ubicacion') {
-        // Obtener personas relacionadas con esta ubicación
+        // 1. Obtener personas relacionadas con esta ubicación
         const personasRelacionadas = await db
           .select({
             persona: personas
@@ -462,7 +462,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.personas = personasRelacionadas.map(r => r.persona);
         
-        // Obtener vehículos relacionados con esta ubicación
+        // 2. Obtener vehículos relacionados con esta ubicación
         const vehiculosRelacionados = await db
           .select({
             vehiculo: vehiculos
@@ -473,7 +473,7 @@ export class DatabaseStorage implements IStorage {
         
         resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
         
-        // Obtener inmuebles relacionados con esta ubicación
+        // 3. Obtener inmuebles relacionados con esta ubicación
         const inmueblesRelacionados = await db
           .select({
             inmueble: inmuebles
