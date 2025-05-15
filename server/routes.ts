@@ -20,7 +20,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       status: "ok",
       environment: process.env.NODE_ENV || "development",
       timestamp: new Date().toISOString(),
-      uptime: process.uptime()
+      uptime: process.uptime(),
+      server: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        memory: process.memoryUsage(),
+      }
+    });
+  });
+  
+  // Ruta especial para verificar la conectividad y los encabezados
+  app.get("/api/connection-test", (req, res) => {
+    const clientIp = req.ip || 
+      req.connection.remoteAddress || 
+      req.socket.remoteAddress || 
+      req.headers['x-forwarded-for'];
+    
+    const forwardedProtocol = req.get('x-forwarded-proto') || 'none';
+    const isSecure = req.secure || forwardedProtocol === 'https';
+    
+    res.json({
+      success: true,
+      message: "Conectividad con el servidor establecida correctamente",
+      timestamp: new Date().toISOString(),
+      clientInfo: {
+        ip: clientIp,
+        userAgent: req.get('user-agent'),
+        acceptEncoding: req.get('accept-encoding'),
+        acceptLanguage: req.get('accept-language'),
+      },
+      connectionInfo: {
+        isSecure,
+        protocol: req.protocol,
+        forwardedProtocol,
+        host: req.get('host'),
+        originalUrl: req.originalUrl,
+      },
+      headers: req.headers
     });
   });
 

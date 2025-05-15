@@ -28,19 +28,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware para la seguridad en producción
-// Redireccionar a HTTPS en producción
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    // Verificar si la conexión es segura
-    if (!req.secure && req.get('x-forwarded-proto') !== 'https') {
-      // Si estamos en producción y no es una conexión segura, redireccionamos a HTTPS
-      log(`Redirigiendo petición insegura a HTTPS: ${req.method} ${req.url}`);
-      return res.redirect('https://' + req.get('host') + req.url);
-    }
-    next();
-  });
-}
+// Middleware para la seguridad
+// Redireccionar a HTTPS cuando sea necesario
+app.use((req, res, next) => {
+  // Verificar si la conexión es segura
+  // En producción, siempre redirigir a HTTPS
+  // En desarrollo, comprobar si la petición viene de un proxy y podría necesitar HTTPS
+  const shouldRedirect = process.env.NODE_ENV === 'production' 
+    ? (!req.secure && req.get('x-forwarded-proto') !== 'https')
+    : (req.get('x-forwarded-proto') === 'http'); // Solo en desarrollo, si detectamos explícitamente HTTP
+  
+  if (shouldRedirect) {
+    const hostWithoutPort = req.get('host')?.split(':')[0] || req.get('host') || 'localhost';
+    const targetHost = process.env.NODE_ENV === 'production' 
+      ? hostWithoutPort
+      : `${hostWithoutPort}:${process.env.PORT || 5000}`;
+    
+    log(`Redirigiendo petición insegura a HTTPS: ${req.method} ${req.url}`);
+    return res.redirect(`https://${targetHost}${req.url}`);
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -133,6 +141,8 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = process.env.PORT || 5000;
+  server.setTimeout(120000); // Aumentar el timeout a 2 minutos (120,000 ms)
+  
   server.listen({
     port: Number(port),
     host: "0.0.0.0",
@@ -140,6 +150,7 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    log(`Server timeout set to ${server.timeout}ms`);
   });
   
   // Iniciar servidor de ubicaciones independiente en un puerto diferente
