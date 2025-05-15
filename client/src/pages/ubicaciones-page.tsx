@@ -133,6 +133,10 @@ export default function UbicacionesPage() {
   useEffect(() => {
     if (!map || !data) return;
     
+    console.log("Actualizando marcadores con datos:", data);
+    console.log("ubicacionesDirectas:", data.ubicacionesDirectas?.length || 0);
+    console.log("ubicacionesRelacionadas:", data.ubicacionesRelacionadas?.length || 0);
+    
     // Limpiar marcadores anteriores
     markers.forEach(marker => marker.remove());
     
@@ -185,8 +189,11 @@ export default function UbicacionesPage() {
     
     // 1. Ubicaciones directas encontradas
     if (data.ubicacionesDirectas && data.ubicacionesDirectas.length > 0) {
-      data.ubicacionesDirectas.forEach((ubicacion: any) => {
+      console.log("Procesando ubicaciones directas:", data.ubicacionesDirectas);
+      data.ubicacionesDirectas.forEach((ubicacion: any, index: number) => {
+        console.log(`Ubicación directa ${index}:`, ubicacion);
         if (ubicacion.latitud && ubicacion.longitud) {
+          console.log(`Agregando marcador en [${ubicacion.latitud}, ${ubicacion.longitud}]`);
           const marker = leaflet.marker([ubicacion.latitud, ubicacion.longitud], { 
             icon: createIcon('ubicacion')
           })
@@ -207,16 +214,23 @@ export default function UbicacionesPage() {
           
           newMarkers.push(marker);
           bounds.extend([ubicacion.latitud, ubicacion.longitud]);
+          console.log(`Marcador agregado y bounds extendido a: ${bounds.toString()}`);
+        } else {
+          console.warn(`Ubicación directa ${index} sin coordenadas válidas:`, ubicacion);
         }
       });
     }
     
     // 2. Ubicaciones relacionadas con entidades encontradas
     if (data.ubicacionesRelacionadas && data.ubicacionesRelacionadas.length > 0) {
-      data.ubicacionesRelacionadas.forEach((relacion: any) => {
+      console.log("Procesando ubicaciones relacionadas:", data.ubicacionesRelacionadas);
+      data.ubicacionesRelacionadas.forEach((relacion: any, index: number) => {
+        console.log(`Ubicación relacionada ${index}:`, relacion);
         if (relacion.ubicacion && relacion.ubicacion.latitud && relacion.ubicacion.longitud) {
           const entidad = relacion.entidadRelacionada.entidad;
           const tipo = relacion.entidadRelacionada.tipo;
+          
+          console.log(`Agregando marcador en [${relacion.ubicacion.latitud}, ${relacion.ubicacion.longitud}] para ${tipo}`);
           
           let title = '';
           if (tipo === 'persona') {
@@ -268,16 +282,23 @@ export default function UbicacionesPage() {
           
           newMarkers.push(marker);
           bounds.extend([relacion.ubicacion.latitud, relacion.ubicacion.longitud]);
+          console.log(`Marcador agregado y bounds extendido a: ${bounds.toString()}`);
+        } else {
+          console.warn(`Ubicación relacionada ${index} sin coordenadas válidas:`, relacion);
         }
       });
     }
     
     // Si se encontraron ubicaciones, ajustar el mapa para mostrarlas todas
     if (newMarkers.length > 0) {
+      console.log(`Ajustando mapa a los límites: ${bounds.toString()} con ${newMarkers.length} marcadores`);
       map.fitBounds(bounds, { padding: [50, 50] });
+    } else {
+      console.warn("No se encontraron marcadores para mostrar en el mapa");
     }
     
     setMarkers(newMarkers);
+    console.log("Marcadores actualizados:", newMarkers.length);
   }, [data, map]);
 
   const handleSearch = () => {
