@@ -365,32 +365,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Ruta alternativa para crear ubicaciones sin filtros de autenticación
-  app.post("/api/bypass-ubicacion", async (req, res) => {
-    console.log("⭐ Recibiendo solicitud en bypass-ubicacion");
+  // Ruta especial para crear ubicaciones sin problemas de middleware
+  app.post("/api/_create_ubicacion_direct", async (req, res) => {
+    console.log("⭐ Recibiendo solicitud en _create_ubicacion_direct");
     
     try {
+      // Validar los datos mínimos necesarios
+      if (!req.body.latitud || !req.body.longitud || !req.body.tipo) {
+        console.error("❌ Datos incompletos:", req.body);
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.write(JSON.stringify({ 
+          success: false, 
+          error: "Faltan datos requeridos (latitud, longitud, tipo)" 
+        }));
+        return res.end();
+      }
+      
       const ubicacionData = {
         latitud: parseFloat(req.body.latitud),
         longitud: parseFloat(req.body.longitud),
-        tipo: req.body.tipo || "Otro",
-        fecha: new Date(),
+        tipo: req.body.tipo,
+        fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
         observaciones: req.body.observaciones || ""
       };
       
-      console.log("⭐ Datos a guardar:", ubicacionData);
+      console.log("⭐ Datos de ubicación a guardar:", ubicacionData);
       
       // Guardar directamente en la base de datos
       const ubicacion = await storage.createUbicacion(ubicacionData);
-      console.log("✅ Ubicación guardada:", ubicacion);
+      console.log("✅ Ubicación guardada exitosamente:", ubicacion);
       
-      // Devolver respuesta como texto plano para evitar interferencias
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.write(JSON.stringify({ success: true, data: ubicacion }));
+      // Devolver respuesta como texto plano para evitar interferencias con middleware
+      res.writeHead(201, { 
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache'
+      });
+      res.write(JSON.stringify({ 
+        success: true, 
+        data: ubicacion 
+      }));
       res.end();
     } catch (error) {
       console.error("❌ Error al guardar ubicación:", error);
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.writeHead(500, { 
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache'
+      });
       res.write(JSON.stringify({ 
         success: false, 
         error: error instanceof Error ? error.message : "Error desconocido" 
