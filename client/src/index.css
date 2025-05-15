@@ -96,9 +96,41 @@
 
 /* Estilo personalizado para el marcador de ubicación */
 .leaflet-div-icon {
-  background: #3b82f6;
+  background: transparent;
   border: none;
+}
+
+/* Estilos para los marcadores de pin estilo Google Maps */
+.map-pin {
+  width: 24px;
+  height: 34px;
+  position: relative;
+  display: inline-block;
+}
+
+.map-pin:before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  background-color: currentColor;
+  border-radius: 50% 50% 50% 0;
+  position: absolute;
+  transform: rotate(-45deg);
+  top: 0;
+  left: 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  border: 2px solid white;
+}
+
+.pin-inner {
+  width: 12px;
+  height: 12px;
+  background-color: white;
   border-radius: 50%;
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
 }
 
 /* Mejoras responsivas */

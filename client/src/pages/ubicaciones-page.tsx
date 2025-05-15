@@ -144,43 +144,57 @@ export default function UbicacionesPage() {
     const bounds = window.L.latLngBounds();
     const leaflet = window.L;
     
-    // Función para crear un icono personalizado según el tipo de entidad
-    const createIcon = (tipo: string) => {
-      const iconColor = tipo === 'persona' ? '#ef4444' : 
-                        tipo === 'vehiculo' ? '#3b82f6' : 
-                        tipo === 'inmueble' ? '#10b981' : '#6366f1';
+    // Función para crear un icono personalizado según el tipo de entidad y la descripción
+    const createIcon = (tipo: string, descripcion?: string) => {
+      // Determinar el color basado en el tipo de entidad
+      const getIconColor = () => {
+        if (tipo === 'persona') return '#ef4444';  // Rojo
+        if (tipo === 'vehiculo') return '#3b82f6'; // Azul
+        if (tipo === 'inmueble') return '#10b981'; // Verde
+        return '#6366f1'; // Indigo (por defecto para ubicaciones)
+      };
       
-      const iconHtml = tipo === 'persona' ? '<i class="fas fa-user"></i>' : 
-                       tipo === 'vehiculo' ? '<i class="fas fa-car"></i>' : 
-                       tipo === 'inmueble' ? '<i class="fas fa-home"></i>' : 
-                       '<i class="fas fa-map-marker-alt"></i>';
+      // Determinar el ícono basado en el tipo y la descripción
+      const getIconHtml = () => {
+        // Si es una ubicación con descripción
+        if (descripcion) {
+          // Verificar si es domicilio
+          if (descripcion.toLowerCase().includes('domicilio')) {
+            return '<i class="fa fa-user"></i>';
+          }
+          // Verificar si es inmueble
+          else if (descripcion.toLowerCase().includes('inmueble') || 
+                   descripcion.toLowerCase().includes('casa') || 
+                   descripcion.toLowerCase().includes('propiedad')) {
+            return '<i class="fa fa-home"></i>';
+          }
+        }
+        
+        // Por tipo de entidad
+        if (tipo === 'persona') return '<i class="fa fa-user"></i>';
+        if (tipo === 'vehiculo') return '<i class="fa fa-car"></i>';
+        if (tipo === 'inmueble') return '<i class="fa fa-home"></i>';
+        
+        // Para ubicaciones generales (pin estilo Google)
+        return `<div class="map-pin" style="color: ${getIconColor()};"><div class="pin-inner"></div></div>`;
+      };
       
-      // Estilo mejorado con sombra y animación al añadirse
+      const iconHtml = getIconHtml();
+      const iconColor = getIconColor();
+      
+      // Pin de ubicación tipo Google
+      if (tipo === 'ubicacion' && !descripcion?.toLowerCase().includes('domicilio') && !descripcion?.toLowerCase().includes('inmueble')) {
+        return leaflet.divIcon({
+          html: iconHtml,
+          className: '',
+          iconSize: [24, 34],
+          iconAnchor: [12, 34] // El pin se ancla en la parte inferior central
+        });
+      }
+      
+      // Para el resto de íconos (circulares)
       return leaflet.divIcon({
-        html: `
-          <div style="
-            background-color: ${iconColor}; 
-            color: white; 
-            border-radius: 50%; 
-            width: 30px; 
-            height: 30px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            border: 2px solid white;
-            font-size: 14px;
-            animation: markerPulse 0.5s ease-out;
-          ">
-            ${iconHtml}
-          </div>
-          <style>
-            @keyframes markerPulse {
-              0% { transform: scale(0); opacity: 0; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-          </style>
-        `,
+        html: `<div style="background-color: ${iconColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white; font-size: 14px;">${iconHtml}</div>`,
         className: '',
         iconSize: [30, 30],
         iconAnchor: [15, 15] // Centrar el icono en la ubicación exacta
@@ -195,7 +209,7 @@ export default function UbicacionesPage() {
         if (ubicacion.latitud && ubicacion.longitud) {
           console.log(`Agregando marcador en [${ubicacion.latitud}, ${ubicacion.longitud}]`);
           const marker = leaflet.marker([ubicacion.latitud, ubicacion.longitud], { 
-            icon: createIcon('ubicacion')
+            icon: createIcon('ubicacion', ubicacion.tipo || ubicacion.observaciones)
           })
           .addTo(map)
           .bindPopup(`
@@ -242,7 +256,7 @@ export default function UbicacionesPage() {
           }
           
           const marker = leaflet.marker([relacion.ubicacion.latitud, relacion.ubicacion.longitud], { 
-            icon: createIcon(tipo)
+            icon: createIcon(tipo, relacion.ubicacion.tipo || relacion.ubicacion.observaciones)
           })
           .addTo(map)
           .bindPopup(`
