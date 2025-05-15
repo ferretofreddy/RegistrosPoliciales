@@ -233,8 +233,25 @@ export class DatabaseStorage {
   // Crear relación entre entidades
   async crearRelacion(tipo1: string, id1: number, tipo2: string, id2: number): Promise<any> {
     try {
+      // Normalizar tipos (convertir plural a singular para consistencia lógica)
+      let tipo1Normalizado = tipo1.toLowerCase();
+      let tipo2Normalizado = tipo2.toLowerCase();
+      
+      // Convertir a singular si está en plural
+      if (tipo1Normalizado === "personas") tipo1Normalizado = "persona";
+      if (tipo1Normalizado === "vehiculos") tipo1Normalizado = "vehiculo";
+      if (tipo1Normalizado === "inmuebles") tipo1Normalizado = "inmueble";
+      if (tipo1Normalizado === "ubicaciones") tipo1Normalizado = "ubicacion";
+      
+      if (tipo2Normalizado === "personas") tipo2Normalizado = "persona";
+      if (tipo2Normalizado === "vehiculos") tipo2Normalizado = "vehiculo";
+      if (tipo2Normalizado === "inmuebles") tipo2Normalizado = "inmueble";
+      if (tipo2Normalizado === "ubicaciones") tipo2Normalizado = "ubicacion";
+      
+      console.log(`Creando relación normalizada: ${tipo1Normalizado}(${id1}) -> ${tipo2Normalizado}(${id2})`);
+      
       // Persona-Vehículo
-      if (tipo1 === 'persona' && tipo2 === 'vehiculo') {
+      if (tipo1Normalizado === 'persona' && tipo2Normalizado === 'vehiculo') {
         await db.insert(personasVehiculos).values({
           personaId: id1,
           vehiculoId: id2
@@ -242,7 +259,7 @@ export class DatabaseStorage {
         return { success: true };
       }
       
-      if (tipo1 === 'vehiculo' && tipo2 === 'persona') {
+      if (tipo1Normalizado === 'vehiculo' && tipo2Normalizado === 'persona') {
         await db.insert(personasVehiculos).values({
           personaId: id2,
           vehiculoId: id1
@@ -251,7 +268,7 @@ export class DatabaseStorage {
       }
       
       // Persona-Inmueble
-      if (tipo1 === 'persona' && tipo2 === 'inmueble') {
+      if (tipo1Normalizado === 'persona' && tipo2Normalizado === 'inmueble') {
         await db.insert(personasInmuebles).values({
           personaId: id1,
           inmuebleId: id2
@@ -259,7 +276,7 @@ export class DatabaseStorage {
         return { success: true };
       }
       
-      if (tipo1 === 'inmueble' && tipo2 === 'persona') {
+      if (tipo1Normalizado === 'inmueble' && tipo2Normalizado === 'persona') {
         await db.insert(personasInmuebles).values({
           personaId: id2,
           inmuebleId: id1
@@ -268,7 +285,7 @@ export class DatabaseStorage {
       }
       
       // Persona-Ubicación
-      if (tipo1 === 'persona' && tipo2 === 'ubicacion') {
+      if (tipo1Normalizado === 'persona' && tipo2Normalizado === 'ubicacion') {
         await db.insert(personasUbicaciones).values({
           personaId: id1,
           ubicacionId: id2
@@ -276,7 +293,7 @@ export class DatabaseStorage {
         return { success: true };
       }
       
-      if (tipo1 === 'ubicacion' && tipo2 === 'persona') {
+      if (tipo1Normalizado === 'ubicacion' && tipo2Normalizado === 'persona') {
         await db.insert(personasUbicaciones).values({
           personaId: id2,
           ubicacionId: id1
@@ -285,7 +302,7 @@ export class DatabaseStorage {
       }
       
       // Vehículo-Inmueble
-      if (tipo1 === 'vehiculo' && tipo2 === 'inmueble') {
+      if (tipo1Normalizado === 'vehiculo' && tipo2Normalizado === 'inmueble') {
         await db.insert(vehiculosInmuebles).values({
           vehiculoId: id1,
           inmuebleId: id2
@@ -293,7 +310,7 @@ export class DatabaseStorage {
         return { success: true };
       }
       
-      if (tipo1 === 'inmueble' && tipo2 === 'vehiculo') {
+      if (tipo1Normalizado === 'inmueble' && tipo2Normalizado === 'vehiculo') {
         await db.insert(vehiculosInmuebles).values({
           vehiculoId: id2,
           inmuebleId: id1
@@ -302,7 +319,7 @@ export class DatabaseStorage {
       }
       
       // Vehículo-Ubicación
-      if (tipo1 === 'vehiculo' && tipo2 === 'ubicacion') {
+      if (tipo1Normalizado === 'vehiculo' && tipo2Normalizado === 'ubicacion') {
         await db.insert(vehiculosUbicaciones).values({
           vehiculoId: id1,
           ubicacionId: id2
@@ -310,7 +327,7 @@ export class DatabaseStorage {
         return { success: true };
       }
       
-      if (tipo1 === 'ubicacion' && tipo2 === 'vehiculo') {
+      if (tipo1Normalizado === 'ubicacion' && tipo2Normalizado === 'vehiculo') {
         await db.insert(vehiculosUbicaciones).values({
           vehiculoId: id2,
           ubicacionId: id1
@@ -319,7 +336,7 @@ export class DatabaseStorage {
       }
       
       // Inmueble-Ubicación
-      if (tipo1 === 'inmueble' && tipo2 === 'ubicacion') {
+      if (tipo1Normalizado === 'inmueble' && tipo2Normalizado === 'ubicacion') {
         await db.insert(inmueblesUbicaciones).values({
           inmuebleId: id1,
           ubicacionId: id2
@@ -327,7 +344,7 @@ export class DatabaseStorage {
         return { success: true };
       }
       
-      if (tipo1 === 'ubicacion' && tipo2 === 'inmueble') {
+      if (tipo1Normalizado === 'ubicacion' && tipo2Normalizado === 'inmueble') {
         await db.insert(inmueblesUbicaciones).values({
           inmuebleId: id2,
           ubicacionId: id1
@@ -336,7 +353,7 @@ export class DatabaseStorage {
       }
       
       // Persona-Persona
-      if (tipo1 === 'persona' && tipo2 === 'persona') {
+      if (tipo1Normalizado === 'persona' && tipo2Normalizado === 'persona') {
         await db.insert(personasPersonas).values({
           personaId1: id1,
           personaId2: id2
@@ -345,7 +362,7 @@ export class DatabaseStorage {
       }
       
       // Vehículo-Vehículo
-      if (tipo1 === 'vehiculo' && tipo2 === 'vehiculo') {
+      if (tipo1Normalizado === 'vehiculo' && tipo2Normalizado === 'vehiculo') {
         await db.insert(vehiculosVehiculos).values({
           vehiculoId1: id1,
           vehiculoId2: id2
@@ -354,7 +371,7 @@ export class DatabaseStorage {
       }
       
       // Inmueble-Inmueble
-      if (tipo1 === 'inmueble' && tipo2 === 'inmueble') {
+      if (tipo1Normalizado === 'inmueble' && tipo2Normalizado === 'inmueble') {
         await db.insert(inmueblesInmuebles).values({
           inmuebleId1: id1,
           inmuebleId2: id2
