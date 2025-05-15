@@ -666,10 +666,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obtener todos los tipos de inmuebles (incluyendo activos e inactivos)
   app.get("/api/tipos-inmuebles-admin", requireAdmin, async (req, res) => {
     try {
-      const tiposInmuebles = await storage.getAllTiposInmuebles();
+      console.log("GET /api/tipos-inmuebles-admin: Obteniendo todos los tipos de inmuebles");
+      // Usamos una consulta directa de la BD con Drizzle
+      const tipos = await db.select().from(tiposInmuebles)
+        .orderBy(tiposInmuebles.nombre);
+      console.log("GET /api/tipos-inmuebles-admin: Tipos encontrados:", tipos.length);
       res.json(tiposInmuebles);
     } catch (error) {
-      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+      console.error("GET /api/tipos-inmuebles-admin Error:", error);
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles", error: String(error) });
     }
   });
   
