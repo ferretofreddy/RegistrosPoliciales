@@ -51,11 +51,7 @@ export default function EstructurasPage() {
     relacionesRefetch();
   };
 
-  const exportToPdf = () => {
-    // Implementación para exportar a PDF utilizando jsPDF o html-to-pdf
-    console.log("Exportando a PDF...");
-    alert("La exportación a PDF se implementará próximamente");
-  };
+  // Función de exportación a PDF eliminada
 
   return (
     <MainLayout>
@@ -281,11 +277,7 @@ export default function EstructurasPage() {
                   </div>
                 )}
                 
-                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
-                  <Button onClick={exportToPdf}>
-                    <FileText className="mr-2 h-4 w-4" /> Exportar a PDF
-                  </Button>
-                </div>
+                {/* Botón de exportación a PDF eliminado */}
               </div>
             )}
             

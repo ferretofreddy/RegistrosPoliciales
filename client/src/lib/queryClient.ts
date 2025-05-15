@@ -15,15 +15,20 @@ export async function apiRequest(
   // Asegurarnos de que la URL sea relativa y compatible con HTTPS
   const fullUrl = url.startsWith('http') ? url : url;
   
-  const res = await fetch(fullUrl, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
+  try {
+    const res = await fetch(fullUrl, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+    
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    console.error(`Error de red en solicitud ${method} a ${fullUrl}:`, error);
+    throw new Error(`Error de conexión: La solicitud al servidor falló. Por favor, verifica tu conexión a internet y vuelve a intentarlo.`);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -36,16 +41,21 @@ export const getQueryFn: <T>(options: {
     const url = queryKey[0] as string;
     const fullUrl = url.startsWith('http') ? url : url;
     
-    const res = await fetch(fullUrl, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(fullUrl, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error) {
+      console.error(`Error de red en solicitud GET a ${fullUrl}:`, error);
+      throw new Error(`Error de conexión: La solicitud al servidor falló. Por favor, verifica tu conexión a internet y vuelve a intentarlo.`);
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

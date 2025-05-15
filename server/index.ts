@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import fs from 'fs';
+import path from 'path';
 
 // Importar el servidor de ubicación independiente
 import { ubicacionServer } from './ubicacion-handler';
@@ -76,8 +78,10 @@ app.use((req, res, next) => {
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    const timestamp = new Date().toISOString();
     
-    console.error("Error en la aplicación:", {
+    // Log detallado del error
+    const errorDetails = {
       status,
       message,
       stack: err.stack,
@@ -85,14 +89,31 @@ app.use((req, res, next) => {
       method: _req.method,
       headers: _req.headers,
       query: _req.query,
-      body: _req.body
-    });
+      body: _req.body,
+      timestamp
+    };
+    
+    console.error("Error en la aplicación:", errorDetails);
+    
+    // Si estamos en producción, guardar errores a un archivo para diagnóstico
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        const logDir = path.join(__dirname, 'production-logs');
+        if (!fs.existsSync(logDir)) {
+          fs.mkdirSync(logDir, { recursive: true });
+        }
+        const logFile = path.join(logDir, `error-${new Date().toISOString().replace(/:/g, '-')}.json`);
+        fs.writeFileSync(logFile, JSON.stringify(errorDetails, null, 2));
+      } catch (logError) {
+        console.error("Error al guardar log de error:", logError);
+      }
+    }
 
     // Solo enviar información básica de error al cliente por seguridad
     res.status(status).json({ 
       message, 
       status,
-      timestamp: new Date().toISOString()
+      timestamp
     });
     
     // No lanzar el error para evitar que la aplicación se detenga
