@@ -20,20 +20,18 @@ interface PdfExportProps {
 export default function PdfExport({ data }: PdfExportProps) {
   const { toast } = useToast();
   
-  const generatePdf = () => {
-    // Este archivo está obsoleto, use pdf-export-new.tsx en su lugar
-    console.warn("PDF Export: Usando versión obsoleta");
+  const notifyFeatureRemoved = () => {
     toast({
-      title: "Función no disponible",
-      description: "La exportación a PDF no está disponible en este momento.",
+      title: "Función eliminada",
+      description: "La funcionalidad de exportación a PDF ha sido eliminada del sistema.",
       variant: "destructive",
     });
   };
 
   return (
-    <Button onClick={generatePdf} variant="secondary">
+    <Button onClick={notifyFeatureRemoved} variant="outline" disabled>
       <FileText className="mr-2 h-4 w-4" />
-      Exportar a PDF
+      Exportar a PDF (Deshabilitado)
     </Button>
   );
 }
