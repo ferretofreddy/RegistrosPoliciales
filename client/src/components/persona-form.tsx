@@ -137,12 +137,17 @@ export default function PersonaForm() {
               const ubicacion = await ubicacionRes.json();
               
               // Crear relación entre persona y ubicación
-              await apiRequest("POST", `/api/relaciones`, {
-                tipo1: "personas",
-                id1: persona.id,
-                tipo2: "ubicaciones",
-                id2: ubicacion.id
-              });
+              try {
+                console.log(`Creando relación persona ${persona.id} - ubicación ${ubicacion.id}`);
+                await apiRequest("POST", `/api/relaciones`, {
+                  tipo1: "persona",
+                  id1: persona.id,
+                  tipo2: "ubicacion",
+                  id2: ubicacion.id
+                });
+              } catch (error) {
+                console.error(`Error al crear relación con ubicación ${ubicacion.id}:`, error);
+              }
               
               console.log(`Ubicación creada para domicilio: ${domicilio.direccion} (${domicilio.latitud}, ${domicilio.longitud})`);
             } catch (error) {
@@ -164,36 +169,51 @@ export default function PersonaForm() {
       // Si hay vehículos relacionados, creamos las relaciones
       if (relacionVehiculos.length > 0) {
         for (const vehiculo of relacionVehiculos) {
-          await apiRequest("POST", `/api/relaciones`, {
-            tipo1: "personas",
-            id1: persona.id,
-            tipo2: "vehiculos",
-            id2: vehiculo.id
-          });
+          try {
+            console.log(`Creando relación persona ${persona.id} - vehículo ${vehiculo.id}`);
+            await apiRequest("POST", `/api/relaciones`, {
+              tipo1: "persona",
+              id1: persona.id,
+              tipo2: "vehiculo",
+              id2: vehiculo.id
+            });
+          } catch (error) {
+            console.error(`Error al crear relación con vehículo ${vehiculo.id}:`, error);
+          }
         }
       }
       
       // Si hay inmuebles relacionados, creamos las relaciones
       if (relacionInmuebles.length > 0) {
         for (const inmueble of relacionInmuebles) {
-          await apiRequest("POST", `/api/relaciones`, {
-            tipo1: "personas",
-            id1: persona.id,
-            tipo2: "inmuebles",
-            id2: inmueble.id
-          });
+          try {
+            console.log(`Creando relación persona ${persona.id} - inmueble ${inmueble.id}`);
+            await apiRequest("POST", `/api/relaciones`, {
+              tipo1: "persona",
+              id1: persona.id,
+              tipo2: "inmueble",
+              id2: inmueble.id
+            });
+          } catch (error) {
+            console.error(`Error al crear relación con inmueble ${inmueble.id}:`, error);
+          }
         }
       }
       
       // Si hay personas relacionadas, creamos las relaciones
       if (relacionPersonas.length > 0) {
         for (const otraPersona of relacionPersonas) {
-          await apiRequest("POST", `/api/relaciones`, {
-            tipo1: "personas",
-            id1: persona.id,
-            tipo2: "personas",
-            id2: otraPersona.id
-          });
+          try {
+            console.log(`Creando relación persona ${persona.id} - persona ${otraPersona.id}`);
+            await apiRequest("POST", `/api/relaciones`, {
+              tipo1: "persona",
+              id1: persona.id,
+              tipo2: "persona",
+              id2: otraPersona.id
+            });
+          } catch (error) {
+            console.error(`Error al crear relación con persona ${otraPersona.id}:`, error);
+          }
         }
       }
       
