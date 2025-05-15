@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera, MapPin, Map, CalendarClock, AlertCircle } from "lucide-react";
+import { X, Plus, Upload, MapPin, Map, CalendarClock, AlertCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -376,24 +376,7 @@ export default function InmuebleForm() {
     }
   };
 
-  // Función para capturar imágenes con la cámara
-  const capturePhoto = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'camera';
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
-      if (file) {
-        // Aquí se procesaría el archivo capturado
-        toast({
-          title: "Foto capturada",
-          description: `Imagen "${file.name}" ha sido capturada`,
-        });
-      }
-    };
-    input.click();
-  };
+  // Función para capturar imágenes eliminada
 
   return (
     <Form {...form}>
