@@ -752,6 +752,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rutas de administración para tipos de inmuebles
+  app.get("/api/admin/tipos-inmuebles", requireRole(["admin"]), async (req, res) => {
+    try {
+      const tiposInmuebles = await storage.getAllTiposInmuebles();
+      res.json(tiposInmuebles);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+    }
+  });
+
+  app.get("/api/admin/tipos-inmuebles/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const tipoInmueble = await storage.getTipoInmueble(parseInt(req.params.id));
+      if (!tipoInmueble) {
+        return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+      }
+      res.json(tipoInmueble);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipo de inmueble" });
+    }
+  });
+
+  app.post("/api/admin/tipos-inmuebles", requireRole(["admin"]), async (req, res) => {
+    try {
+      const tipoInmuebleData = insertTipoInmuebleSchema.parse(req.body);
+      const tipoInmueble = await storage.createTipoInmueble(tipoInmuebleData);
+      res.status(201).json(tipoInmueble);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear tipo de inmueble" });
+    }
+  });
+
+  app.put("/api/admin/tipos-inmuebles/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tipoInmuebleData = insertTipoInmuebleSchema.partial().parse(req.body);
+      const tipoInmueble = await storage.updateTipoInmueble(id, tipoInmuebleData);
+      
+      if (!tipoInmueble) {
+        return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+      }
+      
+      res.json(tipoInmueble);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al actualizar tipo de inmueble" });
+    }
+  });
+
+  app.delete("/api/admin/tipos-inmuebles/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deleteTipoInmueble(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Tipo de inmueble no encontrado o no se pudo eliminar" });
+      }
+      
+      res.json({ message: "Tipo de inmueble eliminado correctamente" });
+    } catch (error) {
+      res.status(500).json({ message: "Error al eliminar tipo de inmueble" });
+    }
+  });
+
+  // Rutas de administración para tipos de ubicaciones
+  app.get("/api/admin/tipos-ubicaciones", requireRole(["admin"]), async (req, res) => {
+    try {
+      const tiposUbicaciones = await storage.getAllTiposUbicaciones();
+      res.json(tiposUbicaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+    }
+  });
+
+  app.get("/api/admin/tipos-ubicaciones/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const tipoUbicacion = await storage.getTipoUbicacion(parseInt(req.params.id));
+      if (!tipoUbicacion) {
+        return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+      }
+      res.json(tipoUbicacion);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipo de ubicación" });
+    }
+  });
+
+  app.post("/api/admin/tipos-ubicaciones", requireRole(["admin"]), async (req, res) => {
+    try {
+      const tipoUbicacionData = insertTipoUbicacionSchema.parse(req.body);
+      const tipoUbicacion = await storage.createTipoUbicacion(tipoUbicacionData);
+      res.status(201).json(tipoUbicacion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear tipo de ubicación" });
+    }
+  });
+
+  app.put("/api/admin/tipos-ubicaciones/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tipoUbicacionData = insertTipoUbicacionSchema.partial().parse(req.body);
+      const tipoUbicacion = await storage.updateTipoUbicacion(id, tipoUbicacionData);
+      
+      if (!tipoUbicacion) {
+        return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+      }
+      
+      res.json(tipoUbicacion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al actualizar tipo de ubicación" });
+    }
+  });
+
+  app.delete("/api/admin/tipos-ubicaciones/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deleteTipoUbicacion(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Tipo de ubicación no encontrado o no se pudo eliminar" });
+      }
+      
+      res.json({ message: "Tipo de ubicación eliminado correctamente" });
+    } catch (error) {
+      res.status(500).json({ message: "Error al eliminar tipo de ubicación" });
+    }
+  });
+
+  // Rutas para obtener tipos de inmuebles y ubicaciones (accesibles por todos los roles)
+  app.get("/api/tipos-inmuebles", async (req, res) => {
+    try {
+      const tiposInmuebles = await storage.getAllTiposInmuebles();
+      res.json(tiposInmuebles);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+    }
+  });
+
+  app.get("/api/tipos-ubicaciones", async (req, res) => {
+    try {
+      const tiposUbicaciones = await storage.getAllTiposUbicaciones();
+      res.json(tiposUbicaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
