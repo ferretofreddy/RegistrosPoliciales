@@ -420,12 +420,10 @@ export default function DetalleDialog({
     queryFn: async () => {
       if (!dato) return null;
       
-      // Convertir tipo a formato requerido por el backend (plural)
-      let tipoNormalizado = tipo;
-      if (tipo === "persona") tipoNormalizado = "personas";
-      if (tipo === "vehiculo") tipoNormalizado = "vehiculos";
-      if (tipo === "inmueble") tipoNormalizado = "inmuebles";
-      if (tipo === "ubicacion") tipoNormalizado = "ubicaciones";
+      // No necesitamos convertir el tipo a plural aquí ya que la API
+      // se encarga de la normalización. Mantenemos el tipo singular
+      // para la URL como está definido en la interfaz DetalleDialogProps
+      const tipoNormalizado = tipo;
       
       console.log(`[DEBUG] Obteniendo relaciones para ${tipo} con ID ${dato.id} (normalizado: ${tipoNormalizado})`);
       

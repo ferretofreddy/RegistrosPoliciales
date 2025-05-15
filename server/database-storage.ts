@@ -903,6 +903,54 @@ export class DatabaseStorage {
                 });
               }
             }
+            
+            // NIVEL 3: Buscar personas relacionadas con este inmueble que a su vez está relacionado con el vehículo
+            console.log(`Buscando personas relacionadas al inmueble ID: ${inmuebleRelacionado.id} (del vehículo ID: ${vehiculo.id})`);
+            const personasInmuebleResult = await db.execute(
+              sql`SELECT p.* FROM personas p
+                  JOIN personas_inmuebles pi ON p.id = pi.persona_id
+                  WHERE pi.inmueble_id = ${inmuebleRelacionado.id}`
+            );
+            
+            const personasInmueble = personasInmuebleResult.rows || [];
+            console.log(`Personas relacionadas al inmueble ID ${inmuebleRelacionado.id}: ${personasInmueble.length}`);
+            
+            // Para cada persona relacionada, buscar ubicaciones
+            for (const personaInmueble of personasInmueble) {
+              console.log(`Buscando ubicaciones para persona ${personaInmueble.id} relacionada con inmueble ${inmuebleRelacionado.id}`);
+              
+              const ubicacionesPersonaResult = await db.execute(
+                sql`SELECT u.* FROM ubicaciones u
+                    JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                    WHERE pu.persona_id = ${personaInmueble.id}
+                    AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+              );
+              
+              const ubicacionesPersona = ubicacionesPersonaResult.rows || [];
+              console.log(`Ubicaciones encontradas para persona ${personaInmueble.id}: ${ubicacionesPersona.length}`);
+              
+              // Agregar cada ubicación al resultado con la cadena de relaciones
+              for (const ubicacion of ubicacionesPersona) {
+                if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                  ubicacionesEncontradas.add(ubicacion.id);
+                  resultado.ubicacionesRelacionadas.push({
+                    ubicacion: ubicacion,
+                    entidadRelacionada: {
+                      tipo: 'persona',
+                      entidad: personaInmueble,
+                      relacionadoCon: {
+                        tipo: 'inmueble',
+                        entidad: inmuebleRelacionado,
+                        relacionadoCon: {
+                          tipo: 'vehiculo',
+                          entidad: vehiculo
+                        }
+                      }
+                    }
+                  });
+                }
+              }
+            }
           }
         }
       }
