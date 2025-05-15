@@ -755,8 +755,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("DELETE /api/tipos-inmuebles/:id - Intentando eliminar tipo de inmueble con ID:", req.params.id);
       const id = parseInt(req.params.id);
       
-      // Primero verificamos si existen inmuebles con este tipo
-      const relatedInmuebles = await db.select().from(inmuebles).where(eq(inmuebles.tipo, String(id)));
+      // Primero verificamos si existen inmuebles con este tipo usando ambos campos tipo y tipoId
+      const relatedInmuebles = await db.select().from(inmuebles).where(
+        or(
+          eq(inmuebles.tipo, String(id)),
+          eq(inmuebles.tipoId, id)
+        )
+      );
       console.log("DELETE /api/tipos-inmuebles/:id - Inmuebles relacionados:", relatedInmuebles.length);
       
       if (relatedInmuebles.length > 0) {
@@ -888,8 +893,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("DELETE /api/tipos-ubicaciones/:id - Intentando eliminar tipo de ubicación con ID:", req.params.id);
       const id = parseInt(req.params.id);
       
-      // Primero verificamos si existen ubicaciones con este tipo
-      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipo, String(id)));
+      // Primero verificamos si existen ubicaciones con este tipo usando ambos campos tipo y tipoId
+      const relatedUbicaciones = await db.select().from(ubicaciones).where(
+        or(
+          eq(ubicaciones.tipo, String(id)),
+          eq(ubicaciones.tipoId, id)
+        )
+      );
       console.log("DELETE /api/tipos-ubicaciones/:id - Ubicaciones relacionadas:", relatedUbicaciones.length);
       
       if (relatedUbicaciones.length > 0) {
