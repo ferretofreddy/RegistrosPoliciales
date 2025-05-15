@@ -392,9 +392,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Datos incompletos para la relación" });
       }
       
-      const relacion = await storage.crearRelacion(tipo1, parseInt(id1), tipo2, parseInt(id2));
+      // Normalizar tipos (convertir singular a plural para consistencia con storage)
+      let tipo1Normalizado = tipo1;
+      let tipo2Normalizado = tipo2;
+      
+      // Convertir a plural si está en singular
+      if (tipo1 === "persona") tipo1Normalizado = "personas";
+      if (tipo1 === "vehiculo") tipo1Normalizado = "vehiculos";
+      if (tipo1 === "inmueble") tipo1Normalizado = "inmuebles";
+      if (tipo1 === "ubicacion") tipo1Normalizado = "ubicaciones";
+      
+      if (tipo2 === "persona") tipo2Normalizado = "personas";
+      if (tipo2 === "vehiculo") tipo2Normalizado = "vehiculos";
+      if (tipo2 === "inmueble") tipo2Normalizado = "inmuebles";
+      if (tipo2 === "ubicacion") tipo2Normalizado = "ubicaciones";
+      
+      console.log(`Creando relación: ${tipo1}(${id1}) -> ${tipo2}(${id2})`);
+      console.log(`Tipos normalizados: ${tipo1Normalizado}(${id1}) -> ${tipo2Normalizado}(${id2})`);
+      
+      const relacion = await storage.crearRelacion(tipo1Normalizado, parseInt(id1), tipo2Normalizado, parseInt(id2));
       res.status(201).json(relacion);
     } catch (error) {
+      console.error("Error al crear relación:", error);
       res.status(500).json({ message: "Error al crear relación" });
     }
   });
@@ -402,9 +421,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/relaciones/:tipo/:id", async (req, res) => {
     try {
       const { tipo, id } = req.params;
-      const relaciones = await storage.getRelaciones(tipo, parseInt(id));
+      
+      // Normalizar tipos (convertir singular a plural para consistencia con storage)
+      let tipoNormalizado = tipo;
+      
+      // Convertir a plural si está en singular
+      if (tipo === "persona") tipoNormalizado = "personas";
+      if (tipo === "vehiculo") tipoNormalizado = "vehiculos";
+      if (tipo === "inmueble") tipoNormalizado = "inmuebles";
+      if (tipo === "ubicacion") tipoNormalizado = "ubicaciones";
+      
+      console.log(`Obteniendo relaciones para: ${tipo}(${id}), normalizado a: ${tipoNormalizado}(${id})`);
+      
+      const relaciones = await storage.getRelaciones(tipoNormalizado, parseInt(id));
       res.json(relaciones);
     } catch (error) {
+      console.error("Error al obtener relaciones:", error);
       res.status(500).json({ message: "Error al obtener relaciones" });
     }
   });

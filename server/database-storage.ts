@@ -892,6 +892,68 @@ export class DatabaseStorage {
         }
       }
       
+      // Antes de terminar, busquemos relaciones adicionales para todas las ubicaciones directas
+      console.log("Buscando relaciones para las ubicaciones directas encontradas...");
+      
+      for (const ubicacion of resultado.ubicacionesDirectas) {
+        // Buscar personas relacionadas con esta ubicación
+        const personasRelacionadas = await db
+          .select({
+            persona: personas
+          })
+          .from(personasUbicaciones)
+          .innerJoin(personas, eq(personasUbicaciones.personaId, personas.id))
+          .where(eq(personasUbicaciones.ubicacionId, ubicacion.id));
+          
+        for (const { persona } of personasRelacionadas) {
+          resultado.ubicacionesRelacionadas.push({
+            ubicacion: ubicacion,
+            entidadRelacionada: {
+              tipo: 'persona',
+              entidad: persona
+            }
+          });
+        }
+        
+        // Buscar vehículos relacionados con esta ubicación
+        const vehiculosRelacionados = await db
+          .select({
+            vehiculo: vehiculos
+          })
+          .from(vehiculosUbicaciones)
+          .innerJoin(vehiculos, eq(vehiculosUbicaciones.vehiculoId, vehiculos.id))
+          .where(eq(vehiculosUbicaciones.ubicacionId, ubicacion.id));
+          
+        for (const { vehiculo } of vehiculosRelacionados) {
+          resultado.ubicacionesRelacionadas.push({
+            ubicacion: ubicacion,
+            entidadRelacionada: {
+              tipo: 'vehiculo',
+              entidad: vehiculo
+            }
+          });
+        }
+        
+        // Buscar inmuebles relacionados con esta ubicación
+        const inmueblesRelacionados = await db
+          .select({
+            inmueble: inmuebles
+          })
+          .from(inmueblesUbicaciones)
+          .innerJoin(inmuebles, eq(inmueblesUbicaciones.inmuebleId, inmuebles.id))
+          .where(eq(inmueblesUbicaciones.ubicacionId, ubicacion.id));
+          
+        for (const { inmueble } of inmueblesRelacionados) {
+          resultado.ubicacionesRelacionadas.push({
+            ubicacion: ubicacion,
+            entidadRelacionada: {
+              tipo: 'inmueble',
+              entidad: inmueble
+            }
+          });
+        }
+      }
+      
       // Terminamos aquí y retornamos los resultados
       console.log(`Total de ubicaciones encontradas: ${resultado.ubicacionesDirectas.length + resultado.ubicacionesRelacionadas.length}`);
       console.log(`DEBUG - Resultado final (resumido):`, JSON.stringify({
