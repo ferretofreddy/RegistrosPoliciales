@@ -626,6 +626,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Ruta pública para obtener tipos de inmuebles (accesible para todos los usuarios)
+  app.get("/api/tipos-inmuebles", async (req, res) => {
+    try {
+      const tiposInmuebles = await storage.getAllTiposInmuebles();
+      // Filtrar solo los tipos activos para el uso en formularios
+      const tiposActivos = tiposInmuebles.filter(tipo => tipo.activo);
+      res.json(tiposActivos);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+    }
+  });
+  
+  // Ruta pública para obtener tipos de ubicaciones (accesible para todos los usuarios)
+  app.get("/api/tipos-ubicaciones", async (req, res) => {
+    try {
+      const tiposUbicaciones = await storage.getAllTiposUbicaciones();
+      // Filtrar solo los tipos activos para el uso en formularios
+      const tiposActivos = tiposUbicaciones.filter(tipo => tipo.activo);
+      res.json(tiposActivos);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+    }
+  });
+  
   // Ruta temporal para verificar la autenticación
   app.get("/api/test-auth", (req, res) => {
     if (req.isAuthenticated()) {

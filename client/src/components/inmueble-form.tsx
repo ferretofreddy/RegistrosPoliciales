@@ -81,6 +81,16 @@ export default function InmuebleForm() {
       return res.json();
     }
   });
+  
+  // Obtener lista de tipos de inmuebles dinámicos
+  const { data: tiposInmuebles, isLoading: loadingTipos } = useQuery({
+    queryKey: ['/api/tipos-inmuebles'],
+    queryFn: async () => {
+      const res = await fetch('/api/tipos-inmuebles');
+      if (!res.ok) throw new Error('Error al cargar tipos de inmuebles');
+      return res.json();
+    }
+  });
 
   // Configurar el formulario
   const form = useForm<InmuebleFormValues>({
@@ -401,13 +411,25 @@ export default function InmuebleForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Casa">Casa</SelectItem>
-                    <SelectItem value="Apartamento">Apartamento</SelectItem>
-                    <SelectItem value="Local Comercial">Local Comercial</SelectItem>
-                    <SelectItem value="Bodega">Bodega</SelectItem>
-                    <SelectItem value="Terreno">Terreno</SelectItem>
-                    <SelectItem value="Oficina">Oficina</SelectItem>
-                    <SelectItem value="Otro">Otro</SelectItem>
+                    {loadingTipos ? (
+                      <SelectItem value="Cargando...">Cargando tipos...</SelectItem>
+                    ) : tiposInmuebles && tiposInmuebles.length > 0 ? (
+                      tiposInmuebles.map((tipo: any) => (
+                        <SelectItem key={tipo.id} value={tipo.nombre}>
+                          {tipo.nombre}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Casa">Casa</SelectItem>
+                        <SelectItem value="Apartamento">Apartamento</SelectItem>
+                        <SelectItem value="Local Comercial">Local Comercial</SelectItem>
+                        <SelectItem value="Bodega">Bodega</SelectItem>
+                        <SelectItem value="Terreno">Terreno</SelectItem>
+                        <SelectItem value="Oficina">Oficina</SelectItem>
+                        <SelectItem value="Otro">Otro</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
