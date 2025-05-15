@@ -850,13 +850,38 @@ export class DatabaseStorage {
         }
       }
       
-      // 4. BUSCAR UBICACIONES DIRECTAS (por texto en tipo u observaciones)
-      const ubicacionesResult = await db.execute(
-        sql`SELECT * FROM ubicaciones 
-            WHERE (LOWER(tipo) LIKE LOWER(${searchPattern})
-                  OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern})))
-            AND latitud IS NOT NULL AND longitud IS NOT NULL`
-      );
+      // 4. BÚSQUEDA DIRECTA DE UBICACIONES
+      console.log(`Buscando ubicaciones con ID/tipo/descripción/observaciones: ${queryExacto}`);
+      
+      // Verificar si el término de búsqueda podría ser un ID numérico
+      let idNumerico: number | null = null;
+      if (!isNaN(parseInt(queryExacto))) {
+        idNumerico = parseInt(queryExacto);
+        console.log(`Detectado posible ID numérico para ubicación: ${idNumerico}`);
+      }
+      
+      // Consulta SQL directa para ubicaciones
+      let ubicacionesResult;
+      if (idNumerico !== null) {
+        console.log(`Ejecutando consulta SQL para ubicaciones con id=${idNumerico} O tipo/descripción/observaciones LIKE ${searchPattern}`);
+        ubicacionesResult = await db.execute(
+          sql`SELECT * FROM ubicaciones 
+              WHERE id = ${idNumerico}
+              OR LOWER(tipo) LIKE LOWER(${searchPattern})
+              OR LOWER(descripcion) LIKE LOWER(${searchPattern})
+              OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern}))
+              AND latitud IS NOT NULL AND longitud IS NOT NULL`
+        );
+      } else {
+        console.log(`Ejecutando consulta SQL para ubicaciones con tipo/descripción/observaciones LIKE ${searchPattern}`);
+        ubicacionesResult = await db.execute(
+          sql`SELECT * FROM ubicaciones 
+              WHERE LOWER(tipo) LIKE LOWER(${searchPattern})
+              OR LOWER(descripcion) LIKE LOWER(${searchPattern})
+              OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern}))
+              AND latitud IS NOT NULL AND longitud IS NOT NULL`
+        );
+      }
       
       const ubicacionesDirectas = ubicacionesResult.rows || [];
       console.log(`Ubicaciones directas encontradas: ${ubicacionesDirectas.length}`);
