@@ -761,17 +761,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eq(inmuebles.tipo, String(id))
       );
       
-      // Verificamos relaciones con tipo_id aparte para evitar errores de SQL
+      // Verificamos si existen inmuebles con este tipo usando SQL raw para evitar errores
       try {
-        const result = await db
-          .execute(sql`SELECT * FROM inmuebles WHERE tipo_id = ${id}`);
+        // Usamos SQL raw para evitar problemas de tipo
+        const result = await db.execute(sql`SELECT count(*) as count FROM inmuebles WHERE tipo_id = ${id}`);
+        const count = parseInt(result.rows?.[0]?.count as string || '0', 10);
         
-        const inmueblesByTipoId = result.rows || [];
-        console.log("DELETE /api/tipos-inmuebles/:id - Inmuebles por tipo_id:", inmueblesByTipoId.length);
+        console.log("DELETE /api/tipos-inmuebles/:id - Cantidad de inmuebles con tipo_id:", count);
         
-        // Añadimos los resultados de la consulta adicional, si hay alguno
-        if (inmueblesByTipoId.length > 0) {
-          relatedInmuebles.push(...inmueblesByTipoId);
+        // Si encontramos registros, los agregamos a nuestra cuenta
+        if (count > 0) {
+          console.log("DELETE /api/tipos-inmuebles/:id - Hay inmuebles relacionados por tipo_id");
+          // En vez de agregar registros, simplemente modificamos la longitud del array existente
+          // para indicar que hay relaciones
+          relatedInmuebles.length = relatedInmuebles.length + count;
         }
       } catch (error: any) {
         console.log("Error al verificar inmuebles por tipo_id:", error?.message || "Error desconocido");
@@ -914,17 +917,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eq(ubicaciones.tipo, String(id))
       );
       
-      // Verificamos relaciones con tipo_id aparte para evitar errores de SQL
+      // Verificamos si existen ubicaciones con este tipo usando SQL raw para evitar errores
       try {
-        const result = await db
-          .execute(sql`SELECT * FROM ubicaciones WHERE tipo_id = ${id}`);
+        // Usamos SQL raw para evitar problemas de tipo
+        const result = await db.execute(sql`SELECT count(*) as count FROM ubicaciones WHERE tipo_id = ${id}`);
+        const count = parseInt(result.rows?.[0]?.count as string || '0', 10);
         
-        const ubicacionesByTipoId = result.rows || [];
-        console.log("DELETE /api/tipos-ubicaciones/:id - Ubicaciones por tipo_id:", ubicacionesByTipoId.length);
+        console.log("DELETE /api/tipos-ubicaciones/:id - Cantidad de ubicaciones con tipo_id:", count);
         
-        // Añadimos los resultados de la consulta adicional, si hay alguno
-        if (ubicacionesByTipoId.length > 0) {
-          relatedUbicaciones.push(...ubicacionesByTipoId);
+        // Si encontramos registros, los agregamos a nuestra cuenta
+        if (count > 0) {
+          console.log("DELETE /api/tipos-ubicaciones/:id - Hay ubicaciones relacionadas por tipo_id");
+          // En vez de agregar registros, simplemente modificamos la longitud del array existente
+          // para indicar que hay relaciones
+          relatedUbicaciones.length = relatedUbicaciones.length + count;
         }
       } catch (error: any) {
         console.log("Error al verificar ubicaciones por tipo_id:", error?.message || "Error desconocido");
