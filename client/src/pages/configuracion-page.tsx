@@ -279,7 +279,7 @@ export default function ConfiguracionPage() {
     inmuebleForm.reset({
       nombre: tipo.nombre,
       descripcion: tipo.descripcion || "",
-      activo: tipo.activo ?? true,
+      activo: Boolean(tipo.activo),
     });
   };
 
@@ -289,7 +289,7 @@ export default function ConfiguracionPage() {
     ubicacionForm.reset({
       nombre: tipo.nombre,
       descripcion: tipo.descripcion || "",
-      activo: tipo.activo ?? true,
+      activo: Boolean(tipo.activo),
     });
   };
 
