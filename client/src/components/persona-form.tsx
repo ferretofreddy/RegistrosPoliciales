@@ -19,10 +19,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera, MapPin, CalendarClock, AlertCircle } from "lucide-react";
+import { X, Plus, Upload, Camera, MapPin, CalendarClock, AlertCircle, Map } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
+import LocationMapDialog from "@/components/location-map-dialog";
 
 // Esquema para observaciones
 const observacionSchema = z.object({
@@ -55,6 +56,7 @@ export default function PersonaForm() {
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showNewDomicilio, setShowNewDomicilio] = useState(false);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
+  const [showMapDialog, setShowMapDialog] = useState(false);
 
   // Obtener lista de vehículos disponibles para las relaciones
   const { data: vehiculos } = useQuery({
@@ -351,6 +353,22 @@ export default function PersonaForm() {
     setRelacionPersonas(relacionPersonas.filter(p => p.id !== id));
   };
 
+  // Función para abrir mapa y seleccionar ubicación
+  const openLocationMap = () => {
+    setShowMapDialog(true);
+  };
+
+  // Función para manejar la selección de ubicación en el mapa
+  const handleLocationSelect = (lat: number, lng: number) => {
+    form.setValue("latitud", lat.toString());
+    form.setValue("longitud", lng.toString());
+    
+    toast({
+      title: "Ubicación seleccionada",
+      description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
+    });
+  };
+
   // Función para capturar ubicación actual
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -635,23 +653,37 @@ export default function PersonaForm() {
                     )}
                   />
                 </div>
-                <div className="flex justify-between">
-                  <Button 
-                    type="button" 
-                    variant="default" 
-                    size="sm" 
-                    onClick={getCurrentLocation}
-                    className="text-xs bg-blue-600 hover:bg-blue-700"
-                  >
-                    <MapPin className="h-3 w-3 mr-1" /> Obtener ubicación actual
-                  </Button>
-                  <div className="text-xs text-gray-500 mb-2 ml-1">
-                    (Presiona para obtener coordenadas automáticamente)
+                <div className="flex flex-col space-y-2">
+                  <div className="flex justify-between">
+                    <div className="flex space-x-2">
+                      <Button 
+                        type="button" 
+                        variant="default" 
+                        size="sm" 
+                        onClick={getCurrentLocation}
+                        className="text-xs bg-blue-600 hover:bg-blue-700"
+                      >
+                        <MapPin className="h-3 w-3 mr-1" /> Obtener ubicación actual
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={openLocationMap}
+                        className="text-xs"
+                      >
+                        <Map className="h-3 w-3 mr-1" /> Abrir mapa
+                      </Button>
+                    </div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      (Seleccione un método para obtener coordenadas)
+                    </div>
                   </div>
                   <Button 
                     type="button" 
                     size="sm" 
                     onClick={addDomicilio}
+                    className="w-full"
                   >
                     Guardar domicilio
                   </Button>
@@ -1026,6 +1058,14 @@ export default function PersonaForm() {
           </Button>
         </div>
       </form>
+      
+      {/* Diálogo para seleccionar ubicación en el mapa */}
+      <LocationMapDialog
+        open={showMapDialog}
+        onOpenChange={setShowMapDialog}
+        onSelectLocation={handleLocationSelect}
+        title="Seleccionar ubicación del domicilio"
+      />
     </Form>
   );
 }
