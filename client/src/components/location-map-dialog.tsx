@@ -8,7 +8,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MapPin, ArrowRight, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LocationMapDialogProps {
@@ -30,9 +32,15 @@ export default function LocationMapDialog({
   const defaultLat = initialLocation?.lat || 9.748917;
   const defaultLng = initialLocation?.lng || -83.753428;
   
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(
-    initialLocation || null
-  );
+  // Estado para el formulario
+  const [latInput, setLatInput] = useState<string>(initialLocation?.lat.toString() || defaultLat.toString());
+  const [lngInput, setLngInput] = useState<string>(initialLocation?.lng.toString() || defaultLng.toString());
+  
+  // Estado para la ubicación seleccionada
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number}>({
+    lat: initialLocation?.lat || defaultLat, 
+    lng: initialLocation?.lng || defaultLng
+  });
   
   const { toast } = useToast();
   
@@ -40,37 +48,35 @@ export default function LocationMapDialog({
   useEffect(() => {
     if (initialLocation) {
       setSelectedLocation(initialLocation);
+      setLatInput(initialLocation.lat.toString());
+      setLngInput(initialLocation.lng.toString());
     }
   }, [initialLocation]);
   
   // Construir URL para el iframe de OpenStreetMap
   const getOsmUrl = () => {
-    const zoom = 13;
-    const lat = selectedLocation?.lat || defaultLat;
-    const lng = selectedLocation?.lng || defaultLng;
+    const lat = selectedLocation.lat || defaultLat;
+    const lng = selectedLocation.lng || defaultLng;
     
-    // URL for iframe that allows clicking and shows marker
+    // URL for iframe that shows marker
     return `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.02}%2C${lat-0.02}%2C${lng+0.02}%2C${lat+0.02}&layer=mapnik&marker=${lat}%2C${lng}`;
   };
   
-  // Función para manejar la selección de ubicación desde el iframe
-  const handleMessage = (event: MessageEvent) => {
-    // Validación básica del mensaje (pueden agregar más seguridad si es necesario)
-    if (event.data && event.data.type === "map-click") {
-      const { lat, lng } = event.data;
+  // Actualizar coordenadas al cambiar los inputs
+  const updateCoordinates = () => {
+    const lat = parseFloat(latInput);
+    const lng = parseFloat(lngInput);
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
       setSelectedLocation({ lat, lng });
+    } else {
+      toast({
+        title: "Formato incorrecto",
+        description: "Por favor ingrese números válidos para latitud y longitud",
+        variant: "destructive",
+      });
     }
   };
-  
-  // Agregar y remover el listener de mensaje
-  useEffect(() => {
-    if (open) {
-      window.addEventListener("message", handleMessage);
-      return () => {
-        window.removeEventListener("message", handleMessage);
-      };
-    }
-  }, [open]);
   
   const handleConfirm = () => {
     if (selectedLocation) {
@@ -89,31 +95,41 @@ export default function LocationMapDialog({
     }
   };
   
-  // Para seleccionar una ubicación, el usuario tendrá que usar la URL completa en una pestaña nueva
+  // Para seleccionar una ubicación, el usuario tendrá que usar el mapa completo en una pestaña nueva
   const handleOpenFullMap = () => {
-    const lat = selectedLocation?.lat || defaultLat;
-    const lng = selectedLocation?.lng || defaultLng;
+    const lat = selectedLocation.lat || defaultLat;
+    const lng = selectedLocation.lng || defaultLng;
     window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=15/${lat}/${lng}`, '_blank');
   };
   
-  // Cuando el usuario vuelve después de seleccionar en el mapa externo
-  const handleSelectCoordinates = () => {
-    const latStr = prompt("Ingrese la latitud (ejemplo: 9.748917):", selectedLocation?.lat.toString() || defaultLat.toString());
-    const lngStr = prompt("Ingrese la longitud (ejemplo: -83.753428):", selectedLocation?.lng.toString() || defaultLng.toString());
-    
-    if (latStr && lngStr) {
-      const lat = parseFloat(latStr);
-      const lng = parseFloat(lngStr);
-      
-      if (!isNaN(lat) && !isNaN(lng)) {
-        setSelectedLocation({ lat, lng });
-      } else {
-        toast({
-          title: "Formato incorrecto",
-          description: "Por favor ingrese números válidos para latitud y longitud",
-          variant: "destructive",
-        });
-      }
+  // Obtener ubicación actual del navegador si está disponible
+  const handleGetCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setSelectedLocation({ lat: latitude, lng: longitude });
+          setLatInput(latitude.toString());
+          setLngInput(longitude.toString());
+          toast({
+            title: "Ubicación actual detectada",
+            description: `Latitud: ${latitude.toFixed(6)}, Longitud: ${longitude.toFixed(6)}`,
+          });
+        },
+        (error) => {
+          toast({
+            title: "Error al obtener ubicación",
+            description: `No se pudo obtener la ubicación actual: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+      );
+    } else {
+      toast({
+        title: "Geolocalización no soportada",
+        description: "Su navegador no admite geolocalización",
+        variant: "destructive",
+      });
     }
   };
   
@@ -129,12 +145,12 @@ export default function LocationMapDialog({
             {title}
           </DialogTitle>
           <DialogDescription>
-            Visualiza el mapa e ingresa las coordenadas manualmente o abre el mapa completo.
+            Visualiza el mapa e ingresa las coordenadas manualmente o usa tu ubicación actual.
           </DialogDescription>
         </DialogHeader>
         
-        {/* Vista previa del mapa (no interactiva) */}
-        <div className="w-full h-[400px] rounded-md border border-border my-4 bg-gray-100 overflow-hidden">
+        {/* Vista previa del mapa (con iframe) */}
+        <div className="w-full h-[350px] rounded-md border border-border my-4 bg-gray-100 overflow-hidden">
           <iframe 
             title="OpenStreetMap" 
             width="100%" 
@@ -145,33 +161,58 @@ export default function LocationMapDialog({
           />
         </div>
         
-        {/* Acciones adicionales */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Button variant="outline" onClick={handleOpenFullMap} type="button">
-            <MapPin className="h-4 w-4 mr-2" />
-            Abrir mapa completo
-          </Button>
-          <Button variant="outline" onClick={handleSelectCoordinates} type="button">
-            Ingresar coordenadas manualmente
+        {/* Entrada manual de coordenadas */}
+        <div className="grid grid-cols-2 gap-4 my-4">
+          <div className="space-y-2">
+            <Label htmlFor="latitude">Latitud</Label>
+            <div className="flex gap-2">
+              <Input 
+                id="latitude" 
+                value={latInput} 
+                onChange={(e) => setLatInput(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="longitude">Longitud</Label>
+            <div className="flex gap-2">
+              <Input 
+                id="longitude" 
+                value={lngInput} 
+                onChange={(e) => setLngInput(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Acciones */}
+        <div className="flex flex-wrap gap-2 mb-4 justify-between">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleGetCurrentLocation} type="button">
+              <Navigation className="h-4 w-4 mr-2" />
+              Usar mi ubicación actual
+            </Button>
+            <Button variant="outline" onClick={handleOpenFullMap} type="button">
+              <MapPin className="h-4 w-4 mr-2" />
+              Abrir mapa interactivo
+            </Button>
+          </div>
+          <Button variant="secondary" onClick={updateCoordinates} type="button">
+            <ArrowRight className="h-4 w-4 mr-2" />
+            Actualizar mapa
           </Button>
         </div>
         
-        <div className="mt-2 text-sm text-muted-foreground">
-          {selectedLocation ? (
-            <p>Ubicación seleccionada: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</p>
-          ) : (
-            <p>No se ha seleccionado ninguna ubicación.</p>
-          )}
+        {/* Coordenadas seleccionadas */}
+        <div className="mt-2 text-sm border-t pt-4 border-border">
+          <p><strong>Coordenadas seleccionadas:</strong> {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</p>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button 
-            onClick={handleConfirm}
-            disabled={!selectedLocation}
-          >
+          <Button onClick={handleConfirm}>
             Confirmar ubicación
           </Button>
         </DialogFooter>
