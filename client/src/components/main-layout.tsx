@@ -95,16 +95,28 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     Estructuras
                   </Link>
                   {user?.rol === "admin" && (
-                    <Link
-                      href="/admin"
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        location === "/admin"
-                          ? "bg-primary-900 text-white"
-                          : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                      }`}
-                    >
-                      Administración
-                    </Link>
+                    <>
+                      <Link
+                        href="/admin"
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          location === "/admin"
+                            ? "bg-primary-900 text-white"
+                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                        }`}
+                      >
+                        Administración
+                      </Link>
+                      <Link
+                        href="/configuracion"
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          location === "/configuracion"
+                            ? "bg-primary-900 text-white"
+                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                        }`}
+                      >
+                        Configuración
+                      </Link>
+                    </>
                   )}
                 </div>
               </div>
@@ -205,17 +217,30 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 Estructuras
               </Link>
               {user?.rol === "admin" && (
-                <Link
-                  href="/admin"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location === "/admin"
-                      ? "bg-primary-900 text-white"
-                      : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Administración
-                </Link>
+                <>
+                  <Link
+                    href="/admin"
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      location === "/admin"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Administración
+                  </Link>
+                  <Link
+                    href="/configuracion"
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      location === "/configuracion"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Configuración
+                  </Link>
+                </>
               )}
             </div>
             <div className="pt-4 pb-3 border-t border-primary-800">
