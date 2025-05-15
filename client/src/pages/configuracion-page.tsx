@@ -6,6 +6,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { TipoInmueble, TipoUbicacion } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import MainLayout from "@/components/main-layout";
 import {
   Form,
   FormControl,
@@ -278,7 +279,7 @@ export default function ConfiguracionPage() {
     inmuebleForm.reset({
       nombre: tipo.nombre,
       descripcion: tipo.descripcion || "",
-      activo: tipo.activo === undefined ? true : tipo.activo,
+      activo: tipo.activo ?? true,
     });
   };
 
@@ -288,7 +289,7 @@ export default function ConfiguracionPage() {
     ubicacionForm.reset({
       nombre: tipo.nombre,
       descripcion: tipo.descripcion || "",
-      activo: tipo.activo === undefined ? true : tipo.activo,
+      activo: tipo.activo ?? true,
     });
   };
 
@@ -336,14 +337,16 @@ export default function ConfiguracionPage() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Configuración del Sistema</h1>
-      
-      <Tabs defaultValue="inmuebles" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="inmuebles">Tipos de Inmuebles</TabsTrigger>
-          <TabsTrigger value="ubicaciones">Tipos de Ubicaciones</TabsTrigger>
-        </TabsList>
+    <>
+      <MainLayout>
+        <div className="container mx-auto py-6">
+          <h1 className="text-3xl font-bold mb-6">Configuración del Sistema</h1>
+          
+          <Tabs defaultValue="inmuebles" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="inmuebles">Tipos de Inmuebles</TabsTrigger>
+              <TabsTrigger value="ubicaciones">Tipos de Ubicaciones</TabsTrigger>
+            </TabsList>
         
         {/* Contenido para Tipos de Inmuebles */}
         <TabsContent value="inmuebles">
@@ -679,6 +682,8 @@ export default function ConfiguracionPage() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+        </div>
+      </MainLayout>
+    </>
   );
 }
