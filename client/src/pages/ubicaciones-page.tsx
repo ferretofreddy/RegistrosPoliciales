@@ -215,6 +215,44 @@ export default function UbicacionesPage() {
       data.ubicacionesDirectas.forEach((ubicacion: any, index: number) => {
         console.log(`Ubicación directa ${index}:`, ubicacion);
         if (ubicacion.latitud && ubicacion.longitud) {
+          // Extraer la entidad de la descripción si es posible
+          let entidadDescripcion = '';
+          let entidadTipo = '';
+          
+          // Si la observación menciona a una persona
+          if (ubicacion.observaciones && ubicacion.observaciones.toLowerCase().includes('de ')) {
+            const match = ubicacion.observaciones.match(/de\s+([^:]+):/i);
+            if (match && match[1]) {
+              entidadDescripcion = match[1].trim();
+              entidadTipo = 'PERSONA';
+            }
+          }
+          
+          // Si la observación menciona un vehículo
+          if (ubicacion.observaciones && 
+              (ubicacion.observaciones.toLowerCase().includes('vehículo') || 
+               ubicacion.observaciones.toLowerCase().includes('vehiculo') || 
+               ubicacion.observaciones.toLowerCase().includes('auto'))) {
+            const matchPlaca = ubicacion.observaciones.match(/placa\s+([A-Z0-9]+)/i);
+            if (matchPlaca && matchPlaca[1]) {
+              entidadDescripcion = `Placa ${matchPlaca[1].trim()}`;
+              entidadTipo = 'VEHÍCULO';
+            }
+          }
+          
+          // Si la observación menciona un inmueble
+          if (ubicacion.observaciones && 
+              (ubicacion.observaciones.toLowerCase().includes('inmueble') || 
+               ubicacion.observaciones.toLowerCase().includes('propiedad') || 
+               ubicacion.observaciones.toLowerCase().includes('casa'))) {
+            entidadTipo = 'INMUEBLE';
+            
+            const matchDireccion = ubicacion.observaciones.match(/en\s+([^\.]+)/i);
+            if (matchDireccion && matchDireccion[1]) {
+              entidadDescripcion = matchDireccion[1].trim();
+            }
+          }
+          
           console.log(`Agregando marcador en [${ubicacion.latitud}, ${ubicacion.longitud}]`);
           const marker = leaflet.marker([ubicacion.latitud, ubicacion.longitud], { 
             icon: createIcon('ubicacion', ubicacion.tipo || ubicacion.observaciones)
@@ -222,16 +260,23 @@ export default function UbicacionesPage() {
           .addTo(map)
           .bindPopup(`
             <div class="popup-content">
-              <div style="font-weight: bold; font-size: 14px; color: #6366f1; margin-bottom: 5px;">${ubicacion.tipo}</div>
+              <div style="font-weight: bold; font-size: 14px; color: #6366f1; margin-bottom: 5px;">
+                ${ubicacion.tipo}
+                ${entidadTipo ? `<span style="color: #0d6efd;">[${entidadTipo}]</span>` : ''}
+              </div>
               <div>${ubicacion.observaciones || 'Sin descripción'}</div>
+              ${entidadDescripcion ? 
+                `<div style="margin-top: 5px; font-weight: 500; color: #333;">
+                  Entidad relacionada: ${entidadDescripcion}
+                </div>` : ""}
               <div style="font-size: 11px; color: #666; margin-top: 8px;">
                 Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}
               </div>
             </div>
           `, {
             className: 'custom-popup',
-            maxWidth: 300,
-            minWidth: 200
+            maxWidth: 350,
+            minWidth: 250
           });
           
           newMarkers.push(marker);
