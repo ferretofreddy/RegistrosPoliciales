@@ -120,6 +120,7 @@ export const inmuebles = pgTable("inmuebles", {
 });
 
 export const insertInmuebleSchema = createInsertSchema(inmuebles).pick({
+  tipoId: true,
   tipo: true,
   propietario: true,
   direccion: true,
@@ -141,12 +142,28 @@ export const insertInmuebleObservacionSchema = createInsertSchema(inmueblesObser
   detalle: true,
 });
 
+// Tipos de Ubicaciones
+export const tiposUbicaciones = pgTable("tipos_ubicaciones", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion"),
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTipoUbicacionSchema = createInsertSchema(tiposUbicaciones).pick({
+  nombre: true,
+  descripcion: true,
+  activo: true,
+});
+
 // Ubicaciones
 export const ubicaciones = pgTable("ubicaciones", {
   id: serial("id").primaryKey(),
   latitud: doublePrecision("latitud").notNull(),
   longitud: doublePrecision("longitud").notNull(),
-  tipo: text("tipo").notNull(), // domicilio, avistamiento, etc
+  tipoId: integer("tipo_id").references(() => tiposUbicaciones.id),
+  tipo: text("tipo").notNull(), // domicilio, avistamiento, etc (mantenemos para compatibilidad)
   fecha: timestamp("fecha").notNull().defaultNow(),
   observaciones: text("observaciones"),
 });
@@ -154,6 +171,7 @@ export const ubicaciones = pgTable("ubicaciones", {
 export const insertUbicacionSchema = createInsertSchema(ubicaciones).pick({
   latitud: true,
   longitud: true,
+  tipoId: true,
   tipo: true,
   fecha: true,
   observaciones: true,
@@ -231,11 +249,17 @@ export type InsertVehiculo = z.infer<typeof insertVehiculoSchema>;
 export type VehiculoObservacion = typeof vehiculosObservaciones.$inferSelect;
 export type InsertVehiculoObservacion = z.infer<typeof insertVehiculoObservacionSchema>;
 
+export type TipoInmueble = typeof tiposInmuebles.$inferSelect;
+export type InsertTipoInmueble = z.infer<typeof insertTipoInmuebleSchema>;
+
 export type Inmueble = typeof inmuebles.$inferSelect;
 export type InsertInmueble = z.infer<typeof insertInmuebleSchema>;
 
 export type InmuebleObservacion = typeof inmueblesObservaciones.$inferSelect;
 export type InsertInmuebleObservacion = z.infer<typeof insertInmuebleObservacionSchema>;
+
+export type TipoUbicacion = typeof tiposUbicaciones.$inferSelect;
+export type InsertTipoUbicacion = z.infer<typeof insertTipoUbicacionSchema>;
 
 export type Ubicacion = typeof ubicaciones.$inferSelect;
 export type InsertUbicacion = z.infer<typeof insertUbicacionSchema>;

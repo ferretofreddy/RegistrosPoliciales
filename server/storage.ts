@@ -4,8 +4,10 @@ import {
   personasObservaciones, PersonaObservacion, InsertPersonaObservacion,
   vehiculos, Vehiculo, InsertVehiculo,
   vehiculosObservaciones, VehiculoObservacion, InsertVehiculoObservacion,
+  tiposInmuebles, TipoInmueble, InsertTipoInmueble,
   inmuebles, Inmueble, InsertInmueble,
   inmueblesObservaciones, InmuebleObservacion, InsertInmuebleObservacion,
+  tiposUbicaciones, TipoUbicacion, InsertTipoUbicacion,
   ubicaciones, Ubicacion, InsertUbicacion
 } from "@shared/schema";
 
@@ -33,6 +35,13 @@ export interface IStorage {
   getVehiculoObservaciones(vehiculoId: number): Promise<VehiculoObservacion[]>;
   createVehiculoObservacion(observacion: InsertVehiculoObservacion): Promise<VehiculoObservacion>;
   
+  // Tipos de Inmuebles methods
+  getAllTiposInmuebles(): Promise<TipoInmueble[]>;
+  getTipoInmueble(id: number): Promise<TipoInmueble | undefined>;
+  createTipoInmueble(tipoInmueble: InsertTipoInmueble): Promise<TipoInmueble>;
+  updateTipoInmueble(id: number, tipoInmueble: Partial<InsertTipoInmueble>): Promise<TipoInmueble | undefined>;
+  deleteTipoInmueble(id: number): Promise<boolean>;
+  
   // Inmuebles methods
   getAllInmuebles(): Promise<Inmueble[]>;
   getInmueble(id: number): Promise<Inmueble | undefined>;
@@ -41,6 +50,13 @@ export interface IStorage {
   // Inmuebles observaciones methods
   getInmuebleObservaciones(inmuebleId: number): Promise<InmuebleObservacion[]>;
   createInmuebleObservacion(observacion: InsertInmuebleObservacion): Promise<InmuebleObservacion>;
+  
+  // Tipos de Ubicaciones methods
+  getAllTiposUbicaciones(): Promise<TipoUbicacion[]>;
+  getTipoUbicacion(id: number): Promise<TipoUbicacion | undefined>;
+  createTipoUbicacion(tipoUbicacion: InsertTipoUbicacion): Promise<TipoUbicacion>;
+  updateTipoUbicacion(id: number, tipoUbicacion: Partial<InsertTipoUbicacion>): Promise<TipoUbicacion | undefined>;
+  deleteTipoUbicacion(id: number): Promise<boolean>;
   
   // Ubicaciones methods
   getAllUbicaciones(): Promise<Ubicacion[]>;

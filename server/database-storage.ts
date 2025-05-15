@@ -6,7 +6,8 @@ import {
   inmueblesObservaciones, InsertInmuebleObservacion, InmuebleObservacion,
   personasVehiculos, personasInmuebles, personasUbicaciones, vehiculosInmuebles,
   vehiculosUbicaciones, inmueblesUbicaciones, personasPersonas, vehiculosVehiculos,
-  inmueblesInmuebles, users
+  inmueblesInmuebles, users, tiposInmuebles, TipoInmueble, InsertTipoInmueble,
+  tiposUbicaciones, TipoUbicacion, InsertTipoUbicacion
 } from '@shared/schema';
 import { sql, eq, and, or, like } from 'drizzle-orm';
 import { db } from './db';
