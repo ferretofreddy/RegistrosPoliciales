@@ -9,6 +9,20 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Middleware para la seguridad en producción
+// Redireccionar a HTTPS en producción
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Verificar si la conexión es segura
+    if (!req.secure && req.get('x-forwarded-proto') !== 'https') {
+      // Si estamos en producción y no es una conexión segura, redireccionamos a HTTPS
+      log(`Redirigiendo petición insegura a HTTPS: ${req.method} ${req.url}`);
+      return res.redirect('https://' + req.get('host') + req.url);
+    }
+    next();
+  });
+}
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
