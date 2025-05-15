@@ -36,11 +36,53 @@ export default function LocationMapDialog({
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(initialLocation);
+  const [leafletLoaded, setLeafletLoaded] = useState<boolean>(!!window.L);
   const { toast } = useToast();
+  
+  // Cargar Leaflet si no está ya cargado
+  useEffect(() => {
+    if (!window.L && open) {
+      console.log("Cargando Leaflet dinámicamente...");
+      
+      // Cargar CSS de Leaflet
+      const linkElement = document.createElement("link");
+      linkElement.rel = "stylesheet";
+      linkElement.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(linkElement);
+      
+      // Cargar JS de Leaflet
+      const scriptElement = document.createElement("script");
+      scriptElement.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      scriptElement.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+      scriptElement.crossOrigin = "";
+      document.body.appendChild(scriptElement);
+      
+      // Esperar a que se cargue el script
+      scriptElement.onload = () => {
+        console.log("Leaflet cargado correctamente");
+        setLeafletLoaded(true);
+        // Invalidar tamaño del mapa después de cargarlo
+        if (map) {
+          map.invalidateSize();
+        }
+      };
+    } else if (window.L && !leafletLoaded) {
+      // Si leaflet ya está disponible pero no lo habíamos marcado
+      setLeafletLoaded(true);
+    }
+  }, [open, map, leafletLoaded]);
   
   // Inicializar el mapa
   useEffect(() => {
-    if (!open || !mapRef.current) return;
+    if (!open || !mapRef.current || !leafletLoaded) return;
+    
+    // Si no está disponible Leaflet, salir (aunque leafletLoaded debería garantizar que está cargado)
+    if (!window.L) {
+      console.log("Esperando a que Leaflet se cargue...");
+      return;
+    }
+    
+    console.log("Inicializando mapa con Leaflet cargado...");
     
     // Si ya hay un mapa, limpiarlo
     if (map) {
@@ -54,6 +96,11 @@ export default function LocationMapDialog({
     const leaflet = window.L;
     if (!leaflet) {
       console.error("Leaflet not loaded");
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el mapa. Por favor, recargue la página.",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -130,7 +177,9 @@ export default function LocationMapDialog({
         newMap.remove();
       }
     };
-  }, [open, initialLocation]);
+    
+    // Incluimos leafletLoaded en las dependencias
+  }, [open, initialLocation, leafletLoaded, map]);
   
   const handleConfirm = () => {
     if (selectedLocation) {
