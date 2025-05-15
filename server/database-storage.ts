@@ -382,6 +382,9 @@ export class DatabaseStorage {
       ubicacionesRelacionadas: []
     };
     
+    // Set para evitar duplicados de ubicaciones
+    const ubicacionesEncontradas = new Set<number>();
+    
     try {
       console.log(`********** INICIO DE BÚSQUEDA MEJORADA **********`);
       console.log(`Buscando con: "${query}", exacto: "${queryExacto}", patrón: "${searchPattern}", tipos: ${tipos.join(', ')}`);
@@ -419,13 +422,104 @@ export class DatabaseStorage {
           
           // Agregar cada ubicación al resultado
           for (const ubicacion of ubicacionesPersona) {
-            resultado.ubicacionesRelacionadas.push({
-              ubicacion: ubicacion,
-              entidadRelacionada: {
-                tipo: 'persona',
-                entidad: persona
+            if (!ubicacionesEncontradas.has(ubicacion.id)) {
+              ubicacionesEncontradas.add(ubicacion.id);
+              resultado.ubicacionesRelacionadas.push({
+                ubicacion: ubicacion,
+                entidadRelacionada: {
+                  tipo: 'persona',
+                  entidad: persona
+                }
+              });
+            }
+          }
+          
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Vehículos relacionados a esta persona
+          console.log(`Buscando vehículos relacionados a la persona ID: ${persona.id}`);
+          const vehiculosRelacionadosResult = await db.execute(
+            sql`SELECT v.* FROM vehiculos v
+                JOIN personas_vehiculos pv ON v.id = pv.vehiculo_id
+                WHERE pv.persona_id = ${persona.id}`
+          );
+          
+          const vehiculosRelacionados = vehiculosRelacionadosResult.rows || [];
+          console.log(`Vehículos relacionados a la persona ID ${persona.id}: ${vehiculosRelacionados.length}`);
+          
+          // Para cada vehículo relacionado, buscar ubicaciones
+          for (const vehiculoRelacionado of vehiculosRelacionados) {
+            console.log(`Buscando ubicaciones para vehículo relacionado ID: ${vehiculoRelacionado.id}`);
+            
+            const ubicacionesVehiculoResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
+                  WHERE vu.vehiculo_id = ${vehiculoRelacionado.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesVehiculo = ubicacionesVehiculoResult.rows || [];
+            console.log(`Ubicaciones encontradas para vehículo relacionado ID ${vehiculoRelacionado.id}: ${ubicacionesVehiculo.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesVehiculo) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'vehiculo',
+                    entidad: vehiculoRelacionado,
+                    relacionadoCon: {
+                      tipo: 'persona',
+                      entidad: persona
+                    }
+                  }
+                });
               }
-            });
+            }
+          }
+          
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Inmuebles relacionados a esta persona
+          console.log(`Buscando inmuebles relacionados a la persona ID: ${persona.id}`);
+          const inmueblesRelacionadosResult = await db.execute(
+            sql`SELECT i.* FROM inmuebles i
+                JOIN personas_inmuebles pi ON i.id = pi.inmueble_id
+                WHERE pi.persona_id = ${persona.id}`
+          );
+          
+          const inmueblesRelacionados = inmueblesRelacionadosResult.rows || [];
+          console.log(`Inmuebles relacionados a la persona ID ${persona.id}: ${inmueblesRelacionados.length}`);
+          
+          // Para cada inmueble relacionado, buscar ubicaciones
+          for (const inmuebleRelacionado of inmueblesRelacionados) {
+            console.log(`Buscando ubicaciones para inmueble relacionado ID: ${inmuebleRelacionado.id}`);
+            
+            const ubicacionesInmuebleResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+                  WHERE iu.inmueble_id = ${inmuebleRelacionado.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesInmueble = ubicacionesInmuebleResult.rows || [];
+            console.log(`Ubicaciones encontradas para inmueble relacionado ID ${inmuebleRelacionado.id}: ${ubicacionesInmueble.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesInmueble) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'inmueble',
+                    entidad: inmuebleRelacionado,
+                    relacionadoCon: {
+                      tipo: 'persona',
+                      entidad: persona
+                    }
+                  }
+                });
+              }
+            }
           }
         }
       }
@@ -463,13 +557,104 @@ export class DatabaseStorage {
           
           // Agregar cada ubicación al resultado
           for (const ubicacion of ubicacionesVehiculo) {
-            resultado.ubicacionesRelacionadas.push({
-              ubicacion: ubicacion,
-              entidadRelacionada: {
-                tipo: 'vehiculo',
-                entidad: vehiculo
+            if (!ubicacionesEncontradas.has(ubicacion.id)) {
+              ubicacionesEncontradas.add(ubicacion.id);
+              resultado.ubicacionesRelacionadas.push({
+                ubicacion: ubicacion,
+                entidadRelacionada: {
+                  tipo: 'vehiculo',
+                  entidad: vehiculo
+                }
+              });
+            }
+          }
+          
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Personas relacionadas a este vehículo
+          console.log(`Buscando personas relacionadas al vehículo ID: ${vehiculo.id}`);
+          const personasRelacionadasResult = await db.execute(
+            sql`SELECT p.* FROM personas p
+                JOIN personas_vehiculos pv ON p.id = pv.persona_id
+                WHERE pv.vehiculo_id = ${vehiculo.id}`
+          );
+          
+          const personasRelacionadas = personasRelacionadasResult.rows || [];
+          console.log(`Personas relacionadas al vehículo ID ${vehiculo.id}: ${personasRelacionadas.length}`);
+          
+          // Para cada persona relacionada, buscar ubicaciones
+          for (const personaRelacionada of personasRelacionadas) {
+            console.log(`Buscando ubicaciones para persona relacionada ID: ${personaRelacionada.id}`);
+            
+            const ubicacionesPersonaResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                  WHERE pu.persona_id = ${personaRelacionada.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesPersona = ubicacionesPersonaResult.rows || [];
+            console.log(`Ubicaciones encontradas para persona relacionada ID ${personaRelacionada.id}: ${ubicacionesPersona.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesPersona) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'persona',
+                    entidad: personaRelacionada,
+                    relacionadoCon: {
+                      tipo: 'vehiculo',
+                      entidad: vehiculo
+                    }
+                  }
+                });
               }
-            });
+            }
+          }
+          
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Inmuebles relacionados a este vehículo
+          console.log(`Buscando inmuebles relacionados al vehículo ID: ${vehiculo.id}`);
+          const inmueblesRelacionadosResult = await db.execute(
+            sql`SELECT i.* FROM inmuebles i
+                JOIN vehiculos_inmuebles vi ON i.id = vi.inmueble_id
+                WHERE vi.vehiculo_id = ${vehiculo.id}`
+          );
+          
+          const inmueblesRelacionados = inmueblesRelacionadosResult.rows || [];
+          console.log(`Inmuebles relacionados al vehículo ID ${vehiculo.id}: ${inmueblesRelacionados.length}`);
+          
+          // Para cada inmueble relacionado, buscar ubicaciones
+          for (const inmuebleRelacionado of inmueblesRelacionados) {
+            console.log(`Buscando ubicaciones para inmueble relacionado ID: ${inmuebleRelacionado.id}`);
+            
+            const ubicacionesInmuebleResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+                  WHERE iu.inmueble_id = ${inmuebleRelacionado.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesInmueble = ubicacionesInmuebleResult.rows || [];
+            console.log(`Ubicaciones encontradas para inmueble relacionado ID ${inmuebleRelacionado.id}: ${ubicacionesInmueble.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesInmueble) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'inmueble',
+                    entidad: inmuebleRelacionado,
+                    relacionadoCon: {
+                      tipo: 'vehiculo',
+                      entidad: vehiculo
+                    }
+                  }
+                });
+              }
+            }
           }
         }
       }
@@ -507,13 +692,104 @@ export class DatabaseStorage {
           
           // Agregar cada ubicación al resultado
           for (const ubicacion of ubicacionesInmueble) {
-            resultado.ubicacionesRelacionadas.push({
-              ubicacion: ubicacion,
-              entidadRelacionada: {
-                tipo: 'inmueble',
-                entidad: inmueble
+            if (!ubicacionesEncontradas.has(ubicacion.id)) {
+              ubicacionesEncontradas.add(ubicacion.id);
+              resultado.ubicacionesRelacionadas.push({
+                ubicacion: ubicacion,
+                entidadRelacionada: {
+                  tipo: 'inmueble',
+                  entidad: inmueble
+                }
+              });
+            }
+          }
+          
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Personas relacionadas a este inmueble
+          console.log(`Buscando personas relacionadas al inmueble ID: ${inmueble.id}`);
+          const personasRelacionadasResult = await db.execute(
+            sql`SELECT p.* FROM personas p
+                JOIN personas_inmuebles pi ON p.id = pi.persona_id
+                WHERE pi.inmueble_id = ${inmueble.id}`
+          );
+          
+          const personasRelacionadas = personasRelacionadasResult.rows || [];
+          console.log(`Personas relacionadas al inmueble ID ${inmueble.id}: ${personasRelacionadas.length}`);
+          
+          // Para cada persona relacionada, buscar ubicaciones
+          for (const personaRelacionada of personasRelacionadas) {
+            console.log(`Buscando ubicaciones para persona relacionada ID: ${personaRelacionada.id}`);
+            
+            const ubicacionesPersonaResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                  WHERE pu.persona_id = ${personaRelacionada.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesPersona = ubicacionesPersonaResult.rows || [];
+            console.log(`Ubicaciones encontradas para persona relacionada ID ${personaRelacionada.id}: ${ubicacionesPersona.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesPersona) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'persona',
+                    entidad: personaRelacionada,
+                    relacionadoCon: {
+                      tipo: 'inmueble',
+                      entidad: inmueble
+                    }
+                  }
+                });
               }
-            });
+            }
+          }
+          
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Vehículos relacionados a este inmueble
+          console.log(`Buscando vehículos relacionados al inmueble ID: ${inmueble.id}`);
+          const vehiculosRelacionadosResult = await db.execute(
+            sql`SELECT v.* FROM vehiculos v
+                JOIN vehiculos_inmuebles vi ON v.id = vi.vehiculo_id
+                WHERE vi.inmueble_id = ${inmueble.id}`
+          );
+          
+          const vehiculosRelacionados = vehiculosRelacionadosResult.rows || [];
+          console.log(`Vehículos relacionados al inmueble ID ${inmueble.id}: ${vehiculosRelacionados.length}`);
+          
+          // Para cada vehículo relacionado, buscar ubicaciones
+          for (const vehiculoRelacionado of vehiculosRelacionados) {
+            console.log(`Buscando ubicaciones para vehículo relacionado ID: ${vehiculoRelacionado.id}`);
+            
+            const ubicacionesVehiculoResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
+                  WHERE vu.vehiculo_id = ${vehiculoRelacionado.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesVehiculo = ubicacionesVehiculoResult.rows || [];
+            console.log(`Ubicaciones encontradas para vehículo relacionado ID ${vehiculoRelacionado.id}: ${ubicacionesVehiculo.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesVehiculo) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'vehiculo',
+                    entidad: vehiculoRelacionado,
+                    relacionadoCon: {
+                      tipo: 'inmueble',
+                      entidad: inmueble
+                    }
+                  }
+                });
+              }
+            }
           }
         }
       }
@@ -528,7 +804,14 @@ export class DatabaseStorage {
       
       const ubicacionesDirectas = ubicacionesResult.rows || [];
       console.log(`Ubicaciones directas encontradas: ${ubicacionesDirectas.length}`);
-      resultado.ubicacionesDirectas = ubicacionesDirectas;
+      
+      // Agregar ubicaciones directas evitando duplicados
+      for (const ubicacion of ubicacionesDirectas) {
+        if (!ubicacionesEncontradas.has(ubicacion.id)) {
+          ubicacionesEncontradas.add(ubicacion.id);
+          resultado.ubicacionesDirectas.push(ubicacion);
+        }
+      }
       
       // Terminamos aquí y retornamos los resultados
       console.log(`Total de ubicaciones encontradas: ${resultado.ubicacionesDirectas.length + resultado.ubicacionesRelacionadas.length}`);
