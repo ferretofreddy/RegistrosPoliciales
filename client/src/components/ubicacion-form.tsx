@@ -80,6 +80,16 @@ export default function UbicacionForm() {
       return res.json();
     }
   });
+  
+  // Obtener lista de tipos de ubicaciones dinámicos
+  const { data: tiposUbicaciones, isLoading: loadingTipos } = useQuery({
+    queryKey: ['/api/tipos-ubicaciones'],
+    queryFn: async () => {
+      const res = await fetch('/api/tipos-ubicaciones');
+      if (!res.ok) throw new Error('Error al cargar tipos de ubicaciones');
+      return res.json();
+    }
+  });
 
   // Configurar el formulario
   const form = useForm<UbicacionFormValues>({
@@ -619,12 +629,24 @@ export default function UbicacionForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Domicilio">Domicilio</SelectItem>
-                  <SelectItem value="Trabajo">Trabajo</SelectItem>
-                  <SelectItem value="Avistamiento">Avistamiento</SelectItem>
-                  <SelectItem value="Lugar Frecuente">Lugar Frecuente</SelectItem>
-                  <SelectItem value="Evento">Evento</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
+                  {loadingTipos ? (
+                    <SelectItem value="Cargando...">Cargando tipos...</SelectItem>
+                  ) : tiposUbicaciones && tiposUbicaciones.length > 0 ? (
+                    tiposUbicaciones.map((tipo: any) => (
+                      <SelectItem key={tipo.id} value={tipo.nombre}>
+                        {tipo.nombre}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="Domicilio">Domicilio</SelectItem>
+                      <SelectItem value="Trabajo">Trabajo</SelectItem>
+                      <SelectItem value="Avistamiento">Avistamiento</SelectItem>
+                      <SelectItem value="Lugar Frecuente">Lugar Frecuente</SelectItem>
+                      <SelectItem value="Evento">Evento</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />
