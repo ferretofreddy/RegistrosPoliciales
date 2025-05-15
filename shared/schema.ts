@@ -100,7 +100,6 @@ export const tiposInmuebles = pgTable("tipos_inmuebles", {
   nombre: text("nombre").notNull(),
   descripcion: text("descripcion"),
   activo: boolean("activo").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertTipoInmuebleSchema = createInsertSchema(tiposInmuebles).pick({
@@ -148,7 +147,6 @@ export const tiposUbicaciones = pgTable("tipos_ubicaciones", {
   nombre: text("nombre").notNull(),
   descripcion: text("descripcion"),
   activo: boolean("activo").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertTipoUbicacionSchema = createInsertSchema(tiposUbicaciones).pick({
