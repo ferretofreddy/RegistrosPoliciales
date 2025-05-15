@@ -711,28 +711,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Actualizar un tipo de inmueble existente
   app.patch("/api/tipos-inmuebles/:id", requireAdmin, async (req, res) => {
     try {
+      console.log("PATCH /api/tipos-inmuebles/:id - Actualizando tipo de inmueble con ID:", req.params.id);
+      console.log("PATCH /api/tipos-inmuebles/:id - Datos:", req.body);
+      
       const id = parseInt(req.params.id);
-      const tipoInmueble = await storage.updateTipoInmueble(id, req.body);
-      if (!tipoInmueble) {
+      
+      // Validamos los datos
+      const validatedData = insertTipoInmuebleSchema.partial().parse(req.body);
+      console.log("PATCH /api/tipos-inmuebles/:id - Datos validados:", validatedData);
+      
+      // Actualizamos directamente con Drizzle
+      const [tipoActualizado] = await db.update(tiposInmuebles)
+        .set(validatedData)
+        .where(eq(tiposInmuebles.id, id))
+        .returning();
+        
+      if (!tipoActualizado) {
         return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
       }
-      res.json(tipoInmueble);
+      
+      console.log("PATCH /api/tipos-inmuebles/:id - Tipo actualizado:", tipoActualizado);
+      res.json(tipoActualizado);
     } catch (error) {
-      res.status(500).json({ message: "Error al actualizar tipo de inmueble" });
+      console.error("PATCH /api/tipos-inmuebles/:id Error:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Datos inválidos para el tipo de inmueble", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Error al actualizar tipo de inmueble",
+        error: String(error)
+      });
     }
   });
   
   // Eliminar un tipo de inmueble
   app.delete("/api/tipos-inmuebles/:id", requireAdmin, async (req, res) => {
     try {
+      console.log("DELETE /api/tipos-inmuebles/:id - Intentando eliminar tipo de inmueble con ID:", req.params.id);
       const id = parseInt(req.params.id);
-      const result = await storage.deleteTipoInmueble(id);
-      if (!result) {
-        return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+      
+      // Primero verificamos si existen inmuebles con este tipo
+      const relatedInmuebles = await db.select().from(inmuebles).where(eq(inmuebles.tipoId, id));
+      console.log("DELETE /api/tipos-inmuebles/:id - Inmuebles relacionados:", relatedInmuebles.length);
+      
+      if (relatedInmuebles.length > 0) {
+        // Si hay inmuebles usando este tipo, solo marcamos como inactivo
+        console.log("DELETE /api/tipos-inmuebles/:id - Marcando como inactivo por tener inmuebles relacionados");
+        const [tipoActualizado] = await db.update(tiposInmuebles)
+          .set({ activo: false })
+          .where(eq(tiposInmuebles.id, id))
+          .returning();
+          
+        if (!tipoActualizado) {
+          return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+        }
+        
+        return res.json({ success: true, message: "Tipo de inmueble marcado como inactivo" });
+      } else {
+        // Si no hay inmuebles relacionados, eliminamos físicamente
+        console.log("DELETE /api/tipos-inmuebles/:id - Eliminando físicamente el tipo");
+        const [eliminado] = await db.delete(tiposInmuebles)
+          .where(eq(tiposInmuebles.id, id))
+          .returning();
+          
+        if (!eliminado) {
+          return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+        }
+        
+        return res.json({ success: true, message: "Tipo de inmueble eliminado correctamente" });
       }
-      res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Error al eliminar tipo de inmueble" });
+      console.error("DELETE /api/tipos-inmuebles/:id Error:", error);
+      res.status(500).json({ 
+        message: "Error al eliminar tipo de inmueble",
+        error: String(error)
+      });
     }
   });
   
@@ -786,28 +844,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Actualizar un tipo de ubicación existente
   app.patch("/api/tipos-ubicaciones/:id", requireAdmin, async (req, res) => {
     try {
+      console.log("PATCH /api/tipos-ubicaciones/:id - Actualizando tipo de ubicación con ID:", req.params.id);
+      console.log("PATCH /api/tipos-ubicaciones/:id - Datos:", req.body);
+      
       const id = parseInt(req.params.id);
-      const tipoUbicacion = await storage.updateTipoUbicacion(id, req.body);
-      if (!tipoUbicacion) {
+      
+      // Validamos los datos
+      const validatedData = insertTipoUbicacionSchema.partial().parse(req.body);
+      console.log("PATCH /api/tipos-ubicaciones/:id - Datos validados:", validatedData);
+      
+      // Actualizamos directamente con Drizzle
+      const [tipoActualizado] = await db.update(tiposUbicaciones)
+        .set(validatedData)
+        .where(eq(tiposUbicaciones.id, id))
+        .returning();
+        
+      if (!tipoActualizado) {
         return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
       }
-      res.json(tipoUbicacion);
+      
+      console.log("PATCH /api/tipos-ubicaciones/:id - Tipo actualizado:", tipoActualizado);
+      res.json(tipoActualizado);
     } catch (error) {
-      res.status(500).json({ message: "Error al actualizar tipo de ubicación" });
+      console.error("PATCH /api/tipos-ubicaciones/:id Error:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Datos inválidos para el tipo de ubicación", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Error al actualizar tipo de ubicación",
+        error: String(error)
+      });
     }
   });
   
   // Eliminar un tipo de ubicación
   app.delete("/api/tipos-ubicaciones/:id", requireAdmin, async (req, res) => {
     try {
+      console.log("DELETE /api/tipos-ubicaciones/:id - Intentando eliminar tipo de ubicación con ID:", req.params.id);
       const id = parseInt(req.params.id);
-      const result = await storage.deleteTipoUbicacion(id);
-      if (!result) {
-        return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+      
+      // Primero verificamos si existen ubicaciones con este tipo
+      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipoId, id));
+      console.log("DELETE /api/tipos-ubicaciones/:id - Ubicaciones relacionadas:", relatedUbicaciones.length);
+      
+      if (relatedUbicaciones.length > 0) {
+        // Si hay ubicaciones usando este tipo, solo marcamos como inactivo
+        console.log("DELETE /api/tipos-ubicaciones/:id - Marcando como inactivo por tener ubicaciones relacionadas");
+        const [tipoActualizado] = await db.update(tiposUbicaciones)
+          .set({ activo: false })
+          .where(eq(tiposUbicaciones.id, id))
+          .returning();
+          
+        if (!tipoActualizado) {
+          return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+        }
+        
+        return res.json({ success: true, message: "Tipo de ubicación marcado como inactivo" });
+      } else {
+        // Si no hay ubicaciones relacionadas, eliminamos físicamente
+        console.log("DELETE /api/tipos-ubicaciones/:id - Eliminando físicamente el tipo");
+        const [eliminado] = await db.delete(tiposUbicaciones)
+          .where(eq(tiposUbicaciones.id, id))
+          .returning();
+          
+        if (!eliminado) {
+          return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+        }
+        
+        return res.json({ success: true, message: "Tipo de ubicación eliminado correctamente" });
       }
-      res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Error al eliminar tipo de ubicación" });
+      console.error("DELETE /api/tipos-ubicaciones/:id Error:", error);
+      res.status(500).json({ 
+        message: "Error al eliminar tipo de ubicación",
+        error: String(error)
+      });
     }
   });
   
