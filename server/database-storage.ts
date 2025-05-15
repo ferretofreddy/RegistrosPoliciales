@@ -523,7 +523,7 @@ export class DatabaseStorage {
       }
       
       // 2. BÚSQUEDA DE VEHÍCULOS (Implementemos correctamente todas las búsquedas)
-      if (tipos.includes('vehiculos')) {
+      if (tipos.includes('vehiculo') || tipos.includes('vehiculos')) {
         console.log(`Buscando vehículos con placa/descripción: ${queryExacto}`);
         
         // Consulta SQL directa para vehículos
@@ -658,7 +658,7 @@ export class DatabaseStorage {
       }
       
       // 3. BÚSQUEDA DE INMUEBLES
-      if (tipos.includes('inmuebles')) {
+      if (tipos.includes('inmueble') || tipos.includes('inmuebles')) {
         console.log(`Buscando inmuebles con dirección/descripción: ${queryExacto}`);
         
         // Consulta SQL directa para inmuebles
