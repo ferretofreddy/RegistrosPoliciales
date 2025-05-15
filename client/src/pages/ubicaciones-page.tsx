@@ -263,6 +263,55 @@ export default function UbicacionesPage() {
             title = `${entidad.tipo} - ${entidad.direccion}`;
           }
           
+          // Construir cadena de relaciones para descripción
+          let cadenaRelaciones = `${tipo.toUpperCase()}`;
+          let relAux = relacion.entidadRelacionada;
+          
+          while (relAux && relAux.relacionadoCon) {
+            cadenaRelaciones += ` → ${relAux.relacionadoCon.tipo.toUpperCase()}`;
+            relAux = relAux.relacionadoCon;
+          }
+          
+          console.log(`Agregando marcador en [${relacion.ubicacion.latitud}, ${relacion.ubicacion.longitud}] para ${cadenaRelaciones}`);
+          
+          // Crear descripción detallada de la cadena de relaciones
+          let descripcionRelaciones = '';
+          if (relacion.entidadRelacionada.relacionadoCon) {
+            descripcionRelaciones = '<div style="margin-top: 5px; border-top: 1px solid #eee; padding-top: 5px;">';
+            descripcionRelaciones += '<span style="font-weight: 500;">Cadena de relaciones:</span><br>';
+            
+            let relActual = relacion.entidadRelacionada;
+            let nivel = 1;
+            
+            // Describir la entidad principal
+            descripcionRelaciones += `<div style="margin-left: ${(nivel-1)*10}px;">${nivel}. <b>${relActual.tipo.charAt(0).toUpperCase() + relActual.tipo.slice(1)}</b>: `;
+            if (relActual.tipo === 'persona') {
+              descripcionRelaciones += `${relActual.entidad.nombre}`;
+            } else if (relActual.tipo === 'vehiculo') {
+              descripcionRelaciones += `${relActual.entidad.marca} ${relActual.entidad.modelo || ''} (${relActual.entidad.placa})`;
+            } else if (relActual.tipo === 'inmueble') {
+              descripcionRelaciones += `${relActual.entidad.tipo} - ${relActual.entidad.direccion}`;
+            }
+            descripcionRelaciones += '</div>';
+            
+            // Describir las relaciones anidadas
+            while (relActual.relacionadoCon) {
+              nivel++;
+              relActual = relActual.relacionadoCon;
+              descripcionRelaciones += `<div style="margin-left: ${(nivel-1)*10}px;">${nivel}. <b>${relActual.tipo.charAt(0).toUpperCase() + relActual.tipo.slice(1)}</b>: `;
+              if (relActual.tipo === 'persona') {
+                descripcionRelaciones += `${relActual.entidad.nombre}`;
+              } else if (relActual.tipo === 'vehiculo') {
+                descripcionRelaciones += `${relActual.entidad.marca} ${relActual.entidad.modelo || ''} (${relActual.entidad.placa})`;
+              } else if (relActual.tipo === 'inmueble') {
+                descripcionRelaciones += `${relActual.entidad.tipo} - ${relActual.entidad.direccion}`;
+              }
+              descripcionRelaciones += '</div>';
+            }
+            
+            descripcionRelaciones += '</div>';
+          }
+          
           const marker = leaflet.marker([relacion.ubicacion.latitud, relacion.ubicacion.longitud], { 
             icon: createIcon(tipo, relacion.ubicacion.tipo || relacion.ubicacion.observaciones)
           })
@@ -290,16 +339,18 @@ export default function UbicacionesPage() {
                 <span style="font-weight: 500;">Tipo:</span> ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}
               </div>
               <div>
-                <span style="font-weight: 500;">Ubicación:</span> ${relacion.ubicacion.observaciones || relacion.ubicacion.tipo || 'Sin descripción'}
+                <span style="font-weight: 500;">Ubicación:</span> ${relacion.ubicacion.tipo || relacion.ubicacion.observaciones || 'Sin descripción'} 
+                <br><span style="color: #0d6efd; font-weight: 500;">[${cadenaRelaciones}]</span>
               </div>
+              ${descripcionRelaciones}
               <div style="font-size: 11px; color: #666; margin-top: 8px;">
                 Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}
               </div>
             </div>
           `, {
             className: 'custom-popup',
-            maxWidth: 300,
-            minWidth: 200
+            maxWidth: 400,
+            minWidth: 250
           });
           
           newMarkers.push(marker);
