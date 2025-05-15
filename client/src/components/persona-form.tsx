@@ -819,38 +819,7 @@ export default function PersonaForm() {
           )}
         </div>
         
-        <div>
-          <FormLabel>Fotografías</FormLabel>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-            <div className="space-y-1 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="flex text-sm text-gray-600 justify-center">
-                <label
-                  htmlFor="file-upload"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                >
-                  <span>Subir archivos</span>
-                  <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple />
-                </label>
-                <p className="pl-1">o arrastrar y soltar</p>
-              </div>
-              <div className="flex justify-center mt-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={capturePhoto}
-                  className="text-xs"
-                >
-                  <Camera className="h-3 w-3 mr-1" /> Tomar foto
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500">
-                PNG, JPG, GIF hasta 10MB
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Sección de fotografías eliminada */}
         
         <div>
           <FormLabel>Relaciones con Vehículos</FormLabel>
