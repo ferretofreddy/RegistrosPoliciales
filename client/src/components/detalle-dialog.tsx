@@ -420,16 +420,36 @@ export default function DetalleDialog({
     queryFn: async () => {
       if (!dato) return null;
       console.log(`Obteniendo relaciones para ${tipo} con ID ${dato.id}`);
-      const res = await fetch(`/api/relaciones/${tipo}/${dato.id}`);
-      if (!res.ok) {
-        console.error(`Error al obtener relaciones: ${res.status} ${res.statusText}`);
+      try {
+        // Usando apiRequest en lugar de fetch directo
+        const url = `/api/relaciones/${tipo}/${dato.id}`;
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+          console.error(`Error al obtener relaciones: ${res.status} ${res.statusText}`);
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log(`Relaciones obtenidas:`, data);
+        
+        // Asegurarnos de que todas las propiedades existen
+        const resultado = {
+          personas: Array.isArray(data.personas) ? data.personas : [],
+          vehiculos: Array.isArray(data.vehiculos) ? data.vehiculos : [],
+          inmuebles: Array.isArray(data.inmuebles) ? data.inmuebles : [],
+          ubicaciones: Array.isArray(data.ubicaciones) ? data.ubicaciones : []
+        };
+        
+        return resultado;
+      } catch (error) {
+        console.error("Error al obtener relaciones:", error);
+        // Retornar un objeto vacío pero válido en caso de error
         return {personas: [], vehiculos: [], inmuebles: [], ubicaciones: []};
       }
-      const data = await res.json();
-      console.log(`Relaciones obtenidas:`, data);
-      return data;
     },
-    enabled: !!dato?.id
+    enabled: !!dato?.id,
+    retry: 1 // Intentar una vez más en caso de error
   });
   
   // Verificación adicional de depuración
@@ -475,8 +495,8 @@ export default function DetalleDialog({
             )}
             
             {/* Verificar si hay alguna relación */}
-            {relaciones && !cargandoRelaciones && !errorRelaciones && (
-              (relaciones.personas?.length > 0 || 
+            {relaciones && !cargandoRelaciones && !errorRelaciones && 
+              ((relaciones.personas?.length > 0 || 
                relaciones.vehiculos?.length > 0 || 
                relaciones.inmuebles?.length > 0 || 
                relaciones.ubicaciones?.length > 0) ? (
@@ -560,8 +580,8 @@ export default function DetalleDialog({
                 <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-md">
                   No hay entidades relacionadas con este registro
                 </div>
-              )
-            )}
+              ))
+            }
             
             {/* Mensaje si no hay relaciones cargadas y no hay error ni carga en progreso */}
             {!relaciones && !cargandoRelaciones && !errorRelaciones && (

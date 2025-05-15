@@ -540,6 +540,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { tipo, id } = req.params;
       
+      console.log(`[DEBUG] Recibida solicitud de relaciones para tipo: "${tipo}", id: "${id}"`);
+      
+      // Verificar parámetros
+      if (!tipo || !id) {
+        console.error(`[ERROR] Parámetros incompletos - tipo: "${tipo}", id: "${id}"`);
+        return res.status(400).json({ message: "Tipo e ID son requeridos" });
+      }
+      
       // Normalizar tipos (convertir singular a plural para consistencia con storage)
       let tipoNormalizado = tipo;
       
@@ -549,12 +557,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (tipo === "inmueble") tipoNormalizado = "inmuebles";
       if (tipo === "ubicacion") tipoNormalizado = "ubicaciones";
       
-      console.log(`Obteniendo relaciones para: ${tipo}(${id}), normalizado a: ${tipoNormalizado}(${id})`);
+      console.log(`[DEBUG] Obteniendo relaciones para: ${tipo}(${id}), normalizado a: ${tipoNormalizado}(${id})`);
       
-      const relaciones = await storage.getRelaciones(tipoNormalizado, parseInt(id));
+      const idNumerico = parseInt(id);
+      if (isNaN(idNumerico)) {
+        console.error(`[ERROR] ID inválido: "${id}"`);
+        return res.status(400).json({ message: "ID debe ser un número" });
+      }
+      
+      const relaciones = await storage.getRelaciones(tipoNormalizado, idNumerico);
+      console.log(`[DEBUG] Relaciones obtenidas:`, {
+        tipoEntidad: tipoNormalizado,
+        idEntidad: idNumerico,
+        cantidadPersonas: relaciones.personas?.length || 0,
+        cantidadVehiculos: relaciones.vehiculos?.length || 0,
+        cantidadInmuebles: relaciones.inmuebles?.length || 0,
+        cantidadUbicaciones: relaciones.ubicaciones?.length || 0
+      });
+      
       res.json(relaciones);
     } catch (error) {
-      console.error("Error al obtener relaciones:", error);
+      console.error("[ERROR] Error al obtener relaciones:", error);
       res.status(500).json({ message: "Error al obtener relaciones" });
     }
   });
@@ -661,7 +684,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const relacionesArray = relacionesResult.rows || [];
       
       for (const relacion of relacionesArray) {
-        ubicacionesPromises.push(storage.getUbicacion(relacion.ubicacion_id));
+        // Asegurarse de que ubicacion_id sea un número
+        const ubicacionId = typeof relacion.ubicacion_id === 'number' 
+          ? relacion.ubicacion_id 
+          : parseInt(relacion.ubicacion_id as string);
+        
+        if (!isNaN(ubicacionId)) {
+          ubicacionesPromises.push(storage.getUbicacion(ubicacionId));
+        }
       }
       
       const ubicaciones = await Promise.all(ubicacionesPromises);
