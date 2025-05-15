@@ -132,10 +132,11 @@ export default function InmuebleForm() {
       if (relacionPersonas.length > 0) {
         relacionPersonas.forEach(async (persona) => {
           try {
+            console.log(`Creando relación inmueble ${data.id} - persona ${persona.id}`);
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "inmuebles",
+              tipo1: "inmueble",
               id1: data.id,
-              tipo2: "personas",
+              tipo2: "persona",
               id2: persona.id
             });
           } catch (error) {
@@ -148,10 +149,11 @@ export default function InmuebleForm() {
       if (relacionVehiculos.length > 0) {
         relacionVehiculos.forEach(async (vehiculo) => {
           try {
+            console.log(`Creando relación inmueble ${data.id} - vehículo ${vehiculo.id}`);
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "inmuebles",
+              tipo1: "inmueble",
               id1: data.id,
-              tipo2: "vehiculos",
+              tipo2: "vehiculo",
               id2: vehiculo.id
             });
           } catch (error) {
@@ -164,10 +166,11 @@ export default function InmuebleForm() {
       if (relacionInmuebles.length > 0) {
         relacionInmuebles.forEach(async (inmueble) => {
           try {
+            console.log(`Creando relación inmueble ${data.id} - inmueble ${inmueble.id}`);
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "inmuebles",
+              tipo1: "inmueble",
               id1: data.id,
-              tipo2: "inmuebles",
+              tipo2: "inmueble",
               id2: inmueble.id
             });
           } catch (error) {
