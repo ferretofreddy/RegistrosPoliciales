@@ -1,6 +1,6 @@
 import { db } from '../server/db';
 import { tiposInmuebles, tiposUbicaciones } from '../shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 async function inicializarTipos() {
   console.log('Iniciando la inicialización de tipos...');
@@ -27,6 +27,31 @@ async function inicializarTipos() {
   ];
 
   try {
+    // Crear tablas si no existen
+    console.log('Verificando si existen las tablas necesarias...');
+    
+    // Crear tabla tipos_inmuebles si no existe
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS tipos_inmuebles (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        descripcion TEXT,
+        activo BOOLEAN DEFAULT TRUE
+      )
+    `);
+    console.log('Tabla tipos_inmuebles verificada');
+    
+    // Crear tabla tipos_ubicaciones si no existe
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS tipos_ubicaciones (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        descripcion TEXT,
+        activo BOOLEAN DEFAULT TRUE
+      )
+    `);
+    console.log('Tabla tipos_ubicaciones verificada');
+    
     // Verificar si ya existen tipos de inmuebles
     const tiposInmueblesExistentes = await db.select().from(tiposInmuebles);
     console.log(`Encontrados ${tiposInmueblesExistentes.length} tipos de inmuebles en la base de datos`);
@@ -59,8 +84,8 @@ async function inicializarTipos() {
   } catch (error) {
     console.error('Error durante la inicialización de tipos:', error);
   } finally {
-    // Cerrar la conexión a la base de datos
-    await db.end();
+    // No es necesario cerrar la conexión aquí
+    console.log('Finalizado');
   }
 }
 
