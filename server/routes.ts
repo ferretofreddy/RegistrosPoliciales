@@ -13,6 +13,16 @@ import {
 export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
   setupAuth(app);
+  
+  // Ruta de estado para verificar el servidor
+  app.get("/api/status", (req, res) => {
+    res.json({
+      status: "ok",
+      environment: process.env.NODE_ENV || "development",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  });
 
   // Middleware to check user role
   const requireRole = (roles: string[]) => (req: any, res: any, next: any) => {

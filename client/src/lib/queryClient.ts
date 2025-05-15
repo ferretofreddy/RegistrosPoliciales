@@ -55,10 +55,22 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // No reintentar cuando el error es 401 o 403
+        if (error?.status === 401 || error?.status === 403) {
+          return false;
+        }
+        // Reintentar máximo 3 veces para otros errores
+        return failureCount < 3;
+      },
     },
     mutations: {
-      retry: false,
+      retry: (failureCount, error: any) => {
+        if (error?.status === 401 || error?.status === 403) {
+          return false;
+        }
+        return failureCount < 2;
+      },
     },
   },
 });

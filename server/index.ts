@@ -9,6 +9,23 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Configurar cabeceras CORS para permitir conexiones desde cualquier origen
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  
+  // Permitir solicitudes pre-flight OPTIONS
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 // Middleware para la seguridad en producción
 // Redireccionar a HTTPS en producción
 if (process.env.NODE_ENV === 'production') {
@@ -59,9 +76,27 @@ app.use((req, res, next) => {
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    
+    console.error("Error en la aplicación:", {
+      status,
+      message,
+      stack: err.stack,
+      path: _req.path,
+      method: _req.method,
+      headers: _req.headers,
+      query: _req.query,
+      body: _req.body
+    });
 
-    res.status(status).json({ message });
-    throw err;
+    // Solo enviar información básica de error al cliente por seguridad
+    res.status(status).json({ 
+      message, 
+      status,
+      timestamp: new Date().toISOString()
+    });
+    
+    // No lanzar el error para evitar que la aplicación se detenga
+    // throw err;
   });
 
   // importantly only setup vite in development and after
@@ -76,18 +111,25 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = process.env.PORT || 5000;
   server.listen({
-    port,
+    port: Number(port),
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    log(`NODE_ENV: ${process.env.NODE_ENV}`);
   });
   
   // Iniciar servidor de ubicaciones independiente en un puerto diferente
-  const ubicacionPort = 5001;
-  ubicacionServer.listen(ubicacionPort, "0.0.0.0", () => {
-    log(`Servidor de ubicaciones escuchando en puerto ${ubicacionPort}`);
-  });
+  // En producción, es posible que necesitemos deshabilitar este servidor adicional
+  // ya que algunos entornos no permiten múltiples puertos abiertos
+  if (process.env.NODE_ENV !== 'production') {
+    const ubicacionPort = 5001;
+    ubicacionServer.listen(ubicacionPort, "0.0.0.0", () => {
+      log(`Servidor de ubicaciones escuchando en puerto ${ubicacionPort}`);
+    });
+  } else {
+    log(`Servidor de ubicaciones no iniciado en modo producción`);
+  }
 })();
