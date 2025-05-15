@@ -756,7 +756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       
       // Primero verificamos si existen inmuebles con este tipo
-      const relatedInmuebles = await db.select().from(inmuebles).where(eq(inmuebles.tipoId, id));
+      const relatedInmuebles = await db.select().from(inmuebles).where(eq(inmuebles.tipo, String(id)));
       console.log("DELETE /api/tipos-inmuebles/:id - Inmuebles relacionados:", relatedInmuebles.length);
       
       if (relatedInmuebles.length > 0) {
@@ -889,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       
       // Primero verificamos si existen ubicaciones con este tipo
-      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipoId, id));
+      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipo, String(id)));
       console.log("DELETE /api/tipos-ubicaciones/:id - Ubicaciones relacionadas:", relatedUbicaciones.length);
       
       if (relatedUbicaciones.length > 0) {

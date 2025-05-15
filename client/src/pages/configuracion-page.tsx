@@ -175,18 +175,31 @@ export default function ConfiguracionPage() {
   // Mutación para eliminar un tipo de inmueble
   const deleteTipoInmuebleMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/tipos-inmuebles/${id}`);
-      return res.json();
+      console.log("Eliminando tipo de inmueble con ID:", id);
+      try {
+        const res = await apiRequest("DELETE", `/api/tipos-inmuebles/${id}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Error al eliminar");
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Error en la mutación:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Tipo de inmueble eliminado correctamente:", data);
       toast({
         title: "Éxito",
-        description: "Tipo de inmueble eliminado correctamente",
+        description: data.message || "Tipo de inmueble eliminado correctamente",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles-admin"] });
+      // Forzar la actualización de las listas
+      refetchTiposInmuebles();
       queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error("Error en onError:", error);
       toast({
         title: "Error",
         description: `Error al eliminar tipo de inmueble: ${error.message}`,
@@ -253,18 +266,31 @@ export default function ConfiguracionPage() {
   // Mutación para eliminar un tipo de ubicación
   const deleteTipoUbicacionMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/tipos-ubicaciones/${id}`);
-      return res.json();
+      console.log("Eliminando tipo de ubicación con ID:", id);
+      try {
+        const res = await apiRequest("DELETE", `/api/tipos-ubicaciones/${id}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Error al eliminar");
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Error en la mutación:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Tipo de ubicación eliminado correctamente:", data);
       toast({
         title: "Éxito",
-        description: "Tipo de ubicación eliminado correctamente",
+        description: data.message || "Tipo de ubicación eliminado correctamente",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/tipos-ubicaciones-admin"] });
+      // Forzar la actualización de las listas
+      refetchTiposUbicaciones();
       queryClient.invalidateQueries({ queryKey: ["/api/tipos-ubicaciones"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error("Error en onError:", error);
       toast({
         title: "Error",
         description: `Error al eliminar tipo de ubicación: ${error.message}`,
