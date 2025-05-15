@@ -120,8 +120,11 @@ export default function ConfiguracionPage() {
   // Mutación para crear un nuevo tipo de inmueble
   const createTipoInmuebleMutation = useMutation({
     mutationFn: async (values: TipoInmuebleFormValues) => {
+      console.log("Creando tipo de inmueble con valores:", values);
       const res = await apiRequest("POST", "/api/tipos-inmuebles", values);
-      return res.json();
+      const data = await res.json();
+      console.log("Respuesta al crear tipo de inmueble:", data);
+      return data;
     },
     onSuccess: () => {
       toast({
@@ -129,10 +132,16 @@ export default function ConfiguracionPage() {
         description: "Tipo de inmueble creado correctamente",
       });
       inmuebleForm.reset();
-      queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles-admin"] });
+      
+      // Forzar actualización de las listas
+      console.log("Actualizando listas después de crear tipo de inmueble");
+      refetchTiposInmuebles().then(() => {
+        console.log("Lista de tipos de inmuebles actualizada");
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles"] });
     },
     onError: (error) => {
+      console.error("Error al crear tipo de inmueble:", error);
       toast({
         title: "Error",
         description: `Error al crear tipo de inmueble: ${error.message}`,
@@ -150,8 +159,11 @@ export default function ConfiguracionPage() {
       id: number;
       values: TipoInmuebleFormValues;
     }) => {
+      console.log("Actualizando tipo de inmueble con ID:", id, "Valores:", values);
       const res = await apiRequest("PATCH", `/api/tipos-inmuebles/${id}`, values);
-      return res.json();
+      const data = await res.json();
+      console.log("Respuesta al actualizar tipo de inmueble:", data);
+      return data;
     },
     onSuccess: () => {
       toast({
@@ -160,10 +172,16 @@ export default function ConfiguracionPage() {
       });
       setEditingTipoInmuebleId(null);
       inmuebleForm.reset();
-      queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles-admin"] });
+      
+      // Forzar actualización de las listas
+      console.log("Actualizando listas después de editar tipo de inmueble");
+      refetchTiposInmuebles().then(() => {
+        console.log("Lista de tipos de inmuebles actualizada después de editar");
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles"] });
     },
     onError: (error) => {
+      console.error("Error al actualizar tipo de inmueble:", error);
       toast({
         title: "Error",
         description: `Error al actualizar tipo de inmueble: ${error.message}`,
@@ -177,14 +195,26 @@ export default function ConfiguracionPage() {
     mutationFn: async (id: number) => {
       console.log("Eliminando tipo de inmueble con ID:", id);
       try {
-        const res = await apiRequest("DELETE", `/api/tipos-inmuebles/${id}`);
+        // Usamos fetch directamente para tener más control
+        const res = await fetch(`/api/tipos-inmuebles/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log("Respuesta de eliminación status:", res.status);
+        
+        const data = await res.json();
+        console.log("Datos de respuesta eliminación:", data);
+        
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Error al eliminar");
+          throw new Error(data.message || "Error al eliminar tipo de inmueble");
         }
-        return await res.json();
+        
+        return data;
       } catch (error) {
-        console.error("Error en la mutación:", error);
+        console.error("Error en la mutación de eliminación:", error);
         throw error;
       }
     },
@@ -194,18 +224,25 @@ export default function ConfiguracionPage() {
         title: "Éxito",
         description: data.message || "Tipo de inmueble eliminado correctamente",
       });
-      // Forzar la actualización de las listas
-      refetchTiposInmuebles();
-      queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles"] });
+      
+      // Forzar la actualización de las listas con retraso para asegurar que la BD se actualice
+      setTimeout(() => {
+        console.log("Actualizando listas después de eliminar tipo de inmueble");
+        refetchTiposInmuebles().then(() => {
+          console.log("Lista de tipos de inmuebles actualizada después de eliminar");
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/tipos-inmuebles"] });
+      }, 500);
     },
     onError: (error: Error) => {
-      console.error("Error en onError:", error);
+      console.error("Error en onError de eliminación:", error);
       toast({
         title: "Error",
         description: `Error al eliminar tipo de inmueble: ${error.message}`,
         variant: "destructive",
       });
     },
+    retry: 0 // Desactivar reintentos automáticos
   });
 
   // Mutación para crear un nuevo tipo de ubicación
