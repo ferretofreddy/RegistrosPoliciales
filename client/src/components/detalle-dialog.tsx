@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Car, Home, User, MapPin, AlertCircle, Plus } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion, PersonaObservacion, VehiculoObservacion, InmuebleObservacion } from "@shared/schema";
-import PdfExport from "@/components/pdf-export-new";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -541,13 +541,6 @@ export default function DetalleDialog({
           )}
         </div>
         <DialogFooter className="flex justify-between">
-          <PdfExport 
-            data={{
-              tipo, 
-              item: dato,
-              relaciones: relaciones || undefined
-            }} 
-          />
           <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
         </DialogFooter>
       </DialogContent>

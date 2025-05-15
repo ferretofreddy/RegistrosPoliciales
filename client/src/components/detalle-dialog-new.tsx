@@ -408,13 +408,6 @@ export default function DetalleDialog({
         </Tabs>
         
         <DialogFooter className="flex justify-between">
-          <PdfExport 
-            data={{
-              tipo, 
-              item: dato,
-              relaciones: relaciones || undefined
-            }} 
-          />
           <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
         </DialogFooter>
       </DialogContent>

@@ -1,0 +1,48 @@
+Instrucciones para la Corrección:
+1. Eliminar el Botón "Exportar a PDF" en la Página de Consultas
+•	Ubicación del Código: Frontend, en el componente o vista que renderiza el popup de información detallada.
+•	Acción Requerida:
+o	Buscar el componente compartido o las vistas específicas que generan el popup para todas las entidades (personas, vehículos, inmuebles, ubicaciones).
+o	Localizar el elemento HTML o el código que renderiza el botón "Exportar a PDF" (puede ser un <button>, un <a>, o similar).
+o	Eliminar o comentar esa sección del código para que el botón no se muestre en ningún caso.
+•	Verificación:
+o	Ir a la página Consultas.
+o	Realizar una búsqueda de cualquier entidad y abrir el popup de un resultado.
+o	Confirmar que el botón "Exportar a PDF" no aparece en el popup para personas, vehículos, inmuebles ni ubicaciones.
+2. Corregir Errores en la Página de Ubicaciones
+a. No se Muestran Resultados al Buscar por Identificación o Placa
+•	Ubicación del Código: Backend (rutas/controladores) y Frontend (lógica de búsqueda y renderizado).
+•	Acción Requerida:
+o	Backend:
+	Revisar las rutas o endpoints que manejan búsquedas por identificación (personas) y placa (vehículos), probablemente en un archivo como routes/ubicaciones.js o similar.
+	Verificar la consulta a la base de datos (SQL o ORM) para asegurarse de que:
+	Incluye condiciones para buscar por identificación y placa (WHERE identificacion = ? o WHERE placa = ?).
+	Recupera ubicaciones directas (domicilio en personas, ubicación en vehículos si aplica) y relacionadas (a través de relaciones con otras entidades).
+	Asegurarse de que el endpoint devuelva un JSON con todas las ubicaciones encontradas.
+o	Frontend:
+	Verificar que los inputs de identificación y placa envíen los parámetros correctos al backend 
+	Comprobar que la lógica para renderizar pines en el mapa y el cuadro de "ubicaciones encontradas" procese correctamente los datos devueltos, incluyendo latitud y longitud.
+•	Verificación:
+o	Buscar un registro por identificación y otro por placa.
+o	Confirmar que los pines aparecen en el mapa y los detalles en el cuadro de "ubicaciones encontradas" para ubicaciones directas y relacionadas.
+b. No se Muestran Ubicaciones Relacionadas al Buscar por Nombre o Tipo de Inmueble
+•	Ubicación del Código: Backend (consultas) y Frontend (renderizado).
+•	Acción Requerida:
+o	Backend:
+	Revisar las rutas o endpoints para búsquedas por nombre (personas) y tipo de inmueble (inmuebles).
+	Asegurarse de que la consulta recupere tanto ubicaciones directas como relacionadas mediante joins o subconsultas.
+	Verificar que el JSON devuelto incluya un campo para distinguir entre "ubicaciones directas" y "ubicaciones relacionadas" 
+o	Frontend:
+	Asegurarse de que el código divida los resultados en "ubicaciones directas" y "ubicaciones relacionadas" para mostrarlos en el cuadro correspondiente.
+	Confirmar que los pines del mapa incluyan todas las ubicaciones (directas y relacionadas).
+•	Verificación:
+o	Buscar por nombre de persona y tipo de inmueble.
+o	Confirmar que el mapa muestra pines para todas las ubicaciones y el cuadro "ubicaciones encontradas" lista tanto directas como relacionadas.
+Recomendaciones Adicionales:
+•	Consistencia de Datos: Revisar la base de datos para asegurar que los campos latitud y longitud estén poblados correctamente en registros de prueba.
+•	Pruebas: Usar registros de prueba (ejemplo: una persona con domicilio, un vehículo relacionado a un inmueble) para validar cada corrección.
+•	Código Exclusivo: Si las funciones actuales afectan otras páginas (como Consultas o Registros), crear funciones específicas para Ubicaciones (ejemplo: buscarUbicacionesPorIdentificacion) en lugar de modificar código reciclado.
+Notas Finales:
+•	Implementar los cambios paso a paso, probando cada corrección antes de pasar a la siguiente.
+•	Guardar un respaldo del código original en Replit antes de modificar.
+•	Si persisten problemas, revisar los logs del backend y las respuestas de las solicitudes en el frontend (usando la consola del navegador).
