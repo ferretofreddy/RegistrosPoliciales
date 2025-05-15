@@ -3,9 +3,10 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
+  personas, vehiculos, inmuebles, ubicaciones,
   insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema,
   insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
 } from "@shared/schema";
@@ -548,6 +549,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tipo e ID son requeridos" });
       }
       
+      // Convertir ID a número
+      const idNumerico = parseInt(id);
+      if (isNaN(idNumerico)) {
+        console.error(`[ERROR] ID inválido: "${id}"`);
+        return res.status(400).json({ message: "ID debe ser un número" });
+      }
+      
       // Normalizar tipos (convertir singular a plural para consistencia con storage)
       let tipoNormalizado = tipo;
       
@@ -557,15 +565,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (tipo === "inmueble") tipoNormalizado = "inmuebles";
       if (tipo === "ubicacion") tipoNormalizado = "ubicaciones";
       
-      console.log(`[DEBUG] Obteniendo relaciones para: ${tipo}(${id}), normalizado a: ${tipoNormalizado}(${id})`);
+      console.log(`[DEBUG] Obteniendo relaciones para: ${tipo}(${idNumerico}), normalizado a: ${tipoNormalizado}(${idNumerico})`);
       
-      const idNumerico = parseInt(id);
-      if (isNaN(idNumerico)) {
-        console.error(`[ERROR] ID inválido: "${id}"`);
-        return res.status(400).json({ message: "ID debe ser un número" });
+      // Verificar existencia de la entidad según el tipo
+      let entidadExiste = false;
+      
+      if (tipoNormalizado === "personas") {
+        const [persona] = await db.select().from(personas).where(eq(personas.id, idNumerico));
+        entidadExiste = !!persona;
+      } else if (tipoNormalizado === "vehiculos") {
+        const [vehiculo] = await db.select().from(vehiculos).where(eq(vehiculos.id, idNumerico));
+        entidadExiste = !!vehiculo;
+      } else if (tipoNormalizado === "inmuebles") {
+        const [inmueble] = await db.select().from(inmuebles).where(eq(inmuebles.id, idNumerico));
+        entidadExiste = !!inmueble;
+      } else if (tipoNormalizado === "ubicaciones") {
+        const [ubicacion] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, idNumerico));
+        entidadExiste = !!ubicacion;
       }
       
+      if (!entidadExiste) {
+        console.error(`[ERROR] Entidad no encontrada: ${tipoNormalizado}(${idNumerico})`);
+        return res.status(404).json({ message: `No se encontró ${tipoNormalizado} con ID ${idNumerico}` });
+      }
+      
+      // Obtener relaciones
       const relaciones = await storage.getRelaciones(tipoNormalizado, idNumerico);
+      
       console.log(`[DEBUG] Relaciones obtenidas:`, {
         tipoEntidad: tipoNormalizado,
         idEntidad: idNumerico,
@@ -575,10 +601,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cantidadUbicaciones: relaciones.ubicaciones?.length || 0
       });
       
+      // Verificar si hay al menos una relación
+      const tieneRelaciones = 
+        (relaciones.personas?.length > 0) || 
+        (relaciones.vehiculos?.length > 0) || 
+        (relaciones.inmuebles?.length > 0) || 
+        (relaciones.ubicaciones?.length > 0);
+      
+      if (!tieneRelaciones) {
+        console.log(`[INFO] No se encontraron relaciones para ${tipoNormalizado}(${idNumerico})`);
+      }
+      
       res.json(relaciones);
     } catch (error) {
       console.error("[ERROR] Error al obtener relaciones:", error);
-      res.status(500).json({ message: "Error al obtener relaciones" });
+      // Devolver un objeto vacío pero válido en caso de error
+      res.status(200).json({
+        personas: [],
+        vehiculos: [],
+        inmuebles: [],
+        ubicaciones: []
+      });
     }
   });
   

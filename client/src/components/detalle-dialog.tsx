@@ -419,19 +419,46 @@ export default function DetalleDialog({
     queryKey: [`/api/relaciones/${tipo}/${dato?.id}`],
     queryFn: async () => {
       if (!dato) return null;
-      console.log(`Obteniendo relaciones para ${tipo} con ID ${dato.id}`);
+      
+      // Convertir tipo a formato requerido por el backend (plural)
+      let tipoNormalizado = tipo;
+      if (tipo === "persona") tipoNormalizado = "personas";
+      if (tipo === "vehiculo") tipoNormalizado = "vehiculos";
+      if (tipo === "inmueble") tipoNormalizado = "inmuebles";
+      if (tipo === "ubicacion") tipoNormalizado = "ubicaciones";
+      
+      console.log(`[DEBUG] Obteniendo relaciones para ${tipo} con ID ${dato.id} (normalizado: ${tipoNormalizado})`);
+      
       try {
-        // Usando apiRequest en lugar de fetch directo
+        // Usando fetch para hacer la petición
         const url = `/api/relaciones/${tipo}/${dato.id}`;
-        const res = await fetch(url);
+        console.log(`[DEBUG] Haciendo request a: ${url}`);
+        
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store'
+          },
+          // Añadir timestamp para evitar cacheo
+          cache: 'no-store'
+        });
         
         if (!res.ok) {
-          console.error(`Error al obtener relaciones: ${res.status} ${res.statusText}`);
+          console.error(`[ERROR] Error al obtener relaciones: ${res.status} ${res.statusText}`);
           throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
         
         const data = await res.json();
-        console.log(`Relaciones obtenidas:`, data);
+        console.log(`[INFO] Relaciones recibidas del servidor:`, data);
+        
+        // Analizar las cantidades de relaciones obtenidas
+        const cantidadPersonas = Array.isArray(data.personas) ? data.personas.length : 0;
+        const cantidadVehiculos = Array.isArray(data.vehiculos) ? data.vehiculos.length : 0;
+        const cantidadInmuebles = Array.isArray(data.inmuebles) ? data.inmuebles.length : 0;
+        const cantidadUbicaciones = Array.isArray(data.ubicaciones) ? data.ubicaciones.length : 0;
+        
+        console.log(`[INFO] Cantidad de relaciones: Personas=${cantidadPersonas}, Vehículos=${cantidadVehiculos}, Inmuebles=${cantidadInmuebles}, Ubicaciones=${cantidadUbicaciones}`);
         
         // Asegurarnos de que todas las propiedades existen
         const resultado = {
@@ -443,23 +470,14 @@ export default function DetalleDialog({
         
         return resultado;
       } catch (error) {
-        console.error("Error al obtener relaciones:", error);
+        console.error("[ERROR] Error al obtener relaciones:", error);
         // Retornar un objeto vacío pero válido en caso de error
         return {personas: [], vehiculos: [], inmuebles: [], ubicaciones: []};
       }
     },
     enabled: !!dato?.id,
-    retry: 1 // Intentar una vez más en caso de error
-  });
-  
-  // Verificación adicional de depuración
-  console.log("Estado actual de relaciones:", {
-    tieneRelaciones: !!relaciones,
-    cargandoRelaciones,
-    errorRelaciones,
-    relaciones,
-    tipo,
-    datoId: dato?.id
+    retry: 3, // Intentar hasta 3 veces en caso de error
+    retryDelay: 1000 // Esperar 1 segundo entre reintentos
   });
 
   return (

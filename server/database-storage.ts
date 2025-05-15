@@ -1132,6 +1132,8 @@ export class DatabaseStorage {
 
   // Obtener relaciones de una entidad
   async getRelaciones(tipo: string, id: number): Promise<any> {
+    console.log(`[DEBUG] INICIO getRelaciones - tipo: "${tipo}", id: ${id}`);
+    
     const resultado: any = {
       personas: [],
       vehiculos: [],
@@ -1140,220 +1142,369 @@ export class DatabaseStorage {
     };
     
     try {
+      // Validar tipo
+      if (!['personas', 'vehiculos', 'inmuebles', 'ubicaciones'].includes(tipo)) {
+        console.error(`[ERROR] Tipo inválido: "${tipo}"`);
+        throw new Error(`Tipo inválido: ${tipo}`);
+      }
+      
       // Relaciones persona
-      if (tipo === 'persona') {
-        // Buscar otras personas relacionadas
-        const personasRelacionadas1 = await db
-          .select({
-            persona: personas
-          })
-          .from(personasPersonas)
-          .innerJoin(personas, eq(personasPersonas.personaId2, personas.id))
-          .where(eq(personasPersonas.personaId1, id));
+      if (tipo === 'personas') {
+        console.log(`[DEBUG] Buscando relaciones para persona con ID ${id}`);
         
-        const personasRelacionadas2 = await db
-          .select({
-            persona: personas
-          })
-          .from(personasPersonas)
-          .innerJoin(personas, eq(personasPersonas.personaId1, personas.id))
-          .where(eq(personasPersonas.personaId2, id));
-        
-        resultado.personas = [
-          ...personasRelacionadas1.map(r => r.persona),
-          ...personasRelacionadas2.map(r => r.persona)
-        ];
-        
-        // Estamos viendo una persona, buscar vehículos relacionados
-        const vehiculosRelacionados = await db
-          .select({
-            vehiculo: vehiculos
-          })
-          .from(personasVehiculos)
-          .innerJoin(vehiculos, eq(personasVehiculos.vehiculoId, vehiculos.id))
-          .where(eq(personasVehiculos.personaId, id));
-        
-        resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
-        
-        // Buscar inmuebles relacionados
-        const inmueblesRelacionados = await db
-          .select({
-            inmueble: inmuebles
-          })
-          .from(personasInmuebles)
-          .innerJoin(inmuebles, eq(personasInmuebles.inmuebleId, inmuebles.id))
-          .where(eq(personasInmuebles.personaId, id));
-        
-        resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
-        
-        // Buscar ubicaciones relacionadas
-        const ubicacionesRelacionadas = await db
-          .select({
-            ubicacion: ubicaciones
-          })
-          .from(personasUbicaciones)
-          .innerJoin(ubicaciones, eq(personasUbicaciones.ubicacionId, ubicaciones.id))
-          .where(eq(personasUbicaciones.personaId, id));
-        
-        resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
+        try {
+          // Verificar si la persona existe
+          const personaExiste = await db
+            .select({ count: sql`count(*)` })
+            .from(personas)
+            .where(eq(personas.id, id));
+          
+          console.log(`[DEBUG] Verificación de existencia de persona ID ${id}:`, personaExiste[0]);
+          
+          // Buscar otras personas relacionadas
+          const personasRelacionadas1 = await db
+            .select({
+              persona: personas
+            })
+            .from(personasPersonas)
+            .innerJoin(personas, eq(personasPersonas.personaId2, personas.id))
+            .where(eq(personasPersonas.personaId1, id));
+          
+          const personasRelacionadas2 = await db
+            .select({
+              persona: personas
+            })
+            .from(personasPersonas)
+            .innerJoin(personas, eq(personasPersonas.personaId1, personas.id))
+            .where(eq(personasPersonas.personaId2, id));
+          
+          console.log(`[DEBUG] Personas relacionadas: 
+            - Dirección 1->2: ${personasRelacionadas1.length}
+            - Dirección 2->1: ${personasRelacionadas2.length}`);
+          
+          resultado.personas = [
+            ...personasRelacionadas1.map(r => r.persona),
+            ...personasRelacionadas2.map(r => r.persona)
+          ];
+          
+          // Buscar vehículos relacionados
+          // Consulta SQL directa para debug
+          const sqlLog = await db.execute(sql`
+            SELECT * FROM personas_vehiculos WHERE persona_id = ${id}
+          `);
+          console.log(`[DEBUG] Raw SQL check personas_vehiculos:`, sqlLog.rows);
+          
+          const vehiculosRelacionados = await db
+            .select({
+              vehiculo: vehiculos
+            })
+            .from(personasVehiculos)
+            .innerJoin(vehiculos, eq(personasVehiculos.vehiculoId, vehiculos.id))
+            .where(eq(personasVehiculos.personaId, id));
+          
+          console.log(`[DEBUG] Vehículos relacionados: ${vehiculosRelacionados.length}`);
+          
+          resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
+          
+          // Buscar inmuebles relacionados
+          const inmueblesRelacionados = await db
+            .select({
+              inmueble: inmuebles
+            })
+            .from(personasInmuebles)
+            .innerJoin(inmuebles, eq(personasInmuebles.inmuebleId, inmuebles.id))
+            .where(eq(personasInmuebles.personaId, id));
+          
+          console.log(`[DEBUG] Inmuebles relacionados: ${inmueblesRelacionados.length}`);
+          
+          resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
+          
+          // Buscar ubicaciones relacionadas
+          const ubicacionesRelacionadas = await db
+            .select({
+              ubicacion: ubicaciones
+            })
+            .from(personasUbicaciones)
+            .innerJoin(ubicaciones, eq(personasUbicaciones.ubicacionId, ubicaciones.id))
+            .where(eq(personasUbicaciones.personaId, id));
+          
+          console.log(`[DEBUG] Ubicaciones relacionadas: ${ubicacionesRelacionadas.length}`);
+          
+          resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
+          
+        } catch (err) {
+          console.error(`[ERROR] Error al buscar relaciones para persona ${id}:`, err);
+        }
       } 
       
       // Relaciones vehículo
-      else if (tipo === 'vehiculo') {
-        // Buscar otros vehículos relacionados
-        const vehiculosRelacionados1 = await db
-          .select({
-            vehiculo: vehiculos
-          })
-          .from(vehiculosVehiculos)
-          .innerJoin(vehiculos, eq(vehiculosVehiculos.vehiculoId2, vehiculos.id))
-          .where(eq(vehiculosVehiculos.vehiculoId1, id));
+      else if (tipo === 'vehiculos') {
+        console.log(`[DEBUG] Buscando relaciones para vehículo con ID ${id}`);
         
-        const vehiculosRelacionados2 = await db
-          .select({
-            vehiculo: vehiculos
-          })
-          .from(vehiculosVehiculos)
-          .innerJoin(vehiculos, eq(vehiculosVehiculos.vehiculoId1, vehiculos.id))
-          .where(eq(vehiculosVehiculos.vehiculoId2, id));
-        
-        resultado.vehiculos = [
-          ...vehiculosRelacionados1.map(r => r.vehiculo),
-          ...vehiculosRelacionados2.map(r => r.vehiculo)
-        ];
-        
-        // Buscar personas relacionadas
-        const personasRelacionadas = await db
-          .select({
-            persona: personas
-          })
-          .from(personasVehiculos)
-          .innerJoin(personas, eq(personasVehiculos.personaId, personas.id))
-          .where(eq(personasVehiculos.vehiculoId, id));
-        
-        resultado.personas = personasRelacionadas.map(r => r.persona);
-        
-        // Buscar inmuebles relacionados
-        const inmueblesRelacionados = await db
-          .select({
-            inmueble: inmuebles
-          })
-          .from(vehiculosInmuebles)
-          .innerJoin(inmuebles, eq(vehiculosInmuebles.inmuebleId, inmuebles.id))
-          .where(eq(vehiculosInmuebles.vehiculoId, id));
-        
-        resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
-        
-        // Buscar ubicaciones relacionadas
-        const ubicacionesRelacionadas = await db
-          .select({
-            ubicacion: ubicaciones
-          })
-          .from(vehiculosUbicaciones)
-          .innerJoin(ubicaciones, eq(vehiculosUbicaciones.ubicacionId, ubicaciones.id))
-          .where(eq(vehiculosUbicaciones.vehiculoId, id));
-        
-        resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
+        try {
+          // Verificar si el vehículo existe
+          const vehiculoExiste = await db
+            .select({ count: sql`count(*)` })
+            .from(vehiculos)
+            .where(eq(vehiculos.id, id));
+          
+          console.log(`[DEBUG] Verificación de existencia de vehículo ID ${id}:`, vehiculoExiste[0]);
+          
+          // Buscar otros vehículos relacionados
+          const vehiculosRelacionados1 = await db
+            .select({
+              vehiculo: vehiculos
+            })
+            .from(vehiculosVehiculos)
+            .innerJoin(vehiculos, eq(vehiculosVehiculos.vehiculoId2, vehiculos.id))
+            .where(eq(vehiculosVehiculos.vehiculoId1, id));
+          
+          const vehiculosRelacionados2 = await db
+            .select({
+              vehiculo: vehiculos
+            })
+            .from(vehiculosVehiculos)
+            .innerJoin(vehiculos, eq(vehiculosVehiculos.vehiculoId1, vehiculos.id))
+            .where(eq(vehiculosVehiculos.vehiculoId2, id));
+          
+          console.log(`[DEBUG] Vehículos relacionados: 
+            - Dirección 1->2: ${vehiculosRelacionados1.length}
+            - Dirección 2->1: ${vehiculosRelacionados2.length}`);
+          
+          resultado.vehiculos = [
+            ...vehiculosRelacionados1.map(r => r.vehiculo),
+            ...vehiculosRelacionados2.map(r => r.vehiculo)
+          ];
+          
+          // Buscar personas relacionadas
+          // Consulta SQL directa para debug
+          const sqlLog = await db.execute(sql`
+            SELECT * FROM personas_vehiculos WHERE vehiculo_id = ${id}
+          `);
+          console.log(`[DEBUG] Raw SQL check personas_vehiculos for vehiculo:`, sqlLog.rows);
+          
+          const personasRelacionadas = await db
+            .select({
+              persona: personas
+            })
+            .from(personasVehiculos)
+            .innerJoin(personas, eq(personasVehiculos.personaId, personas.id))
+            .where(eq(personasVehiculos.vehiculoId, id));
+          
+          console.log(`[DEBUG] Personas relacionadas: ${personasRelacionadas.length}`);
+          
+          resultado.personas = personasRelacionadas.map(r => r.persona);
+          
+          // Buscar inmuebles relacionados
+          const inmueblesRelacionados = await db
+            .select({
+              inmueble: inmuebles
+            })
+            .from(vehiculosInmuebles)
+            .innerJoin(inmuebles, eq(vehiculosInmuebles.inmuebleId, inmuebles.id))
+            .where(eq(vehiculosInmuebles.vehiculoId, id));
+          
+          console.log(`[DEBUG] Inmuebles relacionados: ${inmueblesRelacionados.length}`);
+          
+          resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
+          
+          // Buscar ubicaciones relacionadas
+          const ubicacionesRelacionadas = await db
+            .select({
+              ubicacion: ubicaciones
+            })
+            .from(vehiculosUbicaciones)
+            .innerJoin(ubicaciones, eq(vehiculosUbicaciones.ubicacionId, ubicaciones.id))
+            .where(eq(vehiculosUbicaciones.vehiculoId, id));
+          
+          console.log(`[DEBUG] Ubicaciones relacionadas: ${ubicacionesRelacionadas.length}`);
+          
+          resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
+          
+        } catch (err) {
+          console.error(`[ERROR] Error al buscar relaciones para vehículo ${id}:`, err);
+        }
       } 
       
       // Relaciones inmueble
-      else if (tipo === 'inmueble') {
-        // Buscar otros inmuebles relacionados
-        const inmueblesRelacionados1 = await db
-          .select({
-            inmueble: inmuebles
-          })
-          .from(inmueblesInmuebles)
-          .innerJoin(inmuebles, eq(inmueblesInmuebles.inmuebleId2, inmuebles.id))
-          .where(eq(inmueblesInmuebles.inmuebleId1, id));
+      else if (tipo === 'inmuebles') {
+        console.log(`[DEBUG] Buscando relaciones para inmueble con ID ${id}`);
         
-        const inmueblesRelacionados2 = await db
-          .select({
-            inmueble: inmuebles
-          })
-          .from(inmueblesInmuebles)
-          .innerJoin(inmuebles, eq(inmueblesInmuebles.inmuebleId1, inmuebles.id))
-          .where(eq(inmueblesInmuebles.inmuebleId2, id));
-        
-        resultado.inmuebles = [
-          ...inmueblesRelacionados1.map(r => r.inmueble),
-          ...inmueblesRelacionados2.map(r => r.inmueble)
-        ];
-        
-        // Buscar personas relacionadas
-        const personasRelacionadas = await db
-          .select({
-            persona: personas
-          })
-          .from(personasInmuebles)
-          .innerJoin(personas, eq(personasInmuebles.personaId, personas.id))
-          .where(eq(personasInmuebles.inmuebleId, id));
-        
-        resultado.personas = personasRelacionadas.map(r => r.persona);
-        
-        // Buscar vehículos relacionados
-        const vehiculosRelacionados = await db
-          .select({
-            vehiculo: vehiculos
-          })
-          .from(vehiculosInmuebles)
-          .innerJoin(vehiculos, eq(vehiculosInmuebles.vehiculoId, vehiculos.id))
-          .where(eq(vehiculosInmuebles.inmuebleId, id));
-        
-        resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
-        
-        // Buscar ubicaciones relacionadas
-        const ubicacionesRelacionadas = await db
-          .select({
-            ubicacion: ubicaciones
-          })
-          .from(inmueblesUbicaciones)
-          .innerJoin(ubicaciones, eq(inmueblesUbicaciones.ubicacionId, ubicaciones.id))
-          .where(eq(inmueblesUbicaciones.inmuebleId, id));
-        
-        resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
+        try {
+          // Verificar si el inmueble existe
+          const inmuebleExiste = await db
+            .select({ count: sql`count(*)` })
+            .from(inmuebles)
+            .where(eq(inmuebles.id, id));
+          
+          console.log(`[DEBUG] Verificación de existencia de inmueble ID ${id}:`, inmuebleExiste[0]);
+          
+          // Buscar otros inmuebles relacionados
+          const inmueblesRelacionados1 = await db
+            .select({
+              inmueble: inmuebles
+            })
+            .from(inmueblesInmuebles)
+            .innerJoin(inmuebles, eq(inmueblesInmuebles.inmuebleId2, inmuebles.id))
+            .where(eq(inmueblesInmuebles.inmuebleId1, id));
+          
+          const inmueblesRelacionados2 = await db
+            .select({
+              inmueble: inmuebles
+            })
+            .from(inmueblesInmuebles)
+            .innerJoin(inmuebles, eq(inmueblesInmuebles.inmuebleId1, inmuebles.id))
+            .where(eq(inmueblesInmuebles.inmuebleId2, id));
+          
+          console.log(`[DEBUG] Inmuebles relacionados: 
+            - Dirección 1->2: ${inmueblesRelacionados1.length}
+            - Dirección 2->1: ${inmueblesRelacionados2.length}`);
+          
+          resultado.inmuebles = [
+            ...inmueblesRelacionados1.map(r => r.inmueble),
+            ...inmueblesRelacionados2.map(r => r.inmueble)
+          ];
+          
+          // Buscar personas relacionadas
+          // Consulta SQL directa para debug
+          const sqlLog = await db.execute(sql`
+            SELECT * FROM personas_inmuebles WHERE inmueble_id = ${id}
+          `);
+          console.log(`[DEBUG] Raw SQL check personas_inmuebles:`, sqlLog.rows);
+          
+          const personasRelacionadas = await db
+            .select({
+              persona: personas
+            })
+            .from(personasInmuebles)
+            .innerJoin(personas, eq(personasInmuebles.personaId, personas.id))
+            .where(eq(personasInmuebles.inmuebleId, id));
+          
+          console.log(`[DEBUG] Personas relacionadas: ${personasRelacionadas.length}`);
+          
+          resultado.personas = personasRelacionadas.map(r => r.persona);
+          
+          // Buscar vehículos relacionados
+          const vehiculosRelacionados = await db
+            .select({
+              vehiculo: vehiculos
+            })
+            .from(vehiculosInmuebles)
+            .innerJoin(vehiculos, eq(vehiculosInmuebles.vehiculoId, vehiculos.id))
+            .where(eq(vehiculosInmuebles.inmuebleId, id));
+          
+          console.log(`[DEBUG] Vehículos relacionados: ${vehiculosRelacionados.length}`);
+          
+          resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
+          
+          // Buscar ubicaciones relacionadas
+          const ubicacionesRelacionadas = await db
+            .select({
+              ubicacion: ubicaciones
+            })
+            .from(inmueblesUbicaciones)
+            .innerJoin(ubicaciones, eq(inmueblesUbicaciones.ubicacionId, ubicaciones.id))
+            .where(eq(inmueblesUbicaciones.inmuebleId, id));
+          
+          console.log(`[DEBUG] Ubicaciones relacionadas: ${ubicacionesRelacionadas.length}`);
+          
+          resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
+          
+        } catch (err) {
+          console.error(`[ERROR] Error al buscar relaciones para inmueble ${id}:`, err);
+        }
       } 
       
       // Relaciones ubicación
-      else if (tipo === 'ubicacion') {
-        // Buscar personas relacionadas
-        const personasRelacionadas = await db
-          .select({
-            persona: personas
-          })
-          .from(personasUbicaciones)
-          .innerJoin(personas, eq(personasUbicaciones.personaId, personas.id))
-          .where(eq(personasUbicaciones.ubicacionId, id));
+      else if (tipo === 'ubicaciones') {
+        console.log(`[DEBUG] Buscando relaciones para ubicacion con ID ${id}`);
         
-        resultado.personas = personasRelacionadas.map(r => r.persona);
-        
-        // Buscar vehículos relacionados
-        const vehiculosRelacionados = await db
-          .select({
-            vehiculo: vehiculos
-          })
-          .from(vehiculosUbicaciones)
-          .innerJoin(vehiculos, eq(vehiculosUbicaciones.vehiculoId, vehiculos.id))
-          .where(eq(vehiculosUbicaciones.ubicacionId, id));
-        
-        resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
-        
-        // Buscar inmuebles relacionados
-        const inmueblesRelacionados = await db
-          .select({
-            inmueble: inmuebles
-          })
-          .from(inmueblesUbicaciones)
-          .innerJoin(inmuebles, eq(inmueblesUbicaciones.inmuebleId, inmuebles.id))
-          .where(eq(inmueblesUbicaciones.ubicacionId, id));
-        
-        resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
+        try {
+          // Verificar si la ubicación existe
+          const ubicacionExiste = await db
+            .select({ count: sql`count(*)` })
+            .from(ubicaciones)
+            .where(eq(ubicaciones.id, id));
+          
+          console.log(`[DEBUG] Verificación de existencia de ubicación ID ${id}:`, ubicacionExiste[0]);
+          
+          // Buscar personas relacionadas
+          // Consulta SQL directa para debug
+          const sqlLogPersonas = await db.execute(sql`
+            SELECT * FROM personas_ubicaciones WHERE ubicacion_id = ${id}
+          `);
+          console.log(`[DEBUG] Raw SQL check personas_ubicaciones:`, sqlLogPersonas.rows);
+          
+          const personasRelacionadas = await db
+            .select({
+              persona: personas
+            })
+            .from(personasUbicaciones)
+            .innerJoin(personas, eq(personasUbicaciones.personaId, personas.id))
+            .where(eq(personasUbicaciones.ubicacionId, id));
+          
+          console.log(`[DEBUG] Personas relacionadas: ${personasRelacionadas.length}`);
+          
+          resultado.personas = personasRelacionadas.map(r => r.persona);
+          
+          // Buscar vehículos relacionados
+          const sqlLogVehiculos = await db.execute(sql`
+            SELECT * FROM vehiculos_ubicaciones WHERE ubicacion_id = ${id}
+          `);
+          console.log(`[DEBUG] Raw SQL check vehiculos_ubicaciones:`, sqlLogVehiculos.rows);
+          
+          const vehiculosRelacionados = await db
+            .select({
+              vehiculo: vehiculos
+            })
+            .from(vehiculosUbicaciones)
+            .innerJoin(vehiculos, eq(vehiculosUbicaciones.vehiculoId, vehiculos.id))
+            .where(eq(vehiculosUbicaciones.ubicacionId, id));
+          
+          console.log(`[DEBUG] Vehículos relacionados: ${vehiculosRelacionados.length}`);
+          
+          resultado.vehiculos = vehiculosRelacionados.map(r => r.vehiculo);
+          
+          // Buscar inmuebles relacionados
+          const sqlLogInmuebles = await db.execute(sql`
+            SELECT * FROM inmuebles_ubicaciones WHERE ubicacion_id = ${id}
+          `);
+          console.log(`[DEBUG] Raw SQL check inmuebles_ubicaciones:`, sqlLogInmuebles.rows);
+          
+          const inmueblesRelacionados = await db
+            .select({
+              inmueble: inmuebles
+            })
+            .from(inmueblesUbicaciones)
+            .innerJoin(inmuebles, eq(inmueblesUbicaciones.inmuebleId, inmuebles.id))
+            .where(eq(inmueblesUbicaciones.ubicacionId, id));
+          
+          console.log(`[DEBUG] Inmuebles relacionados: ${inmueblesRelacionados.length}`);
+          
+          resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
+          
+        } catch (err) {
+          console.error(`[ERROR] Error al buscar relaciones para ubicación ${id}:`, err);
+        }
       }
+      
+      console.log(`[DEBUG] FIN getRelaciones - tipo: "${tipo}", id: ${id} - Resultados:`, {
+        cantidadPersonas: resultado.personas.length,
+        cantidadVehiculos: resultado.vehiculos.length,
+        cantidadInmuebles: resultado.inmuebles.length,
+        cantidadUbicaciones: resultado.ubicaciones.length
+      });
       
       return resultado;
     } catch (error) {
-      console.error(`Error al obtener relaciones para ${tipo} con ID ${id}:`, error);
-      throw error;
+      console.error(`[ERROR] Error general al obtener relaciones para ${tipo} con ID ${id}:`, error);
+      // No lanzamos el error, devolvemos un objeto vacío para evitar que se rompa la UI
+      return {
+        personas: [],
+        vehiculos: [],
+        inmuebles: [],
+        ubicaciones: []
+      };
     }
   }
 }
