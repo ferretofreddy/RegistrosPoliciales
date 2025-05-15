@@ -39,147 +39,115 @@ export default function LocationMapDialog({
   const [leafletLoaded, setLeafletLoaded] = useState<boolean>(!!window.L);
   const { toast } = useToast();
   
-  // Cargar Leaflet si no está ya cargado
+  // Verificar si Leaflet está disponible (debería estarlo ya que se carga en el HTML)
   useEffect(() => {
-    if (!window.L && open) {
-      console.log("Cargando Leaflet dinámicamente...");
+    if (open) {
+      console.log("Verificando disponibilidad de Leaflet...");
       
-      // Cargar CSS de Leaflet
-      const linkElement = document.createElement("link");
-      linkElement.rel = "stylesheet";
-      linkElement.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(linkElement);
-      
-      // Cargar JS de Leaflet
-      const scriptElement = document.createElement("script");
-      scriptElement.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      scriptElement.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
-      scriptElement.crossOrigin = "";
-      document.body.appendChild(scriptElement);
-      
-      // Esperar a que se cargue el script
-      scriptElement.onload = () => {
-        console.log("Leaflet cargado correctamente");
+      if (window.L) {
+        console.log("Leaflet disponible:", window.L);
         setLeafletLoaded(true);
-        // Invalidar tamaño del mapa después de cargarlo
-        if (map) {
-          map.invalidateSize();
-        }
-      };
-    } else if (window.L && !leafletLoaded) {
-      // Si leaflet ya está disponible pero no lo habíamos marcado
-      setLeafletLoaded(true);
+        
+        // Invalidar tamaño del mapa después de verificar
+        setTimeout(() => {
+          if (map) {
+            console.log("Invalidando tamaño del mapa");
+            map.invalidateSize();
+          }
+        }, 100);
+      } else {
+        console.error("ERROR: Leaflet no está disponible");
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el mapa. Por favor, recargue la página.",
+          variant: "destructive",
+        });
+      }
     }
-  }, [open, map, leafletLoaded]);
+  }, [open, map]);
   
   // Inicializar el mapa
   useEffect(() => {
-    if (!open || !mapRef.current || !leafletLoaded) return;
+    if (!open || !mapRef.current) return;
     
-    // Si no está disponible Leaflet, salir (aunque leafletLoaded debería garantizar que está cargado)
+    // Verificar disponibilidad de Leaflet
     if (!window.L) {
-      console.log("Esperando a que Leaflet se cargue...");
+      console.error("LEAFLET NO DISPONIBLE");
       return;
     }
     
-    console.log("Inicializando mapa con Leaflet cargado...");
+    console.log("INICIALIZANDO MAPA CON LEAFLET CARGADO:", window.L);
+    console.log("Referencia al div:", mapRef.current);
     
-    // Si ya hay un mapa, limpiarlo
-    if (map) {
-      map.remove();
-    }
-    
-    // Inicializar con coordenadas default
-    const defaultLat = 9.748917;
-    const defaultLng = -83.753428;
-    
-    const leaflet = window.L;
-    if (!leaflet) {
-      console.error("Leaflet not loaded");
+    try {
+      // Si ya hay un mapa, limpiarlo
+      if (map) {
+        console.log("Limpiando mapa anterior");
+        map.remove();
+      }
+      
+      // Inicializar con coordenadas default
+      const defaultLat = 9.748917;
+      const defaultLng = -83.753428;
+      
+      // Crear el mapa de forma simple para depurar
+      console.log("Creando nuevo mapa");
+      
+      // Usar un timeout para dar tiempo al DOM a que se actualice
+      setTimeout(() => {
+        try {
+          const newMap = window.L.map(mapRef.current).setView([defaultLat, defaultLng], 13);
+          
+          // Añadir capa de mapa base OpenStreetMap
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(newMap);
+          
+          // Añadir evento click al mapa simplificado
+          newMap.on('click', function(e: any) {
+            const { lat, lng } = e.latlng;
+            console.log("Mapa clickeado en:", lat, lng);
+            setSelectedLocation({lat, lng});
+            
+            // Crear un marcador simple
+            if (marker) marker.remove();
+            const newMarker = window.L.marker([lat, lng]).addTo(newMap);
+            setMarker(newMarker);
+          });
+          
+          setMap(newMap);
+          console.log("Mapa creado y guardado en estado");
+          
+          // Invalidar tamaño después de un breve retraso
+          setTimeout(() => {
+            newMap.invalidateSize();
+            console.log("Tamaño del mapa invalidado");
+          }, 300);
+        } catch (err) {
+          console.error("Error al crear el mapa:", err);
+          toast({
+            title: "Error",
+            description: "No se pudo inicializar el mapa: " + (err as Error).message,
+            variant: "destructive",
+          });
+        }
+      }, 300);
+    } catch (err) {
+      console.error("Error general del mapa:", err);
       toast({
         title: "Error",
-        description: "No se pudo cargar el mapa. Por favor, recargue la página.",
+        description: "Error al configurar el mapa: " + (err as Error).message,
         variant: "destructive",
       });
-      return;
     }
-    
-    // Crear el mapa
-    const newMap = leaflet.map(mapRef.current).setView(
-      initialLocation ? [initialLocation.lat, initialLocation.lng] : [defaultLat, defaultLng], 
-      13
-    );
-    
-    // Añadir capa de mapa base OpenStreetMap
-    leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(newMap);
-    
-    // Añadir un marcador si ya hay una ubicación inicial
-    let initialMarker = null;
-    if (initialLocation) {
-      initialMarker = leaflet.marker([initialLocation.lat, initialLocation.lng], {
-        draggable: true,
-      }).addTo(newMap)
-        .bindPopup('Ubicación seleccionada')
-        .on('dragend', function(e: any) {
-          const position = e.target.getLatLng();
-          setSelectedLocation({
-            lat: position.lat,
-            lng: position.lng
-          });
-        });
-    }
-    
-    // Añadir evento click al mapa
-    newMap.on('click', function(e: any) {
-      const { lat, lng } = e.latlng;
-      
-      // Si ya hay un marcador, actualizarlo
-      if (marker) {
-        marker.setLatLng([lat, lng]);
-      } else if (initialMarker) {
-        initialMarker.setLatLng([lat, lng]);
-      } else {
-        // Crear un nuevo marcador
-        const newMarker = leaflet.marker([lat, lng], {
-          draggable: true,
-        }).addTo(newMap)
-          .bindPopup('Ubicación seleccionada')
-          .on('dragend', function(e: any) {
-            const position = e.target.getLatLng();
-            setSelectedLocation({
-              lat: position.lat,
-              lng: position.lng
-            });
-          });
-        
-        setMarker(newMarker);
-      }
-      
-      setSelectedLocation({
-        lat: lat,
-        lng: lng
-      });
-    });
-    
-    setMap(newMap);
-    setMarker(initialMarker);
-    
-    // Actualizar el tamaño del mapa después de que el diálogo se muestre
-    setTimeout(() => {
-      newMap.invalidateSize();
-    }, 100);
     
     return () => {
-      if (newMap) {
-        // Limpiar mapa al desmontar
-        newMap.remove();
+      if (map) {
+        console.log("Limpiando mapa al desmontar");
+        map.remove();
       }
     };
-    
-    // Incluimos leafletLoaded en las dependencias
-  }, [open, initialLocation, leafletLoaded, map]);
+  }, [open, map, toast]);
   
   const handleConfirm = () => {
     if (selectedLocation) {
@@ -200,7 +168,10 @@ export default function LocationMapDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
+      <DialogContent 
+        className="sm:max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col" 
+        style={{ width: "90vw", maxWidth: "800px" }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
@@ -213,8 +184,18 @@ export default function LocationMapDialog({
         
         <div 
           ref={mapRef} 
-          className="w-full h-[400px] rounded-md border border-border my-4"
-        ></div>
+          className="w-full h-[400px] rounded-md border border-red-500 my-4 bg-gray-100"
+          style={{ position: 'relative', zIndex: 999 }}
+        >
+          {!map && (
+            <div className="flex items-center justify-center h-full bg-gray-100 rounded-md">
+              <div className="text-center">
+                <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4" />
+                <p>Cargando mapa...</p>
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="mt-2 text-sm text-muted-foreground">
           {selectedLocation ? (
