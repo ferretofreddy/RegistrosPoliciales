@@ -8,8 +8,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { MapPin, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,54 +32,55 @@ export default function LocationMapDialog({
   initialLocation,
   title = "Seleccionar ubicación",
 }: LocationMapDialogProps) {
-  // Referencias y estados
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  // Estados
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(
     initialLocation || null
   );
-  const [isMapInitialized, setIsMapInitialized] = useState(false);
   
   const { toast } = useToast();
   
-  // Default location (Costa Rica)
-  const defaultLat = initialLocation?.lat || 9.748917;
-  const defaultLng = initialLocation?.lng || -83.753428;
+  // Default location (Argentina)
+  const defaultLat = initialLocation?.lat || -34.603722;
+  const defaultLng = initialLocation?.lng || -58.381592;
+  
+  // ID único para el mapa dentro del diálogo
+  const mapDialogId = "map-in-dialog";
 
-  // Inicializar mapa después de montar el componente - usando useEffect en lugar de useState
+  // Función para inicializar el mapa cuando el diálogo está abierto
   useEffect(() => {
-    // Solo inicializar si el diálogo está abierto y no se ha inicializado aún
-    if (open && !isMapInitialized && window.L) {
-      console.log("Inicializando mapa en el diálogo...");
+    // Solo inicializar si el diálogo está abierto, el mapa no está inicializado y Leaflet está disponible
+    if (open && !mapInitialized && typeof window !== 'undefined' && window.L) {
+      console.log("Dialog open, initializing map...");
       
-      // Pequeño timeout para asegurarnos que el DOM está listo
-      setTimeout(() => {
+      // Pequeño retraso para asegurar que el DOM esté completamente renderizado
+      const initMapTimeout = setTimeout(() => {
         try {
+          console.log("Attempting to initialize map in dialog");
           const leaflet = window.L;
-          // Crear un ID único para el mapa en este diálogo
-          const mapId = "location-map-dialog";
-          const mapElement = document.getElementById(mapId);
+          const mapElement = document.getElementById(mapDialogId);
           
           if (mapElement) {
-            console.log("Elemento del mapa encontrado, inicializando...");
+            console.log("Map element found, creating map");
             
-            // Usar las coordenadas iniciales o predeterminadas
+            // Coordenadas iniciales
             const initialCoords = selectedLocation 
               ? [selectedLocation.lat, selectedLocation.lng] 
               : [defaultLat, defaultLng];
+              
+            console.log("Using coordinates:", initialCoords);
             
-            console.log("Creando mapa con coordenadas:", initialCoords);
+            // Crear el mapa
+            const newMap = leaflet.map(mapDialogId).setView(initialCoords, 13);
             
-            // Crear el mapa y configurarlo
-            const newMap = leaflet.map(mapId).setView(initialCoords, 13);
-            
-            // Agregar la capa de mapa (OpenStreetMap)
+            // Agregar capa del mapa (OpenStreetMap)
             leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(newMap);
             
-            // Crear un marcador en la posición inicial con icono personalizado
+            // Crear marcador
             const newMarker = leaflet.marker(initialCoords, {
               draggable: true,
               icon: leaflet.icon({
@@ -94,72 +93,78 @@ export default function LocationMapDialog({
               })
             }).addTo(newMap);
             
-            // Al arrastrar el marcador, actualizar la ubicación seleccionada
+            // Evento dragend del marcador
             newMarker.on('dragend', function() {
               const position = newMarker.getLatLng();
-              console.log("Marcador arrastrado a:", position);
-              setSelectedLocation({ 
-                lat: position.lat, 
-                lng: position.lng 
+              console.log("Marker dragged to:", position);
+              setSelectedLocation({
+                lat: position.lat,
+                lng: position.lng
               });
             });
             
-            // Al hacer clic en el mapa, mover el marcador y actualizar la ubicación
+            // Evento click en el mapa
             newMap.on('click', function(e: any) {
-              console.log("Clic en el mapa:", e.latlng);
+              console.log("Map clicked at:", e.latlng);
               newMarker.setLatLng(e.latlng);
-              setSelectedLocation({ 
-                lat: e.latlng.lat, 
-                lng: e.latlng.lng 
+              setSelectedLocation({
+                lat: e.latlng.lat,
+                lng: e.latlng.lng
               });
             });
             
             // Guardar referencias
             setMap(newMap);
             setMarker(newMarker);
-            setIsMapInitialized(true);
+            setMapInitialized(true);
             
-            // Importante: invalidar el tamaño después que el diálogo se muestre completamente
+            // MUY IMPORTANTE: invalidar el tamaño para que el mapa se renderice correctamente
+            // en un diálogo que estaba oculto
             setTimeout(() => {
-              console.log("Invalidando tamaño del mapa");
+              console.log("Invalidating map size");
               newMap.invalidateSize();
             }, 300);
             
-            console.log("Mapa inicializado correctamente");
+            console.log("Map initialized successfully");
           } else {
-            console.error("Elemento del mapa no encontrado:", mapId);
+            console.error("Map element not found:", mapDialogId);
           }
         } catch (error) {
-          console.error("Error al inicializar el mapa:", error);
+          console.error("Error initializing map:", error);
           toast({
-            title: "Error",
-            description: "No se pudo inicializar el mapa: " + (error as Error).message,
+            title: "Error al inicializar el mapa",
+            description: "Ocurrió un error al cargar el mapa: " + (error instanceof Error ? error.message : String(error)),
             variant: "destructive",
           });
         }
-      }, 500); // Damos tiempo para que el DOM se actualice completamente
+      }, 500); // Esperar 500ms para que el DOM esté listo
+      
+      // Limpiar timeout si el componente se desmonta
+      return () => clearTimeout(initMapTimeout);
     }
-    
-    // Limpiar el mapa cuando se cierra el diálogo
-    return () => {
-      if (map) {
-        console.log("Limpiando mapa");
-        map.remove();
-        setMap(null);
-        setMarker(null);
-        setIsMapInitialized(false);
-      }
-    };
-  }, [open, selectedLocation, defaultLat, defaultLng, isMapInitialized]);
+  }, [open, mapInitialized]);
+
+  // Limpiar el mapa cuando se cierra el diálogo
+  useEffect(() => {
+    if (!open && map) {
+      console.log("Dialog closed, cleaning up map");
+      map.remove();
+      setMap(null);
+      setMarker(null);
+      setMapInitialized(false);
+    }
+  }, [open, map]);
 
   // Actualizar el mapa si cambia la ubicación inicial
   useEffect(() => {
-    if (map && marker && initialLocation) {
+    if (map && marker && initialLocation && open) {
+      console.log("Updating map with new initial location:", initialLocation);
       marker.setLatLng([initialLocation.lat, initialLocation.lng]);
       map.setView([initialLocation.lat, initialLocation.lng], 13);
       setSelectedLocation(initialLocation);
+      map.invalidateSize();
     }
-  }, [initialLocation, map, marker]);
+  }, [initialLocation, map, marker, open]);
 
   // Función para obtener la ubicación actual
   const getCurrentLocation = () => {
@@ -181,7 +186,6 @@ export default function LocationMapDialog({
             marker.setLatLng([latitude, longitude]);
             map.setView([latitude, longitude], 15);
             
-            // Opcional: mostrar un popup temporal
             marker.bindPopup("<b>¡Su ubicación actual!</b>").openPopup();
             setTimeout(() => marker.closePopup(), 3000);
           }
@@ -261,15 +265,14 @@ export default function LocationMapDialog({
           </DialogDescription>
         </DialogHeader>
         
-        {/* Contenedor del mapa - Usamos el mismo patrón que en ubicacion-form.tsx */}
+        {/* Contenedor del mapa */}
         <div className="relative">
           <div 
-            id="location-map-dialog"
-            ref={mapContainerRef} 
-            className="leaflet-container h-[450px] rounded-md border border-border bg-gray-100"
+            id={mapDialogId} 
+            className="leaflet-container h-[450px] rounded-md border border-border"
           />
           
-          {!isMapInitialized && (
+          {!mapInitialized && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-md">
               <div className="bg-white p-4 rounded-lg shadow-lg text-center">
                 <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4" />
