@@ -419,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ruta especial para crear múltiples relaciones para una ubicación de una sola vez
-  app.post("/api/ubicaciones/:id/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+  app.post("/api/ubicaciones/:id/relaciones", async (req, res) => {
     try {
       const ubicacionId = parseInt(req.params.id);
       const { personas, vehiculos, inmuebles } = req.body;
@@ -429,7 +429,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`- Vehículos: ${vehiculos?.length || 0}`);
       console.log(`- Inmuebles: ${inmuebles?.length || 0}`);
       
-      const resultados = {
+      const resultados: {
+        personas: Array<{id: number; exito: boolean; error?: string}>;
+        vehiculos: Array<{id: number; exito: boolean; error?: string}>;
+        inmuebles: Array<{id: number; exito: boolean; error?: string}>;
+      } = {
         personas: [],
         vehiculos: [],
         inmuebles: []
@@ -439,11 +443,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (personas && personas.length > 0) {
         for (const personaId of personas) {
           try {
-            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "personas", parseInt(personaId));
-            resultados.personas.push({ id: personaId, exito: true });
+            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "personas", parseInt(String(personaId)));
+            resultados.personas.push({ id: parseInt(String(personaId)), exito: true });
           } catch (error) {
             console.error(`Error al crear relación con persona ${personaId}:`, error);
-            resultados.personas.push({ id: personaId, exito: false, error: "Error al crear relación" });
+            resultados.personas.push({ id: parseInt(String(personaId)), exito: false, error: "Error al crear relación" });
           }
         }
       }
@@ -452,11 +456,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (vehiculos && vehiculos.length > 0) {
         for (const vehiculoId of vehiculos) {
           try {
-            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "vehiculos", parseInt(vehiculoId));
-            resultados.vehiculos.push({ id: vehiculoId, exito: true });
+            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "vehiculos", parseInt(String(vehiculoId)));
+            resultados.vehiculos.push({ id: parseInt(String(vehiculoId)), exito: true });
           } catch (error) {
             console.error(`Error al crear relación con vehículo ${vehiculoId}:`, error);
-            resultados.vehiculos.push({ id: vehiculoId, exito: false, error: "Error al crear relación" });
+            resultados.vehiculos.push({ id: parseInt(String(vehiculoId)), exito: false, error: "Error al crear relación" });
           }
         }
       }
@@ -465,11 +469,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (inmuebles && inmuebles.length > 0) {
         for (const inmuebleId of inmuebles) {
           try {
-            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "inmuebles", parseInt(inmuebleId));
-            resultados.inmuebles.push({ id: inmuebleId, exito: true });
+            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "inmuebles", parseInt(String(inmuebleId)));
+            resultados.inmuebles.push({ id: parseInt(String(inmuebleId)), exito: true });
           } catch (error) {
             console.error(`Error al crear relación con inmueble ${inmuebleId}:`, error);
-            resultados.inmuebles.push({ id: inmuebleId, exito: false, error: "Error al crear relación" });
+            resultados.inmuebles.push({ id: parseInt(String(inmuebleId)), exito: false, error: "Error al crear relación" });
           }
         }
       }

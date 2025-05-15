@@ -248,114 +248,60 @@ export default function UbicacionForm() {
         description: "Ubicación registrada correctamente",
       });
       
-      // Crear observaciones
-      if (observaciones.length > 0) {
-        // Usar Promise.all en lugar de forEach para esperar a que todas las promesas se resuelvan
-        const promesasObservaciones = observaciones.map(async (observacion) => {
-          try {
-            const resultado = await apiRequest("POST", "/api/ubicaciones/observaciones", {
-              ubicacionId: data.id,
-              detalle: observacion.detalle,
-              fecha: observacion.fecha || new Date()
-            });
-            console.log(`Observación creada exitosamente:`, resultado);
-            return resultado;
-          } catch (error) {
-            console.error("Error al guardar observación:", error);
-            throw error;
+      try {
+        // Crear observaciones
+        if (observaciones.length > 0) {
+          for (const observacion of observaciones) {
+            try {
+              const resultado = await apiRequest("POST", "/api/ubicaciones/observaciones", {
+                ubicacionId: data.id,
+                detalle: observacion.detalle,
+                fecha: observacion.fecha || new Date()
+              });
+              console.log(`Observación creada exitosamente:`, resultado);
+            } catch (error) {
+              console.error("Error al guardar observación:", error);
+            }
           }
-        });
-        
-        try {
-          await Promise.all(promesasObservaciones);
-          console.log("Todas las observaciones han sido creadas");
-        } catch (error) {
-          console.error("Error al crear algunas observaciones:", error);
+          console.log("Proceso de creación de observaciones completado");
         }
-      }
-      
-      // Crear relaciones con personas si existen
-      if (relacionPersonas.length > 0) {
-        // Usar Promise.all en lugar de forEach para esperar a que todas las promesas se resuelvan
-        const promesasPersonas = relacionPersonas.map(async (persona) => {
+        
+        // Crear todas las relaciones de una vez con el nuevo endpoint
+        if (relacionPersonas.length > 0 || relacionVehiculos.length > 0 || relacionInmuebles.length > 0) {
+          // Preparar los datos para la petición
+          const relacionesData = {
+            personas: relacionPersonas.map(p => p.id),
+            vehiculos: relacionVehiculos.map(v => v.id),
+            inmuebles: relacionInmuebles.map(i => i.id)
+          };
+          
+          console.log(`Enviando petición para crear relaciones de ubicación ${data.id}:`, relacionesData);
+          
           try {
-            console.log(`Creando relación ubicación ${data.id} - persona ${persona.id}`);
-            const resultado = await apiRequest("POST", "/api/relaciones", {
-              tipo1: "ubicacion",
-              id1: data.id,
-              tipo2: "persona",
-              id2: persona.id
+            const resultado = await apiRequest("POST", `/api/ubicaciones/${data.id}/relaciones`, relacionesData);
+            console.log("Resultado de la creación de relaciones:", resultado);
+            
+            // Invalidar consultas relacionadas para refrescar datos
+            queryClient.invalidateQueries({ queryKey: ["/api/personas"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/vehiculos"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/inmuebles"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/ubicaciones"] });
+            
+            toast({
+              title: "Relaciones creadas",
+              description: "Se han creado todas las relaciones exitosamente",
             });
-            console.log(`Relación creada exitosamente:`, resultado);
-            return resultado;
           } catch (error) {
-            console.error("Error al crear relación con persona:", error);
-            throw error;
-          }
-        });
-        
-        try {
-          await Promise.all(promesasPersonas);
-          console.log("Todas las relaciones con personas han sido creadas");
-        } catch (error) {
-          console.error("Error al crear algunas relaciones con personas:", error);
-        }
-      }
-      
-      // Crear relaciones con vehículos si existen
-      if (relacionVehiculos.length > 0) {
-        // Usar Promise.all en lugar de forEach para esperar a que todas las promesas se resuelvan
-        const promesasVehiculos = relacionVehiculos.map(async (vehiculo) => {
-          try {
-            console.log(`Creando relación ubicación ${data.id} - vehículo ${vehiculo.id}`);
-            const resultado = await apiRequest("POST", "/api/relaciones", {
-              tipo1: "ubicacion",
-              id1: data.id,
-              tipo2: "vehiculo",
-              id2: vehiculo.id
+            console.error("Error al crear relaciones:", error);
+            toast({
+              title: "Error",
+              description: "Hubo un problema al crear las relaciones",
+              variant: "destructive",
             });
-            console.log(`Relación creada exitosamente:`, resultado);
-            return resultado;
-          } catch (error) {
-            console.error("Error al crear relación con vehículo:", error);
-            throw error;
           }
-        });
-        
-        try {
-          await Promise.all(promesasVehiculos);
-          console.log("Todas las relaciones con vehículos han sido creadas");
-        } catch (error) {
-          console.error("Error al crear algunas relaciones con vehículos:", error);
         }
-      }
-      
-      // Crear relaciones con inmuebles si existen
-      if (relacionInmuebles.length > 0) {
-        // Usar Promise.all en lugar de forEach para esperar a que todas las promesas se resuelvan
-        const promesasInmuebles = relacionInmuebles.map(async (inmueble) => {
-          try {
-            console.log(`Creando relación ubicación ${data.id} - inmueble ${inmueble.id}`);
-            const resultado = await apiRequest("POST", "/api/relaciones", {
-              tipo1: "ubicacion",
-              id1: data.id,
-              tipo2: "inmueble",
-              id2: inmueble.id
-            });
-            console.log(`Relación creada exitosamente:`, resultado);
-            return resultado;
-          } catch (error) {
-            console.error("Error al crear relación con inmueble:", error);
-            throw error;
-          }
-        });
-        
-        try {
-          await Promise.all(promesasInmuebles);
-          console.log("Todas las relaciones con inmuebles han sido creadas");
-        } catch (error) {
-          console.error("Error al crear algunas relaciones con inmuebles:", error);
-        }
+      } catch (error) {
+        console.error("Error general:", error);
       }
       
       // Reiniciar formulario
