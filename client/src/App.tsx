@@ -6,7 +6,6 @@ import AuthPage from "@/pages/auth-page";
 import ConsultaPage from "@/pages/consulta-page-new";
 import RegistrosPage from "@/pages/registros-page";
 import UbicacionesPage from "@/pages/ubicaciones-page";
-import UbicacionDirecta from "@/pages/ubicacion-directa"; // Nueva página
 import EstructurasPage from "@/pages/estructuras-page";
 import AdminPage from "@/pages/admin-page";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -19,7 +18,6 @@ function Router() {
       <ProtectedRoute path="/consulta" component={ConsultaPage} />
       <ProtectedRoute path="/registros" component={RegistrosPage} roles={["admin", "investigador"]} />
       <ProtectedRoute path="/ubicaciones" component={UbicacionesPage} />
-      <ProtectedRoute path="/ubicacion-directa" component={UbicacionDirecta} />
       <ProtectedRoute path="/estructuras" component={EstructurasPage} />
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
       <Route component={NotFound} />
