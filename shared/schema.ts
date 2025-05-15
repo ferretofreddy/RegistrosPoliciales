@@ -94,10 +94,26 @@ export const insertVehiculoObservacionSchema = createInsertSchema(vehiculosObser
   detalle: true,
 });
 
+// Tipos de Inmuebles
+export const tiposInmuebles = pgTable("tipos_inmuebles", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion"),
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTipoInmuebleSchema = createInsertSchema(tiposInmuebles).pick({
+  nombre: true,
+  descripcion: true,
+  activo: true,
+});
+
 // Inmuebles
 export const inmuebles = pgTable("inmuebles", {
   id: serial("id").primaryKey(),
-  tipo: text("tipo").notNull(), // casa, apartamento, etc
+  tipoId: integer("tipo_id").references(() => tiposInmuebles.id),
+  tipo: text("tipo").notNull(), // casa, apartamento, etc (mantenemos para compatibilidad)
   propietario: text("propietario").notNull(),
   direccion: text("direccion").notNull(),
   foto: text("foto"), // URL to photo
