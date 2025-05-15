@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera, MapPin, CalendarClock, AlertCircle } from "lucide-react";
+import { X, Plus, Upload, Camera, MapPin, Map, CalendarClock, AlertCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
+import LocationMapDialog from "@/components/location-map-dialog";
 
 // Extender el esquema para el formulario
 const inmuebleFormSchema = insertInmuebleSchema.extend({
@@ -49,6 +50,7 @@ export default function InmuebleForm() {
   const [relacionInmuebles, setRelacionInmuebles] = useState<{ id: number; nombre: string }[]>([]);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
+  const [showMapDialog, setShowMapDialog] = useState(false);
 
   // Obtener lista de personas para las relaciones
   const { data: personas } = useQuery({
@@ -283,6 +285,22 @@ export default function InmuebleForm() {
     setRelacionInmuebles(relacionInmuebles.filter(i => i.id !== id));
   };
 
+  // Función para abrir mapa y seleccionar ubicación
+  const openLocationMap = () => {
+    setShowMapDialog(true);
+  };
+
+  // Función para manejar la selección de ubicación en el mapa
+  const handleLocationSelect = (lat: number, lng: number) => {
+    form.setValue("latitud", lat.toString());
+    form.setValue("longitud", lng.toString());
+    
+    toast({
+      title: "Ubicación seleccionada",
+      description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
+    });
+  };
+
   // Función para capturar la ubicación actual
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -470,18 +488,31 @@ export default function InmuebleForm() {
           />
         </div>
         
-        <div className="flex justify-start">
-          <Button 
-            type="button" 
-            variant="default" 
-            size="sm" 
-            onClick={getCurrentLocation}
-            className="flex items-center bg-blue-600 hover:bg-blue-700"
-          >
-            <MapPin className="h-4 w-4 mr-2" /> Obtener ubicación actual
-          </Button>
-          <div className="ml-2 text-xs text-gray-500">
-            (Presiona este botón para obtener las coordenadas de tu ubicación actual)
+        <div className="flex flex-col space-y-2">
+          <div className="flex justify-between">
+            <div className="flex space-x-2">
+              <Button 
+                type="button" 
+                variant="default" 
+                size="sm" 
+                onClick={getCurrentLocation}
+                className="flex items-center bg-blue-600 hover:bg-blue-700"
+              >
+                <MapPin className="h-4 w-4 mr-1" /> Obtener ubicación actual
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={openLocationMap}
+                className="flex items-center"
+              >
+                <Map className="h-4 w-4 mr-1" /> Abrir mapa
+              </Button>
+            </div>
+            <div className="text-xs text-gray-500">
+              (Seleccione un método para obtener coordenadas)
+            </div>
           </div>
         </div>
         
@@ -838,6 +869,14 @@ export default function InmuebleForm() {
           </Button>
         </div>
       </form>
+      
+      {/* Diálogo para seleccionar ubicación en el mapa */}
+      <LocationMapDialog
+        open={showMapDialog}
+        onOpenChange={setShowMapDialog}
+        onSelectLocation={handleLocationSelect}
+        title="Seleccionar ubicación del inmueble"
+      />
     </Form>
   );
 }
