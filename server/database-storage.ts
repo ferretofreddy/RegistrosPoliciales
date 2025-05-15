@@ -699,6 +699,54 @@ export class DatabaseStorage {
                 });
               }
             }
+            
+            // NIVEL 3: Buscar vehículos relacionados con este inmueble
+            console.log(`Buscando vehículos relacionados al inmueble ID: ${inmuebleRelacionado.id} (de la persona ID: ${persona.id})`);
+            const vehiculosInmuebleResult = await db.execute(
+              sql`SELECT v.* FROM vehiculos v
+                  JOIN vehiculos_inmuebles vi ON v.id = vi.vehiculo_id
+                  WHERE vi.inmueble_id = ${inmuebleRelacionado.id}`
+            );
+            
+            const vehiculosInmueble = vehiculosInmuebleResult.rows || [];
+            console.log(`Vehículos relacionados al inmueble ID ${inmuebleRelacionado.id}: ${vehiculosInmueble.length}`);
+            
+            // Para cada vehículo, obtener sus ubicaciones
+            for (const vehiculoInmueble of vehiculosInmueble) {
+              console.log(`Buscando ubicaciones para vehículo ${vehiculoInmueble.id} relacionado con inmueble ${inmuebleRelacionado.id}`);
+              
+              const ubicacionesVehiculoResult = await db.execute(
+                sql`SELECT u.* FROM ubicaciones u
+                    JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
+                    WHERE vu.vehiculo_id = ${vehiculoInmueble.id}
+                    AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+              );
+              
+              const ubicacionesVehiculo = ubicacionesVehiculoResult.rows || [];
+              console.log(`Ubicaciones encontradas para vehículo ${vehiculoInmueble.id}: ${ubicacionesVehiculo.length}`);
+              
+              // Agregar cada ubicación al resultado con la cadena de relaciones
+              for (const ubicacion of ubicacionesVehiculo) {
+                if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                  ubicacionesEncontradas.add(ubicacion.id);
+                  resultado.ubicacionesRelacionadas.push({
+                    ubicacion: ubicacion,
+                    entidadRelacionada: {
+                      tipo: 'vehiculo',
+                      entidad: vehiculoInmueble,
+                      relacionadoCon: {
+                        tipo: 'inmueble',
+                        entidad: inmuebleRelacionado,
+                        relacionadoCon: {
+                          tipo: 'persona',
+                          entidad: persona
+                        }
+                      }
+                    }
+                  });
+                }
+              }
+            }
           }
         }
       }
