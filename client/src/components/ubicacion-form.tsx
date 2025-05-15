@@ -242,7 +242,29 @@ export default function UbicacionForm() {
         throw error;
       }
     },
-    onSuccess: async (data: any) => {
+    onSuccess: async (responseData: any) => {
+      console.log("🔍 Datos completos de respuesta:", responseData);
+      
+      // Extraer el ID de la ubicación correctamente, dependiendo de la estructura de respuesta
+      let ubicacionId;
+      if (responseData && responseData.data && responseData.data.id) {
+        // Si la respuesta es como {success: true, data: {id: X, ...}}
+        ubicacionId = responseData.data.id;
+        console.log("📌 ID de ubicación extraído de responseData.data:", ubicacionId);
+      } else if (responseData && responseData.id) {
+        // Si la respuesta es como {id: X, ...}
+        ubicacionId = responseData.id;
+        console.log("📌 ID de ubicación extraído directamente:", ubicacionId);
+      } else {
+        console.error("❌ No se pudo extraer el ID de la ubicación de la respuesta:", responseData);
+        toast({
+          title: "Advertencia",
+          description: "Ubicación creada pero no se pudo procesar su ID para relaciones",
+          variant: "destructive",
+        });
+        return; // Salir si no tenemos ID
+      }
+      
       toast({
         title: "Éxito",
         description: "Ubicación registrada correctamente",
@@ -254,7 +276,7 @@ export default function UbicacionForm() {
           for (const observacion of observaciones) {
             try {
               const resultado = await apiRequest("POST", "/api/ubicaciones/observaciones", {
-                ubicacionId: data.id,
+                ubicacionId: ubicacionId,
                 detalle: observacion.detalle,
                 fecha: observacion.fecha || new Date()
               });
@@ -275,10 +297,10 @@ export default function UbicacionForm() {
             inmuebles: relacionInmuebles.map(i => i.id)
           };
           
-          console.log(`Enviando petición para crear relaciones de ubicación ${data.id}:`, relacionesData);
+          console.log(`Enviando petición para crear relaciones de ubicación ${ubicacionId}:`, relacionesData);
           
           try {
-            const resultado = await apiRequest("POST", `/api/ubicaciones/${data.id}/relaciones`, relacionesData);
+            const resultado = await apiRequest("POST", `/api/ubicaciones/${ubicacionId}/relaciones`, relacionesData);
             console.log("Resultado de la creación de relaciones:", resultado);
             
             // Invalidar consultas relacionadas para refrescar datos
