@@ -390,15 +390,33 @@ export class DatabaseStorage {
       // Procesando cada tipo de entidad por separado
       // 1. BÚSQUEDA DE PERSONAS
       if (tipos.includes('persona') || tipos.includes('personas')) {
-        console.log(`Buscando personas con ID/nombre: ${queryExacto}`);
+        console.log(`Buscando personas con ID/identificación/nombre: ${queryExacto}`);
+        
+        // Verificar si el término de búsqueda podría ser un ID numérico
+        let idNumerico: number | null = null;
+        if (!isNaN(parseInt(queryExacto))) {
+          idNumerico = parseInt(queryExacto);
+          console.log(`Detectado posible ID numérico: ${idNumerico}`);
+        }
         
         // Consulta SQL directa para personas
-        console.log(`Ejecutando consulta SQL para personas con identificacion=${queryExacto} O nombre LIKE ${searchPattern}`);
-        const personasResult = await db.execute(
-          sql`SELECT * FROM personas 
-              WHERE identificacion = ${queryExacto}
-              OR LOWER(nombre) LIKE LOWER(${searchPattern})`
-        );
+        let personasResult;
+        if (idNumerico !== null) {
+          console.log(`Ejecutando consulta SQL para personas con id=${idNumerico} O identificacion=${queryExacto} O nombre LIKE ${searchPattern}`);
+          personasResult = await db.execute(
+            sql`SELECT * FROM personas 
+                WHERE id = ${idNumerico}
+                OR identificacion = ${queryExacto}
+                OR LOWER(nombre) LIKE LOWER(${searchPattern})`
+          );
+        } else {
+          console.log(`Ejecutando consulta SQL para personas con identificacion=${queryExacto} O nombre LIKE ${searchPattern}`);
+          personasResult = await db.execute(
+            sql`SELECT * FROM personas 
+                WHERE identificacion = ${queryExacto}
+                OR LOWER(nombre) LIKE LOWER(${searchPattern})`
+          );
+        }
         
         const personas = personasResult.rows || [];
         console.log(`Personas encontradas: ${personas.length}`);
@@ -524,16 +542,37 @@ export class DatabaseStorage {
       
       // 2. BÚSQUEDA DE VEHÍCULOS (Implementemos correctamente todas las búsquedas)
       if (tipos.includes('vehiculo') || tipos.includes('vehiculos')) {
-        console.log(`Buscando vehículos con placa/descripción: ${queryExacto}`);
+        console.log(`Buscando vehículos con ID/placa/marca/modelo: ${queryExacto}`);
+        
+        // Verificar si el término de búsqueda podría ser un ID numérico
+        let idNumerico: number | null = null;
+        if (!isNaN(parseInt(queryExacto))) {
+          idNumerico = parseInt(queryExacto);
+          console.log(`Detectado posible ID numérico: ${idNumerico}`);
+        }
         
         // Consulta SQL directa para vehículos
-        console.log(`Ejecutando consulta SQL para vehículos con placa=${queryExacto} O marca/modelo LIKE ${searchPattern}`);
-        const vehiculosResult = await db.execute(
-          sql`SELECT * FROM vehiculos 
-              WHERE placa = ${queryExacto}
-              OR LOWER(marca) LIKE LOWER(${searchPattern})
-              OR LOWER(modelo) LIKE LOWER(${searchPattern})`
-        );
+        let vehiculosResult;
+        if (idNumerico !== null) {
+          console.log(`Ejecutando consulta SQL para vehículos con id=${idNumerico} O placa=${queryExacto} O marca/modelo/tipo LIKE ${searchPattern}`);
+          vehiculosResult = await db.execute(
+            sql`SELECT * FROM vehiculos 
+                WHERE id = ${idNumerico}
+                OR placa = ${queryExacto}
+                OR LOWER(marca) LIKE LOWER(${searchPattern})
+                OR LOWER(modelo) LIKE LOWER(${searchPattern})
+                OR LOWER(tipo) LIKE LOWER(${searchPattern})`
+          );
+        } else {
+          console.log(`Ejecutando consulta SQL para vehículos con placa=${queryExacto} O marca/modelo/tipo LIKE ${searchPattern}`);
+          vehiculosResult = await db.execute(
+            sql`SELECT * FROM vehiculos 
+                WHERE placa = ${queryExacto}
+                OR LOWER(marca) LIKE LOWER(${searchPattern})
+                OR LOWER(modelo) LIKE LOWER(${searchPattern})
+                OR LOWER(tipo) LIKE LOWER(${searchPattern})`
+          );
+        }
         
         const vehiculos = vehiculosResult.rows || [];
         console.log(`Vehículos encontrados: ${vehiculos.length}`);
@@ -659,16 +698,35 @@ export class DatabaseStorage {
       
       // 3. BÚSQUEDA DE INMUEBLES
       if (tipos.includes('inmueble') || tipos.includes('inmuebles')) {
-        console.log(`Buscando inmuebles con dirección/descripción: ${queryExacto}`);
+        console.log(`Buscando inmuebles con ID/dirección/tipo/propietario: ${queryExacto}`);
+        
+        // Verificar si el término de búsqueda podría ser un ID numérico
+        let idNumerico: number | null = null;
+        if (!isNaN(parseInt(queryExacto))) {
+          idNumerico = parseInt(queryExacto);
+          console.log(`Detectado posible ID numérico: ${idNumerico}`);
+        }
         
         // Consulta SQL directa para inmuebles
-        console.log(`Ejecutando consulta SQL para inmuebles con dirección LIKE ${searchPattern}`);
-        const inmueblesResult = await db.execute(
-          sql`SELECT * FROM inmuebles 
-              WHERE LOWER(direccion) LIKE LOWER(${searchPattern})
-              OR LOWER(tipo) LIKE LOWER(${searchPattern})
-              OR LOWER(propietario) LIKE LOWER(${searchPattern})`
-        );
+        let inmueblesResult;
+        if (idNumerico !== null) {
+          console.log(`Ejecutando consulta SQL para inmuebles con id=${idNumerico} O dirección/tipo/propietario LIKE ${searchPattern}`);
+          inmueblesResult = await db.execute(
+            sql`SELECT * FROM inmuebles 
+                WHERE id = ${idNumerico}
+                OR LOWER(direccion) LIKE LOWER(${searchPattern})
+                OR LOWER(tipo) LIKE LOWER(${searchPattern})
+                OR LOWER(propietario) LIKE LOWER(${searchPattern})`
+          );
+        } else {
+          console.log(`Ejecutando consulta SQL para inmuebles con dirección/tipo/propietario LIKE ${searchPattern}`);
+          inmueblesResult = await db.execute(
+            sql`SELECT * FROM inmuebles 
+                WHERE LOWER(direccion) LIKE LOWER(${searchPattern})
+                OR LOWER(tipo) LIKE LOWER(${searchPattern})
+                OR LOWER(propietario) LIKE LOWER(${searchPattern})`
+          );
+        }
         
         const inmuebles = inmueblesResult.rows || [];
         console.log(`Inmuebles encontrados: ${inmuebles.length}`);
