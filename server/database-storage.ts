@@ -863,21 +863,19 @@ export class DatabaseStorage {
       // Consulta SQL directa para ubicaciones
       let ubicacionesResult;
       if (idNumerico !== null) {
-        console.log(`Ejecutando consulta SQL para ubicaciones con id=${idNumerico} O tipo/descripción/observaciones LIKE ${searchPattern}`);
+        console.log(`Ejecutando consulta SQL para ubicaciones con id=${idNumerico} O tipo/observaciones LIKE ${searchPattern}`);
         ubicacionesResult = await db.execute(
           sql`SELECT * FROM ubicaciones 
-              WHERE id = ${idNumerico}
+              WHERE (id = ${idNumerico}
               OR LOWER(tipo) LIKE LOWER(${searchPattern})
-              OR LOWER(descripcion) LIKE LOWER(${searchPattern})
-              OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern}))
+              OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern})))
               AND latitud IS NOT NULL AND longitud IS NOT NULL`
         );
       } else {
-        console.log(`Ejecutando consulta SQL para ubicaciones con tipo/descripción/observaciones LIKE ${searchPattern}`);
+        console.log(`Ejecutando consulta SQL para ubicaciones con tipo/observaciones LIKE ${searchPattern}`);
         ubicacionesResult = await db.execute(
           sql`SELECT * FROM ubicaciones 
               WHERE LOWER(tipo) LIKE LOWER(${searchPattern})
-              OR LOWER(descripcion) LIKE LOWER(${searchPattern})
               OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern}))
               AND latitud IS NOT NULL AND longitud IS NOT NULL`
         );
