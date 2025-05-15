@@ -37,7 +37,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
+import { FormDescription } from "@/components/ui/form";
 import { Pencil, Trash2, Plus, Save, X } from "lucide-react";
 
 // Esquema para el formulario de tipo de inmueble

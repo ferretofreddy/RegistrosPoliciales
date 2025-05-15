@@ -649,6 +649,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
     }
   });
+
+  // Función middleware para verificar rol de administrador
+  const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    if (req.user?.rol !== "admin") {
+      return res.status(403).json({ message: "No tiene permisos para esta acción" });
+    }
+    next();
+  };
+  
+  // Rutas de administración para tipos de inmuebles (solo accesibles por administradores)
+  
+  // Obtener todos los tipos de inmuebles (incluyendo activos e inactivos)
+  app.get("/api/tipos-inmuebles-admin", requireAdmin, async (req, res) => {
+    try {
+      const tiposInmuebles = await storage.getAllTiposInmuebles();
+      res.json(tiposInmuebles);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+    }
+  });
+  
+  // Crear un nuevo tipo de inmueble
+  app.post("/api/tipos-inmuebles", requireAdmin, async (req, res) => {
+    try {
+      const tipoInmueble = await storage.createTipoInmueble(req.body);
+      res.status(201).json(tipoInmueble);
+    } catch (error) {
+      res.status(500).json({ message: "Error al crear tipo de inmueble" });
+    }
+  });
+  
+  // Actualizar un tipo de inmueble existente
+  app.patch("/api/tipos-inmuebles/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tipoInmueble = await storage.updateTipoInmueble(id, req.body);
+      if (!tipoInmueble) {
+        return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+      }
+      res.json(tipoInmueble);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar tipo de inmueble" });
+    }
+  });
+  
+  // Eliminar un tipo de inmueble
+  app.delete("/api/tipos-inmuebles/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deleteTipoInmueble(id);
+      if (!result) {
+        return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Error al eliminar tipo de inmueble" });
+    }
+  });
+  
+  // Rutas de administración para tipos de ubicaciones (solo accesibles por administradores)
+  
+  // Obtener todos los tipos de ubicaciones (incluyendo activos e inactivos)
+  app.get("/api/tipos-ubicaciones-admin", requireAdmin, async (req, res) => {
+    try {
+      const tiposUbicaciones = await storage.getAllTiposUbicaciones();
+      res.json(tiposUbicaciones);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+    }
+  });
+  
+  // Crear un nuevo tipo de ubicación
+  app.post("/api/tipos-ubicaciones", requireAdmin, async (req, res) => {
+    try {
+      const tipoUbicacion = await storage.createTipoUbicacion(req.body);
+      res.status(201).json(tipoUbicacion);
+    } catch (error) {
+      res.status(500).json({ message: "Error al crear tipo de ubicación" });
+    }
+  });
+  
+  // Actualizar un tipo de ubicación existente
+  app.patch("/api/tipos-ubicaciones/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tipoUbicacion = await storage.updateTipoUbicacion(id, req.body);
+      if (!tipoUbicacion) {
+        return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+      }
+      res.json(tipoUbicacion);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar tipo de ubicación" });
+    }
+  });
+  
+  // Eliminar un tipo de ubicación
+  app.delete("/api/tipos-ubicaciones/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deleteTipoUbicacion(id);
+      if (!result) {
+        return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Error al eliminar tipo de ubicación" });
+    }
+  });
   
   // Ruta temporal para verificar la autenticación
   app.get("/api/test-auth", (req, res) => {
