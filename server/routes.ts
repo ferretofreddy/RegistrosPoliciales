@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
 import { 
   insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema,
   insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
@@ -584,6 +586,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: error instanceof Error ? error.message : "Error desconocido" 
       }));
       res.end();
+    }
+  });
+  
+  // Ruta de diagnóstico para ubicaciones relacionadas
+  app.get("/api/debug/ubicaciones-relacionadas/:personaId", async (req, res) => {
+    try {
+      const personaId = parseInt(req.params.personaId);
+      
+      if (isNaN(personaId)) {
+        return res.status(400).json({ error: "ID de persona inválido" });
+      }
+      
+      // Obtener información de la persona
+      const persona = await storage.getPersona(personaId);
+      
+      if (!persona) {
+        return res.status(404).json({ error: "Persona no encontrada" });
+      }
+      
+      // Consultar directamente las relaciones
+      const relacionesResult = await db.execute(
+        sql`SELECT * FROM personas_ubicaciones WHERE persona_id = ${personaId}`
+      );
+      
+      // Obtener datos completos de las ubicaciones relacionadas
+      const ubicacionesPromises = [];
+      const relacionesArray = relacionesResult.rows || [];
+      
+      for (const relacion of relacionesArray) {
+        ubicacionesPromises.push(storage.getUbicacion(relacion.ubicacion_id));
+      }
+      
+      const ubicaciones = await Promise.all(ubicacionesPromises);
+      
+      // Responder con los datos
+      res.status(200).json({
+        persona,
+        relaciones: relacionesArray,
+        ubicacionesDetalle: ubicaciones.filter(u => u) // Filtrar nulls
+      });
+    } catch (error) {
+      console.error("Error al consultar ubicaciones relacionadas:", error);
+      res.status(500).json({ error: "Error al consultar relaciones" });
     }
   });
 

@@ -440,7 +440,19 @@ export class DatabaseStorage {
         
         // Para cada persona encontrada, buscar sus ubicaciones relacionadas
         for (const persona of personas) {
-          console.log(`Buscando ubicaciones para persona ID: ${persona.id}`);
+          console.log(`Buscando ubicaciones para persona ID: ${persona.id}, Nombre: ${persona.nombre}`);
+          
+          // Verificar directamente en la tabla de relaciones
+          const relacionesResult = await db.execute(
+            sql`SELECT * FROM personas_ubicaciones WHERE persona_id = ${persona.id}`
+          );
+          
+          console.log(`[DEBUG] Relaciones en personas_ubicaciones para persona ID ${persona.id}:`, 
+                      relacionesResult.rows ? relacionesResult.rows.length : 0);
+          
+          if (relacionesResult.rows && relacionesResult.rows.length > 0) {
+            console.log(`[DEBUG] Primera relación:`, relacionesResult.rows[0]);
+          }
           
           // Buscar ubicaciones relacionadas con esta persona mediante SQL directo
           const ubicacionesResult = await db.execute(
@@ -452,6 +464,10 @@ export class DatabaseStorage {
           
           const ubicacionesPersona = ubicacionesResult.rows || [];
           console.log(`Ubicaciones encontradas para persona ID ${persona.id}: ${ubicacionesPersona.length}`);
+          
+          if (ubicacionesPersona.length > 0) {
+            console.log(`[DEBUG] Primera ubicación encontrada:`, ubicacionesPersona[0]);
+          }
           
           // Agregar cada ubicación al resultado
           for (const ubicacion of ubicacionesPersona) {
