@@ -415,7 +415,7 @@ export default function DetalleDialog({
   }
 
   // Obtener relaciones del elemento seleccionado
-  const { data: relaciones } = useQuery({
+  const { data: relaciones, isLoading: cargandoRelaciones, error: errorRelaciones } = useQuery({
     queryKey: [`/api/relaciones/${tipo}/${dato?.id}`],
     queryFn: async () => {
       if (!dato) return null;
@@ -430,6 +430,16 @@ export default function DetalleDialog({
       return data;
     },
     enabled: !!dato?.id
+  });
+  
+  // Verificación adicional de depuración
+  console.log("Estado actual de relaciones:", {
+    tieneRelaciones: !!relaciones,
+    cargandoRelaciones,
+    errorRelaciones,
+    relaciones,
+    tipo,
+    datoId: dato?.id
   });
 
   return (
@@ -447,15 +457,29 @@ export default function DetalleDialog({
         <div className="py-4">
           {contenido}
           
-          {relaciones && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-3">Entidades Relacionadas</h3>
-              
-              {/* Verificar si hay alguna relación */}
-              {(relaciones.personas?.length > 0 || 
-                relaciones.vehiculos?.length > 0 || 
-                relaciones.inmuebles?.length > 0 || 
-                relaciones.ubicaciones?.length > 0) ? (
+          {/* Sección de relaciones */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-3">Entidades Relacionadas</h3>
+            
+            {cargandoRelaciones && (
+              <div className="text-center py-3">
+                <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+                <p className="mt-2 text-gray-500">Cargando relaciones...</p>
+              </div>
+            )}
+            
+            {errorRelaciones && (
+              <div className="bg-red-50 p-3 rounded-md text-red-500 text-sm">
+                Error al cargar relaciones: {errorRelaciones.message}
+              </div>
+            )}
+            
+            {/* Verificar si hay alguna relación */}
+            {relaciones && !cargandoRelaciones && !errorRelaciones && (
+              (relaciones.personas?.length > 0 || 
+               relaciones.vehiculos?.length > 0 || 
+               relaciones.inmuebles?.length > 0 || 
+               relaciones.ubicaciones?.length > 0) ? (
                 <>
                   {/* Personas relacionadas */}
                   {relaciones.personas && relaciones.personas.length > 0 && (
@@ -536,9 +560,16 @@ export default function DetalleDialog({
                 <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-md">
                   No hay entidades relacionadas con este registro
                 </div>
-              )}
-            </div>
-          )}
+              )
+            )}
+            
+            {/* Mensaje si no hay relaciones cargadas y no hay error ni carga en progreso */}
+            {!relaciones && !cargandoRelaciones && !errorRelaciones && (
+              <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-md">
+                No se pudieron cargar las relaciones
+              </div>
+            )}
+          </div>
         </div>
         <DialogFooter className="flex justify-between">
           <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
