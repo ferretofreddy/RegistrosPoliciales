@@ -288,14 +288,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ubicaciones", requireRole(["admin", "investigador"]), async (req, res) => {
     try {
-      const ubicacionData = insertUbicacionSchema.parse(req.body);
-      const ubicacion = await storage.createUbicacion(ubicacionData);
-      res.status(201).json(ubicacion);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      console.log("📍 Recibido datos para nueva ubicación:", req.body);
+      
+      // Validar datos recibidos
+      if (!req.body.latitud || !req.body.longitud || !req.body.tipo) {
+        console.error("⚠️ Datos incompletos:", req.body);
+        return res.status(400).json({ 
+          success: false, 
+          error: "Faltan datos requeridos (latitud, longitud, tipo)" 
+        });
       }
-      res.status(500).json({ message: "Error al crear ubicación" });
+      
+      // Normalizar datos
+      const ubicacionData = {
+        latitud: parseFloat(req.body.latitud),
+        longitud: parseFloat(req.body.longitud),
+        tipo: req.body.tipo,
+        fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
+        observaciones: req.body.observaciones || ""
+      };
+      
+      console.log("📍 Datos normalizados para guardar:", ubicacionData);
+      
+      // Guardar en la base de datos
+      const ubicacion = await storage.createUbicacion(ubicacionData);
+      console.log("✅ Ubicación creada con éxito:", ubicacion);
+      
+      // Asegurar el Content-Type adecuado
+      res.setHeader('Content-Type', 'application/json');
+      
+      // Enviar respuesta exitosa
+      return res.status(201).json({
+        success: true,
+        data: ubicacion
+      });
+    } catch (error) {
+      console.error("❌ Error al crear ubicación:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          success: false,
+          error: "Datos inválidos", 
+          details: error.errors 
+        });
+      }
+      
+      // Asegurar el Content-Type adecuado
+      res.setHeader('Content-Type', 'application/json');
+      
+      // Enviar respuesta de error
+      return res.status(500).json({ 
+        success: false, 
+        error: "Error al crear ubicación" 
+      });
     }
   });
 
