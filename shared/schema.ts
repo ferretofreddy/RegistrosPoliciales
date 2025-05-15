@@ -111,18 +111,18 @@ export const insertTipoInmuebleSchema = createInsertSchema(tiposInmuebles).pick(
 // Inmuebles
 export const inmuebles = pgTable("inmuebles", {
   id: serial("id").primaryKey(),
-  tipoId: integer("tipo_id").references(() => tiposInmuebles.id),
-  tipo: text("tipo").notNull(), // casa, apartamento, etc (mantenemos para compatibilidad)
+  tipo: text("tipo").notNull(), // casa, apartamento, etc
   propietario: text("propietario").notNull(),
   direccion: text("direccion").notNull(),
+  observaciones: text("observaciones"),
   foto: text("foto"), // URL to photo
 });
 
 export const insertInmuebleSchema = createInsertSchema(inmuebles).pick({
-  tipoId: true,
   tipo: true,
   propietario: true,
   direccion: true,
+  observaciones: true,
   foto: true,
 });
 
@@ -160,8 +160,7 @@ export const ubicaciones = pgTable("ubicaciones", {
   id: serial("id").primaryKey(),
   latitud: doublePrecision("latitud").notNull(),
   longitud: doublePrecision("longitud").notNull(),
-  tipoId: integer("tipo_id").references(() => tiposUbicaciones.id),
-  tipo: text("tipo").notNull(), // domicilio, avistamiento, etc (mantenemos para compatibilidad)
+  tipo: text("tipo").notNull(), // domicilio, avistamiento, etc
   fecha: timestamp("fecha").notNull().defaultNow(),
   observaciones: text("observaciones"),
 });
@@ -169,7 +168,6 @@ export const ubicaciones = pgTable("ubicaciones", {
 export const insertUbicacionSchema = createInsertSchema(ubicaciones).pick({
   latitud: true,
   longitud: true,
-  tipoId: true,
   tipo: true,
   fecha: true,
   observaciones: true,
