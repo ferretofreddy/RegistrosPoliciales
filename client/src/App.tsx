@@ -8,6 +8,7 @@ import RegistrosPage from "@/pages/registros-page";
 import UbicacionesPage from "@/pages/ubicaciones-page";
 import EstructurasPage from "@/pages/estructuras-page";
 import AdminPage from "@/pages/admin-page";
+import ConfiguracionPage from "@/pages/configuracion-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <ProtectedRoute path="/ubicaciones" component={UbicacionesPage} />
       <ProtectedRoute path="/estructuras" component={EstructurasPage} />
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
+      <ProtectedRoute path="/configuracion" component={ConfiguracionPage} roles={["admin"]} />
       <Route component={NotFound} />
     </Switch>
   );
