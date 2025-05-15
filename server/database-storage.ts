@@ -170,7 +170,7 @@ export class DatabaseStorage {
   async deleteTipoUbicacion(id: number): Promise<boolean> {
     try {
       // Comprobamos si hay ubicaciones usando este tipo
-      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipoId, id));
+      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipo, String(id)));
       
       if (relatedUbicaciones.length > 0) {
         // Si hay ubicaciones usando este tipo, no eliminar físicamente, solo marcar como inactivo
