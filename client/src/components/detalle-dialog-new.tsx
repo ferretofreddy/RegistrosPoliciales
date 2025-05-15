@@ -14,7 +14,7 @@ import {
   List, Link2, Info, AlertCircle 
 } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
-import PdfExport from "@/components/pdf-export";
+
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
