@@ -875,8 +875,8 @@ export class DatabaseStorage {
         console.log(`Ejecutando consulta SQL para ubicaciones con tipo/observaciones LIKE ${searchPattern}`);
         ubicacionesResult = await db.execute(
           sql`SELECT * FROM ubicaciones 
-              WHERE LOWER(tipo) LIKE LOWER(${searchPattern})
-              OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern}))
+              WHERE (LOWER(tipo) LIKE LOWER(${searchPattern})
+              OR (observaciones IS NOT NULL AND LOWER(observaciones) LIKE LOWER(${searchPattern})))
               AND latitud IS NOT NULL AND longitud IS NOT NULL`
         );
       }

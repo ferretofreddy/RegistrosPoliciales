@@ -27,18 +27,26 @@ export default function UbicacionesPage() {
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["/api/ubicaciones", searchTerm, selectedTypes],
     queryFn: async () => {
+      console.log("[DEBUG] Iniciando búsqueda de ubicaciones"); 
       const tipos = Object.entries(selectedTypes)
         .filter(([_, value]) => value)
         .map(([key]) => key);
       
+      console.log(`[DEBUG] Búsqueda con término: "${searchTerm}" y tipos: ${tipos.join(', ')}`);
       const response = await fetch(`/api/ubicaciones?buscar=${encodeURIComponent(searchTerm)}&tipos=${tipos.join(',')}`);
+      
       if (!response.ok) {
-        throw new Error('Error al buscar ubicaciones');
+        const errorText = await response.text();
+        console.error(`[DEBUG] Error en la búsqueda: ${response.status} - ${errorText}`);
+        throw new Error(`Error al buscar ubicaciones: ${response.status}`);
       }
-      return await response.json();
+      
+      const data = await response.json();
+      console.log("[DEBUG] Datos recibidos:", data);
+      return data;
     },
     enabled: false, // Desactivamos la búsqueda automática y la manejamos con nuestro efecto
   });
