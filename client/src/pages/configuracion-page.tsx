@@ -278,8 +278,11 @@ export default function ConfiguracionPage() {
       id: number;
       values: TipoUbicacionFormValues;
     }) => {
+      console.log("Actualizando tipo de ubicación con ID:", id, "Valores:", values);
       const res = await apiRequest("PATCH", `/api/tipos-ubicaciones/${id}`, values);
-      return res.json();
+      const data = await res.json();
+      console.log("Respuesta al actualizar tipo de ubicación:", data);
+      return data;
     },
     onSuccess: () => {
       toast({
@@ -288,10 +291,16 @@ export default function ConfiguracionPage() {
       });
       setEditingTipoUbicacionId(null);
       ubicacionForm.reset();
-      queryClient.invalidateQueries({ queryKey: ["/api/tipos-ubicaciones-admin"] });
+      
+      // Forzar actualización de las listas
+      console.log("Actualizando listas después de editar tipo de ubicación");
+      refetchTiposUbicaciones().then(() => {
+        console.log("Lista de tipos de ubicaciones actualizada después de editar");
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/tipos-ubicaciones"] });
     },
     onError: (error) => {
+      console.error("Error al actualizar tipo de ubicación:", error);
       toast({
         title: "Error",
         description: `Error al actualizar tipo de ubicación: ${error.message}`,
@@ -305,14 +314,26 @@ export default function ConfiguracionPage() {
     mutationFn: async (id: number) => {
       console.log("Eliminando tipo de ubicación con ID:", id);
       try {
-        const res = await apiRequest("DELETE", `/api/tipos-ubicaciones/${id}`);
+        // Usamos fetch directamente para tener más control
+        const res = await fetch(`/api/tipos-ubicaciones/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log("Respuesta de eliminación status:", res.status);
+        
+        const data = await res.json();
+        console.log("Datos de respuesta eliminación ubicación:", data);
+        
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Error al eliminar");
+          throw new Error(data.message || "Error al eliminar tipo de ubicación");
         }
-        return await res.json();
+        
+        return data;
       } catch (error) {
-        console.error("Error en la mutación:", error);
+        console.error("Error en la mutación de eliminación:", error);
         throw error;
       }
     },
@@ -322,18 +343,25 @@ export default function ConfiguracionPage() {
         title: "Éxito",
         description: data.message || "Tipo de ubicación eliminado correctamente",
       });
-      // Forzar la actualización de las listas
-      refetchTiposUbicaciones();
-      queryClient.invalidateQueries({ queryKey: ["/api/tipos-ubicaciones"] });
+      
+      // Forzar la actualización de las listas con retraso para asegurar que la BD se actualice
+      setTimeout(() => {
+        console.log("Actualizando listas después de eliminar tipo de ubicación");
+        refetchTiposUbicaciones().then(() => {
+          console.log("Lista de tipos de ubicaciones actualizada después de eliminar");
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/tipos-ubicaciones"] });
+      }, 500);
     },
     onError: (error: Error) => {
-      console.error("Error en onError:", error);
+      console.error("Error en onError de eliminación ubicación:", error);
       toast({
         title: "Error",
         description: `Error al eliminar tipo de ubicación: ${error.message}`,
         variant: "destructive",
       });
     },
+    retry: 0 // Desactivar reintentos automáticos
   });
 
   // Función para manejar la edición de un tipo de inmueble
