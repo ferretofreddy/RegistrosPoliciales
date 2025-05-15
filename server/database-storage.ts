@@ -81,6 +81,52 @@ export class DatabaseStorage {
     return vehiculo;
   }
 
+  // TIPOS DE INMUEBLES METHODS
+  async getAllTiposInmuebles(): Promise<TipoInmueble[]> {
+    return await db.select().from(tiposInmuebles)
+      .where(eq(tiposInmuebles.activo, true))
+      .orderBy(tiposInmuebles.nombre);
+  }
+
+  async getTipoInmueble(id: number): Promise<TipoInmueble | undefined> {
+    const [tipoInmueble] = await db.select().from(tiposInmuebles).where(eq(tiposInmuebles.id, id));
+    return tipoInmueble;
+  }
+
+  async createTipoInmueble(tipoInmueble: InsertTipoInmueble): Promise<TipoInmueble> {
+    const [nuevoTipoInmueble] = await db.insert(tiposInmuebles).values(tipoInmueble).returning();
+    return nuevoTipoInmueble;
+  }
+
+  async updateTipoInmueble(id: number, tipoInmueble: Partial<InsertTipoInmueble>): Promise<TipoInmueble | undefined> {
+    const [tipoActualizado] = await db.update(tiposInmuebles)
+      .set(tipoInmueble)
+      .where(eq(tiposInmuebles.id, id))
+      .returning();
+    return tipoActualizado;
+  }
+
+  async deleteTipoInmueble(id: number): Promise<boolean> {
+    try {
+      // Comprobamos si hay inmuebles usando este tipo
+      const relatedInmuebles = await db.select().from(inmuebles).where(eq(inmuebles.tipoId, id));
+      
+      if (relatedInmuebles.length > 0) {
+        // Si hay inmuebles usando este tipo, no eliminar físicamente, solo marcar como inactivo
+        await db.update(tiposInmuebles)
+          .set({ activo: false })
+          .where(eq(tiposInmuebles.id, id));
+      } else {
+        // Si no hay inmuebles usando este tipo, podemos eliminarlo físicamente
+        await db.delete(tiposInmuebles).where(eq(tiposInmuebles.id, id));
+      }
+      return true;
+    } catch (error) {
+      console.error('Error al eliminar tipo de inmueble:', error);
+      return false;
+    }
+  }
+
   // INMUEBLES METHODS
   async getAllInmuebles(): Promise<Inmueble[]> {
     return await db.select().from(inmuebles);
@@ -94,6 +140,52 @@ export class DatabaseStorage {
   async createInmueble(insertInmueble: InsertInmueble): Promise<Inmueble> {
     const [inmueble] = await db.insert(inmuebles).values(insertInmueble).returning();
     return inmueble;
+  }
+
+  // TIPOS DE UBICACIONES METHODS
+  async getAllTiposUbicaciones(): Promise<TipoUbicacion[]> {
+    return await db.select().from(tiposUbicaciones)
+      .where(eq(tiposUbicaciones.activo, true))
+      .orderBy(tiposUbicaciones.nombre);
+  }
+
+  async getTipoUbicacion(id: number): Promise<TipoUbicacion | undefined> {
+    const [tipoUbicacion] = await db.select().from(tiposUbicaciones).where(eq(tiposUbicaciones.id, id));
+    return tipoUbicacion;
+  }
+
+  async createTipoUbicacion(tipoUbicacion: InsertTipoUbicacion): Promise<TipoUbicacion> {
+    const [nuevoTipoUbicacion] = await db.insert(tiposUbicaciones).values(tipoUbicacion).returning();
+    return nuevoTipoUbicacion;
+  }
+
+  async updateTipoUbicacion(id: number, tipoUbicacion: Partial<InsertTipoUbicacion>): Promise<TipoUbicacion | undefined> {
+    const [tipoActualizado] = await db.update(tiposUbicaciones)
+      .set(tipoUbicacion)
+      .where(eq(tiposUbicaciones.id, id))
+      .returning();
+    return tipoActualizado;
+  }
+
+  async deleteTipoUbicacion(id: number): Promise<boolean> {
+    try {
+      // Comprobamos si hay ubicaciones usando este tipo
+      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipoId, id));
+      
+      if (relatedUbicaciones.length > 0) {
+        // Si hay ubicaciones usando este tipo, no eliminar físicamente, solo marcar como inactivo
+        await db.update(tiposUbicaciones)
+          .set({ activo: false })
+          .where(eq(tiposUbicaciones.id, id));
+      } else {
+        // Si no hay ubicaciones usando este tipo, podemos eliminarlo físicamente
+        await db.delete(tiposUbicaciones).where(eq(tiposUbicaciones.id, id));
+      }
+      return true;
+    } catch (error) {
+      console.error('Error al eliminar tipo de ubicacion:', error);
+      return false;
+    }
   }
 
   // UBICACIONES METHODS

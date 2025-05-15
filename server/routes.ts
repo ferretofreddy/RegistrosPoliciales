@@ -6,9 +6,10 @@ import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  personas, vehiculos, inmuebles, ubicaciones,
+  personas, vehiculos, inmuebles, ubicaciones, tiposInmuebles, tiposUbicaciones,
   insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema,
-  insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
+  insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema,
+  insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
