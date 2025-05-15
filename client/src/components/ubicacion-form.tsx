@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { insertUbicacionSchema } from "@shared/schema";
+import { insertUbicacionSchema, Ubicacion } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -242,7 +242,7 @@ export default function UbicacionForm() {
         throw error;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Éxito",
         description: "Ubicación registrada correctamente",
@@ -267,10 +267,11 @@ export default function UbicacionForm() {
       if (relacionPersonas.length > 0) {
         relacionPersonas.forEach(async (persona) => {
           try {
+            console.log(`Creando relación ubicación ${data.id} - persona ${persona.id}`);
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "ubicaciones",
+              tipo1: "ubicacion",
               id1: data.id,
-              tipo2: "personas",
+              tipo2: "persona",
               id2: persona.id
             });
           } catch (error) {
@@ -283,10 +284,11 @@ export default function UbicacionForm() {
       if (relacionVehiculos.length > 0) {
         relacionVehiculos.forEach(async (vehiculo) => {
           try {
+            console.log(`Creando relación ubicación ${data.id} - vehículo ${vehiculo.id}`);
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "ubicaciones",
+              tipo1: "ubicacion",
               id1: data.id,
-              tipo2: "vehiculos",
+              tipo2: "vehiculo",
               id2: vehiculo.id
             });
           } catch (error) {
@@ -299,10 +301,11 @@ export default function UbicacionForm() {
       if (relacionInmuebles.length > 0) {
         relacionInmuebles.forEach(async (inmueble) => {
           try {
+            console.log(`Creando relación ubicación ${data.id} - inmueble ${inmueble.id}`);
             await apiRequest("POST", "/api/relaciones", {
-              tipo1: "ubicaciones",
+              tipo1: "ubicacion",
               id1: data.id,
-              tipo2: "inmuebles",
+              tipo2: "inmueble",
               id2: inmueble.id
             });
           } catch (error) {
