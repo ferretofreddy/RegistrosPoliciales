@@ -259,9 +259,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`DEBUG - No se proporcionaron tipos, usando valores por defecto: [${tiposArray.join(', ')}]`);
         }
         
-        console.log(`DEBUG - Tipos finales para la búsqueda: [${tiposArray.join(', ')}]`);
+        // Normalizar los tipos: convertir plural a singular para consistencia
+        const tiposNormalizados = tiposArray.map(tipo => {
+          if (tipo === "personas") return "persona";
+          if (tipo === "vehiculos") return "vehiculo";
+          if (tipo === "inmuebles") return "inmueble";
+          return tipo;
+        });
         
-        const resultados = await storage.buscarUbicacionesConCoordenadas(buscar.toString(), tiposArray);
+        console.log(`DEBUG - Tipos normalizados para la búsqueda: [${tiposNormalizados.join(', ')}]`);
+        
+        const resultados = await storage.buscarUbicacionesConCoordenadas(buscar.toString(), tiposNormalizados);
         return res.json(resultados);
       }
       

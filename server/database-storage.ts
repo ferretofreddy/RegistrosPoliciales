@@ -389,7 +389,7 @@ export class DatabaseStorage {
       
       // Procesando cada tipo de entidad por separado
       // 1. BÚSQUEDA DE PERSONAS
-      if (tipos.includes('personas')) {
+      if (tipos.includes('persona') || tipos.includes('personas')) {
         console.log(`Buscando personas con ID/nombre: ${queryExacto}`);
         
         // Consulta SQL directa para personas
