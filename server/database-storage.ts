@@ -207,8 +207,6 @@ export class DatabaseStorage {
           .from(inmuebles)
           .where(
             or(
-              eq(inmuebles.identificacion, query),
-              like(inmuebles.identificacion, searchPattern),
               like(inmuebles.direccion, searchPattern),
               like(inmuebles.propietario, searchPattern)
             )
