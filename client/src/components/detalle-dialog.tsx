@@ -419,9 +419,15 @@ export default function DetalleDialog({
     queryKey: [`/api/relaciones/${tipo}/${dato?.id}`],
     queryFn: async () => {
       if (!dato) return null;
+      console.log(`Obteniendo relaciones para ${tipo} con ID ${dato.id}`);
       const res = await fetch(`/api/relaciones/${tipo}/${dato.id}`);
-      if (!res.ok) return null;
-      return res.json();
+      if (!res.ok) {
+        console.error(`Error al obtener relaciones: ${res.status} ${res.statusText}`);
+        return {personas: [], vehiculos: [], inmuebles: [], ubicaciones: []};
+      }
+      const data = await res.json();
+      console.log(`Relaciones obtenidas:`, data);
+      return data;
     },
     enabled: !!dato?.id
   });
