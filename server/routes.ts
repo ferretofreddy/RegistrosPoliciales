@@ -366,63 +366,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ruta alternativa para crear ubicaciones sin filtros de autenticación
-  app.post("/api/_create_ubicacion_direct", (req, res) => {
-    console.log("⭐ Recibiendo solicitud para crear ubicación directa");
-    console.log("Body recibido:", req.body);
+  app.post("/api/bypass-ubicacion", async (req, res) => {
+    console.log("⭐ Recibiendo solicitud en bypass-ubicacion");
     
     try {
-      // Verificar si tenemos datos válidos
-      if (!req.body.latitud || !req.body.longitud || !req.body.tipo) {
-        console.log("❌ Datos incompletos:", Object.keys(req.body));
-        return res.status(400).send(JSON.stringify({ 
-          success: false,
-          error: "Datos incompletos", 
-          requeridos: "latitud, longitud, tipo",
-          recibidos: Object.keys(req.body).join(", ")
-        }));
-      }
-      
       const ubicacionData = {
-        latitud: req.body.latitud,
-        longitud: req.body.longitud,
-        tipo: req.body.tipo,
-        fecha: req.body.fecha || new Date(),
+        latitud: parseFloat(req.body.latitud),
+        longitud: parseFloat(req.body.longitud),
+        tipo: req.body.tipo || "Otro",
+        fecha: new Date(),
         observaciones: req.body.observaciones || ""
       };
       
-      console.log("✅ Intentando crear ubicación con datos:", ubicacionData);
+      console.log("⭐ Datos a guardar:", ubicacionData);
       
-      // IMPORTANTE: Hacer esto de manera síncrona para evitar problemas
-      storage.createUbicacion(ubicacionData)
-        .then(ubicacion => {
-          console.log("✅ Ubicación creada exitosamente:", ubicacion);
-          // Usar res.send en lugar de res.json para evitar interferencia con middleware
-          res.status(201);
-          // Establecer encabezado antes de enviar cualquier dato
-          res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          // Enviar respuesta plana para evitar procesamiento
-          res.end(JSON.stringify({
-            success: true,
-            data: ubicacion
-          }));
-        })
-        .catch(err => {
-          console.error("❌ Error al crear ubicación:", err);
-          res.status(500);
-          res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          res.end(JSON.stringify({
-            success: false,
-            error: err instanceof Error ? err.message : "Error desconocido"
-          }));
-        });
+      // Guardar directamente en la base de datos
+      const ubicacion = await storage.createUbicacion(ubicacionData);
+      console.log("✅ Ubicación guardada:", ubicacion);
+      
+      // Devolver respuesta como texto plano para evitar interferencias
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.write(JSON.stringify({ success: true, data: ubicacion }));
+      res.end();
     } catch (error) {
-      console.error("❌ Error en el procesamiento:", error);
-      res.status(500);
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.end(JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Error desconocido"
+      console.error("❌ Error al guardar ubicación:", error);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.write(JSON.stringify({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Error desconocido" 
       }));
+      res.end();
     }
   });
 

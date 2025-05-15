@@ -84,6 +84,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     Ubicaciones
                   </Link>
                   <Link
+                    href="/ubicacion-directa"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      location === "/ubicacion-directa"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                  >
+                    Ubicación Directa
+                  </Link>
+                  <Link
                     href="/estructuras"
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
                       location === "/estructuras"
@@ -190,6 +200,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Ubicaciones
+              </Link>
+              <Link
+                href="/ubicacion-directa"
+                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  location === "/ubicacion-directa"
+                    ? "bg-primary-900 text-white"
+                    : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Ubicación Directa
               </Link>
               <Link
                 href="/estructuras"
