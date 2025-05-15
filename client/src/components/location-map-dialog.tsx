@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, ArrowRight, Navigation } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LocationMapDialogProps {
@@ -21,6 +21,12 @@ interface LocationMapDialogProps {
   title?: string;
 }
 
+declare global {
+  interface Window {
+    L: any;
+  }
+}
+
 export default function LocationMapDialog({
   open,
   onOpenChange,
@@ -28,56 +34,180 @@ export default function LocationMapDialog({
   initialLocation,
   title = "Seleccionar ubicación",
 }: LocationMapDialogProps) {
-  // Default location (Costa Rica)
-  const defaultLat = initialLocation?.lat || 9.748917;
-  const defaultLng = initialLocation?.lng || -83.753428;
-  
-  // Estado para el formulario
-  const [latInput, setLatInput] = useState<string>(initialLocation?.lat.toString() || defaultLat.toString());
-  const [lngInput, setLngInput] = useState<string>(initialLocation?.lng.toString() || defaultLng.toString());
-  
-  // Estado para la ubicación seleccionada
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number}>({
-    lat: initialLocation?.lat || defaultLat, 
-    lng: initialLocation?.lng || defaultLng
-  });
+  // Referencias y estados
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [map, setMap] = useState<any>(null);
+  const [marker, setMarker] = useState<any>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(
+    initialLocation || null
+  );
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
   
   const { toast } = useToast();
   
-  // Actualiza el estado cuando cambian las props
+  // Default location (Costa Rica)
+  const defaultLat = initialLocation?.lat || 9.748917;
+  const defaultLng = initialLocation?.lng || -83.753428;
+
+  // Inicializar el mapa cuando se abre el diálogo
   useEffect(() => {
-    if (initialLocation) {
-      setSelectedLocation(initialLocation);
-      setLatInput(initialLocation.lat.toString());
-      setLngInput(initialLocation.lng.toString());
+    if (open && mapContainerRef.current && !isMapInitialized && window.L) {
+      console.log("Inicializando mapa en el diálogo");
+      
+      try {
+        const leaflet = window.L;
+        
+        // Crear el mapa
+        const newMap = leaflet.map(mapContainerRef.current).setView(
+          selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : [defaultLat, defaultLng],
+          13
+        );
+        
+        // Añadir capa base de OpenStreetMap
+        leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(newMap);
+        
+        // Crear un marcador en la posición inicial con icono personalizado
+        const initialPos = selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : [defaultLat, defaultLng];
+        const newMarker = leaflet.marker(initialPos, {
+          draggable: true,
+          icon: leaflet.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+          })
+        }).addTo(newMap);
+        
+        // Al arrastrar el marcador, actualizar la ubicación seleccionada
+        newMarker.on('dragend', function() {
+          const position = newMarker.getLatLng();
+          setSelectedLocation({ 
+            lat: position.lat, 
+            lng: position.lng 
+          });
+        });
+        
+        // Al hacer clic en el mapa, mover el marcador y actualizar la ubicación
+        newMap.on('click', function(e: any) {
+          newMarker.setLatLng(e.latlng);
+          setSelectedLocation({ 
+            lat: e.latlng.lat, 
+            lng: e.latlng.lng 
+          });
+        });
+        
+        // Guardar referencias
+        setMap(newMap);
+        setMarker(newMarker);
+        setIsMapInitialized(true);
+        
+        // Invalidar tamaño después que el diálogo se muestre completamente
+        setTimeout(() => {
+          newMap.invalidateSize();
+        }, 100);
+        
+      } catch (error) {
+        console.error("Error al inicializar el mapa:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo inicializar el mapa. Por favor, recargue la página.",
+          variant: "destructive",
+        });
+      }
     }
-  }, [initialLocation]);
-  
-  // Construir URL para el iframe de OpenStreetMap
-  const getOsmUrl = () => {
-    const lat = selectedLocation.lat || defaultLat;
-    const lng = selectedLocation.lng || defaultLng;
     
-    // URL for iframe that shows marker
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.02}%2C${lat-0.02}%2C${lng+0.02}%2C${lat+0.02}&layer=mapnik&marker=${lat}%2C${lng}`;
-  };
-  
-  // Actualizar coordenadas al cambiar los inputs
-  const updateCoordinates = () => {
-    const lat = parseFloat(latInput);
-    const lng = parseFloat(lngInput);
-    
-    if (!isNaN(lat) && !isNaN(lng)) {
-      setSelectedLocation({ lat, lng });
+    // Limpiar el mapa cuando se cierra el diálogo
+    return () => {
+      if (open === false && map) {
+        console.log("Limpiando mapa");
+        map.remove();
+        setMap(null);
+        setMarker(null);
+        setIsMapInitialized(false);
+      }
+    };
+  }, [open, selectedLocation, defaultLat, defaultLng, isMapInitialized]);
+
+  // Actualizar el mapa si cambia la ubicación inicial
+  useEffect(() => {
+    if (map && marker && initialLocation) {
+      marker.setLatLng([initialLocation.lat, initialLocation.lng]);
+      map.setView([initialLocation.lat, initialLocation.lng], 13);
+      setSelectedLocation(initialLocation);
+    }
+  }, [initialLocation, map, marker]);
+
+  // Función para obtener la ubicación actual
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      toast({
+        title: "Obteniendo ubicación",
+        description: "Por favor espere mientras obtenemos su ubicación actual...",
+      });
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Actualizar ubicación seleccionada
+          setSelectedLocation({ lat: latitude, lng: longitude });
+          
+          // Si el mapa y marcador están disponibles, actualizarlos
+          if (map && marker) {
+            marker.setLatLng([latitude, longitude]);
+            map.setView([latitude, longitude], 15);
+            
+            // Opcional: mostrar un popup temporal
+            marker.bindPopup("<b>¡Su ubicación actual!</b>").openPopup();
+            setTimeout(() => marker.closePopup(), 3000);
+          }
+          
+          toast({
+            title: "Ubicación obtenida",
+            description: `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`,
+          });
+        },
+        (error) => {
+          let errorMsg = "Error desconocido";
+          
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg = "Permiso denegado para acceder a la ubicación";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg = "La información de ubicación no está disponible";
+              break;
+            case error.TIMEOUT:
+              errorMsg = "La solicitud de ubicación ha expirado";
+              break;
+          }
+          
+          toast({
+            title: "Error de geolocalización",
+            description: errorMsg,
+            variant: "destructive",
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
     } else {
       toast({
-        title: "Formato incorrecto",
-        description: "Por favor ingrese números válidos para latitud y longitud",
+        title: "Geolocalización no soportada",
+        description: "Su navegador no soporta la geolocalización",
         variant: "destructive",
       });
     }
   };
-  
+
+  // Confirmar la selección de ubicación
   const handleConfirm = () => {
     if (selectedLocation) {
       onSelectLocation(selectedLocation.lat, selectedLocation.lng);
@@ -89,50 +219,12 @@ export default function LocationMapDialog({
     } else {
       toast({
         title: "Error",
-        description: "Por favor, selecciona una ubicación",
+        description: "Por favor, selecciona una ubicación en el mapa",
         variant: "destructive",
       });
     }
   };
-  
-  // Para seleccionar una ubicación, el usuario tendrá que usar el mapa completo en una pestaña nueva
-  const handleOpenFullMap = () => {
-    const lat = selectedLocation.lat || defaultLat;
-    const lng = selectedLocation.lng || defaultLng;
-    window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=15/${lat}/${lng}`, '_blank');
-  };
-  
-  // Obtener ubicación actual del navegador si está disponible
-  const handleGetCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setSelectedLocation({ lat: latitude, lng: longitude });
-          setLatInput(latitude.toString());
-          setLngInput(longitude.toString());
-          toast({
-            title: "Ubicación actual detectada",
-            description: `Latitud: ${latitude.toFixed(6)}, Longitud: ${longitude.toFixed(6)}`,
-          });
-        },
-        (error) => {
-          toast({
-            title: "Error al obtener ubicación",
-            description: `No se pudo obtener la ubicación actual: ${error.message}`,
-            variant: "destructive",
-          });
-        }
-      );
-    } else {
-      toast({
-        title: "Geolocalización no soportada",
-        description: "Su navegador no admite geolocalización",
-        variant: "destructive",
-      });
-    }
-  };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -145,74 +237,50 @@ export default function LocationMapDialog({
             {title}
           </DialogTitle>
           <DialogDescription>
-            Visualiza el mapa e ingresa las coordenadas manualmente o usa tu ubicación actual.
+            Haz clic en el mapa para seleccionar una ubicación o arrastra el marcador.
           </DialogDescription>
         </DialogHeader>
         
-        {/* Vista previa del mapa (con iframe) */}
-        <div className="w-full h-[350px] rounded-md border border-border my-4 bg-gray-100 overflow-hidden">
-          <iframe 
-            title="OpenStreetMap" 
-            width="100%" 
-            height="100%" 
-            src={getOsmUrl()}
-            style={{ border: "none" }}
-            allowFullScreen
+        {/* Contenedor del mapa */}
+        <div className="relative">
+          <div 
+            ref={mapContainerRef} 
+            className="w-full h-[450px] rounded-md border border-border bg-gray-100"
           />
+          
+          {!isMapInitialized && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-md">
+              <div className="bg-white p-4 rounded-lg shadow-lg text-center">
+                <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4" />
+                <p className="text-sm">Cargando mapa...</p>
+              </div>
+            </div>
+          )}
         </div>
         
-        {/* Entrada manual de coordenadas */}
-        <div className="grid grid-cols-2 gap-4 my-4">
-          <div className="space-y-2">
-            <Label htmlFor="latitude">Latitud</Label>
-            <div className="flex gap-2">
-              <Input 
-                id="latitude" 
-                value={latInput} 
-                onChange={(e) => setLatInput(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="longitude">Longitud</Label>
-            <div className="flex gap-2">
-              <Input 
-                id="longitude" 
-                value={lngInput} 
-                onChange={(e) => setLngInput(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Acciones */}
-        <div className="flex flex-wrap gap-2 mb-4 justify-between">
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleGetCurrentLocation} type="button">
-              <Navigation className="h-4 w-4 mr-2" />
-              Usar mi ubicación actual
-            </Button>
-            <Button variant="outline" onClick={handleOpenFullMap} type="button">
-              <MapPin className="h-4 w-4 mr-2" />
-              Abrir mapa interactivo
-            </Button>
-          </div>
-          <Button variant="secondary" onClick={updateCoordinates} type="button">
-            <ArrowRight className="h-4 w-4 mr-2" />
-            Actualizar mapa
+        {/* Acciones para el mapa */}
+        <div className="flex gap-2 mt-4">
+          <Button variant="outline" onClick={getCurrentLocation} type="button">
+            <Navigation className="h-4 w-4 mr-2" />
+            Usar mi ubicación actual
           </Button>
         </div>
         
         {/* Coordenadas seleccionadas */}
-        <div className="mt-2 text-sm border-t pt-4 border-border">
-          <p><strong>Coordenadas seleccionadas:</strong> {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</p>
-        </div>
+        {selectedLocation && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+            <p className="text-sm text-blue-800 flex justify-between">
+              <span><strong>Latitud:</strong> {selectedLocation.lat.toFixed(6)}</span>
+              <span><strong>Longitud:</strong> {selectedLocation.lng.toFixed(6)}</span>
+            </p>
+          </div>
+        )}
         
-        <DialogFooter className="pt-4">
+        <DialogFooter className="mt-4 pt-2 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleConfirm}>
+          <Button onClick={handleConfirm} disabled={!selectedLocation}>
             Confirmar ubicación
           </Button>
         </DialogFooter>
