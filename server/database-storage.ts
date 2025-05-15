@@ -190,9 +190,9 @@ export class DatabaseStorage {
           .from(personas)
           .where(
             or(
-              like(personas.nombre, searchPattern),
-              eq(personas.identificacion, query),
-              like(personas.identificacion, searchPattern)
+              sql`LOWER(${personas.nombre}) LIKE LOWER(${searchPattern})`,
+              sql`LOWER(${personas.identificacion}) = LOWER(${query})`,
+              sql`LOWER(${personas.identificacion}) LIKE LOWER(${searchPattern})`
             )
           );
         
@@ -239,10 +239,11 @@ export class DatabaseStorage {
           .from(vehiculos)
           .where(
             or(
-              eq(vehiculos.placa, query),
-              like(vehiculos.placa, searchPattern),
-              like(vehiculos.marca, searchPattern),
-              like(vehiculos.modelo, searchPattern)
+              sql`LOWER(${vehiculos.placa}) = LOWER(${query})`,
+              sql`LOWER(${vehiculos.placa}) LIKE LOWER(${searchPattern})`,
+              sql`LOWER(${vehiculos.marca}) LIKE LOWER(${searchPattern})`,
+              sql`LOWER(${vehiculos.modelo}) LIKE LOWER(${searchPattern})`,
+              sql`LOWER(${vehiculos.tipo}) LIKE LOWER(${searchPattern})`
             )
           );
         
@@ -289,8 +290,9 @@ export class DatabaseStorage {
           .from(inmuebles)
           .where(
             or(
-              like(inmuebles.direccion, searchPattern),
-              like(inmuebles.propietario, searchPattern)
+              sql`LOWER(${inmuebles.direccion}) LIKE LOWER(${searchPattern})`,
+              sql`LOWER(${inmuebles.propietario}) LIKE LOWER(${searchPattern})`,
+              sql`LOWER(${inmuebles.tipo}) LIKE LOWER(${searchPattern})`
             )
           );
         
@@ -334,8 +336,8 @@ export class DatabaseStorage {
         
         const ubicacionesBasicas = await db.select().from(ubicaciones).where(
           or(
-            like(ubicaciones.tipo, searchPattern),
-            like(ubicaciones.observaciones, searchPattern)
+            sql`LOWER(${ubicaciones.tipo}) LIKE LOWER(${searchPattern})`,
+            sql`LOWER(${ubicaciones.observaciones}) LIKE LOWER(${searchPattern})`
           )
         );
         
