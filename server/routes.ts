@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
-import { eq, sql } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
   personas, vehiculos, inmuebles, ubicaciones, tiposInmuebles, tiposUbicaciones,

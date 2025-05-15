@@ -109,7 +109,12 @@ export class DatabaseStorage {
   async deleteTipoInmueble(id: number): Promise<boolean> {
     try {
       // Comprobamos si hay inmuebles usando este tipo
-      const relatedInmuebles = await db.select().from(inmuebles).where(eq(inmuebles.tipo, String(id)));
+      const relatedInmuebles = await db.select().from(inmuebles).where(
+        or(
+          eq(inmuebles.tipo, String(id)),
+          eq(inmuebles.tipoId, id)
+        )
+      );
       
       if (relatedInmuebles.length > 0) {
         // Si hay inmuebles usando este tipo, no eliminar físicamente, solo marcar como inactivo
@@ -170,7 +175,12 @@ export class DatabaseStorage {
   async deleteTipoUbicacion(id: number): Promise<boolean> {
     try {
       // Comprobamos si hay ubicaciones usando este tipo
-      const relatedUbicaciones = await db.select().from(ubicaciones).where(eq(ubicaciones.tipo, String(id)));
+      const relatedUbicaciones = await db.select().from(ubicaciones).where(
+        or(
+          eq(ubicaciones.tipo, String(id)),
+          eq(ubicaciones.tipoId, id)
+        )
+      );
       
       if (relatedUbicaciones.length > 0) {
         // Si hay ubicaciones usando este tipo, no eliminar físicamente, solo marcar como inactivo
