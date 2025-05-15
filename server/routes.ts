@@ -417,6 +417,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al crear relación" });
     }
   });
+  
+  // Ruta especial para crear múltiples relaciones para una ubicación de una sola vez
+  app.post("/api/ubicaciones/:id/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const ubicacionId = parseInt(req.params.id);
+      const { personas, vehiculos, inmuebles } = req.body;
+      
+      console.log(`Creando múltiples relaciones para ubicación ${ubicacionId}:`);
+      console.log(`- Personas: ${personas?.length || 0}`);
+      console.log(`- Vehículos: ${vehiculos?.length || 0}`);
+      console.log(`- Inmuebles: ${inmuebles?.length || 0}`);
+      
+      const resultados = {
+        personas: [],
+        vehiculos: [],
+        inmuebles: []
+      };
+      
+      // Crear relaciones con personas
+      if (personas && personas.length > 0) {
+        for (const personaId of personas) {
+          try {
+            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "personas", parseInt(personaId));
+            resultados.personas.push({ id: personaId, exito: true });
+          } catch (error) {
+            console.error(`Error al crear relación con persona ${personaId}:`, error);
+            resultados.personas.push({ id: personaId, exito: false, error: "Error al crear relación" });
+          }
+        }
+      }
+      
+      // Crear relaciones con vehículos
+      if (vehiculos && vehiculos.length > 0) {
+        for (const vehiculoId of vehiculos) {
+          try {
+            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "vehiculos", parseInt(vehiculoId));
+            resultados.vehiculos.push({ id: vehiculoId, exito: true });
+          } catch (error) {
+            console.error(`Error al crear relación con vehículo ${vehiculoId}:`, error);
+            resultados.vehiculos.push({ id: vehiculoId, exito: false, error: "Error al crear relación" });
+          }
+        }
+      }
+      
+      // Crear relaciones con inmuebles
+      if (inmuebles && inmuebles.length > 0) {
+        for (const inmuebleId of inmuebles) {
+          try {
+            const relacion = await storage.crearRelacion("ubicaciones", ubicacionId, "inmuebles", parseInt(inmuebleId));
+            resultados.inmuebles.push({ id: inmuebleId, exito: true });
+          } catch (error) {
+            console.error(`Error al crear relación con inmueble ${inmuebleId}:`, error);
+            resultados.inmuebles.push({ id: inmuebleId, exito: false, error: "Error al crear relación" });
+          }
+        }
+      }
+      
+      res.status(201).json({ 
+        mensaje: "Relaciones creadas",
+        resultados 
+      });
+    } catch (error) {
+      console.error("Error al crear relaciones:", error);
+      res.status(500).json({ message: "Error al crear relaciones" });
+    }
+  });
 
   app.get("/api/relaciones/:tipo/:id", async (req, res) => {
     try {
