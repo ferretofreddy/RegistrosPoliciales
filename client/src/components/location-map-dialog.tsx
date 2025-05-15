@@ -234,12 +234,28 @@ export default function LocationMapDialog({
   // Confirmar la selección de ubicación
   const handleConfirm = () => {
     if (selectedLocation) {
-      onSelectLocation(selectedLocation.lat, selectedLocation.lng);
-      onOpenChange(false);
-      toast({
-        title: "Ubicación seleccionada",
-        description: `Latitud: ${selectedLocation.lat.toFixed(6)}, Longitud: ${selectedLocation.lng.toFixed(6)}`,
-      });
+      console.log("Confirmando ubicación:", selectedLocation);
+      try {
+        // Llamar a la función de callback con las coordenadas
+        onSelectLocation(selectedLocation.lat, selectedLocation.lng);
+        console.log("Callback de selección ejecutado correctamente");
+        
+        // Cerrar el diálogo
+        onOpenChange(false);
+        
+        // Mostrar confirmación al usuario
+        toast({
+          title: "Ubicación seleccionada",
+          description: `Latitud: ${selectedLocation.lat.toFixed(6)}, Longitud: ${selectedLocation.lng.toFixed(6)}`,
+        });
+      } catch (error) {
+        console.error("Error al confirmar ubicación:", error);
+        toast({
+          title: "Error al guardar coordenadas",
+          description: "No se pudieron guardar las coordenadas en el formulario.",
+          variant: "destructive",
+        });
+      }
     } else {
       toast({
         title: "Error",
@@ -269,7 +285,7 @@ export default function LocationMapDialog({
         <div className="relative">
           <div 
             id={mapDialogId} 
-            className="leaflet-container h-[450px] rounded-md border border-border"
+            className="leaflet-container h-[500px] rounded-md border border-border"
           />
           
           {!mapInitialized && (
@@ -282,14 +298,6 @@ export default function LocationMapDialog({
           )}
         </div>
         
-        {/* Acciones para el mapa */}
-        <div className="flex gap-2 mt-4">
-          <Button variant="outline" onClick={getCurrentLocation} type="button">
-            <Navigation className="h-4 w-4 mr-2" />
-            Usar mi ubicación actual
-          </Button>
-        </div>
-        
         {/* Coordenadas seleccionadas */}
         {selectedLocation && (
           <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
@@ -300,12 +308,17 @@ export default function LocationMapDialog({
           </div>
         )}
         
-        <DialogFooter className="mt-4 pt-2 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="mt-5 pt-3 border-t flex flex-col sm:flex-row gap-3 items-center justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button onClick={handleConfirm} disabled={!selectedLocation}>
-            Confirmar ubicación
+          <Button 
+            onClick={handleConfirm}
+            disabled={!selectedLocation}
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 flex items-center gap-2"
+          >
+            <MapPin className="h-4 w-4" />
+            Usar esta ubicación
           </Button>
         </DialogFooter>
       </DialogContent>

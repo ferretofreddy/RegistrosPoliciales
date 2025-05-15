@@ -292,8 +292,20 @@ export default function InmuebleForm() {
 
   // Función para manejar la selección de ubicación en el mapa
   const handleLocationSelect = (lat: number, lng: number) => {
+    console.log("Recibiendo coordenadas en inmueble-form:", lat, lng);
+    
+    // Actualizar los campos del formulario
     form.setValue("latitud", lat.toString());
     form.setValue("longitud", lng.toString());
+    
+    // Forzar la actualización de los valores en los campos de entrada
+    const latInput = document.querySelector('input[name="latitud"]') as HTMLInputElement;
+    const lngInput = document.querySelector('input[name="longitud"]') as HTMLInputElement;
+    
+    if (latInput) latInput.value = lat.toString();
+    if (lngInput) lngInput.value = lng.toString();
+    
+    console.log("Formulario actualizado con las coordenadas");
     
     toast({
       title: "Ubicación seleccionada",
