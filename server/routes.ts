@@ -755,13 +755,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("DELETE /api/tipos-inmuebles/:id - Intentando eliminar tipo de inmueble con ID:", req.params.id);
       const id = parseInt(req.params.id);
       
-      // Primero verificamos si existen inmuebles con este tipo usando ambos campos tipo y tipoId
+      // Primero verificamos si existen inmuebles con este tipo (sólo usando campo tipo)
+      // Usamos sólo el campo 'tipo' ya que 'tipoId' se convierte a 'tipo_id' en SQL
       const relatedInmuebles = await db.select().from(inmuebles).where(
-        or(
-          eq(inmuebles.tipo, String(id)),
-          eq(inmuebles.tipoId, id)
-        )
+        eq(inmuebles.tipo, String(id))
       );
+      
+      // Verificamos relaciones con tipo_id aparte para evitar errores de SQL
+      try {
+        const result = await db
+          .execute(sql`SELECT * FROM inmuebles WHERE tipo_id = ${id}`);
+        
+        const inmueblesByTipoId = result.rows || [];
+        console.log("DELETE /api/tipos-inmuebles/:id - Inmuebles por tipo_id:", inmueblesByTipoId.length);
+        
+        // Añadimos los resultados de la consulta adicional, si hay alguno
+        if (inmueblesByTipoId.length > 0) {
+          relatedInmuebles.push(...inmueblesByTipoId);
+        }
+      } catch (error: any) {
+        console.log("Error al verificar inmuebles por tipo_id:", error?.message || "Error desconocido");
+        // Si hay error, continuamos con la operación normal
+      }
       console.log("DELETE /api/tipos-inmuebles/:id - Inmuebles relacionados:", relatedInmuebles.length);
       
       if (relatedInmuebles.length > 0) {
@@ -893,13 +908,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("DELETE /api/tipos-ubicaciones/:id - Intentando eliminar tipo de ubicación con ID:", req.params.id);
       const id = parseInt(req.params.id);
       
-      // Primero verificamos si existen ubicaciones con este tipo usando ambos campos tipo y tipoId
+      // Primero verificamos si existen ubicaciones con este tipo (sólo usando campo tipo)
+      // Usamos sólo el campo 'tipo' ya que 'tipoId' se convierte a 'tipo_id' en SQL
       const relatedUbicaciones = await db.select().from(ubicaciones).where(
-        or(
-          eq(ubicaciones.tipo, String(id)),
-          eq(ubicaciones.tipoId, id)
-        )
+        eq(ubicaciones.tipo, String(id))
       );
+      
+      // Verificamos relaciones con tipo_id aparte para evitar errores de SQL
+      try {
+        const result = await db
+          .execute(sql`SELECT * FROM ubicaciones WHERE tipo_id = ${id}`);
+        
+        const ubicacionesByTipoId = result.rows || [];
+        console.log("DELETE /api/tipos-ubicaciones/:id - Ubicaciones por tipo_id:", ubicacionesByTipoId.length);
+        
+        // Añadimos los resultados de la consulta adicional, si hay alguno
+        if (ubicacionesByTipoId.length > 0) {
+          relatedUbicaciones.push(...ubicacionesByTipoId);
+        }
+      } catch (error: any) {
+        console.log("Error al verificar ubicaciones por tipo_id:", error?.message || "Error desconocido");
+        // Si hay error, continuamos con la operación normal
+      }
       console.log("DELETE /api/tipos-ubicaciones/:id - Ubicaciones relacionadas:", relatedUbicaciones.length);
       
       if (relatedUbicaciones.length > 0) {
