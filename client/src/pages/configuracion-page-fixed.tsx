@@ -39,7 +39,6 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-
 import { Pencil, Trash2, Plus, Save, X } from "lucide-react";
 
 // Esquema para el formulario de tipo de inmueble
@@ -279,7 +278,7 @@ export default function ConfiguracionPage() {
     inmuebleForm.reset({
       nombre: tipo.nombre,
       descripcion: tipo.descripcion || "",
-      activo: tipo.activo,
+      activo: tipo.activo === undefined ? true : tipo.activo,
     });
   };
 
@@ -289,7 +288,7 @@ export default function ConfiguracionPage() {
     ubicacionForm.reset({
       nombre: tipo.nombre,
       descripcion: tipo.descripcion || "",
-      activo: tipo.activo,
+      activo: tipo.activo === undefined ? true : tipo.activo,
     });
   };
 
@@ -402,9 +401,9 @@ export default function ConfiguracionPage() {
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                           <div className="space-y-0.5">
                             <FormLabel>Activo</FormLabel>
-                            <FormDescription>
+                            <p className="text-sm text-muted-foreground">
                               Mostrar este tipo en los formularios
-                            </FormDescription>
+                            </p>
                           </div>
                           <FormControl>
                             <Switch
@@ -569,9 +568,9 @@ export default function ConfiguracionPage() {
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                           <div className="space-y-0.5">
                             <FormLabel>Activo</FormLabel>
-                            <FormDescription>
+                            <p className="text-sm text-muted-foreground">
                               Mostrar este tipo en los formularios
-                            </FormDescription>
+                            </p>
                           </div>
                           <FormControl>
                             <Switch

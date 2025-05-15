@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
@@ -651,7 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Función middleware para verificar rol de administrador
-  const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  const requireAdmin = (req: any, res: any, next: any) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
     }
