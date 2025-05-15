@@ -668,10 +668,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("GET /api/tipos-inmuebles-admin: Obteniendo todos los tipos de inmuebles");
       // Usamos una consulta directa de la BD con Drizzle
-      const tipos = await db.select().from(tiposInmuebles)
-        .orderBy(tiposInmuebles.nombre);
+      const tipos = await db.select().from(tiposInmuebles).orderBy(tiposInmuebles.nombre);
       console.log("GET /api/tipos-inmuebles-admin: Tipos encontrados:", tipos.length);
-      res.json(tiposInmuebles);
+      res.json(tipos);
     } catch (error) {
       console.error("GET /api/tipos-inmuebles-admin Error:", error);
       res.status(500).json({ message: "Error al obtener tipos de inmuebles", error: String(error) });
@@ -681,10 +680,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Crear un nuevo tipo de inmueble
   app.post("/api/tipos-inmuebles", requireAdmin, async (req, res) => {
     try {
-      const tipoInmueble = await storage.createTipoInmueble(req.body);
-      res.status(201).json(tipoInmueble);
+      console.log("POST /api/tipos-inmuebles: Creando nuevo tipo de inmueble:", req.body);
+      
+      // Validamos los datos con el esquema
+      const validatedData = insertTipoInmuebleSchema.parse(req.body);
+      console.log("POST /api/tipos-inmuebles: Datos validados:", validatedData);
+      
+      // Insertamos directamente con Drizzle
+      const [nuevoTipo] = await db.insert(tiposInmuebles).values(validatedData).returning();
+      console.log("POST /api/tipos-inmuebles: Tipo creado:", nuevoTipo);
+      
+      res.status(201).json(nuevoTipo);
     } catch (error) {
-      res.status(500).json({ message: "Error al crear tipo de inmueble" });
+      console.error("POST /api/tipos-inmuebles Error:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Datos inválidos para el tipo de inmueble", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Error al crear tipo de inmueble", 
+        error: String(error) 
+      });
     }
   });
   
@@ -721,20 +741,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obtener todos los tipos de ubicaciones (incluyendo activos e inactivos)
   app.get("/api/tipos-ubicaciones-admin", requireAdmin, async (req, res) => {
     try {
-      const tiposUbicaciones = await storage.getAllTiposUbicaciones();
-      res.json(tiposUbicaciones);
+      console.log("GET /api/tipos-ubicaciones-admin: Obteniendo todos los tipos de ubicaciones");
+      // Consulta directa con Drizzle
+      const tipos = await db.select().from(tiposUbicaciones).orderBy(tiposUbicaciones.nombre);
+      console.log("GET /api/tipos-ubicaciones-admin: Tipos encontrados:", tipos.length);
+      res.json(tipos);
     } catch (error) {
-      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+      console.error("GET /api/tipos-ubicaciones-admin Error:", error);
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones", error: String(error) });
     }
   });
   
   // Crear un nuevo tipo de ubicación
   app.post("/api/tipos-ubicaciones", requireAdmin, async (req, res) => {
     try {
-      const tipoUbicacion = await storage.createTipoUbicacion(req.body);
-      res.status(201).json(tipoUbicacion);
+      console.log("POST /api/tipos-ubicaciones: Creando nuevo tipo de ubicación:", req.body);
+      
+      // Validamos los datos con el esquema
+      const validatedData = insertTipoUbicacionSchema.parse(req.body);
+      console.log("POST /api/tipos-ubicaciones: Datos validados:", validatedData);
+      
+      // Insertamos directamente con Drizzle
+      const [nuevoTipo] = await db.insert(tiposUbicaciones).values(validatedData).returning();
+      console.log("POST /api/tipos-ubicaciones: Tipo creado:", nuevoTipo);
+      
+      res.status(201).json(nuevoTipo);
     } catch (error) {
-      res.status(500).json({ message: "Error al crear tipo de ubicación" });
+      console.error("POST /api/tipos-ubicaciones Error:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Datos inválidos para el tipo de ubicación", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Error al crear tipo de ubicación", 
+        error: String(error) 
+      });
     }
   });
   
@@ -1033,19 +1078,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rutas para obtener tipos de inmuebles y ubicaciones (accesibles por todos los roles)
   app.get("/api/tipos-inmuebles", async (req, res) => {
     try {
-      const tiposInmuebles = await storage.getAllTiposInmuebles();
-      res.json(tiposInmuebles);
+      console.log("GET /api/tipos-inmuebles: Obteniendo tipos de inmuebles activos");
+      // Solo retornamos los tipos activos para estas rutas públicas
+      const tipos = await db.select().from(tiposInmuebles)
+        .where(eq(tiposInmuebles.activo, true))
+        .orderBy(tiposInmuebles.nombre);
+      console.log("GET /api/tipos-inmuebles: Tipos activos encontrados:", tipos.length);
+      res.json(tipos);
     } catch (error) {
-      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+      console.error("GET /api/tipos-inmuebles Error:", error);
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles", error: String(error) });
     }
   });
 
   app.get("/api/tipos-ubicaciones", async (req, res) => {
     try {
-      const tiposUbicaciones = await storage.getAllTiposUbicaciones();
-      res.json(tiposUbicaciones);
+      console.log("GET /api/tipos-ubicaciones: Obteniendo tipos de ubicaciones activos");
+      // Solo retornamos los tipos activos para estas rutas públicas
+      const tipos = await db.select().from(tiposUbicaciones)
+        .where(eq(tiposUbicaciones.activo, true))
+        .orderBy(tiposUbicaciones.nombre);
+      console.log("GET /api/tipos-ubicaciones: Tipos activos encontrados:", tipos.length);
+      res.json(tipos);
     } catch (error) {
-      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+      console.error("GET /api/tipos-ubicaciones Error:", error);
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones", error: String(error) });
     }
   });
 
