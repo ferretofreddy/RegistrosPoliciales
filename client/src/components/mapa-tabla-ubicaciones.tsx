@@ -68,183 +68,28 @@ export default function MapaTablaUbicaciones({
   entidadSeleccionada,
   detalleData
 }: MapaTablaUbicacionesProps) {
-  // Usamos React hooks directamente
-  // Definimos los estados para las ubicaciones
-  // Procesamiento de ubicaciones a partir de detalleData
-  const [ubicacionesDirectas, setUbicacionesDirectas] = useState<Ubicacion[]>([]);
+  // Definimos estados para ubicaciones usando datos reales en lugar de procesados
+  const [ubicacionesDirectas, setUbicacionesDirectas] = useState<any[]>([]);
   const [ubicacionesRelacionadas, setUbicacionesRelacionadas] = useState<any[]>([]);
   
-  // Procesar los datos para extraer ubicaciones
+  // Simplificar el procesamiento de ubicaciones para recuperar la estabilidad
   useEffect(() => {
+    console.log("Datos detallados completos:", detalleData);
+    
     if (!entidadSeleccionada || !detalleData) return;
     
-    const directas: Ubicacion[] = [];
-    const relacionadas: any[] = [];
+    // Extraer las ubicaciones directas de detalleData
+    let directas: any[] = [];
     
-    // Procesar según el tipo de entidad seleccionada
-    if (entidadSeleccionada.tipo === "persona") {
-      // Para personas, sus domicilios son ubicaciones directas
-      const persona = detalleData.personas?.find((p: any) => p.id === entidadSeleccionada.id);
-      
-      if (persona && persona.domicilios && Array.isArray(persona.domicilios)) {
-        // Convertir domicilios a ubicaciones (si tienen coordenadas)
-        persona.domicilios.forEach((domicilio: string, index: number) => {
-          // Aquí solo podemos agregar domicilios que tengan coordenadas
-          // En un caso real, debería haber un servicio de geocodificación
-          
-          // Buscar si existen ubicaciones relacionadas con este domicilio
-          const ubicacionDomicilio = Array.isArray(detalleData.ubicaciones) ? 
-            detalleData.ubicaciones.find((u: any) => 
-              u.observaciones && u.observaciones.includes(domicilio)
-            ) : undefined;
-            
-          if (ubicacionDomicilio) {
-            directas.push(ubicacionDomicilio);
-          }
-        });
-      }
-      
-      // Ubicaciones directamente relacionadas con la persona
-      if (Array.isArray(detalleData.ubicaciones)) {
-        detalleData.ubicaciones.forEach((ubicacion: Ubicacion) => {
-          if (!directas.some(u => u.id === ubicacion.id)) {
-            directas.push(ubicacion);
-          }
-        });
-      }
-      
-      // Procesar ubicaciones de entidades relacionadas
-      // Personas relacionadas
-      if (detalleData.personas) {
-        detalleData.personas.forEach((persona: any) => {
-          if (persona.id !== entidadSeleccionada.id && persona.domicilios) {
-            // Buscar ubicaciones para los domicilios de personas relacionadas
-            persona.domicilios.forEach((domicilio: string) => {
-              // Aquí deberíamos buscar coordenadas para estos domicilios
-              // Para demostración, podemos crear ubicaciones simuladas
-              const ubicacionRelacionada = {
-                ubicacion: {
-                  id: `dom-p-${persona.id}-${Math.random()}`,
-                  latitud: 8.5 + Math.random() * 0.5,
-                  longitud: -82.5 - Math.random() * 0.5,
-                  tipo: "Domicilio",
-                  fecha: new Date().toISOString(),
-                  observaciones: domicilio
-                },
-                entidadRelacionada: {
-                  tipo: "persona",
-                  entidad: persona
-                }
-              };
-              relacionadas.push(ubicacionRelacionada);
-            });
-          }
-        });
-      }
-      
-      // Inmuebles relacionados
-      if (detalleData.inmuebles) {
-        detalleData.inmuebles.forEach((inmueble: any) => {
-          // Buscar ubicaciones para los inmuebles
-          const ubicacionRelacionada = {
-            ubicacion: {
-              id: `inm-${inmueble.id}-${Math.random()}`,
-              latitud: 8.6 + Math.random() * 0.5,
-              longitud: -82.6 - Math.random() * 0.5,
-              tipo: inmueble.tipo || "Inmueble",
-              fecha: new Date().toISOString(),
-              observaciones: inmueble.direccion
-            },
-            entidadRelacionada: {
-              tipo: "inmueble",
-              entidad: inmueble
-            }
-          };
-          relacionadas.push(ubicacionRelacionada);
-        });
-      }
-    }
-    // Para vehículos
-    else if (entidadSeleccionada.tipo === "vehiculo") {
-      // Ubicaciones directamente relacionadas con el vehículo
-      if (Array.isArray(detalleData.ubicaciones)) {
-        detalleData.ubicaciones.forEach((ubicacion: Ubicacion) => {
-          directas.push(ubicacion);
-        });
-      }
-      
-      // Procesar ubicaciones de entidades relacionadas
-      // Personas relacionadas con este vehículo
-      if (detalleData.personas) {
-        detalleData.personas.forEach((persona: any) => {
-          if (persona.domicilios) {
-            persona.domicilios.forEach((domicilio: string) => {
-              const ubicacionRelacionada = {
-                ubicacion: {
-                  id: `dom-p-${persona.id}-${Math.random()}`,
-                  latitud: 8.5 + Math.random() * 0.5,
-                  longitud: -82.5 - Math.random() * 0.5,
-                  tipo: "Domicilio",
-                  fecha: new Date().toISOString(),
-                  observaciones: domicilio
-                },
-                entidadRelacionada: {
-                  tipo: "persona",
-                  entidad: persona
-                }
-              };
-              relacionadas.push(ubicacionRelacionada);
-            });
-          }
-        });
-      }
-    }
-    // Para inmuebles
-    else if (entidadSeleccionada.tipo === "inmueble") {
-      // La dirección del inmueble como ubicación directa
-      const inmueble = detalleData.inmuebles?.find((i: any) => i.id === entidadSeleccionada.id);
-      
-      if (inmueble && inmueble.direccion) {
-        // Si hay ubicaciones relacionadas
-        if (Array.isArray(detalleData.ubicaciones)) {
-          detalleData.ubicaciones.forEach((ubicacion: Ubicacion) => {
-            directas.push(ubicacion);
-          });
-        } else {
-          // Crear una ubicación para la dirección del inmueble
-          const ubicacionInmueble = {
-            id: `inm-dir-${inmueble.id}`,
-            latitud: 8.7 + Math.random() * 0.3,
-            longitud: -82.7 - Math.random() * 0.3,
-            tipo: inmueble.tipo || "Inmueble",
-            fecha: new Date().toISOString(),
-            observaciones: inmueble.direccion
-          };
-          directas.push(ubicacionInmueble as Ubicacion);
-        }
-      }
-    }
-    // Para ubicaciones
-    else if (entidadSeleccionada.tipo === "ubicacion") {
-      // La ubicación seleccionada como ubicación directa
-      if (Array.isArray(detalleData.ubicaciones)) {
-        const ubicacion = detalleData.ubicaciones.find((u: any) => u.id === entidadSeleccionada.id);
-        if (ubicacion) {
-          directas.push(ubicacion);
-        } else {
-          directas.push(...detalleData.ubicaciones);
-        }
-      }
+    // Para cualquier tipo de entidad, obtener las ubicaciones
+    if (Array.isArray(detalleData.ubicaciones)) {
+      directas = detalleData.ubicaciones;
+      console.log("Ubicaciones directas encontradas:", directas.length);
     }
     
-    // Actualizar los estados
+    // Actualizar el estado
     setUbicacionesDirectas(directas);
-    setUbicacionesRelacionadas(relacionadas);
-    
-    console.log("Ubicaciones procesadas:", {
-      directas: directas.length,
-      relacionadas: relacionadas.length
-    });
+    setUbicacionesRelacionadas([]);
     
   }, [entidadSeleccionada, detalleData]);
   const mapRef = useRef<L.Map | null>(null);
