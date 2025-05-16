@@ -11,12 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import 'leaflet/dist/leaflet.css';
-
-// Importamos Leaflet directamente
-let L;
-if (typeof window !== 'undefined') {
-  L = require('leaflet');
-}
+import L from 'leaflet';
 
 interface LocationMapDialogProps {
   open: boolean;
@@ -50,7 +45,7 @@ export default function LocationMapDialog({
   // Inicializar mapa cuando se abre el diálogo
   useEffect(() => {
     // Solo inicializar si el diálogo está abierto y no hay mapa ya inicializado
-    if (!open || mapInitialized || !L) return;
+    if (!open || mapInitialized) return;
     
     console.log("Iniciando inicialización del mapa...");
     
