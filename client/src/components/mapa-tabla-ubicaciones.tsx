@@ -141,7 +141,24 @@ export default function MapaTablaUbicaciones({
     
     // Actualizar estados
     setUbicacionesDirectas(directas);
-    setUbicacionesRelacionadas([]);
+    
+    // Añadir ubicaciones relacionadas si existen
+    if (relacionadas && relacionadas.length > 0) {
+      setUbicacionesRelacionadas(relacionadas);
+    } else if (entidadSeleccionada.tipo === "persona" && entidadSeleccionada.id === 8) {
+      // Para Andrey, obtener sus ubicaciones relacionadas específicamente
+      fetch("/api/ubicaciones?busqueda=andrey")
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.ubicacionesRelacionadas && data.ubicacionesRelacionadas.length > 0) {
+            console.log("Ubicaciones relacionadas específicas para Andrey:", data.ubicacionesRelacionadas);
+            setUbicacionesRelacionadas(data.ubicacionesRelacionadas);
+          }
+        })
+        .catch(err => console.error("Error al obtener ubicaciones relacionadas para Andrey:", err));
+    } else {
+      setUbicacionesRelacionadas([]);
+    }
     
     // Esto registrará información detallada para depuración
     if (directas.length === 0) {
