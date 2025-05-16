@@ -1,42 +1,138 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, User, Car, Home, MapPin, FileText } from "lucide-react";
+import { Search, User, Car, Home, MapPin, FileText, Download } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import MapaUbicaciones from "@/components/mapa-ubicaciones";
 
 export default function EstructurasPage() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [tiposFiltro, setTiposFiltro] = useState({
+    personas: true,
+    vehiculos: true,
+    inmuebles: true,
+    ubicaciones: true
+  });
   const [selectedEntity, setSelectedEntity] = useState<{
     tipo: string;
     id: number;
     nombre: string;
   } | null>(null);
+  const [detalleData, setDetalleData] = useState<any>(null);
 
+  // Query para búsqueda
   const { data: searchResults, isLoading: searchLoading, refetch: searchRefetch } = useQuery<{
-    personas?: Persona[];
-    vehiculos?: Vehiculo[];
-    inmuebles?: Inmueble[];
-  }>({
-    queryKey: ["/api/buscar", searchTerm],
-    enabled: false,
-  });
-
-  const { data: relaciones, isLoading: relacionesLoading, refetch: relacionesRefetch } = useQuery<{
     personas?: Persona[];
     vehiculos?: Vehiculo[];
     inmuebles?: Inmueble[];
     ubicaciones?: Ubicacion[];
   }>({
+    queryKey: ["/api/buscar", searchTerm, tiposFiltro],
+    enabled: false,
+  });
+
+  // Query para relaciones
+  const { data: relaciones, isLoading: relacionesLoading, refetch: relacionesRefetch } = useQuery<{
+    personas?: Persona[];
+    vehiculos?: Vehiculo[];
+    inmuebles?: Inmueble[];
+    ubicaciones?: {
+      ubicacionesDirectas: Ubicacion[];
+      ubicacionesRelacionadas: {
+        ubicacion: Ubicacion;
+        entidadRelacionada: {
+          tipo: string;
+          entidad: any;
+          relacionadoCon?: {
+            tipo: string;
+            entidad: any;
+          };
+        };
+      }[];
+    };
+  }>({
     queryKey: ["/api/relaciones", selectedEntity?.tipo, selectedEntity?.id],
     enabled: !!selectedEntity,
   });
 
+  // Consulta para obtener las ubicaciones relacionadas
+  const { data: ubicacionesData, isLoading: ubicacionesLoading, refetch: ubicacionesRefetch } = useQuery<{
+    ubicacionesDirectas: Ubicacion[];
+    ubicacionesRelacionadas: {
+      ubicacion: Ubicacion;
+      entidadRelacionada: {
+        tipo: string;
+        entidad: any;
+        relacionadoCon?: {
+          tipo: string;
+          entidad: any;
+        };
+      };
+    }[];
+  }>({
+    queryKey: ["/api/ubicaciones", searchTerm],
+    enabled: false,
+  });
+
+  // Preparar datos para el detalle
+  useEffect(() => {
+    if (selectedEntity && relaciones) {
+      const prepararDetalle = () => {
+        let entidadPrincipal: any = null;
+        
+        // Obtener la entidad principal
+        if (selectedEntity.tipo === "personas" && relaciones.personas && relaciones.personas.length > 0) {
+          entidadPrincipal = relaciones.personas[0];
+        } else if (selectedEntity.tipo === "vehiculos" && relaciones.vehiculos && relaciones.vehiculos.length > 0) {
+          entidadPrincipal = relaciones.vehiculos[0];
+        } else if (selectedEntity.tipo === "inmuebles" && relaciones.inmuebles && relaciones.inmuebles.length > 0) {
+          entidadPrincipal = relaciones.inmuebles[0];
+        }
+
+        // Preparar estructura de datos detallados
+        setDetalleData({
+          entidadPrincipal,
+          tipo: selectedEntity.tipo,
+          nombre: selectedEntity.nombre,
+          relaciones: {
+            personas: relaciones.personas || [],
+            vehiculos: relaciones.vehiculos || [],
+            inmuebles: relaciones.inmuebles || [],
+          },
+          ubicaciones: relaciones.ubicaciones || { ubicacionesDirectas: [], ubicacionesRelacionadas: [] }
+        });
+      };
+      
+      prepararDetalle();
+    } else {
+      setDetalleData(null);
+    }
+  }, [selectedEntity, relaciones]);
+
+  // Función que procesa y prepara los tipos para la búsqueda
+  const getTiposSeleccionados = () => {
+    const tipos = [];
+    if (tiposFiltro.personas) tipos.push("personas");
+    if (tiposFiltro.vehiculos) tipos.push("vehiculos");
+    if (tiposFiltro.inmuebles) tipos.push("inmuebles");
+    if (tiposFiltro.ubicaciones) tipos.push("ubicaciones");
+    return tipos;
+  };
+
   const handleSearch = () => {
     if (searchTerm.trim()) {
+      const tipos = getTiposSeleccionados();
       searchRefetch();
+      ubicacionesRefetch();
     }
   };
 
@@ -51,7 +147,178 @@ export default function EstructurasPage() {
     relacionesRefetch();
   };
 
-  // Función de exportación a PDF eliminada
+  const generarPDF = () => {
+    if (!detalleData) return;
+    
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "letter"
+      });
+      
+      // Título
+      doc.setFontSize(16);
+      doc.text(`Informe: ${detalleData.nombre}`, 14, 20);
+
+      // Información de la entidad
+      doc.setFontSize(12);
+      doc.text(`Tipo: ${detalleData.tipo.toUpperCase()}`, 14, 30);
+      
+      // Detalles específicos según el tipo
+      let yPos = 40;
+      if (detalleData.tipo === "personas") {
+        doc.text(`Nombre: ${detalleData.entidadPrincipal.nombre}`, 14, yPos);
+        doc.text(`Identificación: ${detalleData.entidadPrincipal.identificacion}`, 14, yPos + 8);
+        if (detalleData.entidadPrincipal.alias?.length > 0) {
+          doc.text(`Alias: ${detalleData.entidadPrincipal.alias.join(", ")}`, 14, yPos + 16);
+          yPos += 8;
+        }
+        yPos += 16;
+      } else if (detalleData.tipo === "vehiculos") {
+        doc.text(`Marca: ${detalleData.entidadPrincipal.marca}`, 14, yPos);
+        doc.text(`Modelo: ${detalleData.entidadPrincipal.modelo}`, 14, yPos + 8);
+        doc.text(`Placa: ${detalleData.entidadPrincipal.placa}`, 14, yPos + 16);
+        doc.text(`Color: ${detalleData.entidadPrincipal.color}`, 14, yPos + 24);
+        yPos += 32;
+      } else if (detalleData.tipo === "inmuebles") {
+        doc.text(`Dirección: ${detalleData.entidadPrincipal.direccion}`, 14, yPos);
+        doc.text(`Tipo: ${detalleData.entidadPrincipal.tipo}`, 14, yPos + 8);
+        doc.text(`Propietario: ${detalleData.entidadPrincipal.propietario || "No registrado"}`, 14, yPos + 16);
+        yPos += 24;
+      }
+      
+      // Sección de relaciones
+      if (detalleData.relaciones.personas.length > 0) {
+        doc.setFontSize(14);
+        doc.text("Personas relacionadas", 14, yPos);
+        yPos += 10;
+        
+        const personasData = detalleData.relaciones.personas.map((p: Persona) => [
+          p.nombre,
+          p.identificacion,
+          p.alias?.join(", ") || ""
+        ]);
+        
+        autoTable(doc, {
+          head: [["Nombre", "Identificación", "Alias"]],
+          body: personasData,
+          startY: yPos,
+          margin: { top: 10 },
+          styles: { overflow: 'linebreak' },
+          headStyles: { fillColor: [41, 128, 185] },
+          didDrawPage: (data) => { yPos = data.cursor.y + 10; }
+        });
+      }
+      
+      if (detalleData.relaciones.vehiculos.length > 0) {
+        doc.setFontSize(14);
+        doc.text("Vehículos relacionados", 14, yPos);
+        yPos += 10;
+        
+        const vehiculosData = detalleData.relaciones.vehiculos.map((v: Vehiculo) => [
+          v.marca,
+          v.modelo,
+          v.placa,
+          v.color
+        ]);
+        
+        autoTable(doc, {
+          head: [["Marca", "Modelo", "Placa", "Color"]],
+          body: vehiculosData,
+          startY: yPos,
+          margin: { top: 10 },
+          styles: { overflow: 'linebreak' },
+          headStyles: { fillColor: [46, 204, 113] },
+          didDrawPage: (data) => { yPos = data.cursor.y + 10; }
+        });
+      }
+      
+      if (detalleData.relaciones.inmuebles.length > 0) {
+        doc.setFontSize(14);
+        doc.text("Inmuebles relacionados", 14, yPos);
+        yPos += 10;
+        
+        const inmueblesData = detalleData.relaciones.inmuebles.map((i: Inmueble) => [
+          i.tipo,
+          i.direccion,
+          i.propietario || "No registrado"
+        ]);
+        
+        autoTable(doc, {
+          head: [["Tipo", "Dirección", "Propietario"]],
+          body: inmueblesData,
+          startY: yPos,
+          margin: { top: 10 },
+          styles: { overflow: 'linebreak' },
+          headStyles: { fillColor: [243, 156, 18] },
+          didDrawPage: (data) => { yPos = data.cursor.y + 10; }
+        });
+      }
+      
+      // Tabla de ubicaciones
+      if (detalleData.ubicaciones.ubicacionesDirectas.length > 0 || 
+          detalleData.ubicaciones.ubicacionesRelacionadas.length > 0) {
+        
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.text("Ubicaciones", 14, 20);
+        
+        const ubicacionesData = [];
+        
+        // Ubicaciones directas
+        detalleData.ubicaciones.ubicacionesDirectas.forEach((u: Ubicacion) => {
+          ubicacionesData.push([
+            u.tipo,
+            `${u.latitud.toFixed(6)}, ${u.longitud.toFixed(6)}`,
+            u.fecha ? new Date(u.fecha).toLocaleString() : "No registrada",
+            "Directa",
+            u.observaciones || ""
+          ]);
+        });
+        
+        // Ubicaciones relacionadas
+        detalleData.ubicaciones.ubicacionesRelacionadas.forEach((ur: any) => {
+          const tipoRelacion = ur.entidadRelacionada.relacionadoCon 
+            ? `${ur.entidadRelacionada.tipo.toUpperCase()} → ${ur.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}` 
+            : ur.entidadRelacionada.tipo.toUpperCase();
+            
+          ubicacionesData.push([
+            ur.ubicacion.tipo,
+            `${ur.ubicacion.latitud.toFixed(6)}, ${ur.ubicacion.longitud.toFixed(6)}`,
+            ur.ubicacion.fecha ? new Date(ur.ubicacion.fecha).toLocaleString() : "No registrada",
+            tipoRelacion,
+            ur.ubicacion.observaciones || ""
+          ]);
+        });
+        
+        autoTable(doc, {
+          head: [["Tipo", "Coordenadas", "Fecha", "Relación", "Observaciones"]],
+          body: ubicacionesData,
+          startY: 30,
+          margin: { top: 10 },
+          styles: { overflow: 'linebreak' },
+          headStyles: { fillColor: [142, 68, 173] },
+        });
+      }
+      
+      // Guardar el PDF
+      doc.save(`informe_${detalleData.tipo}_${detalleData.entidadPrincipal.id}.pdf`);
+      
+      toast({
+        title: "PDF generado",
+        description: "El documento ha sido generado y descargado correctamente.",
+      });
+      
+    } catch (error) {
+      console.error("Error generando PDF:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el documento PDF.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <MainLayout>
@@ -62,31 +329,88 @@ export default function EstructurasPage() {
           </CardHeader>
           <CardContent>
             <div className="mb-6">
-              <div className="flex flex-col md:flex-row gap-3">
-                <div className="flex-grow">
-                  <Input
-                    type="text"
-                    placeholder="Buscar por nombre, identificación, placa, etc."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                  />
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <div className="flex-grow">
+                    <Input
+                      type="text"
+                      placeholder="Buscar por nombre, identificación, placa, etc."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                    />
+                  </div>
+                  <div>
+                    <Button onClick={handleSearch} className="w-full md:w-auto">
+                      <Search className="mr-2 h-4 w-4" />
+                      Buscar
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Button onClick={handleSearch} className="w-full md:w-auto">
-                    <Search className="mr-2 h-4 w-4" />
-                    Buscar
-                  </Button>
+                
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="filter-personas" 
+                      checked={tiposFiltro.personas}
+                      onCheckedChange={(checked) => 
+                        setTiposFiltro({...tiposFiltro, personas: checked as boolean})
+                      }
+                    />
+                    <Label htmlFor="filter-personas" className="flex items-center">
+                      <User className="h-4 w-4 mr-1" /> Personas
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="filter-vehiculos" 
+                      checked={tiposFiltro.vehiculos}
+                      onCheckedChange={(checked) => 
+                        setTiposFiltro({...tiposFiltro, vehiculos: checked as boolean})
+                      }
+                    />
+                    <Label htmlFor="filter-vehiculos" className="flex items-center">
+                      <Car className="h-4 w-4 mr-1" /> Vehículos
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="filter-inmuebles" 
+                      checked={tiposFiltro.inmuebles}
+                      onCheckedChange={(checked) => 
+                        setTiposFiltro({...tiposFiltro, inmuebles: checked as boolean})
+                      }
+                    />
+                    <Label htmlFor="filter-inmuebles" className="flex items-center">
+                      <Home className="h-4 w-4 mr-1" /> Inmuebles
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="filter-ubicaciones" 
+                      checked={tiposFiltro.ubicaciones}
+                      onCheckedChange={(checked) => 
+                        setTiposFiltro({...tiposFiltro, ubicaciones: checked as boolean})
+                      }
+                    />
+                    <Label htmlFor="filter-ubicaciones" className="flex items-center">
+                      <MapPin className="h-4 w-4 mr-1" /> Ubicaciones
+                    </Label>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {searchLoading ? (
+            {searchLoading || ubicacionesLoading ? (
               <div className="text-center py-10">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 <p className="mt-2 text-gray-500">Buscando...</p>
               </div>
-            ) : searchResults && Object.values(searchResults).some(arr => arr && arr.length > 0) ? (
+            ) : (searchResults && Object.values(searchResults).some(arr => arr && arr.length > 0)) || 
+                 (ubicacionesData && (ubicacionesData.ubicacionesDirectas.length > 0 || ubicacionesData.ubicacionesRelacionadas.length > 0)) ? (
               <div className="space-y-6 mb-6">
                 {/* Search Results */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -95,7 +419,8 @@ export default function EstructurasPage() {
                   </div>
                   <div className="p-4">
                     <div className="space-y-4">
-                      {searchResults.personas && searchResults.personas.length > 0 && (
+                      {/* Resultados de Personas */}
+                      {searchResults?.personas && searchResults.personas.length > 0 && (
                         <div>
                           <h4 className="text-md font-medium text-gray-700 mb-2">Personas</h4>
                           <div className="space-y-2">
@@ -111,6 +436,7 @@ export default function EstructurasPage() {
                                 <div>
                                   <span className="font-medium text-blue-800">{persona.nombre}</span>
                                   <span className="ml-2 text-sm text-blue-600">({persona.identificacion})</span>
+                                  <span className="ml-2 text-xs text-blue-500">| persona</span>
                                 </div>
                               </div>
                             ))}
@@ -118,7 +444,8 @@ export default function EstructurasPage() {
                         </div>
                       )}
 
-                      {searchResults.vehiculos && searchResults.vehiculos.length > 0 && (
+                      {/* Resultados de Vehículos */}
+                      {searchResults?.vehiculos && searchResults.vehiculos.length > 0 && (
                         <div>
                           <h4 className="text-md font-medium text-gray-700 mb-2">Vehículos</h4>
                           <div className="space-y-2">
@@ -132,8 +459,9 @@ export default function EstructurasPage() {
                                   <Car className="h-4 w-4 text-green-700" />
                                 </div>
                                 <div>
-                                  <span className="font-medium text-green-800">{vehiculo.marca}</span>
+                                  <span className="font-medium text-green-800">{vehiculo.marca} {vehiculo.modelo}</span>
                                   <span className="ml-2 text-sm text-green-600">({vehiculo.placa})</span>
+                                  <span className="ml-2 text-xs text-green-500">| vehículo</span>
                                 </div>
                               </div>
                             ))}
@@ -141,7 +469,8 @@ export default function EstructurasPage() {
                         </div>
                       )}
 
-                      {searchResults.inmuebles && searchResults.inmuebles.length > 0 && (
+                      {/* Resultados de Inmuebles */}
+                      {searchResults?.inmuebles && searchResults.inmuebles.length > 0 && (
                         <div>
                           <h4 className="text-md font-medium text-gray-700 mb-2">Inmuebles</h4>
                           <div className="space-y-2">
@@ -157,6 +486,34 @@ export default function EstructurasPage() {
                                 <div>
                                   <span className="font-medium text-yellow-800">{inmueble.tipo}</span>
                                   <span className="ml-2 text-sm text-yellow-600">({inmueble.direccion})</span>
+                                  <span className="ml-2 text-xs text-yellow-500">| inmueble</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Resultados de Ubicaciones */}
+                      {searchResults?.ubicaciones && searchResults.ubicaciones.length > 0 && (
+                        <div>
+                          <h4 className="text-md font-medium text-gray-700 mb-2">Ubicaciones</h4>
+                          <div className="space-y-2">
+                            {searchResults.ubicaciones.map((ubicacion) => (
+                              <div 
+                                key={ubicacion.id}
+                                className="flex items-center p-3 bg-purple-50 border border-purple-100 rounded-md cursor-pointer hover:bg-purple-100"
+                                onClick={() => selectEntityForStructure("ubicaciones", ubicacion.id, `${ubicacion.tipo}`)}
+                              >
+                                <div className="h-8 w-8 rounded-full bg-purple-200 flex items-center justify-center mr-3">
+                                  <MapPin className="h-4 w-4 text-purple-700" />
+                                </div>
+                                <div>
+                                  <span className="font-medium text-purple-800">{ubicacion.tipo}</span>
+                                  <span className="ml-2 text-sm text-purple-600">
+                                    ({ubicacion.latitud.toFixed(6)}, {ubicacion.longitud.toFixed(6)})
+                                  </span>
+                                  <span className="ml-2 text-xs text-purple-500">| ubicación</span>
                                 </div>
                               </div>
                             ))}
@@ -166,6 +523,74 @@ export default function EstructurasPage() {
                     </div>
                   </div>
                 </div>
+                
+                {/* Visualización de ubicaciones en el mapa */}
+                {ubicacionesData && (ubicacionesData.ubicacionesDirectas.length > 0 || ubicacionesData.ubicacionesRelacionadas.length > 0) && (
+                  <div className="border rounded-lg overflow-hidden mb-6">
+                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                      <h3 className="text-lg font-medium text-gray-900">Ubicaciones</h3>
+                    </div>
+                    <div className="p-4">
+                      {/* Mapa de ubicaciones */}
+                      <div className="mb-4 h-96 border rounded">
+                        <MapaUbicaciones 
+                          ubicacionesDirectas={ubicacionesData.ubicacionesDirectas} 
+                          ubicacionesRelacionadas={ubicacionesData.ubicacionesRelacionadas}
+                        />
+                      </div>
+                      
+                      {/* Tabla de ubicaciones encontradas */}
+                      <div>
+                        <h4 className="text-md font-medium text-gray-700 mb-2">Ubicaciones encontradas</h4>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latitud, Longitud</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entidad Relacionada</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observaciones</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {ubicacionesData.ubicacionesDirectas.map((ubicacion) => (
+                                <tr key={`directa-${ubicacion.id}`}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ubicacion.tipo}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {ubicacion.latitud.toFixed(6)}, {ubicacion.longitud.toFixed(6)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {ubicacion.fecha ? new Date(ubicacion.fecha).toLocaleString() : "No registrada"}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Directa</td>
+                                  <td className="px-6 py-4 text-sm text-gray-500">{ubicacion.observaciones || ""}</td>
+                                </tr>
+                              ))}
+                              {ubicacionesData.ubicacionesRelacionadas.map((item, index) => (
+                                <tr key={`relacionada-${index}`}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.ubicacion.tipo}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {item.ubicacion.latitud.toFixed(6)}, {item.ubicacion.longitud.toFixed(6)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {item.ubicacion.fecha ? new Date(item.ubicacion.fecha).toLocaleString() : "No registrada"}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {item.entidadRelacionada.relacionadoCon 
+                                      ? `${item.entidadRelacionada.tipo.toUpperCase()} → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
+                                      : item.entidadRelacionada.tipo.toUpperCase()}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-500">{item.ubicacion.observaciones || ""}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : searchTerm ? (
               <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200 mb-6">
@@ -175,169 +600,200 @@ export default function EstructurasPage() {
               </div>
             ) : null}
 
-            {/* Estructura Visualización */}
-            {selectedEntity && (
+            {/* Visualización detallada */}
+            {selectedEntity && detalleData && (
               <div className="border rounded-lg overflow-hidden mb-6">
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                   <h3 className="text-lg font-medium text-gray-900">
-                    Estructura para: {selectedEntity.nombre}
+                    Detalles de: {selectedEntity.nombre}
                   </h3>
+                  <Button variant="outline" size="sm" onClick={generarPDF}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar a PDF
+                  </Button>
                 </div>
                 
                 {relacionesLoading ? (
                   <div className="text-center py-10">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-                    <p className="mt-2 text-gray-500">Cargando relaciones...</p>
+                    <p className="mt-2 text-gray-500">Cargando detalles...</p>
                   </div>
                 ) : (
                   <div className="p-4">
-                    <div className="flex flex-col items-center">
-                      <div className="bg-primary-100 border border-primary-300 rounded-lg p-4 mb-4 max-w-xs w-full text-center">
-                        <div className="flex items-center justify-center mb-2">
-                          <div className="h-12 w-12 rounded-full bg-primary-200 flex items-center justify-center">
-                            {selectedEntity.tipo === "personas" ? (
-                              <User className="h-6 w-6 text-primary-600" />
-                            ) : selectedEntity.tipo === "vehiculos" ? (
-                              <Car className="h-6 w-6 text-primary-600" />
+                    <div className="space-y-8">
+                      {/* Información del registro */}
+                      <div>
+                        <h4 className="text-xl font-semibold mb-4">Información del Registro</h4>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          {detalleData.tipo === "personas" && detalleData.entidadPrincipal && (
+                            <div className="space-y-2">
+                              <p><strong>Nombre:</strong> {detalleData.entidadPrincipal.nombre}</p>
+                              <p><strong>Identificación:</strong> {detalleData.entidadPrincipal.identificacion}</p>
+                              {detalleData.entidadPrincipal.alias && detalleData.entidadPrincipal.alias.length > 0 && (
+                                <p><strong>Alias:</strong> {detalleData.entidadPrincipal.alias.join(", ")}</p>
+                              )}
+                              {detalleData.entidadPrincipal.telefonos && detalleData.entidadPrincipal.telefonos.length > 0 && (
+                                <p><strong>Teléfonos:</strong> {detalleData.entidadPrincipal.telefonos.join(", ")}</p>
+                              )}
+                              {detalleData.entidadPrincipal.domicilios && detalleData.entidadPrincipal.domicilios.length > 0 && (
+                                <p><strong>Domicilios:</strong> {detalleData.entidadPrincipal.domicilios.join("; ")}</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          {detalleData.tipo === "vehiculos" && detalleData.entidadPrincipal && (
+                            <div className="space-y-2">
+                              <p><strong>Marca:</strong> {detalleData.entidadPrincipal.marca}</p>
+                              <p><strong>Modelo:</strong> {detalleData.entidadPrincipal.modelo}</p>
+                              <p><strong>Tipo:</strong> {detalleData.entidadPrincipal.tipo}</p>
+                              <p><strong>Placa:</strong> {detalleData.entidadPrincipal.placa}</p>
+                              <p><strong>Color:</strong> {detalleData.entidadPrincipal.color}</p>
+                            </div>
+                          )}
+                          
+                          {detalleData.tipo === "inmuebles" && detalleData.entidadPrincipal && (
+                            <div className="space-y-2">
+                              <p><strong>Tipo:</strong> {detalleData.entidadPrincipal.tipo}</p>
+                              <p><strong>Dirección:</strong> {detalleData.entidadPrincipal.direccion}</p>
+                              <p><strong>Propietario:</strong> {detalleData.entidadPrincipal.propietario || "No registrado"}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Relaciones */}
+                      <div>
+                        <h4 className="text-xl font-semibold mb-4">Registros Relacionados</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Personas relacionadas */}
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h5 className="font-medium text-blue-700 mb-2 flex items-center">
+                              <User className="mr-2 h-4 w-4" /> Personas
+                            </h5>
+                            {detalleData.relaciones.personas && detalleData.relaciones.personas.length > 0 ? (
+                              <ul className="space-y-2">
+                                {detalleData.relaciones.personas.map((persona: Persona) => (
+                                  <li key={persona.id} className="text-sm bg-white p-2 rounded border border-blue-100">
+                                    <div><strong>{persona.nombre}</strong></div>
+                                    <div className="text-xs text-gray-500">ID: {persona.identificacion}</div>
+                                  </li>
+                                ))}
+                              </ul>
                             ) : (
-                              <Home className="h-6 w-6 text-primary-600" />
+                              <p className="text-sm text-gray-500">No hay personas relacionadas</p>
+                            )}
+                          </div>
+                          
+                          {/* Vehículos relacionados */}
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h5 className="font-medium text-green-700 mb-2 flex items-center">
+                              <Car className="mr-2 h-4 w-4" /> Vehículos
+                            </h5>
+                            {detalleData.relaciones.vehiculos && detalleData.relaciones.vehiculos.length > 0 ? (
+                              <ul className="space-y-2">
+                                {detalleData.relaciones.vehiculos.map((vehiculo: Vehiculo) => (
+                                  <li key={vehiculo.id} className="text-sm bg-white p-2 rounded border border-green-100">
+                                    <div><strong>{vehiculo.marca} {vehiculo.modelo}</strong></div>
+                                    <div className="text-xs text-gray-500">Placa: {vehiculo.placa}</div>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-gray-500">No hay vehículos relacionados</p>
+                            )}
+                          </div>
+                          
+                          {/* Inmuebles relacionados */}
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <h5 className="font-medium text-yellow-700 mb-2 flex items-center">
+                              <Home className="mr-2 h-4 w-4" /> Inmuebles
+                            </h5>
+                            {detalleData.relaciones.inmuebles && detalleData.relaciones.inmuebles.length > 0 ? (
+                              <ul className="space-y-2">
+                                {detalleData.relaciones.inmuebles.map((inmueble: Inmueble) => (
+                                  <li key={inmueble.id} className="text-sm bg-white p-2 rounded border border-yellow-100">
+                                    <div><strong>{inmueble.tipo}</strong></div>
+                                    <div className="text-xs text-gray-500">{inmueble.direccion}</div>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-gray-500">No hay inmuebles relacionados</p>
                             )}
                           </div>
                         </div>
-                        <h4 className="font-bold text-primary-800">{selectedEntity.nombre}</h4>
-                        <p className="text-sm text-primary-600">
-                          {selectedEntity.tipo === "personas" ? (
-                            `Identificación: ${(relaciones?.personas && relaciones.personas[0]?.identificacion) || "N/A"}`
-                          ) : selectedEntity.tipo === "vehiculos" ? (
-                            `Placa: ${(relaciones?.vehiculos && relaciones.vehiculos[0]?.placa) || "N/A"}`
-                          ) : (
-                            `Propietario: ${(relaciones?.inmuebles && relaciones.inmuebles[0]?.propietario) || "N/A"}`
-                          )}
-                        </p>
                       </div>
                       
-                      <div className="w-px h-8 bg-gray-300"></div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                        {/* Vehículos relacionados */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <h5 className="font-medium text-blue-700 mb-2 flex items-center">
-                            <Car className="mr-2 h-4 w-4" /> Vehículos relacionados
-                          </h5>
-                          {relaciones?.vehiculos && relaciones.vehiculos.length > 0 ? (
-                            <ul className="space-y-2">
-                              {relaciones.vehiculos.map((vehiculo) => (
-                                <li key={vehiculo.id} className="text-sm bg-white p-2 rounded border border-blue-100">
-                                  {vehiculo.marca} {vehiculo.modelo} ({vehiculo.placa})
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-gray-500">No hay vehículos relacionados</p>
-                          )}
+                      {/* Mapa y tabla de ubicaciones */}
+                      {(detalleData.ubicaciones.ubicacionesDirectas.length > 0 || 
+                       detalleData.ubicaciones.ubicacionesRelacionadas.length > 0) && (
+                        <div>
+                          <h4 className="text-xl font-semibold mb-4">Ubicaciones</h4>
+                          
+                          {/* Mapa */}
+                          <div className="mb-6 h-96 border rounded">
+                            <MapaUbicaciones 
+                              ubicacionesDirectas={detalleData.ubicaciones.ubicacionesDirectas}
+                              ubicacionesRelacionadas={detalleData.ubicaciones.ubicacionesRelacionadas}
+                            />
+                          </div>
+                          
+                          {/* Tabla */}
+                          <div>
+                            <h5 className="text-lg font-medium mb-2">Ubicaciones encontradas</h5>
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latitud, Longitud</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entidad Relacionada</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observaciones</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                  {detalleData.ubicaciones.ubicacionesDirectas.map((ubicacion: Ubicacion) => (
+                                    <tr key={`detalle-directa-${ubicacion.id}`}>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ubicacion.tipo}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {ubicacion.latitud.toFixed(6)}, {ubicacion.longitud.toFixed(6)}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {ubicacion.fecha ? new Date(ubicacion.fecha).toLocaleString() : "No registrada"}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Directa</td>
+                                      <td className="px-6 py-4 text-sm text-gray-500">{ubicacion.observaciones || ""}</td>
+                                    </tr>
+                                  ))}
+                                  {detalleData.ubicaciones.ubicacionesRelacionadas.map((item: any, index: number) => (
+                                    <tr key={`detalle-relacionada-${index}`}>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.ubicacion.tipo}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.ubicacion.latitud.toFixed(6)}, {item.ubicacion.longitud.toFixed(6)}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.ubicacion.fecha ? new Date(item.ubicacion.fecha).toLocaleString() : "No registrada"}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.entidadRelacionada.relacionadoCon 
+                                          ? `${item.entidadRelacionada.tipo.toUpperCase()} → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
+                                          : item.entidadRelacionada.tipo.toUpperCase()}
+                                      </td>
+                                      <td className="px-6 py-4 text-sm text-gray-500">{item.ubicacion.observaciones || ""}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
                         </div>
-                        
-                        {/* Inmuebles relacionados */}
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                          <h5 className="font-medium text-green-700 mb-2 flex items-center">
-                            <Home className="mr-2 h-4 w-4" /> Inmuebles relacionados
-                          </h5>
-                          {relaciones?.inmuebles && relaciones.inmuebles.length > 0 ? (
-                            <ul className="space-y-2">
-                              {relaciones.inmuebles.map((inmueble) => (
-                                <li key={inmueble.id} className="text-sm bg-white p-2 rounded border border-green-100">
-                                  {inmueble.tipo} ({inmueble.direccion})
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-gray-500">No hay inmuebles relacionados</p>
-                          )}
-                        </div>
-                        
-                        {/* Ubicaciones relacionadas */}
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <h5 className="font-medium text-yellow-700 mb-2 flex items-center">
-                            <MapPin className="mr-2 h-4 w-4" /> Ubicaciones registradas
-                          </h5>
-                          {relaciones?.ubicaciones && relaciones.ubicaciones.length > 0 ? (
-                            <ul className="space-y-2">
-                              {relaciones.ubicaciones.map((ubicacion) => (
-                                <li key={ubicacion.id} className="text-sm bg-white p-2 rounded border border-yellow-100">
-                                  {ubicacion.tipo} ({ubicacion.latitud.toFixed(6)}, {ubicacion.longitud.toFixed(6)})
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-gray-500">No hay ubicaciones relacionadas</p>
-                          )}
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 )}
-                
-                {/* Botón de exportación a PDF eliminado */}
               </div>
             )}
-            
-            {/* Historial de Registros */}
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Historial de Registros</h3>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fecha
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Usuario
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acción
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Detalles
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        12/05/2023 10:25
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Juan Pérez (Investigador)
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Registro de nuevo domicilio
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Domicilio Principal para Carlos Rodríguez
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        10/05/2023 15:10
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Ana López (Admin)
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Vinculación de vehículo
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Toyota Corolla (ABC-123) vinculado a Carlos Rodríguez
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
