@@ -3,7 +3,7 @@ import { Ubicacion } from "@shared/schema";
 import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
 
-// Corregir el problema de iconos de marcadores en Leaflet
+// Definir iconos personalizados para los diferentes tipos de entidades
 const iconoPersona = L.icon({
   iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -15,28 +15,34 @@ const iconoPersona = L.icon({
   className: 'marker-persona'
 });
 
-const iconoVehiculo = L.icon({
-  iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'marker-vehiculo'
+// Icono para domicilio (casa)
+const iconoDomicilio = L.divIcon({
+  html: '<div class="map-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></div>',
+  className: 'marker-domicilio',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30]
 });
 
-const iconoInmueble = L.icon({
-  iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'marker-inmueble'
+// Icono para vehículo (carro)
+const iconoVehiculo = L.divIcon({
+  html: '<div class="map-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="22" height="12" rx="2" ry="2"></rect><path d="M4 12h16"></path><path d="M7 6v4"></path><path d="M17 6v4"></path><path d="M7 18v2"></path><path d="M17 18v2"></path></svg></div>',
+  className: 'marker-vehiculo',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30]
 });
 
+// Icono para inmueble (edificio)
+const iconoInmueble = L.divIcon({
+  html: '<div class="map-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="6" x2="12" y2="6"></line><line x1="12" y1="12" x2="12" y2="12"></line><line x1="12" y1="18" x2="12" y2="18"></line></svg></div>',
+  className: 'marker-inmueble',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30]
+});
+
+// Icono para ubicación (marcador por defecto)
 const iconoUbicacion = L.icon({
   iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -131,8 +137,49 @@ export default function MapaTablaUbicaciones({
         console.log(`Ubicación directa ${index}:`, ubicacion);
         const position: L.LatLngExpression = [ubicacion.latitud, ubicacion.longitud];
         
-        console.log(`Agregando marcador en [${position}]`);
-        const marker = L.marker(position, { icon: iconoUbicacion })
+        // Determinar icono según el tipo de ubicación
+        let icon = iconoUbicacion; // Por defecto usar el icono estándar
+        
+        // Detectar si es un domicilio por el tipo de ubicación
+        if (ubicacion.tipo.toLowerCase().includes('domicilio') || 
+            ubicacion.tipo.toLowerCase().includes('casa') || 
+            ubicacion.tipo.toLowerCase().includes('residencia')) {
+          // Usar íconos con colores diferentes según el tipo
+          let markerHtml = '<div class="map-icon" style="background-color: #FFF5F0; border: 2px solid #FF5722;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></div>';
+          icon = L.divIcon({
+            html: markerHtml,
+            className: '',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          });
+        } 
+        // Detectar si es una ubicación de inmueble
+        else if (ubicacion.tipo.toLowerCase().includes('inmueble') || 
+                ubicacion.tipo.toLowerCase().includes('edificio') || 
+                ubicacion.tipo.toLowerCase().includes('terreno') ||
+                ubicacion.tipo.toLowerCase().includes('local')) {
+          // Usar íconos con colores diferentes según el tipo
+          let markerHtml = '<div class="map-icon" style="background-color: #E8F5E9; border: 2px solid #4CAF50;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="6" x2="12" y2="6"></line><line x1="12" y1="12" x2="12" y2="12"></line></svg></div>';
+          icon = L.divIcon({
+            html: markerHtml,
+            className: '',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          });
+        }
+        // Para otros tipos de ubicaciones, usar un pin estándar pero con color distintivo
+        else {
+          let markerHtml = '<div class="map-icon" style="background-color: #F3E5F5; border: 2px solid #9C27B0;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9C27B0" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>';
+          icon = L.divIcon({
+            html: markerHtml,
+            className: '',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          });
+        }
+        
+        console.log(`Agregando marcador en [${position}] con tipo ${ubicacion.tipo}`);
+        const marker = L.marker(position, { icon })
           .addTo(mapRef.current!)
           .bindPopup(`
             <div>
@@ -162,29 +209,78 @@ export default function MapaTablaUbicaciones({
         console.log(`Ubicación relacionada ${index}:`, item);
         const position: L.LatLngExpression = [item.ubicacion.latitud, item.ubicacion.longitud];
         
-        // Determinar el icono según el tipo de entidad relacionada
-        let icon = iconoUbicacion;
+        // Determinar el icono según el tipo de entidad relacionada y tipo de ubicación
+        let icon = iconoUbicacion; // Por defecto usar el icono estándar
         let relacion = '';
         
         if (item.entidadRelacionada) {
           console.log(`Procesando entidad relacionada para [${position}]: ${item.entidadRelacionada.tipo}`);
           
+          // Persona y sus domicilios
           if (item.entidadRelacionada.tipo === 'persona') {
-            icon = iconoPersona;
+            // Usar ícono según tipo de ubicación
+            if (item.ubicacion.tipo.toLowerCase().includes('domicilio') || 
+                item.ubicacion.tipo.toLowerCase().includes('casa') || 
+                item.ubicacion.tipo.toLowerCase().includes('residencia')) {
+              // Usar íconos con colores diferentes según el tipo
+              let markerHtml = '<div class="map-icon" style="background-color: #FFF5F0; border: 2px solid #FF5722;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></div>';
+              icon = L.divIcon({
+                html: markerHtml,
+                className: '',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+              });
+            }
+            
+            // Información de relación
+            const nombreEntidad = item.entidadRelacionada.entidad?.nombre || "Persona";
             relacion = item.entidadRelacionada.relacionadoCon 
-              ? `PERSONA → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
-              : 'PERSONA';
-          } else if (item.entidadRelacionada.tipo === 'vehiculo') {
-            icon = iconoVehiculo;
+              ? `${nombreEntidad} → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
+              : nombreEntidad;
+          } 
+          // Vehículo
+          else if (item.entidadRelacionada.tipo === 'vehiculo') {
+            // Usar íconos con colores diferentes según el tipo
+            let markerHtml = '<div class="map-icon" style="background-color: #E3F2FD; border: 2px solid #2196F3;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2"><rect x="1" y="6" width="22" height="12" rx="2" ry="2"></rect><path d="M4 12h16"></path></svg></div>';
+            icon = L.divIcon({
+              html: markerHtml,
+              className: '',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            });
+            
+            // Información de relación
+            const detalleVehiculo = item.entidadRelacionada.entidad?.marca 
+              ? `${item.entidadRelacionada.entidad.marca} ${item.entidadRelacionada.entidad.modelo || ''}`
+              : "Vehículo";
             relacion = item.entidadRelacionada.relacionadoCon 
-              ? `VEHICULO → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
-              : 'VEHICULO';
-          } else if (item.entidadRelacionada.tipo === 'inmueble') {
-            icon = iconoInmueble;
+              ? `${detalleVehiculo} → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
+              : detalleVehiculo;
+          } 
+          // Inmueble
+          else if (item.entidadRelacionada.tipo === 'inmueble') {
+            // Usar íconos con colores diferentes según el tipo
+            let markerHtml = '<div class="map-icon" style="background-color: #E8F5E9; border: 2px solid #4CAF50;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="6" x2="12" y2="6"></line><line x1="12" y1="12" x2="12" y2="12"></line></svg></div>';
+            icon = L.divIcon({
+              html: markerHtml,
+              className: '',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            });
+            
+            // Información de relación
+            const detalleInmueble = item.entidadRelacionada.entidad?.tipo || "Inmueble";
             relacion = item.entidadRelacionada.relacionadoCon 
-              ? `INMUEBLE → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
-              : 'INMUEBLE';
+              ? `${detalleInmueble} → ${item.entidadRelacionada.relacionadoCon.tipo.toUpperCase()}`
+              : detalleInmueble;
           }
+          // Ubicación por defecto
+          else {
+            relacion = item.entidadRelacionada.tipo.toUpperCase();
+          }
+        } else {
+          // Si no hay entidad relacionada, usar icono por defecto
+          relacion = 'Sin relación';
         }
         
         const marker = L.marker(position, { icon })

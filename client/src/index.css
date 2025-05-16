@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Estilos para los iconos de mapa personalizados */
+.map-icon {
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
+}
+
+/* Clases para tipos de marcadores */
+.marker-persona svg {
+  color: #3b82f6; /* Azul */
+}
+
+.marker-domicilio svg {
+  color: #f97316; /* Naranja */
+}
+
+.marker-vehiculo svg {
+  color: #10b981; /* Verde */
+}
+
+.marker-inmueble svg {
+  color: #8b5cf6; /* Púrpura */
+}
+
+.marker-ubicacion svg {
+  color: #ef4444; /* Rojo */
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 20 14.3% 4.1%;
