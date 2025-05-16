@@ -757,16 +757,10 @@ export default function EstructurasPage() {
                             <h2 className="text-xl font-medium text-gray-900">Mapa y Ubicaciones</h2>
                           </div>
                           <div className="p-4">
-                            {Array.isArray(detalleData.ubicaciones) && detalleData.ubicaciones.length > 0 ? (
+                            {entidadSeleccionada && detalleData ? (
                               <MapaTablaUbicaciones 
-                                ubicacionesDirectas={detalleData.ubicaciones}
-                                ubicacionesRelacionadas={[]}
-                              />
-                            ) : (detalleData.ubicaciones.ubicacionesDirectas && detalleData.ubicaciones.ubicacionesDirectas.length > 0) ||
-                               (detalleData.ubicaciones.ubicacionesRelacionadas && detalleData.ubicaciones.ubicacionesRelacionadas.length > 0) ? (
-                              <MapaTablaUbicaciones 
-                                ubicacionesDirectas={detalleData.ubicaciones.ubicacionesDirectas || []}
-                                ubicacionesRelacionadas={detalleData.ubicaciones.ubicacionesRelacionadas || []}
+                                entidadSeleccionada={entidadSeleccionada}
+                                detalleData={detalleData}
                               />
                             ) : (
                               <div className="text-center p-4">
