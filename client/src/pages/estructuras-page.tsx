@@ -161,89 +161,6 @@ export default function EstructurasPage() {
     }
   });
 
-  // Función para filtrar y procesar datos específicos para la entidad seleccionada
-  const procesarDatosEntidad = useCallback((seleccionada: SearchResult, datos: any) => {
-    if (!seleccionada || !datos) return datos;
-    
-    // Copia profunda para no modificar los datos originales
-    const datosProcesados = JSON.parse(JSON.stringify(datos));
-    
-    // Solución específica para Andrey (ID 8)
-    if (seleccionada.tipo === "persona" && seleccionada.id === 8) {
-      fetch("/api/personas/8")
-        .then(res => res.json())
-        .then(personaAndrey => {
-          if (personaAndrey && datosProcesados.personas && datosProcesados.personas.length > 0) {
-            // Reemplazar los datos con los de Andrey
-            datosProcesados.personas[0] = personaAndrey;
-            console.log("Datos corregidos para Andrey:", datosProcesados);
-            
-            // Actualizar el markdown
-            generarContenidoMarkdown(seleccionada, datosProcesados);
-          }
-        })
-        .catch(err => console.error("Error al obtener datos de Andrey:", err));
-      
-      return datosProcesados;
-    }
-    
-    // Para otras personas
-    if (seleccionada.tipo === "persona" && datosProcesados.personas && datosProcesados.personas.length > 0) {
-      // Asegurarnos que la primera persona en el array es la seleccionada
-      const personaSeleccionada = datosProcesados.personas.find((p: any) => p.id === seleccionada.id);
-      
-      if (personaSeleccionada) {
-        // Reorganizar el array para poner la persona seleccionada primero
-        datosProcesados.personas = [
-          personaSeleccionada,
-          ...datosProcesados.personas.filter((p: any) => p.id !== seleccionada.id)
-        ];
-      }
-    }
-    
-    // Filtrar vehículos para mostrar solo el seleccionado o relacionados
-    if (seleccionada.tipo === "vehiculo" && datosProcesados.vehiculos && datosProcesados.vehiculos.length > 0) {
-      const vehiculoSeleccionado = datosProcesados.vehiculos.find((v: any) => v.id === seleccionada.id);
-      
-      if (vehiculoSeleccionado) {
-        datosProcesados.vehiculos = [
-          vehiculoSeleccionado,
-          ...datosProcesados.vehiculos.filter((v: any) => v.id !== seleccionada.id)
-        ];
-      }
-    }
-    
-    // Filtrar inmuebles para mostrar solo el seleccionado o relacionados
-    if (seleccionada.tipo === "inmueble" && datosProcesados.inmuebles && datosProcesados.inmuebles.length > 0) {
-      const inmuebleSeleccionado = datosProcesados.inmuebles.find((i: any) => i.id === seleccionada.id);
-      
-      if (inmuebleSeleccionado) {
-        datosProcesados.inmuebles = [
-          inmuebleSeleccionado,
-          ...datosProcesados.inmuebles.filter((i: any) => i.id !== seleccionada.id)
-        ];
-      }
-    }
-    
-    return datosProcesados;
-  }, []);
-
-  // Actualizar el contenido markdown cuando cambian los datos o las observaciones
-  useEffect(() => {
-    if (entidadSeleccionada && detalleData) {
-      const observaciones = 
-          entidadSeleccionada.tipo === "persona" ? observacionesPersona :
-          entidadSeleccionada.tipo === "vehiculo" ? observacionesVehiculo :
-          entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
-      
-      // Procesar los datos para asegurar que se muestre la información correcta
-      const datosProcesados = procesarDatosEntidad(entidadSeleccionada, detalleData);
-      
-      // Generar contenido Markdown con los datos procesados
-      generarContenidoMarkdown(entidadSeleccionada, datosProcesados, observaciones);
-    }
-  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble, procesarDatosEntidad]);
-
   // Generar el contenido Markdown basado en los datos
   const generarContenidoMarkdown = useCallback((entidad: SearchResult, data: any, observaciones: any[] = []) => {
     let md = `# ${entidad.nombre}\n\n`;
@@ -309,7 +226,7 @@ export default function EstructurasPage() {
       md += `**Tipo:** ${inmuebleData.tipo}  \n`;
       md += `**Dirección:** ${inmuebleData.direccion}  \n`;
       md += `**Propietario:** ${inmuebleData.propietario || "No registrado"}  \n`;
-    } else if (entidad.tipo === "ubicacion" && data.ubicaciones && data.ubicaciones.length > 0) {
+    } else if (entidad.tipo === "ubicacion" && data.ubicaciones) {
       // Manejar los diferentes formatos de ubicaciones
       let ubicacionesArray = Array.isArray(data.ubicaciones) ? data.ubicaciones : [];
       
@@ -322,12 +239,12 @@ export default function EstructurasPage() {
       const ubicacion = ubicacionesArray.find((u: any) => u.id === entidad.id);
       
       // Si no encontramos la ubicación con el ID exacto, usar la primera (pero loguear advertencia)
-      if (!ubicacion && ubicacionesArray[0]) {
+      if (!ubicacion && ubicacionesArray.length > 0) {
         console.warn(`No se encontró ubicación con ID=${entidad.id}, usando primera ubicación en datos:`, ubicacionesArray[0]);
       }
       
       // Usar ubicación encontrada por ID o la primera como fallback
-      const ubicacionData = ubicacion || ubicacionesArray[0];
+      const ubicacionData = ubicacion || (ubicacionesArray.length > 0 ? ubicacionesArray[0] : null);
       
       if (ubicacionData) {
         md += `**Tipo:** ${ubicacionData.tipo}  \n`;
@@ -343,14 +260,11 @@ export default function EstructurasPage() {
     
     md += "\n";
     
-    // Observaciones relacionadas
-    const tieneObservaciones = observaciones && observaciones.length > 0;
-    
-    if (tieneObservaciones) {
+    // Observaciones
+    if (observaciones && observaciones.length > 0) {
       md += "## Observaciones\n\n";
-      
-      observaciones.forEach((obs: any) => {
-        md += `### ${new Date(obs.fecha).toLocaleString()}\n\n`;
+      observaciones.forEach(obs => {
+        md += `### ${new Date(obs.fecha).toLocaleString()} | ${obs.usuario || "Sistema"}\n\n`;
         md += `${obs.detalle || obs.observacion || "Sin detalles"}\n\n`;
       });
     }
@@ -479,354 +393,382 @@ export default function EstructurasPage() {
     setMarkdownContent(md);
   }, []);
 
-  // Ejecutar búsqueda
-  const ejecutarBusqueda = () => {
-    if (!searchTerm) {
+  // Función para filtrar y procesar datos específicos para la entidad seleccionada
+  const procesarDatosEntidad = useCallback((seleccionada: SearchResult, datos: any) => {
+    if (!seleccionada || !datos) return datos;
+    
+    // Copia profunda para no modificar los datos originales
+    const datosProcesados = JSON.parse(JSON.stringify(datos));
+    
+    // Para cada tipo de entidad, asegurarse que la entidad correcta esté en primer lugar
+    if (seleccionada.tipo === "persona" && datosProcesados.personas && datosProcesados.personas.length > 0) {
+      const personaSeleccionada = datosProcesados.personas.find((p: any) => p.id === seleccionada.id);
+      
+      if (personaSeleccionada) {
+        // Reorganizar el array para poner la persona seleccionada primero
+        datosProcesados.personas = [
+          personaSeleccionada,
+          ...datosProcesados.personas.filter((p: any) => p.id !== seleccionada.id)
+        ];
+      }
+    }
+    
+    // Filtrar vehículos para mostrar solo el seleccionado o relacionados
+    if (seleccionada.tipo === "vehiculo" && datosProcesados.vehiculos && datosProcesados.vehiculos.length > 0) {
+      const vehiculoSeleccionado = datosProcesados.vehiculos.find((v: any) => v.id === seleccionada.id);
+      
+      if (vehiculoSeleccionado) {
+        datosProcesados.vehiculos = [
+          vehiculoSeleccionado,
+          ...datosProcesados.vehiculos.filter((v: any) => v.id !== seleccionada.id)
+        ];
+      }
+    }
+    
+    // Filtrar inmuebles para mostrar solo el seleccionado o relacionados
+    if (seleccionada.tipo === "inmueble" && datosProcesados.inmuebles && datosProcesados.inmuebles.length > 0) {
+      const inmuebleSeleccionado = datosProcesados.inmuebles.find((i: any) => i.id === seleccionada.id);
+      
+      if (inmuebleSeleccionado) {
+        datosProcesados.inmuebles = [
+          inmuebleSeleccionado,
+          ...datosProcesados.inmuebles.filter((i: any) => i.id !== seleccionada.id)
+        ];
+      }
+    }
+    
+    return datosProcesados;
+  }, []);
+
+  // Actualizar el contenido markdown cuando cambian los datos o las observaciones
+  useEffect(() => {
+    if (entidadSeleccionada && detalleData) {
+      const observaciones = 
+          entidadSeleccionada.tipo === "persona" ? observacionesPersona :
+          entidadSeleccionada.tipo === "vehiculo" ? observacionesVehiculo :
+          entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
+      
+      // Procesar los datos para asegurar que se muestre la información correcta
+      const datosProcesados = procesarDatosEntidad(entidadSeleccionada, detalleData);
+      
+      // Generar contenido Markdown con los datos procesados
+      generarContenidoMarkdown(entidadSeleccionada, datosProcesados, observaciones);
+    }
+  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble, procesarDatosEntidad, generarContenidoMarkdown]);
+
+  // Realizar búsqueda
+  const realizarBusqueda = () => {
+    if (!searchTerm.trim()) {
       toast({
-        title: "Error",
-        description: "Ingrese un término de búsqueda",
-        variant: "destructive"
+        title: "Error de búsqueda",
+        description: "Por favor, ingrese un término de búsqueda",
+        variant: "destructive",
       });
       return;
     }
     
-    // Limpiar resultados anteriores
     setResultadosBusqueda([]);
     setEntidadSeleccionada(null);
     setMarkdownContent("");
     
-    // Ejecutar la consulta
-    searchRefetch()
-      .then((result: any) => {
-        // Refrescar la consulta de ubicaciones también
-        ubicacionesRefetch();
-      })
-      .catch((error: any) => {
-        console.error("Error de búsqueda:", error);
-        toast({
-          title: "Error",
-          description: "Error al realizar la búsqueda",
-          variant: "destructive"
-        });
-      });
-  };
-  
-  // Cargar observaciones cuando se selecciona una entidad
-  const cargarObservaciones = async (tipo: string, id: number) => {
-    try {
-      // Limpiar observaciones anteriores
-      setObservacionesPersona([]);
-      setObservacionesVehiculo([]);
-      setObservacionesInmueble([]);
-      
-      // Consulta de observaciones según el tipo
-      if (tipo === "persona") {
-        const res = await fetch(`/api/personas/${id}/observaciones`);
-        const data = await res.json();
-        setObservacionesPersona(data);
-      } else if (tipo === "vehiculo") {
-        const res = await fetch(`/api/vehiculos/${id}/observaciones`);
-        const data = await res.json();
-        setObservacionesVehiculo(data);
-      } else if (tipo === "inmueble") {
-        const res = await fetch(`/api/inmuebles/${id}/observaciones`);
-        const data = await res.json();
-        setObservacionesInmueble(data);
-      }
-      
-      // Refrescar datos de detalle si es necesario
-      detalleRefetch();
-    } catch (error) {
-      console.error("Error al cargar observaciones:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las observaciones",
-        variant: "destructive"
-      });
+    // Refrescar las búsquedas
+    searchRefetch();
+    
+    // Buscar ubicaciones si el filtro está activo
+    if (tiposFiltro.ubicaciones) {
+      ubicacionesRefetch();
     }
   };
 
-  // Seleccionar una entidad para ver detalles
+  // Seleccionar entidad para mostrar detalles
   const seleccionarEntidad = async (resultado: SearchResult) => {
-    // Si es la misma entidad, no hacer nada
-    if (entidadSeleccionada && 
-        entidadSeleccionada.tipo === resultado.tipo && 
-        entidadSeleccionada.id === resultado.id) {
-      return;
+    // Limpiar observaciones previas
+    setObservacionesPersona([]);
+    setObservacionesVehiculo([]);
+    setObservacionesInmueble([]);
+    
+    // Cargar observaciones según el tipo de entidad
+    if (resultado.tipo === "persona") {
+      fetch(`/api/personas/${resultado.id}/observaciones`)
+        .then(res => res.json())
+        .then(data => setObservacionesPersona(data))
+        .catch(err => console.error("Error al cargar observaciones de persona:", err));
+    } else if (resultado.tipo === "vehiculo") {
+      fetch(`/api/vehiculos/${resultado.id}/observaciones`)
+        .then(res => res.json())
+        .then(data => setObservacionesVehiculo(data))
+        .catch(err => console.error("Error al cargar observaciones de vehículo:", err));
+    } else if (resultado.tipo === "inmueble") {
+      fetch(`/api/inmuebles/${resultado.id}/observaciones`)
+        .then(res => res.json())
+        .then(data => setObservacionesInmueble(data))
+        .catch(err => console.error("Error al cargar observaciones de inmueble:", err));
     }
     
-    // Establecer la entidad seleccionada
+    // Actualizar entidad seleccionada (esto debe desencadenar la carga de sus relaciones)
     setEntidadSeleccionada(resultado);
     
-    // Cargar observaciones asociadas a esta entidad
-    await cargarObservaciones(resultado.tipo, resultado.id);
+    // Refetch detalleData
+    detalleRefetch();
+    
+    // Mostrar toast de carga
+    toast({
+      title: "Cargando detalles",
+      description: `Obteniendo información detallada para ${resultado.nombre}`,
+    });
   };
 
-  // Exportar a PDF
-  const exportarPDF = useCallback(() => {
-    if (!entidadSeleccionada || !markdownContent) {
-      toast({
-        title: "Error",
-        description: "No hay información para exportar",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  // Generar PDF
+  const generarPDF = () => {
     try {
-      // Crear documento PDF
-      const doc = new jsPDF();
+      if (!entidadSeleccionada) {
+        toast({
+          title: "Error",
+          description: "No hay información seleccionada para exportar a PDF",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      // Título
-      doc.setFontSize(20);
-      doc.text(`Reporte: ${entidadSeleccionada.nombre}`, 15, 15);
+      // Crear el documento PDF
+      const pdf = new jsPDF();
       
-      // Contenido principal
-      doc.setFontSize(12);
+      // Configurar el título
+      pdf.setFontSize(16);
+      pdf.text(`Informe: ${entidadSeleccionada.nombre}`, 20, 20);
       
-      // Convertir markdown a texto plano simplificado
-      let texto = markdownContent
-        .replace(/\*\*(.*?)\*\*/g, "$1") // Eliminar negrita
-        .replace(/## (.*?)\n/g, "\n$1\n") // Reemplazar encabezados
-        .replace(/\n- /g, "\n• "); // Reemplazar viñetas
+      // Convertir el contenido de markdown a texto plano básico
+      const plainText = markdownContent
+        .replace(/^# (.*)$/gm, '') // Quitar título principal (ya lo añadimos arriba)
+        .replace(/^## (.*)$/gm, '\n$1\n') // Convertir encabezados nivel 2 en texto con subrayado
+        .replace(/^### (.*)$/gm, '\n$1:') // Convertir encabezados nivel 3 en texto con dos puntos
+        .replace(/^\*\*(.+?)\*\*:/gm, '$1:') // Convertir texto en negrita seguido de dos puntos
+        .replace(/\*\*(.+?)\*\*/g, '$1') // Quitar resto de marcas de negrita
+        .trim();
       
-      // Dividir el texto en líneas y agregar al PDF
-      const lineas = doc.splitTextToSize(texto, 180);
-      doc.text(lineas, 15, 25);
+      // Añadir el texto
+      pdf.setFontSize(12);
       
-      // Guardar PDF
-      doc.save(`reporte_${entidadSeleccionada.tipo}_${entidadSeleccionada.id}.pdf`);
+      // Usar autotable para crear una tabla sencilla con el contenido
+      autoTable(pdf, {
+        body: [
+          [{ content: plainText, styles: { cellPadding: 5 } }],
+        ],
+        theme: 'plain',
+        styles: { overflow: 'linebreak', cellWidth: 'wrap' },
+        columnStyles: { 0: { cellWidth: 170 } },
+      });
+      
+      // Guardar el PDF
+      pdf.save(`informe_${entidadSeleccionada.tipo}_${entidadSeleccionada.id}.pdf`);
       
       toast({
-        title: "Éxito",
-        description: "Reporte exportado como PDF",
+        title: "PDF generado",
+        description: "El informe ha sido descargado correctamente",
       });
     } catch (error) {
-      console.error("Error al exportar PDF:", error);
+      console.error("Error al generar PDF:", error);
       toast({
         title: "Error",
         description: "No se pudo generar el PDF",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
-  }, [entidadSeleccionada, markdownContent, toast]);
+  };
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-4">
-        <Card className="mb-4">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl font-bold">Búsqueda de Estructuras</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Buscar personas, vehículos, inmuebles o ubicaciones..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyUp={(e) => {
-                      if (e.key === "Enter") {
-                        ejecutarBusqueda();
-                      }
-                    }}
-                  />
-                </div>
-                <Button onClick={ejecutarBusqueda} className="bg-blue-600 hover:bg-blue-700">
-                  <Search className="mr-2 h-4 w-4" />
-                  Buscar
-                </Button>
-              </div>
-              
-              <div className="flex flex-row gap-6 mt-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="personas" 
-                    checked={tiposFiltro.personas}
-                    onCheckedChange={(checked) => 
-                      setTiposFiltro(prev => ({ ...prev, personas: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="personas" className="flex items-center">
-                    <User className="h-4 w-4 mr-1" />
-                    Personas
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="vehiculos" 
-                    checked={tiposFiltro.vehiculos}
-                    onCheckedChange={(checked) => 
-                      setTiposFiltro(prev => ({ ...prev, vehiculos: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="vehiculos" className="flex items-center">
-                    <Car className="h-4 w-4 mr-1" />
-                    Vehículos
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="inmuebles" 
-                    checked={tiposFiltro.inmuebles}
-                    onCheckedChange={(checked) => 
-                      setTiposFiltro(prev => ({ ...prev, inmuebles: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="inmuebles" className="flex items-center">
-                    <Home className="h-4 w-4 mr-1" />
-                    Inmuebles
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="ubicaciones" 
-                    checked={tiposFiltro.ubicaciones}
-                    onCheckedChange={(checked) => 
-                      setTiposFiltro(prev => ({ ...prev, ubicaciones: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="ubicaciones" className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    Ubicaciones
-                  </Label>
+      <div className="p-6">
+        <div className="grid grid-cols-1 gap-6 mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Búsqueda de registros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3">
+                <div className="flex flex-col gap-3">
+                  <div className="flex space-x-2">
+                    <Input
+                      placeholder="Buscar por nombre, identificación, placa, dirección..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && realizarBusqueda()}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={realizarBusqueda} 
+                      disabled={searchLoading} 
+                      className="w-[140px]"
+                    >
+                      {searchLoading ? "Buscando..." : <><Search className="mr-2 h-4 w-4" /> Buscar</>}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="personas" 
+                        checked={tiposFiltro.personas} 
+                        onCheckedChange={(checked) => 
+                          setTiposFiltro({...tiposFiltro, personas: !!checked})
+                        } 
+                      />
+                      <Label htmlFor="personas" className="flex items-center text-sm">
+                        <User className="mr-1 h-4 w-4" /> Personas
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="vehiculos" 
+                        checked={tiposFiltro.vehiculos} 
+                        onCheckedChange={(checked) => 
+                          setTiposFiltro({...tiposFiltro, vehiculos: !!checked})
+                        } 
+                      />
+                      <Label htmlFor="vehiculos" className="flex items-center text-sm">
+                        <Car className="mr-1 h-4 w-4" /> Vehículos
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="inmuebles" 
+                        checked={tiposFiltro.inmuebles} 
+                        onCheckedChange={(checked) => 
+                          setTiposFiltro({...tiposFiltro, inmuebles: !!checked})
+                        } 
+                      />
+                      <Label htmlFor="inmuebles" className="flex items-center text-sm">
+                        <Home className="mr-1 h-4 w-4" /> Inmuebles
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="ubicaciones" 
+                        checked={tiposFiltro.ubicaciones} 
+                        onCheckedChange={(checked) => 
+                          setTiposFiltro({...tiposFiltro, ubicaciones: !!checked})
+                        } 
+                      />
+                      <Label htmlFor="ubicaciones" className="flex items-center text-sm">
+                        <MapPin className="mr-1 h-4 w-4" /> Ubicaciones
+                      </Label>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-12 gap-4">
-          {/* Columna de resultados */}
-          <div className="col-span-12 md:col-span-4 lg:col-span-3">
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-6">
+          {/* Panel de resultados */}
+          <Card className="h-[calc(100vh-248px)] flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle>Resultados ({resultadosBusqueda.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-auto">
+              {searchLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800" />
+                </div>
+              ) : resultadosBusqueda.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  <Search className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">No hay resultados para mostrar</p>
+                  <p className="text-xs">Intente una búsqueda diferente o utilice otros filtros</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {resultadosBusqueda.map((resultado) => (
+                    <div 
+                      key={`${resultado.tipo}-${resultado.id}`}
+                      className={`p-3 rounded-lg cursor-pointer border border-gray-200 hover:bg-gray-50 flex items-center ${
+                        entidadSeleccionada?.id === resultado.id && entidadSeleccionada?.tipo === resultado.tipo
+                          ? "bg-blue-50 border-blue-200"
+                          : ""
+                      }`}
+                      onClick={() => seleccionarEntidad(resultado)}
+                    >
+                      {resultado.tipo === "persona" ? (
+                        <User className="h-5 w-5 mr-2 text-blue-500" />
+                      ) : resultado.tipo === "vehiculo" ? (
+                        <Car className="h-5 w-5 mr-2 text-green-500" />
+                      ) : resultado.tipo === "inmueble" ? (
+                        <Home className="h-5 w-5 mr-2 text-amber-500" />
+                      ) : (
+                        <MapPin className="h-5 w-5 mr-2 text-red-500" />
+                      )}
+                      <div>
+                        <div className="font-medium">{resultado.nombre}</div>
+                        <div className="text-xs text-gray-500">{resultado.descripcion}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Panel de detalles */}
+          <div className="space-y-6">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold">Resultados</CardTitle>
+              <CardHeader className="pb-3 flex flex-row justify-between items-center">
+                <CardTitle>Detalles</CardTitle>
+                {entidadSeleccionada && (
+                  <Button size="sm" variant="outline" onClick={generarPDF}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar a PDF
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
-                {searchLoading ? (
-                  <p className="text-center p-4">Buscando...</p>
-                ) : resultadosBusqueda.length === 0 ? (
-                  <p className="text-center p-4 text-gray-500">
-                    {searchTerm ? "No se encontraron resultados" : "Ingrese un término de búsqueda"}
-                  </p>
+                {detalleLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800" />
+                  </div>
+                ) : !entidadSeleccionada ? (
+                  <div className="text-center py-6 text-gray-500">
+                    <div className="flex justify-center space-x-3 mb-3">
+                      <User className="h-8 w-8 text-gray-400" />
+                      <Car className="h-8 w-8 text-gray-400" />
+                      <Home className="h-8 w-8 text-gray-400" />
+                      <MapPin className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-sm">Seleccione un resultado para ver detalles</p>
+                  </div>
                 ) : (
-                  <div className="space-y-2">
-                    {resultadosBusqueda.map((resultado) => (
-                      <div
-                        key={`${resultado.tipo}-${resultado.id}`}
-                        className={`p-3 rounded-md cursor-pointer transition-colors ${
-                          entidadSeleccionada && 
-                          entidadSeleccionada.tipo === resultado.tipo && 
-                          entidadSeleccionada.id === resultado.id
-                            ? "bg-blue-100 border-l-4 border-blue-500"
-                            : "hover:bg-gray-100 border-l-4 border-transparent"
-                        }`}
-                        onClick={() => seleccionarEntidad(resultado)}
-                      >
-                        <div className="flex items-center">
-                          {resultado.tipo === "persona" && <User className="h-4 w-4 mr-2 text-blue-600" />}
-                          {resultado.tipo === "vehiculo" && <Car className="h-4 w-4 mr-2 text-green-600" />}
-                          {resultado.tipo === "inmueble" && <Home className="h-4 w-4 mr-2 text-amber-600" />}
-                          {resultado.tipo === "ubicacion" && <MapPin className="h-4 w-4 mr-2 text-red-600" />}
-                          <div>
-                            <p className="font-medium text-gray-900">{resultado.nombre}</p>
-                            <p className="text-sm text-gray-600">{resultado.descripcion}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="prose max-w-none prose-blue">
+                    <ReactMarkdown>{markdownContent}</ReactMarkdown>
                   </div>
                 )}
               </CardContent>
             </Card>
-          </div>
-          
-          {/* Columna de detalles */}
-          <div className="col-span-12 md:col-span-8 lg:col-span-9">
-            {detalleLoading ? (
-              <div className="flex items-center justify-center min-h-[200px]">
-                <p>Cargando detalles...</p>
-              </div>
-            ) : entidadSeleccionada ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold">
-                    Detalle de {entidadSeleccionada.tipo}: {entidadSeleccionada.nombre}
-                  </h2>
-                  <Button variant="outline" onClick={exportarPDF}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Exportar a PDF
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  {/* Contenedor para información detallada */}
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                      <h2 className="text-xl font-medium text-gray-900">Información Detallada</h2>
-                    </div>
-                    <div className="p-6">
-                      <div className="prose prose-blue max-w-none">
-                        <ReactMarkdown>
-                          {markdownContent}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Mapa y Tabla de ubicaciones */}
-                  <div id="ubicaciones-container" className="border rounded-lg overflow-hidden">
-                    {detalleData && detalleData.ubicaciones && (
-                      <>
-                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                          <h2 className="text-xl font-medium text-gray-900">Mapa y Ubicaciones</h2>
-                        </div>
-                        <div className="p-4">
-                          {entidadSeleccionada && detalleData ? (
-                            <MapaTablaUbicaciones 
-                              entidadSeleccionada={entidadSeleccionada}
-                              detalleData={detalleData}
-                            />
-                          ) : (
-                            <div className="text-center p-4">
-                              <p className="text-gray-500">No hay ubicaciones registradas para esta entidad.</p>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Mapa de ubicaciones general (si hay resultados de búsqueda que incluyen ubicaciones) */}
-            {!entidadSeleccionada && ubicacionesData && 
-              ubicacionesData.ubicacionesDirectas && 
-              ubicacionesData.ubicacionesDirectas.length > 0 && (
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                    <h2 className="text-xl font-medium text-gray-900">Ubicaciones Encontradas</h2>
-                  </div>
-                  <div className="p-4">
-                    <div className="h-[400px] bg-gray-100 mb-4">
-                      {/* Componente de mapa para ubicaciones directas */}
+            
+            {/* Mapa de ubicaciones */}
+            {entidadSeleccionada && (
+              <>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle>Ubicaciones</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {entidadSeleccionada && detalleData ? (
                       <MapaTablaUbicaciones 
-                        entidadSeleccionada={null} 
-                        detalleData={{ 
-                          ubicaciones: ubicacionesData.ubicacionesDirectas, 
-                          ubicacionesRelacionadas: ubicacionesData.ubicacionesRelacionadas 
-                        }} 
+                        entidadSeleccionada={entidadSeleccionada}
+                        detalleData={detalleData}
                       />
-                    </div>
-                  </div>
-                </div>
-              )}
+                    ) : (
+                      <div className="text-center p-4">
+                        <p className="text-gray-500">No hay ubicaciones registradas para esta entidad.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         </div>
       </div>

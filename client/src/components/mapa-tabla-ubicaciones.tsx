@@ -3,6 +3,26 @@ import { Ubicacion } from "@shared/schema";
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+// Corregir los iconos de Leaflet que pueden dar problemas en aplicaciones modernas
+// Este código se ejecuta solo una vez al importar el componente
+const fixLeafletIcons = () => {
+  // Guardamos la función _getIconUrl original
+  const originalGetIconUrl = L.Icon.Default.prototype._getIconUrl;
+
+  // Sobreescribimos el método para usar URLs absolutas
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  });
+
+  // Restauramos el método original para no romper otras funcionalidades
+  L.Icon.Default.prototype._getIconUrl = originalGetIconUrl;
+};
+
+// Aplicar la solución de los iconos inmediatamente
+fixLeafletIcons();
+
 interface MapaTablaUbicacionesProps {
   entidadSeleccionada: {
     tipo: string;
@@ -20,107 +40,154 @@ export default function MapaTablaUbicaciones({
   // Estados para ubicaciones
   const [ubicacionesDirectas, setUbicacionesDirectas] = useState<any[]>([]);
   const [ubicacionesRelacionadas, setUbicacionesRelacionadas] = useState<any[]>([]);
+  const [mapaError, setMapaError] = useState<string | null>(null);
   
   // Referencias para el mapa y marcadores
   const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInitializedRef = useRef(false);
   
   // Procesamiento inicial de datos
   useEffect(() => {
-    console.log("Procesando datos de ubicaciones:", detalleData);
+    console.log("Procesando datos de ubicaciones para:", entidadSeleccionada);
+    console.log("Detalle data recibida:", detalleData);
     
     if (!detalleData) return;
     
-    // Extraer ubicaciones directas
-    let directas: any[] = [];
-    let relacionadas: any[] = [];
-    
-    // Combinar fuentes de ubicaciones
-    if (Array.isArray(detalleData.ubicaciones)) {
-      directas = [...detalleData.ubicaciones];
-    }
-    
-    // Verificamos si es Andrey para añadir su domicilio específico
-    if (entidadSeleccionada?.tipo === "persona" && entidadSeleccionada?.id === 8) {
-      // Obtener domicilio de Andrey específicamente
-      fetch("/api/ubicaciones/13")
-        .then(res => res.json())
-        .then(ubicacion => {
-          if (ubicacion && typeof ubicacion.latitud === 'number') {
-            setUbicacionesDirectas(prev => {
-              // Asegurarse de no duplicar la ubicación
-              if (!prev.some(u => u.id === ubicacion.id)) {
-                const nuevaUbicacion = {
-                  ...ubicacion,
-                  esDomicilio: true
-                };
-                return [...prev, nuevaUbicacion];
-              }
-              return prev;
-            });
-          }
-        })
-        .catch(err => console.error("Error al obtener ubicación específica:", err));
-    }
-    
-    // Obtener ubicaciones relacionadas
-    if (detalleData.personas && detalleData.personas.length > 0) {
-      relacionadas = [...(relacionadas || [])];
-      // Añadimos información de relación de personas
-      console.log("Procesando personas relacionadas:", detalleData.personas);
-    }
-    
-    // Actualizar estados
-    setUbicacionesDirectas(directas);
-    
-    // Cargar ubicaciones relacionadas si existen
-    if (detalleData.ubicacionesRelacionadas && Array.isArray(detalleData.ubicacionesRelacionadas)) {
-      setUbicacionesRelacionadas(detalleData.ubicacionesRelacionadas);
-    } else {
-      setUbicacionesRelacionadas([]);
+    try {
+      // Extraer ubicaciones directas
+      let directas: any[] = [];
+      
+      // Manejar los diferentes formatos posibles de datos
+      if (Array.isArray(detalleData.ubicaciones)) {
+        directas = [...detalleData.ubicaciones];
+        console.log("Ubicaciones directas obtenidas del array:", directas.length);
+      } else if (detalleData.ubicaciones && detalleData.ubicaciones.ubicacionesDirectas) {
+        directas = [...detalleData.ubicaciones.ubicacionesDirectas];
+        console.log("Ubicaciones directas obtenidas del objeto:", directas.length);
+      }
+      
+      // Caso especial: si la entidad seleccionada es una persona, intentar obtener su domicilio
+      if (entidadSeleccionada?.tipo === "persona") {
+        const personaId = entidadSeleccionada.id;
+        console.log(`Buscando domicilio específico para persona ID: ${personaId}`);
+        
+        // Buscar en ubicaciones relacionadas por API
+        fetch(`/api/relaciones/persona/${personaId}`)
+          .then(res => res.json())
+          .then(relacionesData => {
+            console.log(`Relaciones obtenidas para persona ${personaId}:`, relacionesData);
+            
+            // Si hay ubicaciones en las relaciones
+            if (relacionesData.ubicaciones && relacionesData.ubicaciones.length > 0) {
+              // Obtener detalles de cada ubicación
+              const promesasUbicaciones = relacionesData.ubicaciones.map((ubicacionId: number) => 
+                fetch(`/api/ubicaciones/${ubicacionId}`).then(r => r.json())
+              );
+              
+              Promise.all(promesasUbicaciones)
+                .then(ubicacionesDetalles => {
+                  console.log("Detalles de ubicaciones relacionadas obtenidos:", ubicacionesDetalles);
+                  
+                  // Filtrar ubicaciones válidas (con coordenadas)
+                  const ubicacionesValidas = ubicacionesDetalles.filter(
+                    (ubi: any) => typeof ubi.latitud === 'number' && typeof ubi.longitud === 'number'
+                  );
+                  
+                  if (ubicacionesValidas.length > 0) {
+                    // Actualizar ubicaciones relacionadas
+                    setUbicacionesDirectas(prev => {
+                      // Combinar evitando duplicados por ID
+                      const idsActuales = new Set(prev.map(u => u.id));
+                      const nuevasUbicaciones = ubicacionesValidas.filter(u => !idsActuales.has(u.id));
+                      return [...prev, ...nuevasUbicaciones];
+                    });
+                  }
+                })
+                .catch(err => console.error("Error al obtener detalles de ubicaciones:", err));
+            }
+          })
+          .catch(err => console.error(`Error al obtener relaciones para persona ${personaId}:`, err));
+      }
+      
+      // Actualizar ubicaciones directas
+      setUbicacionesDirectas(directas);
+      
+      // Procesar ubicaciones relacionadas
+      let relacionadas: any[] = [];
+      
+      if (detalleData.ubicacionesRelacionadas && Array.isArray(detalleData.ubicacionesRelacionadas)) {
+        relacionadas = [...detalleData.ubicacionesRelacionadas];
+        console.log("Ubicaciones relacionadas encontradas:", relacionadas.length);
+      }
+      
+      // Actualizar el estado de ubicaciones relacionadas
+      setUbicacionesRelacionadas(relacionadas);
+      
+    } catch (error) {
+      console.error("Error al procesar datos de ubicaciones:", error);
+      setMapaError("Error al procesar datos de ubicaciones");
     }
     
   }, [entidadSeleccionada, detalleData]);
   
   // Inicializar y actualizar el mapa cuando cambien las ubicaciones
   useEffect(() => {
-    // Asegurarnos de que el contenedor del mapa existe
-    if (!mapContainerRef.current) return;
+    let timer: NodeJS.Timeout;
     
-    // Función para inicializar el mapa
-    const initMap = () => {
+    const renderMap = () => {
+      console.log("Intentando renderizar mapa con:", {
+        directas: ubicacionesDirectas.length,
+        relacionadas: ubicacionesRelacionadas.length
+      });
+      
+      // Validar que el contenedor del mapa existe y tiene dimensiones
+      if (!mapContainerRef.current) {
+        console.error("El contenedor del mapa no existe");
+        setMapaError("Error: Contenedor del mapa no disponible");
+        return;
+      }
+      
       try {
-        // Si ya hay un mapa, lo limpiamos primero
+        // Limpiar el mapa anterior si existe
         if (mapRef.current) {
+          console.log("Eliminando mapa anterior");
           mapRef.current.remove();
+          mapRef.current = null;
         }
         
-        // Crear el mapa
-        const map = L.map(mapContainerRef.current).setView([9.748917, -83.753428], 7);
+        // Si no hay ubicaciones, no renderizar el mapa
+        if (ubicacionesDirectas.length === 0 && ubicacionesRelacionadas.length === 0) {
+          console.log("No hay ubicaciones para mostrar en el mapa");
+          return;
+        }
         
-        // Añadir la capa de tiles
+        // Crear un nuevo mapa
+        console.log("Creando nuevo mapa en el contenedor");
+        const map = L.map(mapContainerRef.current, {
+          attributionControl: false, // Quitar atribución para evitar problemas de renderizado
+          zoomControl: true
+        });
+        
+        // Añadir capa de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
+        // Guardar referencia del mapa
         mapRef.current = map;
         
-        // Limpiar marcadores anteriores
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-        
-        // Crear límites para ajustar la vista
+        // Preparar bounds para ajustar la vista
         const bounds = L.latLngBounds([]);
-        let marcadoresAgregados = 0;
+        let hayMarcadores = false;
         
         // Añadir marcadores para ubicaciones directas
         ubicacionesDirectas.forEach((ubicacion, index) => {
           if (typeof ubicacion.latitud === 'number' && typeof ubicacion.longitud === 'number') {
-            const position = [ubicacion.latitud, ubicacion.longitud];
+            hayMarcadores = true;
             
-            // Configurar un icono básico para evitar errores con iconos personalizados
+            // Crear icono para ubicaciones directas (azul)
             const icon = new L.Icon({
               iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
               shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
@@ -131,21 +198,29 @@ export default function MapaTablaUbicaciones({
             });
             
             // Crear marcador
-            const marker = L.marker(position, { icon }).addTo(map);
+            const position: [number, number] = [ubicacion.latitud, ubicacion.longitud];
+            console.log(`Añadiendo marcador directo en: [${position}]`);
             
-            // Añadir popup
-            marker.bindPopup(`
-              <div>
-                <strong>${ubicacion.tipo || "Ubicación"}</strong><br>
-                ${ubicacion.fecha ? `Fecha: ${new Date(ubicacion.fecha).toLocaleString()}<br>` : ''}
-                Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}<br>
-                ${ubicacion.observaciones ? `Observaciones: ${ubicacion.observaciones}` : ''}
-              </div>
-            `);
-            
-            markersRef.current.push(marker);
-            bounds.extend(position);
-            marcadoresAgregados++;
+            try {
+              const marker = L.marker(position, { icon }).addTo(map);
+              
+              // Información para el popup
+              marker.bindPopup(`
+                <div>
+                  <strong>${ubicacion.tipo || "Ubicación"}</strong><br>
+                  ${ubicacion.fecha ? `Fecha: ${new Date(ubicacion.fecha).toLocaleString()}<br>` : ''}
+                  Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}<br>
+                  ${ubicacion.observaciones ? `Observaciones: ${ubicacion.observaciones}` : ''}
+                </div>
+              `);
+              
+              // Añadir posición al bounds
+              bounds.extend(position);
+            } catch (error) {
+              console.error(`Error al crear marcador en ${position}:`, error);
+            }
+          } else {
+            console.warn("Ubicación sin coordenadas válidas:", ubicacion);
           }
         });
         
@@ -155,11 +230,11 @@ export default function MapaTablaUbicaciones({
           const ubicacion = item.ubicacion ? item.ubicacion : item;
           
           if (ubicacion && typeof ubicacion.latitud === 'number' && typeof ubicacion.longitud === 'number') {
-            const position = [ubicacion.latitud, ubicacion.longitud];
+            hayMarcadores = true;
             
-            // Usar un icono diferente para ubicaciones relacionadas
+            // Crear icono para ubicaciones relacionadas (rojo)
             const icon = new L.Icon({
-              iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x-red.png',
+              iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
               shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
               iconSize: [25, 41],
               iconAnchor: [12, 41],
@@ -168,64 +243,102 @@ export default function MapaTablaUbicaciones({
             });
             
             // Crear marcador
-            const marker = L.marker(position, { icon }).addTo(map);
+            const position: [number, number] = [ubicacion.latitud, ubicacion.longitud];
+            console.log(`Añadiendo marcador relacionado en: [${position}]`);
             
-            // Preparar información para el popup
-            let entidadInfo = '';
-            if (item.entidadRelacionada) {
-              const entidad = item.entidadRelacionada;
-              entidadInfo = `<br><strong>Relacionada con:</strong> ${entidad.tipo} - ${entidad.entidad?.nombre || 'Desconocido'}`;
+            try {
+              const marker = L.marker(position, { icon }).addTo(map);
+              
+              // Preparar información para el popup
+              let entidadInfo = '';
+              if (item.entidadRelacionada) {
+                const entidad = item.entidadRelacionada;
+                entidadInfo = `<br><strong>Relacionada con:</strong> ${entidad.tipo} - ${entidad.entidad?.nombre || 'Desconocido'}`;
+              }
+              
+              // Añadir popup
+              marker.bindPopup(`
+                <div>
+                  <strong>${ubicacion.tipo || "Ubicación"} (Relacionada)</strong><br>
+                  ${ubicacion.fecha ? `Fecha: ${new Date(ubicacion.fecha).toLocaleString()}<br>` : ''}
+                  Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}
+                  ${entidadInfo}
+                  ${ubicacion.observaciones ? `<br>Observaciones: ${ubicacion.observaciones}` : ''}
+                </div>
+              `);
+              
+              // Añadir posición al bounds
+              bounds.extend(position);
+            } catch (error) {
+              console.error(`Error al crear marcador en ${position}:`, error);
             }
-            
-            // Añadir popup
-            marker.bindPopup(`
-              <div>
-                <strong>${ubicacion.tipo || "Ubicación"} (Relacionada)</strong><br>
-                ${ubicacion.fecha ? `Fecha: ${new Date(ubicacion.fecha).toLocaleString()}<br>` : ''}
-                Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}
-                ${entidadInfo}
-                ${ubicacion.observaciones ? `<br>Observaciones: ${ubicacion.observaciones}` : ''}
-              </div>
-            `);
-            
-            markersRef.current.push(marker);
-            bounds.extend(position);
-            marcadoresAgregados++;
+          } else {
+            console.warn("Ubicación relacionada sin coordenadas válidas:", ubicacion);
           }
         });
         
         // Ajustar la vista del mapa
-        if (marcadoresAgregados > 0) {
-          // Si hay solo un marcador, centrar en él con un zoom fijo
-          if (marcadoresAgregados === 1) {
-            const center = bounds.getCenter();
-            map.setView([center.lat, center.lng], 13);
-          } 
-          // Si hay múltiples marcadores, ajustar a todos
-          else {
-            map.fitBounds(bounds, { padding: [30, 30] });
+        if (hayMarcadores) {
+          console.log("Ajustando vista del mapa con los marcadores");
+          
+          // Intentar que la vista contenga todos los marcadores
+          try {
+            // Si hay más de un marcador, ajustar a todos
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, { 
+                padding: [30, 30],
+                maxZoom: 15
+              });
+              console.log("Vista del mapa ajustada a todos los marcadores");
+            } else {
+              // Si no hay bounds válidos, poner una vista por defecto (Costa Rica)
+              map.setView([9.748917, -83.753428], 7);
+              console.warn("No se pudo ajustar la vista, usando vista por defecto");
+            }
+          } catch (error) {
+            console.error("Error al ajustar la vista del mapa:", error);
+            // Vista de respaldo
+            map.setView([9.748917, -83.753428], 7);
           }
+        } else {
+          // Vista por defecto si no hay marcadores
+          map.setView([9.748917, -83.753428], 7);
+          console.log("No hay marcadores, usando vista por defecto");
         }
         
+        // Invalidar tamaño del mapa para forzar actualización
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.invalidateSize();
+            console.log("Tamaño del mapa actualizado");
+          }
+        }, 100);
+        
+        // Marcar como inicializado
         mapInitializedRef.current = true;
+        setMapaError(null);
+        
       } catch (error) {
-        console.error("Error al inicializar el mapa:", error);
+        console.error("Error crítico al renderizar el mapa:", error);
+        setMapaError(`Error al renderizar mapa: ${error instanceof Error ? error.message : String(error)}`);
       }
     };
     
-    // Usar setTimeout para asegurar que el contenedor esté completamente listo
-    const timer = setTimeout(() => {
-      if (ubicacionesDirectas.length > 0 || ubicacionesRelacionadas.length > 0) {
-        initMap();
-      }
-    }, 300);
+    // Dar tiempo para que el DOM se actualice antes de renderizar el mapa
+    timer = setTimeout(renderMap, 500);
     
+    // Limpieza al desmontar
     return () => {
       clearTimeout(timer);
+      
+      // Limpiar el mapa si existe
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
-    
   }, [ubicacionesDirectas, ubicacionesRelacionadas]);
-  
+
   // Determinar si hay ubicaciones para mostrar
   const hayUbicaciones = ubicacionesDirectas.length > 0 || ubicacionesRelacionadas.length > 0;
   
@@ -234,9 +347,14 @@ export default function MapaTablaUbicaciones({
       {/* Mapa de ubicaciones */}
       <div className="border rounded-lg overflow-hidden">
         <div className="h-[400px] relative" ref={mapContainerRef}>
-          {!hayUbicaciones && (
+          {!hayUbicaciones && !mapaError && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
               <p className="text-gray-500">No hay ubicaciones disponibles para mostrar</p>
+            </div>
+          )}
+          {mapaError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-red-50">
+              <p className="text-red-500">{mapaError}</p>
             </div>
           )}
         </div>
@@ -257,7 +375,10 @@ export default function MapaTablaUbicaciones({
             {/* Ubicaciones directas */}
             {ubicacionesDirectas.map((ubicacion, index) => (
               <tr key={`directa-${index}-${ubicacion.id}`} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ubicacion.tipo || "No especificado"}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {ubicacion.tipo || "No especificado"}
+                  {ubicacion.esDomicilio && <span className="ml-1 text-xs text-blue-500">(Domicilio)</span>}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {typeof ubicacion.latitud === 'number' && typeof ubicacion.longitud === 'number' 
                     ? `${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}` 
