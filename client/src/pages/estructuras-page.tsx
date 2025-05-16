@@ -34,6 +34,9 @@ export default function EstructurasPage() {
   const [resultadosBusqueda, setResultadosBusqueda] = useState<SearchResult[]>([]);
   const [entidadSeleccionada, setEntidadSeleccionada] = useState<SearchResult | null>(null);
   const [markdownContent, setMarkdownContent] = useState<string>("");
+  const [observacionesPersona, setObservacionesPersona] = useState<any[]>([]);
+  const [observacionesVehiculo, setObservacionesVehiculo] = useState<any[]>([]);
+  const [observacionesInmueble, setObservacionesInmueble] = useState<any[]>([]);
 
   // Función que procesa y prepara los tipos para la búsqueda
   const getTiposSeleccionados = () => {
@@ -143,17 +146,34 @@ export default function EstructurasPage() {
   const { data: detalleData, isLoading: detalleLoading, refetch: detalleRefetch } = useQuery<any>({
     queryKey: ["/api/relaciones", entidadSeleccionada?.tipo, entidadSeleccionada?.id],
     enabled: !!entidadSeleccionada,
+    queryFn: ({ queryKey }) => {
+      if (!queryKey[1] || !queryKey[2]) {
+        throw new Error("Tipo y ID de entidad requeridos");
+      }
+      return fetch(`/api/relaciones/${queryKey[1]}/${queryKey[2]}`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error("Error al obtener detalles de la entidad");
+          }
+          return res.json();
+        });
+    }
   });
 
-  // Actualizar el contenido markdown cuando cambian los datos
+  // Actualizar el contenido markdown cuando cambian los datos o las observaciones
   useEffect(() => {
     if (entidadSeleccionada && detalleData) {
-      generarContenidoMarkdown(entidadSeleccionada, detalleData);
+      const observaciones = 
+          entidadSeleccionada.tipo === "persona" ? observacionesPersona :
+          entidadSeleccionada.tipo === "vehiculo" ? observacionesVehiculo :
+          entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
+          
+      generarContenidoMarkdown(entidadSeleccionada, detalleData, observaciones);
     }
-  }, [entidadSeleccionada, detalleData]);
+  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble]);
 
   // Generar el contenido Markdown basado en los datos
-  const generarContenidoMarkdown = (entidad: SearchResult, data: any) => {
+  const generarContenidoMarkdown = (entidad: SearchResult, data: any, observaciones: any[] = []) => {
     let md = `# ${entidad.nombre}\n\n`;
     
     // Información del registro
@@ -200,30 +220,15 @@ export default function EstructurasPage() {
     md += "\n";
     
     // Observaciones relacionadas
-    const tieneObservaciones = 
-      (entidad.tipo === "persona" && data.observacionesPersona && data.observacionesPersona.length > 0) ||
-      (entidad.tipo === "vehiculo" && data.observacionesVehiculo && data.observacionesVehiculo.length > 0) ||
-      (entidad.tipo === "inmueble" && data.observacionesInmueble && data.observacionesInmueble.length > 0);
+    const tieneObservaciones = observaciones && observaciones.length > 0;
     
     if (tieneObservaciones) {
       md += "## Observaciones\n\n";
       
-      if (entidad.tipo === "persona" && data.observacionesPersona) {
-        data.observacionesPersona.forEach((obs: any) => {
-          md += `### ${new Date(obs.fecha).toLocaleString()}\n\n`;
-          md += `${obs.observacion}\n\n`;
-        });
-      } else if (entidad.tipo === "vehiculo" && data.observacionesVehiculo) {
-        data.observacionesVehiculo.forEach((obs: any) => {
-          md += `### ${new Date(obs.fecha).toLocaleString()}\n\n`;
-          md += `${obs.observacion}\n\n`;
-        });
-      } else if (entidad.tipo === "inmueble" && data.observacionesInmueble) {
-        data.observacionesInmueble.forEach((obs: any) => {
-          md += `### ${new Date(obs.fecha).toLocaleString()}\n\n`;
-          md += `${obs.observacion}\n\n`;
-        });
-      }
+      observaciones.forEach((obs: any) => {
+        md += `### ${new Date(obs.fecha).toLocaleString()}\n\n`;
+        md += `${obs.observacion}\n\n`;
+      });
     }
     
     // Entidades relacionadas
@@ -350,9 +355,9 @@ export default function EstructurasPage() {
       
       // Observaciones
       const observaciones = 
-        entidadSeleccionada.tipo === "persona" ? detalleData.observacionesPersona :
-        entidadSeleccionada.tipo === "vehiculo" ? detalleData.observacionesVehiculo :
-        entidadSeleccionada.tipo === "inmueble" ? detalleData.observacionesInmueble : [];
+        entidadSeleccionada.tipo === "persona" ? observacionesPersona :
+        entidadSeleccionada.tipo === "vehiculo" ? observacionesVehiculo :
+        entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
       
       if (observaciones && observaciones.length > 0) {
         yPos += 8;
@@ -492,9 +497,43 @@ export default function EstructurasPage() {
     }
   };
 
-  const seleccionarEntidad = (resultado: SearchResult) => {
+  const seleccionarEntidad = async (resultado: SearchResult) => {
+    // Limpiar estados anteriores
+    setObservacionesPersona([]);
+    setObservacionesVehiculo([]);
+    setObservacionesInmueble([]);
     setEntidadSeleccionada(resultado);
-    detalleRefetch();
+    
+    try {
+      // Obtener observaciones según el tipo de entidad
+      if (resultado.tipo === "persona") {
+        const res = await fetch(`/api/personas/${resultado.id}/observaciones`);
+        const data = await res.json();
+        setObservacionesPersona(data);
+        console.log("Observaciones de persona:", data);
+      } else if (resultado.tipo === "vehiculo") {
+        const res = await fetch(`/api/vehiculos/${resultado.id}/observaciones`);
+        const data = await res.json();
+        setObservacionesVehiculo(data);
+        console.log("Observaciones de vehículo:", data);
+      } else if (resultado.tipo === "inmueble") {
+        const res = await fetch(`/api/inmuebles/${resultado.id}/observaciones`);
+        const data = await res.json();
+        setObservacionesInmueble(data);
+        console.log("Observaciones de inmueble:", data);
+      }
+      
+      // Refrescar la consulta de detalles
+      await detalleRefetch();
+      
+    } catch (error) {
+      console.error("Error al obtener detalles:", error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al obtener los detalles del registro seleccionado.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
