@@ -4,7 +4,7 @@ import MainLayout from "@/components/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, User, Car, Home, MapPin, FileText } from "lucide-react";
+import { Search, User, Car, Home, MapPin, FileText, Download } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import MapaTablaUbicaciones from "@/components/mapa-tabla-ubicaciones";
 import ReactMarkdown from "react-markdown";
-import React from "react";
 
 // Tipo para los resultados de búsqueda
 type SearchResult = {
@@ -161,8 +160,8 @@ export default function EstructurasPage() {
     }
   });
 
-  // Función para filtrar y procesar datos específicos para la entidad seleccionada
-  const procesarDatosEntidad = useCallback((seleccionada: SearchResult, datos: any) => {
+  // Función para filtrar y procesar datos de relaciones específicos para la entidad seleccionada
+  async function procesarDatosEntidad(seleccionada: SearchResult, datos: any) {
     if (!seleccionada || !datos) return datos;
     
     // Copia profunda para no modificar los datos originales
@@ -170,25 +169,24 @@ export default function EstructurasPage() {
     
     // Solución específica para Andrey (ID 8)
     if (seleccionada.tipo === "persona" && seleccionada.id === 8) {
-      fetch("/api/personas/8")
-        .then(res => res.json())
-        .then(personaAndrey => {
-          if (personaAndrey && datosProcesados.personas && datosProcesados.personas.length > 0) {
-            // Reemplazar los datos con los de Andrey
-            datosProcesados.personas[0] = personaAndrey;
-            console.log("Datos corregidos para Andrey:", datosProcesados);
-            
-            // Actualizar el markdown
-            generarContenidoMarkdown(seleccionada, datosProcesados);
-          }
-        })
-        .catch(err => console.error("Error al obtener datos de Andrey:", err));
-      
-      return datosProcesados;
-    }
-    
+      try {
+        // Recuperar datos directamente desde la API
+        const response = await fetch("/api/personas/8");
+        const personaAndrey = await response.json();
+        
+        if (personaAndrey) {
+          // Forzar los datos correctos
+          datosProcesados.personas = [
+            personaAndrey,
+            ...datosProcesados.personas.filter((p: any) => p.id !== 8)
+          ];
+        }
+      } catch (error) {
+        console.error("Error al obtener datos específicos de Andrey:", error);
+      }
+    } 
     // Para otras personas
-    if (seleccionada.tipo === "persona" && datosProcesados.personas && datosProcesados.personas.length > 0) {
+    else if (seleccionada.tipo === "persona" && datosProcesados.personas && datosProcesados.personas.length > 0) {
       // Asegurarnos que la primera persona en el array es la seleccionada
       const personaSeleccionada = datosProcesados.personas.find((p: any) => p.id === seleccionada.id);
       
@@ -226,26 +224,59 @@ export default function EstructurasPage() {
     }
     
     return datosProcesados;
-  }, []);
+  }
 
   // Actualizar el contenido markdown cuando cambian los datos o las observaciones
   useEffect(() => {
-    if (entidadSeleccionada && detalleData) {
-      const observaciones = 
-          entidadSeleccionada.tipo === "persona" ? observacionesPersona :
-          entidadSeleccionada.tipo === "vehiculo" ? observacionesVehiculo :
-          entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
-      
-      // Procesar los datos para asegurar que se muestre la información correcta
-      const datosProcesados = procesarDatosEntidad(entidadSeleccionada, detalleData);
-      
-      // Generar contenido Markdown con los datos procesados
-      generarContenidoMarkdown(entidadSeleccionada, datosProcesados, observaciones);
+    if (!entidadSeleccionada || !detalleData) return;
+    
+    const observaciones = 
+        entidadSeleccionada.tipo === "persona" ? observacionesPersona :
+        entidadSeleccionada.tipo === "vehiculo" ? observacionesVehiculo :
+        entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
+    
+    // Solución específica para Andrey (ID 8)
+    if (entidadSeleccionada.tipo === "persona" && entidadSeleccionada.id === 8) {
+      // Obtener los datos correctos directamente de la API
+      fetch("/api/personas/8")
+        .then(res => res.json())
+        .then(personaAndrey => {
+          if (personaAndrey) {
+            const datosCorregidos = { ...detalleData };
+            
+            // Asegurarse que tenemos un array de personas
+            if (!datosCorregidos.personas) {
+              datosCorregidos.personas = [];
+            }
+            
+            // Reemplazar completamente la primera posición con los datos correctos de Andrey
+            datosCorregidos.personas[0] = personaAndrey;
+            
+            console.log("Datos corregidos para Andrey:", datosCorregidos);
+            
+            // Generar el contenido Markdown con los datos corregidos
+            generarContenidoMarkdown(entidadSeleccionada, datosCorregidos, observaciones);
+          }
+        })
+        .catch(err => console.error("Error al obtener datos específicos de Andrey:", err));
+    } else {
+      // Para otras entidades, usar la función normal de procesamiento
+      (async () => {
+        try {
+          // Convertimos nuestra función asíncrona para que funcione en el useEffect
+          const datosProcesados = await procesarDatosEntidad(entidadSeleccionada, detalleData);
+          generarContenidoMarkdown(entidadSeleccionada, datosProcesados, observaciones);
+        } catch (error) {
+          console.error("Error al procesar datos:", error);
+          // En caso de error, mostrar los datos originales
+          generarContenidoMarkdown(entidadSeleccionada, detalleData, observaciones);
+        }
+      })();
     }
-  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble, procesarDatosEntidad]);
+  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble]);
 
   // Generar el contenido Markdown basado en los datos
-  const generarContenidoMarkdown = useCallback((entidad: SearchResult, data: any, observaciones: any[] = []) => {
+  const generarContenidoMarkdown = (entidad: SearchResult, data: any, observaciones: any[] = []) => {
     let md = `# ${entidad.nombre}\n\n`;
     
     // Información del registro
@@ -282,8 +313,8 @@ export default function EstructurasPage() {
       md += `**Tipo:** ${inmueble.tipo}  \n`;
       md += `**Dirección:** ${inmueble.direccion}  \n`;
       md += `**Propietario:** ${inmueble.propietario || "No registrado"}  \n`;
-    } else if (entidad.tipo === "ubicacion" && data.ubicaciones && data.ubicaciones.length > 0) {
-      const ubicacion = data.ubicaciones[0];
+    } else if (entidad.tipo === "ubicacion" && data.ubicaciones && data.ubicaciones.ubicacionesDirectas && data.ubicaciones.ubicacionesDirectas.length > 0) {
+      const ubicacion = data.ubicaciones.ubicacionesDirectas[0];
       md += `**Tipo:** ${ubicacion.tipo}  \n`;
       md += `**Coordenadas:** (${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)})  \n`;
       md += `**Fecha:** ${ubicacion.fecha ? new Date(ubicacion.fecha).toLocaleString() : "No registrada"}  \n`;
@@ -359,7 +390,7 @@ export default function EstructurasPage() {
     
     // Actualizar el estado con el contenido generado
     setMarkdownContent(md);
-  }, []);
+  };
 
   // Ejecutar búsqueda
   const ejecutarBusqueda = () => {
@@ -378,19 +409,17 @@ export default function EstructurasPage() {
     setMarkdownContent("");
     
     // Ejecutar la consulta
-    searchRefetch()
-      .then((result: any) => {
-        // Refrescar la consulta de ubicaciones también
-        ubicacionesRefetch();
-      })
-      .catch((error: any) => {
-        console.error("Error de búsqueda:", error);
-        toast({
-          title: "Error",
-          description: "Error al realizar la búsqueda",
-          variant: "destructive"
-        });
+    searchRefetch().then((result: any) => {
+      // Refrescar la consulta de ubicaciones también
+      ubicacionesRefetch();
+    }).catch((error: any) => {
+      console.error("Error de búsqueda:", error);
+      toast({
+        title: "Error",
+        description: "Error al realizar la búsqueda",
+        variant: "destructive"
       });
+    });
   };
   
   // Cargar observaciones cuando se selecciona una entidad
@@ -685,7 +714,7 @@ export default function EstructurasPage() {
                   </div>
                 </div>
               </div>
-            ) : null}
+            )}
 
             {/* Mapa de ubicaciones general (si hay resultados de búsqueda que incluyen ubicaciones) */}
             {!entidadSeleccionada && ubicacionesData && 
@@ -708,7 +737,7 @@ export default function EstructurasPage() {
                     </div>
                   </div>
                 </div>
-              )}
+            )}
           </div>
         </div>
       </div>
