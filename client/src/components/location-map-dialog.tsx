@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { MapPin, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+
+// No importar directamente Leaflet - se cargará dinámicamente
 
 interface LocationMapDialogProps {
   open: boolean;
@@ -19,6 +19,12 @@ interface LocationMapDialogProps {
   onSelectLocation: (lat: number, lng: number) => void;
   initialLocation?: {lat: number, lng: number} | null;
   title?: string;
+}
+
+declare global {
+  interface Window {
+    L: any;
+  }
 }
 
 export default function LocationMapDialog({
@@ -45,88 +51,118 @@ export default function LocationMapDialog({
   // ID único para el mapa dentro del diálogo
   const mapDialogId = "map-in-dialog";
 
-  // Inicializar el mapa cuando el diálogo está abierto
+  // Función para inicializar el mapa cuando el diálogo está abierto
   useEffect(() => {
-    if (!open || mapInitialized) return;
+    // Solo inicializar si el diálogo está abierto y el mapa no está inicializado
+    if (open && !mapInitialized) {
+      console.log("Dialog open, initializing map...");
+      
+      // Verificar si Leaflet está disponible o cargarlo dinámicamente
+      if (typeof window !== 'undefined' && !window.L) {
+        console.log("Leaflet no está disponible, cargándolo dinámicamente");
+        
+        // Cargar CSS de Leaflet
+        const linkCSS = document.createElement('link');
+        linkCSS.rel = 'stylesheet';
+        linkCSS.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        linkCSS.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+        linkCSS.crossOrigin = '';
+        document.head.appendChild(linkCSS);
+        
+        // Cargar JS de Leaflet
+        const scriptJS = document.createElement('script');
+        scriptJS.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        scriptJS.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+        scriptJS.crossOrigin = '';
+        scriptJS.onload = initializeMap;
+        document.head.appendChild(scriptJS);
+      } else {
+        // Pequeño retraso para asegurar que el DOM esté completamente renderizado
+        setTimeout(initializeMap, 500);
+      }
+    }
     
-    console.log("Dialog open, initializing map...");
-    
-    const initializeMap = () => {
+    // Función para inicializar el mapa
+    function initializeMap() {
       try {
         console.log("Initializing map in dialog");
-        const mapElement = document.getElementById(mapDialogId);
-        
-        if (!mapElement) {
-          console.error("Map element not found:", mapDialogId);
+        if (!window.L) {
+          console.error("Leaflet still not available");
           return;
         }
         
-        console.log("Map element found, creating map");
+        const L = window.L;
+        const mapElement = document.getElementById(mapDialogId);
         
-        // Corregir los iconos de Leaflet
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-          iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-        });
-        
-        // Coordenadas iniciales
-        const initialCoords = selectedLocation 
-          ? [selectedLocation.lat, selectedLocation.lng] 
-          : [defaultLat, defaultLng];
+        if (mapElement) {
+          console.log("Map element found, creating map");
           
-        console.log("Using coordinates:", initialCoords);
-        
-        // Crear el mapa
-        const newMap = L.map(mapDialogId).setView(initialCoords, 10);
-        
-        // Agregar capa del mapa (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(newMap);
-        
-        // Crear marcador
-        const newMarker = L.marker(initialCoords, {
-          draggable: true
-        }).addTo(newMap);
-        
-        // Evento dragend del marcador
-        newMarker.on('dragend', function() {
-          const position = newMarker.getLatLng();
-          console.log("Marker dragged to:", position);
-          setSelectedLocation({
-            lat: position.lat,
-            lng: position.lng
+          // Coordenadas iniciales
+          const initialCoords = selectedLocation 
+            ? [selectedLocation.lat, selectedLocation.lng] 
+            : [defaultLat, defaultLng];
+            
+          console.log("Using coordinates:", initialCoords);
+          
+          // Crear el mapa
+          const newMap = L.map(mapDialogId).setView(initialCoords, 13);
+          
+          // Agregar capa del mapa (OpenStreetMap)
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(newMap);
+          
+          // Crear marcador
+          const newMarker = L.marker(initialCoords, {
+            draggable: true,
+            icon: L.icon({
+              iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+              shadowSize: [41, 41]
+            })
+          }).addTo(newMap);
+          
+          // Evento dragend del marcador
+          newMarker.on('dragend', function() {
+            const position = newMarker.getLatLng();
+            console.log("Marker dragged to:", position);
+            setSelectedLocation({
+              lat: position.lat,
+              lng: position.lng
+            });
           });
-        });
-        
-        // Evento click en el mapa
-        newMap.on('click', function(e: any) {
-          console.log("Map clicked at:", e.latlng);
-          // Mover el marcador a la posición clicada
-          newMarker.setLatLng(e.latlng);
-          // Actualizar el estado de ubicación seleccionada
-          setSelectedLocation({
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
+          
+          // Evento click en el mapa
+          newMap.on('click', function(e) {
+            console.log("Map clicked at:", e.latlng);
+            // Mover el marcador a la posición clicada
+            newMarker.setLatLng(e.latlng);
+            // Actualizar el estado de ubicación seleccionada
+            setSelectedLocation({
+              lat: e.latlng.lat,
+              lng: e.latlng.lng
+            });
           });
-        });
-        
-        // Guardar referencias
-        setMap(newMap);
-        setMarker(newMarker);
-        setMapInitialized(true);
-        
-        // Invalidar el tamaño para que el mapa se renderice correctamente
-        setTimeout(() => {
-          if (newMap) {
+          
+          // Guardar referencias
+          setMap(newMap);
+          setMarker(newMarker);
+          setMapInitialized(true);
+          
+          // MUY IMPORTANTE: invalidar el tamaño para que el mapa se renderice correctamente
+          // en un diálogo que estaba oculto
+          setTimeout(() => {
             console.log("Invalidating map size");
             newMap.invalidateSize();
-          }
-        }, 300);
-        
-        console.log("Map initialized successfully");
+          }, 300);
+          
+          console.log("Map initialized successfully");
+        } else {
+          console.error("Map element not found:", mapDialogId);
+        }
       } catch (error) {
         console.error("Error initializing map:", error);
         toast({
@@ -135,21 +171,8 @@ export default function LocationMapDialog({
           variant: "destructive",
         });
       }
-    };
-    
-    // Si ya tenemos Leaflet cargado, inicializar después de un breve retraso
-    setTimeout(initializeMap, 500);
-    
-    // Limpiar cuando el componente se desmonte
-    return () => {
-      if (map) {
-        console.log("Cleaning up map");
-        map.remove();
-        setMap(null);
-        setMarker(null);
-      }
-    };
-  }, [open, mapInitialized, defaultLat, defaultLng, selectedLocation, toast, map]);
+    }
+  }, [open, mapInitialized, defaultLat, defaultLng, selectedLocation, toast]);
 
   // Limpiar el mapa cuando se cierra el diálogo
   useEffect(() => {
@@ -167,7 +190,7 @@ export default function LocationMapDialog({
     if (map && marker && initialLocation && open) {
       console.log("Updating map with new initial location:", initialLocation);
       marker.setLatLng([initialLocation.lat, initialLocation.lng]);
-      map.setView([initialLocation.lat, initialLocation.lng], 10);
+      map.setView([initialLocation.lat, initialLocation.lng], 13);
       setSelectedLocation(initialLocation);
       map.invalidateSize();
     }
@@ -286,7 +309,8 @@ export default function LocationMapDialog({
         <div className="relative">
           <div 
             id={mapDialogId} 
-            className="leaflet-container h-[500px] rounded-md border border-border"
+            className="h-[500px] rounded-md border border-border"
+            style={{ display: 'block', width: '100%', zIndex: 0 }}
           />
           
           {!mapInitialized && (
