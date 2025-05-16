@@ -3,25 +3,26 @@ import { Ubicacion } from "@shared/schema";
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Corregir los iconos de Leaflet que pueden dar problemas en aplicaciones modernas
-// Este código se ejecuta solo una vez al importar el componente
-const fixLeafletIcons = () => {
-  // Guardamos la función _getIconUrl original
-  const originalGetIconUrl = L.Icon.Default.prototype._getIconUrl;
+// Configurar marcadores personalizados para Leaflet
+// Definir íconos personalizados para evitar problemas con los íconos por defecto
+const iconoAzul = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-  // Sobreescribimos el método para usar URLs absolutas
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  });
-
-  // Restauramos el método original para no romper otras funcionalidades
-  L.Icon.Default.prototype._getIconUrl = originalGetIconUrl;
-};
-
-// Aplicar la solución de los iconos inmediatamente
-fixLeafletIcons();
+const iconoRojo = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 interface MapaTablaUbicacionesProps {
   entidadSeleccionada: {
@@ -79,11 +80,14 @@ export default function MapaTablaUbicaciones({
             console.log(`Relaciones obtenidas para persona ${personaId}:`, relacionesData);
             
             // Si hay ubicaciones en las relaciones
-            if (relacionesData.ubicaciones && relacionesData.ubicaciones.length > 0) {
+            if (relacionesData.ubicaciones && Array.isArray(relacionesData.ubicaciones)) {
               // Obtener detalles de cada ubicación
-              const promesasUbicaciones = relacionesData.ubicaciones.map((ubicacionId: number) => 
-                fetch(`/api/ubicaciones/${ubicacionId}`).then(r => r.json())
-              );
+              const promesasUbicaciones = relacionesData.ubicaciones.map((ubicacion: any) => {
+                // Verificar si tenemos un objeto o un ID
+                const ubicacionId = typeof ubicacion === 'object' ? ubicacion.id : ubicacion;
+                console.log(`Obteniendo detalles para ubicación ${ubicacionId}`);
+                return fetch(`/api/ubicaciones/${ubicacionId}`).then(r => r.json());
+              });
               
               Promise.all(promesasUbicaciones)
                 .then(ubicacionesDetalles => {
@@ -187,15 +191,8 @@ export default function MapaTablaUbicaciones({
           if (typeof ubicacion.latitud === 'number' && typeof ubicacion.longitud === 'number') {
             hayMarcadores = true;
             
-            // Crear icono para ubicaciones directas (azul)
-            const icon = new L.Icon({
-              iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-              shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            });
+            // Usar icono azul para ubicaciones directas
+            const icon = iconoAzul;
             
             // Crear marcador
             const position: [number, number] = [ubicacion.latitud, ubicacion.longitud];
@@ -232,15 +229,8 @@ export default function MapaTablaUbicaciones({
           if (ubicacion && typeof ubicacion.latitud === 'number' && typeof ubicacion.longitud === 'number') {
             hayMarcadores = true;
             
-            // Crear icono para ubicaciones relacionadas (rojo)
-            const icon = new L.Icon({
-              iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-              shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            });
+            // Usar icono rojo para ubicaciones relacionadas
+            const icon = iconoRojo;
             
             // Crear marcador
             const position: [number, number] = [ubicacion.latitud, ubicacion.longitud];
