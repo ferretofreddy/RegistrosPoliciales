@@ -1,5 +1,5 @@
 import { db } from '../server/db';
-import { eq, like } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { tiposInmuebles, tiposUbicaciones } from '../shared/schema';
 
 // Script para inicializar tipos básicos necesarios para el funcionamiento de la aplicación
@@ -20,18 +20,9 @@ async function inicializarTipos() {
     ];
     
     for (const tipo of tiposInmueblesData) {
-      // Verificar si ya existe
-      const [existente] = await db
-        .select()
-        .from(tiposInmuebles)
-        .where(like(tiposInmuebles.nombre, tipo.nombre));
-      
-      if (!existente) {
-        await db.insert(tiposInmuebles).values(tipo);
-        console.log(`Tipo de inmueble añadido: ${tipo.nombre}`);
-      } else {
-        console.log(`Tipo de inmueble ya existe: ${tipo.nombre}`);
-      }
+      // Insertar directamente (estamos en una base limpia)
+      const [nuevoTipo] = await db.insert(tiposInmuebles).values(tipo).returning();
+      console.log(`Tipo de inmueble añadido: ${nuevoTipo.nombre} (ID: ${nuevoTipo.id})`);
     }
     
     // Inicializar tipos de ubicaciones
@@ -48,18 +39,9 @@ async function inicializarTipos() {
     ];
     
     for (const tipo of tiposUbicacionesData) {
-      // Verificar si ya existe
-      const [existente] = await db
-        .select()
-        .from(tiposUbicaciones)
-        .where(sql => sql`LOWER(${tiposUbicaciones.nombre}) = LOWER(${tipo.nombre})`);
-      
-      if (!existente) {
-        await db.insert(tiposUbicaciones).values(tipo);
-        console.log(`Tipo de ubicación añadido: ${tipo.nombre}`);
-      } else {
-        console.log(`Tipo de ubicación ya existe: ${tipo.nombre}`);
-      }
+      // Insertar directamente (estamos en una base limpia)
+      const [nuevoTipo] = await db.insert(tiposUbicaciones).values(tipo).returning();
+      console.log(`Tipo de ubicación añadido: ${nuevoTipo.nombre} (ID: ${nuevoTipo.id})`);
     }
     
     console.log('¡Tipos inicializados exitosamente!');
