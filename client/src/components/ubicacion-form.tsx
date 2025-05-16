@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -106,117 +106,73 @@ export default function UbicacionForm() {
     },
   });
 
-  // Referencia al contenedor del mapa
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Importar Leaflet dinámicamente
-  useEffect(() => {
-    if (mapInitialized || !mapContainerRef.current) return;
-    
-    console.log("Intentando inicializar mapa");
-    
-    // Añadir referencia a Leaflet
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.7.1/dist/leaflet.js';
-    script.integrity = 'sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==';
-    script.crossOrigin = '';
-    script.onload = () => {
-      console.log("Leaflet cargado, inicializando mapa");
-      
-      // Inicializar mapa después de cargar Leaflet
-      const L = window.L;
-      
-      try {
-        // Corregir los iconos de Leaflet
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-          iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-        });
-        
-        // Coordenadas iniciales (centrado en Costa Rica)
-        const initialCoords: [number, number] = [9.7489, -83.7534];
-        
-        // Crear el mapa y configurarlo
-        console.log("Creando nuevo mapa");
-        const newMap = L.map('location-map').setView(initialCoords, 8);
-        
-        // Agregar la capa de mapa (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(newMap);
-        
-        // Crear un marcador en la posición inicial
-        const newMarker = L.marker(initialCoords, {
-          draggable: true,
-        }).addTo(newMap);
+  // Inicializar mapa después de montar el componente
+  useState(() => {
+    if (typeof window !== 'undefined' && !mapInitialized && window.L) {
+      setTimeout(() => {
+        try {
+          const leaflet = window.L;
+          const mapElement = document.getElementById('location-map');
+          
+          if (mapElement) {
+            // Coordenadas iniciales (puedes cambiarlas según tu ubicación principal)
+            const initialCoords = [-34.603722, -58.381592];
             
-        // Al arrastrar el marcador, actualizar los valores del formulario
-        newMarker.on('dragend', function() {
-          const position = newMarker.getLatLng();
-          form.setValue("latitud", position.lat);
-          form.setValue("longitud", position.lng);
-          console.log("Marker moved to:", position);
-        });
-        
-        // Al hacer clic en el mapa, mover el marcador y actualizar los valores
-        newMap.on('click', function(e: any) {
-          newMarker.setLatLng(e.latlng);
-          form.setValue("latitud", e.latlng.lat);
-          form.setValue("longitud", e.latlng.lng);
-          console.log("Map clicked at:", e.latlng);
-        });
-        
-        // Guardar referencias al mapa y marcador en el estado
-        setMap(newMap);
-        setMarker(newMarker);
-        setMapInitialized(true);
-        
-        // Si ya hay valores de latitud y longitud en el formulario, mover el marcador allí
-        const lat = form.getValues("latitud");
-        const lng = form.getValues("longitud");
-        if (lat && lng && lat !== 0 && lng !== 0) {
-          const coords = [lat, lng];
-          newMarker.setLatLng(coords);
-          newMap.setView(coords, 15);
-        }
-        
-        // Ajustar el tamaño del mapa después de un breve retraso
-        setTimeout(() => {
-          if (newMap) {
-            newMap.invalidateSize();
-            console.log("Map size invalidated");
+            // Crear el mapa y configurarlo
+            const newMap = leaflet.map('location-map').setView(initialCoords, 13);
+            
+            // Agregar la capa de mapa (OpenStreetMap)
+            leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(newMap);
+            
+            // Crear un marcador en la posición inicial con icono personalizado
+            const newMarker = leaflet.marker(initialCoords, {
+              draggable: true,
+              icon: leaflet.icon({
+                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                iconSize: [25, 41], // tamaño del icono
+                iconAnchor: [12, 41], // punto del icono que corresponderá a la ubicación del marcador
+                popupAnchor: [1, -34], // punto desde donde se debe abrir el popup en relación con el iconAnchor
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                shadowSize: [41, 41]
+              })
+            }).addTo(newMap);
+            
+            // Al arrastrar el marcador, actualizar los valores del formulario
+            newMarker.on('dragend', function() {
+              const position = newMarker.getLatLng();
+              form.setValue("latitud", position.lat);
+              form.setValue("longitud", position.lng);
+            });
+            
+            // Al hacer clic en el mapa, mover el marcador y actualizar los valores
+            newMap.on('click', function(e: any) {
+              newMarker.setLatLng(e.latlng);
+              form.setValue("latitud", e.latlng.lat);
+              form.setValue("longitud", e.latlng.lng);
+            });
+            
+            // Guardar referencias al mapa y marcador en el estado
+            setMap(newMap);
+            setMarker(newMarker);
+            setMapInitialized(true);
+            
+            // Si ya hay valores de latitud y longitud en el formulario, mover el marcador allí
+            const lat = form.getValues("latitud");
+            const lng = form.getValues("longitud");
+            if (lat && lng && lat !== 0 && lng !== 0) {
+              const coords = [lat, lng];
+              newMarker.setLatLng(coords);
+              newMap.setView(coords, 15);
+            }
           }
-        }, 300);
-        
-      } catch (error) {
-        console.error("Error al inicializar el mapa:", error);
-      }
-    };
-    
-    // Cargar el CSS de Leaflet
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.7.1/dist/leaflet.css';
-    link.integrity = 'sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==';
-    link.crossOrigin = '';
-    document.head.appendChild(link);
-    
-    // Añadir el script de Leaflet al documento
-    document.head.appendChild(script);
-    
-    // Limpiar al desmontar
-    return () => {
-      if (map) {
-        console.log("Cleaning up map on unmount");
-        map.remove();
-        setMap(null);
-        setMarker(null);
-        setMapInitialized(false);
-      }
-    };
-  }, [mapInitialized, form]);
+        } catch (error) {
+          console.error("Error al inicializar el mapa:", error);
+        }
+      }, 500);
+    }
+  });
 
   // Mutación para enviar el formulario
   const createUbicacionMutation = useMutation({
@@ -546,7 +502,7 @@ export default function UbicacionForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <FormLabel className="mb-2 block font-semibold">Seleccione la ubicación en el mapa o introduzca las coordenadas</FormLabel>
-          <div ref={mapContainerRef} id="location-map" className="leaflet-container h-[400px] mt-2 rounded-lg border-2 border-gray-300 shadow-md"></div>
+          <div id="location-map" className="leaflet-container h-[400px] mt-2 rounded-lg border-2 border-gray-300 shadow-md"></div>
           <p className="text-xs text-gray-500 mt-1">
             <span className="font-medium">Tip:</span> Haga clic en el mapa para seleccionar una ubicación o arrastre el marcador.
           </p>
