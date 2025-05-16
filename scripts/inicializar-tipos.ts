@@ -1,103 +1,81 @@
 import { db } from '../server/db';
+import { eq, like } from 'drizzle-orm';
 import { tiposInmuebles, tiposUbicaciones } from '../shared/schema';
-import { eq, sql } from 'drizzle-orm';
 
+// Script para inicializar tipos básicos necesarios para el funcionamiento de la aplicación
 async function inicializarTipos() {
-  console.log('Iniciando la inicialización de tipos...');
-
-  // Tipos de inmuebles predefinidos
-  const tiposInmueblesDefault = [
-    { nombre: 'Casa', descripcion: 'Vivienda unifamiliar', activo: true },
-    { nombre: 'Apartamento', descripcion: 'Vivienda en edificio multifamiliar', activo: true },
-    { nombre: 'Local Comercial', descripcion: 'Espacio para negocios', activo: true },
-    { nombre: 'Bodega', descripcion: 'Espacio para almacenamiento', activo: true },
-    { nombre: 'Terreno', descripcion: 'Espacio de tierra sin construcción', activo: true },
-    { nombre: 'Oficina', descripcion: 'Espacio para trabajo administrativo', activo: true },
-    { nombre: 'Otro', descripcion: 'Otro tipo de inmueble', activo: true }
-  ];
-
-  // Tipos de ubicaciones predefinidos
-  const tiposUbicacionesDefault = [
-    { nombre: 'Domicilio', descripcion: 'Lugar de residencia', activo: true },
-    { nombre: 'Avistamiento', descripcion: 'Lugar donde se ha visto a la persona', activo: true },
-    { nombre: 'Frecuente', descripcion: 'Lugar que frecuenta la persona', activo: true },
-    { nombre: 'Trabajo', descripcion: 'Lugar de trabajo', activo: true },
-    { nombre: 'Estacionamiento', descripcion: 'Lugar donde se estaciona un vehículo', activo: true },
-    { nombre: 'Otro', descripcion: 'Otro tipo de ubicación', activo: true }
-  ];
+  console.log('Iniciando inicialización de tipos...');
 
   try {
-    // Crear tablas si no existen
-    console.log('Verificando si existen las tablas necesarias...');
+    // Inicializar tipos de inmuebles
+    console.log('Inicializando tipos de inmuebles...');
     
-    // Crear tabla tipos_inmuebles si no existe
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS tipos_inmuebles (
-        id SERIAL PRIMARY KEY,
-        nombre TEXT NOT NULL,
-        descripcion TEXT,
-        activo BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('Tabla tipos_inmuebles verificada');
+    const tiposInmueblesData = [
+      { nombre: 'Casa', descripcion: 'Vivienda unifamiliar' },
+      { nombre: 'Apartamento', descripcion: 'Vivienda en edificio' },
+      { nombre: 'Bodega', descripcion: 'Espacio para almacenamiento' },
+      { nombre: 'Local Comercial', descripcion: 'Espacio para negocio' },
+      { nombre: 'Terreno', descripcion: 'Propiedad sin construcción' },
+      { nombre: 'Finca', descripcion: 'Propiedad rural extensa' },
+    ];
     
-    // Crear tabla tipos_ubicaciones si no existe
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS tipos_ubicaciones (
-        id SERIAL PRIMARY KEY,
-        nombre TEXT NOT NULL,
-        descripcion TEXT,
-        activo BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('Tabla tipos_ubicaciones verificada');
-    
-    // Verificar si ya existen tipos de inmuebles usando SQL directo
-    const resultInmuebles = await db.execute(sql`SELECT COUNT(*) FROM tipos_inmuebles`);
-    const countInmuebles = parseInt(resultInmuebles.rows[0].count.toString());
-    console.log(`Encontrados ${countInmuebles} tipos de inmuebles en la base de datos`);
-
-    if (countInmuebles === 0) {
-      console.log('Insertando tipos de inmuebles predefinidos...');
-      for (const tipo of tiposInmueblesDefault) {
-        await db.execute(sql`
-          INSERT INTO tipos_inmuebles (nombre, descripcion, activo)
-          VALUES (${tipo.nombre}, ${tipo.descripcion}, ${tipo.activo})
-        `);
+    for (const tipo of tiposInmueblesData) {
+      // Verificar si ya existe
+      const [existente] = await db
+        .select()
+        .from(tiposInmuebles)
+        .where(like(tiposInmuebles.nombre, tipo.nombre));
+      
+      if (!existente) {
+        await db.insert(tiposInmuebles).values(tipo);
+        console.log(`Tipo de inmueble añadido: ${tipo.nombre}`);
+      } else {
+        console.log(`Tipo de inmueble ya existe: ${tipo.nombre}`);
       }
-      console.log('Tipos de inmuebles insertados correctamente');
-    } else {
-      console.log('Ya existen tipos de inmuebles. No se realizarán inserciones.');
     }
-
-    // Verificar si ya existen tipos de ubicaciones usando SQL directo
-    const resultUbicaciones = await db.execute(sql`SELECT COUNT(*) FROM tipos_ubicaciones`);
-    const countUbicaciones = parseInt(resultUbicaciones.rows[0].count.toString());
-    console.log(`Encontrados ${countUbicaciones} tipos de ubicaciones en la base de datos`);
-
-    if (countUbicaciones === 0) {
-      console.log('Insertando tipos de ubicaciones predefinidos...');
-      for (const tipo of tiposUbicacionesDefault) {
-        await db.execute(sql`
-          INSERT INTO tipos_ubicaciones (nombre, descripcion, activo)
-          VALUES (${tipo.nombre}, ${tipo.descripcion}, ${tipo.activo})
-        `);
+    
+    // Inicializar tipos de ubicaciones
+    console.log('Inicializando tipos de ubicaciones...');
+    
+    const tiposUbicacionesData = [
+      { nombre: 'Domicilio', descripcion: 'Lugar de residencia' },
+      { nombre: 'Trabajo', descripcion: 'Lugar de empleo' },
+      { nombre: 'Avistamiento', descripcion: 'Lugar donde se observó a la persona' },
+      { nombre: 'Punto de Venta', descripcion: 'Lugar donde se efectúan transacciones' },
+      { nombre: 'Punto de Encuentro', descripcion: 'Lugar donde se reúnen varias personas' },
+      { nombre: 'Escondite', descripcion: 'Lugar usado para ocultarse' },
+      { nombre: 'Otro', descripcion: 'Otro tipo de ubicación' },
+    ];
+    
+    for (const tipo of tiposUbicacionesData) {
+      // Verificar si ya existe
+      const [existente] = await db
+        .select()
+        .from(tiposUbicaciones)
+        .where(sql => sql`LOWER(${tiposUbicaciones.nombre}) = LOWER(${tipo.nombre})`);
+      
+      if (!existente) {
+        await db.insert(tiposUbicaciones).values(tipo);
+        console.log(`Tipo de ubicación añadido: ${tipo.nombre}`);
+      } else {
+        console.log(`Tipo de ubicación ya existe: ${tipo.nombre}`);
       }
-      console.log('Tipos de ubicaciones insertados correctamente');
-    } else {
-      console.log('Ya existen tipos de ubicaciones. No se realizarán inserciones.');
     }
-
-    console.log('Inicialización de tipos completada con éxito');
+    
+    console.log('¡Tipos inicializados exitosamente!');
   } catch (error) {
-    console.error('Error durante la inicialización de tipos:', error);
-  } finally {
-    // No es necesario cerrar la conexión aquí
-    console.log('Finalizado');
+    console.error('Error al inicializar tipos:', error);
+    throw error;
   }
 }
 
-// Ejecutar la función
-inicializarTipos();
+// Ejecutar inicialización
+inicializarTipos()
+  .then(() => {
+    console.log('Script completado con éxito.');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Error en el script:', error);
+    process.exit(1);
+  });
