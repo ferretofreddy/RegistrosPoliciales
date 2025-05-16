@@ -170,14 +170,28 @@ export default function EstructurasPage() {
           
       generarContenidoMarkdown(entidadSeleccionada, detalleData, observaciones);
       
-      // Log para depuración
-      console.log("Datos detallados cargados:", {
-        tipo: entidadSeleccionada.tipo,
-        id: entidadSeleccionada.id,
-        tieneUbicaciones: detalleData.ubicaciones ? "Sí" : "No",
-        ubicacionesDirectas: detalleData.ubicaciones?.ubicacionesDirectas?.length || 0,
-        ubicacionesRelacionadas: detalleData.ubicaciones?.ubicacionesRelacionadas?.length || 0
-      });
+      // Log para depuración extendida
+      console.log("Datos detallados completos:", detalleData);
+      
+      // Verificar estructura de ubicaciones
+      if (detalleData.ubicaciones) {
+        console.log("Estructura de ubicaciones:", {
+          tipo: entidadSeleccionada.tipo,
+          id: entidadSeleccionada.id,
+          tieneUbicaciones: detalleData.ubicaciones ? "Sí" : "No",
+          tipoUbicaciones: typeof detalleData.ubicaciones,
+          esArray: Array.isArray(detalleData.ubicaciones),
+          propiedades: Object.keys(detalleData.ubicaciones),
+          ubicacionesDirectas: detalleData.ubicaciones?.ubicacionesDirectas ? {
+            longitud: detalleData.ubicaciones.ubicacionesDirectas.length,
+            muestra: detalleData.ubicaciones.ubicacionesDirectas.slice(0, 2)
+          } : "No disponible",
+          ubicacionesRelacionadas: detalleData.ubicaciones?.ubicacionesRelacionadas ? {
+            longitud: detalleData.ubicaciones.ubicacionesRelacionadas.length,
+            muestra: detalleData.ubicaciones.ubicacionesRelacionadas.slice(0, 2)
+          } : "No disponible"
+        });
+      }
     }
   }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble]);
 
@@ -243,31 +257,52 @@ export default function EstructurasPage() {
     // Entidades relacionadas
     md += "## Registros Relacionados\n\n";
     
-    // Personas relacionadas
-    if (data.personas && data.personas.length > 0 && entidad.tipo !== "persona") {
-      md += "### Personas\n\n";
-      data.personas.forEach((persona: Persona) => {
-        md += `- **${persona.nombre}** (${persona.identificacion})\n`;
-      });
-      md += "\n";
+    // Personas relacionadas (incluso del mismo tipo)
+    if (data.personas && data.personas.length > 0) {
+      // Filtramos la entidad actual si es persona
+      const personasRelacionadas = entidad.tipo === "persona" 
+        ? data.personas.filter(p => p.id !== parseInt(entidad.id.toString())) 
+        : data.personas;
+        
+      if (personasRelacionadas.length > 0) {
+        md += "### Personas\n\n";
+        personasRelacionadas.forEach((persona: Persona) => {
+          md += `- **${persona.nombre}** (${persona.identificacion})\n`;
+        });
+        md += "\n";
+      }
     }
     
-    // Vehículos relacionados
-    if (data.vehiculos && data.vehiculos.length > 0 && entidad.tipo !== "vehiculo") {
-      md += "### Vehículos\n\n";
-      data.vehiculos.forEach((vehiculo: Vehiculo) => {
-        md += `- **${vehiculo.marca} ${vehiculo.modelo}** (${vehiculo.placa})\n`;
-      });
-      md += "\n";
+    // Vehículos relacionados (incluso del mismo tipo)
+    if (data.vehiculos && data.vehiculos.length > 0) {
+      // Filtramos la entidad actual si es vehículo
+      const vehiculosRelacionados = entidad.tipo === "vehiculo"
+        ? data.vehiculos.filter(v => v.id !== parseInt(entidad.id.toString()))
+        : data.vehiculos;
+        
+      if (vehiculosRelacionados.length > 0) {
+        md += "### Vehículos\n\n";
+        vehiculosRelacionados.forEach((vehiculo: Vehiculo) => {
+          md += `- **${vehiculo.marca} ${vehiculo.modelo}** (${vehiculo.placa})\n`;
+        });
+        md += "\n";
+      }
     }
     
-    // Inmuebles relacionados
-    if (data.inmuebles && data.inmuebles.length > 0 && entidad.tipo !== "inmueble") {
-      md += "### Inmuebles\n\n";
-      data.inmuebles.forEach((inmueble: Inmueble) => {
-        md += `- **${inmueble.tipo}** (${inmueble.direccion})\n`;
-      });
-      md += "\n";
+    // Inmuebles relacionados (incluso del mismo tipo)
+    if (data.inmuebles && data.inmuebles.length > 0) {
+      // Filtramos la entidad actual si es inmueble
+      const inmueblesRelacionados = entidad.tipo === "inmueble"
+        ? data.inmuebles.filter(i => i.id !== parseInt(entidad.id.toString()))
+        : data.inmuebles;
+        
+      if (inmueblesRelacionados.length > 0) {
+        md += "### Inmuebles\n\n";
+        inmueblesRelacionados.forEach((inmueble: Inmueble) => {
+          md += `- **${inmueble.tipo}** (${inmueble.direccion})\n`;
+        });
+        md += "\n";
+      }
     }
     
     // Ubicaciones (si hay)
@@ -717,10 +752,29 @@ export default function EstructurasPage() {
                     {/* Mapa y Tabla de ubicaciones */}
                     <div id="ubicaciones-container" className="border rounded-lg overflow-hidden">
                       {detalleData && detalleData.ubicaciones && (
-                        <MapaTablaUbicaciones 
-                          ubicacionesDirectas={detalleData.ubicaciones.ubicacionesDirectas || []} 
-                          ubicacionesRelacionadas={detalleData.ubicaciones.ubicacionesRelacionadas || []}
-                        />
+                        <>
+                          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                            <h2 className="text-xl font-medium text-gray-900">Mapa y Ubicaciones</h2>
+                          </div>
+                          <div className="p-4">
+                            {Array.isArray(detalleData.ubicaciones) && detalleData.ubicaciones.length > 0 ? (
+                              <MapaTablaUbicaciones 
+                                ubicacionesDirectas={detalleData.ubicaciones}
+                                ubicacionesRelacionadas={[]}
+                              />
+                            ) : (detalleData.ubicaciones.ubicacionesDirectas && detalleData.ubicaciones.ubicacionesDirectas.length > 0) ||
+                               (detalleData.ubicaciones.ubicacionesRelacionadas && detalleData.ubicaciones.ubicacionesRelacionadas.length > 0) ? (
+                              <MapaTablaUbicaciones 
+                                ubicacionesDirectas={detalleData.ubicaciones.ubicacionesDirectas || []}
+                                ubicacionesRelacionadas={detalleData.ubicaciones.ubicacionesRelacionadas || []}
+                              />
+                            ) : (
+                              <div className="text-center p-4">
+                                <p className="text-gray-500">No hay ubicaciones registradas para esta entidad.</p>
+                              </div>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
