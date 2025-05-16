@@ -11,7 +11,12 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+
+// Importamos Leaflet directamente
+let L;
+if (typeof window !== 'undefined') {
+  L = require('leaflet');
+}
 
 interface LocationMapDialogProps {
   open: boolean;
@@ -28,43 +33,43 @@ export default function LocationMapDialog({
   initialLocation,
   title = "Seleccionar ubicación",
 }: LocationMapDialogProps) {
-  // Estados
-  const [map, setMap] = useState<any>(null);
-  const [marker, setMarker] = useState<any>(null);
+  const [map, setMap] = useState(null);
+  const [marker, setMarker] = useState(null);
   const [mapInitialized, setMapInitialized] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(
-    initialLocation || null
-  );
+  const [selectedLocation, setSelectedLocation] = useState(initialLocation || null);
   
   const { toast } = useToast();
   
-  // Default location (Costa Rica)
+  // Ubicación predeterminada (Costa Rica)
   const defaultLat = initialLocation?.lat || 9.7489;
   const defaultLng = initialLocation?.lng || -83.7534;
   
-  // ID único para el mapa dentro del diálogo
-  const mapDialogId = "map-in-dialog";
-
-  // Inicializar el mapa cuando el diálogo está abierto
+  // ID único para el contenedor del mapa
+  const mapId = "location-select-map";
+  
+  // Inicializar mapa cuando se abre el diálogo
   useEffect(() => {
-    if (!open || mapInitialized) return;
+    // Solo inicializar si el diálogo está abierto y no hay mapa ya inicializado
+    if (!open || mapInitialized || !L) return;
     
-    console.log("Dialog open, initializing map...");
+    console.log("Iniciando inicialización del mapa...");
     
-    const initializeMap = () => {
+    // Dar tiempo para que el DOM se actualice antes de inicializar
+    const timer = setTimeout(() => {
       try {
-        console.log("Initializing map in dialog");
-        const mapElement = document.getElementById(mapDialogId);
+        console.log("Intentando inicializar mapa...");
         
+        // Verificar que el elemento del mapa existe
+        const mapElement = document.getElementById(mapId);
         if (!mapElement) {
-          console.error("Map element not found:", mapDialogId);
+          console.error("Elemento del mapa no encontrado:", mapId);
           return;
         }
         
-        console.log("Map element found, creating map");
+        console.log("Elemento del mapa encontrado, inicializando...");
         
-        // Corregir los iconos de Leaflet
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        // Corregir problema con iconos en Leaflet
+        delete L.Icon.Default.prototype._getIconUrl;
         L.Icon.Default.mergeOptions({
           iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
           iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
@@ -75,42 +80,40 @@ export default function LocationMapDialog({
         const initialCoords = selectedLocation 
           ? [selectedLocation.lat, selectedLocation.lng] 
           : [defaultLat, defaultLng];
-          
-        console.log("Using coordinates:", initialCoords);
         
-        // Crear el mapa
-        const newMap = L.map(mapDialogId).setView(initialCoords, 10);
+        console.log("Creando mapa con coordenadas:", initialCoords);
         
-        // Agregar capa del mapa (OpenStreetMap)
+        // Crear mapa
+        const newMap = L.map(mapId).setView(initialCoords, 10);
+        
+        // Añadir capa del mapa
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(newMap);
         
-        // Crear marcador
+        // Crear marcador draggable
         const newMarker = L.marker(initialCoords, {
           draggable: true
         }).addTo(newMap);
         
-        // Evento dragend del marcador
+        // Manejar evento de arrastrar el marcador
         newMarker.on('dragend', function() {
           const position = newMarker.getLatLng();
-          console.log("Marker dragged to:", position);
           setSelectedLocation({
             lat: position.lat,
             lng: position.lng
           });
+          console.log("Marcador arrastrado a:", position);
         });
         
-        // Evento click en el mapa
-        newMap.on('click', function(e: any) {
-          console.log("Map clicked at:", e.latlng);
-          // Mover el marcador a la posición clicada
+        // Manejar clic en el mapa
+        newMap.on('click', function(e) {
           newMarker.setLatLng(e.latlng);
-          // Actualizar el estado de ubicación seleccionada
           setSelectedLocation({
             lat: e.latlng.lat,
             lng: e.latlng.lng
           });
+          console.log("Clic en el mapa en:", e.latlng);
         });
         
         // Guardar referencias
@@ -118,154 +121,143 @@ export default function LocationMapDialog({
         setMarker(newMarker);
         setMapInitialized(true);
         
-        // Invalidar el tamaño para que el mapa se renderice correctamente
+        // Forzar reajuste del mapa después de un breve retraso
         setTimeout(() => {
-          if (newMap) {
-            console.log("Invalidating map size");
-            newMap.invalidateSize();
-          }
-        }, 300);
+          newMap.invalidateSize();
+          console.log("Tamaño del mapa invalidado para forzar renderizado correcto");
+        }, 200);
         
-        console.log("Map initialized successfully");
+        console.log("Mapa inicializado exitosamente");
+        
       } catch (error) {
-        console.error("Error initializing map:", error);
+        console.error("Error al inicializar el mapa:", error);
         toast({
-          title: "Error al inicializar el mapa",
-          description: "Ocurrió un error al cargar el mapa: " + (error instanceof Error ? error.message : String(error)),
+          title: "Error al cargar el mapa",
+          description: "Ocurrió un error técnico. Por favor, inténtelo de nuevo.",
           variant: "destructive",
         });
       }
-    };
+    }, 200);
     
-    // Si ya tenemos Leaflet cargado, inicializar después de un breve retraso
-    setTimeout(initializeMap, 500);
-    
-    // Limpiar cuando el componente se desmonte
+    // Limpieza al desmontar
     return () => {
-      if (map) {
-        console.log("Cleaning up map");
-        map.remove();
-        setMap(null);
-        setMarker(null);
-      }
+      clearTimeout(timer);
     };
-  }, [open, mapInitialized, defaultLat, defaultLng, selectedLocation, toast, map]);
-
-  // Limpiar el mapa cuando se cierra el diálogo
+  }, [open, mapInitialized, selectedLocation, defaultLat, defaultLng, toast]);
+  
+  // Limpiar mapa cuando se cierra el diálogo
   useEffect(() => {
     if (!open && map) {
-      console.log("Dialog closed, cleaning up map");
+      console.log("Diálogo cerrado, limpiando mapa");
       map.remove();
       setMap(null);
       setMarker(null);
       setMapInitialized(false);
     }
   }, [open, map]);
-
-  // Actualizar el mapa si cambia la ubicación inicial
+  
+  // Actualizar mapa si cambia initialLocation
   useEffect(() => {
     if (map && marker && initialLocation && open) {
-      console.log("Updating map with new initial location:", initialLocation);
+      console.log("Actualizando ubicación inicial en el mapa:", initialLocation);
       marker.setLatLng([initialLocation.lat, initialLocation.lng]);
-      map.setView([initialLocation.lat, initialLocation.lng], 10);
+      map.setView([initialLocation.lat, initialLocation.lng], 13);
       setSelectedLocation(initialLocation);
       map.invalidateSize();
     }
   }, [initialLocation, map, marker, open]);
-
-  // Función para obtener la ubicación actual
+  
+  // Función para obtener ubicación actual
   const getCurrentLocation = () => {
-    if (navigator.geolocation) {
+    if (!navigator.geolocation) {
       toast({
-        title: "Obteniendo ubicación",
-        description: "Por favor espere mientras obtenemos sus coordenadas...",
-      });
-      
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          if (marker && map) {
-            marker.setLatLng([latitude, longitude]);
-            map.setView([latitude, longitude], 15);
-          }
-          
-          setSelectedLocation({
-            lat: latitude,
-            lng: longitude
-          });
-          
-          toast({
-            title: "Ubicación obtenida",
-            description: `Coordenadas: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
-          });
-        },
-        (error) => {
-          console.error("Error al obtener la ubicación:", error);
-          
-          let errorMessage = "No se pudo obtener su ubicación actual.";
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = "Acceso a la ubicación denegado. Verifique los permisos de su navegador.";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = "La información de ubicación no está disponible.";
-              break;
-            case error.TIMEOUT:
-              errorMessage = "Se agotó el tiempo para obtener la ubicación.";
-              break;
-          }
-          
-          toast({
-            title: "Error",
-            description: errorMessage,
-            variant: "destructive",
-          });
-        }
-      );
-    } else {
-      toast({
-        title: "Error",
-        description: "La geolocalización no es compatible con este navegador.",
+        title: "No soportado",
+        description: "Su navegador no soporta geolocalización.",
         variant: "destructive",
       });
+      return;
     }
-  };
-
-  // Confirmar la selección de ubicación
-  const handleConfirm = () => {
-    if (selectedLocation) {
-      console.log("Confirmando ubicación:", selectedLocation);
-      try {
-        // Llamar a la función de callback con las coordenadas
-        onSelectLocation(selectedLocation.lat, selectedLocation.lng);
-        console.log("Callback de selección ejecutado correctamente");
+    
+    toast({
+      title: "Obteniendo ubicación",
+      description: "Espere mientras obtenemos su ubicación actual...",
+    });
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
         
-        // Cerrar el diálogo
-        onOpenChange(false);
+        if (marker && map) {
+          marker.setLatLng([latitude, longitude]);
+          map.setView([latitude, longitude], 15);
+        }
         
-        // Mostrar confirmación al usuario
-        toast({
-          title: "Ubicación seleccionada",
-          description: `Latitud: ${selectedLocation.lat.toFixed(6)}, Longitud: ${selectedLocation.lng.toFixed(6)}`,
+        setSelectedLocation({
+          lat: latitude,
+          lng: longitude
         });
-      } catch (error) {
-        console.error("Error al confirmar ubicación:", error);
+        
         toast({
-          title: "Error al guardar coordenadas",
-          description: "No se pudieron guardar las coordenadas en el formulario.",
+          title: "Ubicación obtenida",
+          description: `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`,
+        });
+      },
+      (error) => {
+        console.error("Error al obtener ubicación:", error);
+        
+        let errorMessage = "No se pudo obtener su ubicación.";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Permisos de ubicación denegados.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Información de ubicación no disponible.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Tiempo de espera agotado al obtener ubicación.";
+            break;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
           variant: "destructive",
         });
       }
-    } else {
+    );
+  };
+  
+  // Confirmar la selección de ubicación
+  const handleConfirm = () => {
+    if (!selectedLocation) {
+      toast({
+        title: "Seleccione ubicación",
+        description: "Por favor, seleccione una ubicación en el mapa primero.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("Confirmando ubicación:", selectedLocation);
+    
+    try {
+      onSelectLocation(selectedLocation.lat, selectedLocation.lng);
+      onOpenChange(false);
+      
+      toast({
+        title: "Ubicación seleccionada",
+        description: `Coordenadas guardadas: ${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}`,
+      });
+    } catch (error) {
+      console.error("Error al confirmar ubicación:", error);
       toast({
         title: "Error",
-        description: "Por favor, selecciona una ubicación en el mapa",
+        description: "No se pudo guardar la ubicación seleccionada.",
         variant: "destructive",
       });
     }
   };
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -278,15 +270,16 @@ export default function LocationMapDialog({
             {title}
           </DialogTitle>
           <DialogDescription>
-            Haz clic en el mapa para seleccionar una ubicación o arrastra el marcador.
+            Haga clic en el mapa para seleccionar una ubicación o arrastre el marcador.
           </DialogDescription>
         </DialogHeader>
         
         {/* Contenedor del mapa */}
-        <div className="relative">
+        <div className="relative mb-4">
           <div 
-            id={mapDialogId} 
-            className="leaflet-container h-[500px] rounded-md border border-border"
+            id={mapId} 
+            className="h-[500px] rounded-md border border-border"
+            style={{ width: "100%" }}
           />
           
           {!mapInitialized && (
@@ -299,9 +292,9 @@ export default function LocationMapDialog({
           )}
         </div>
         
-        {/* Coordenadas seleccionadas */}
+        {/* Mostrar coordenadas seleccionadas */}
         {selectedLocation && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+          <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
             <p className="text-sm text-blue-800 flex justify-between">
               <span><strong>Latitud:</strong> {selectedLocation.lat.toFixed(6)}</span>
               <span><strong>Longitud:</strong> {selectedLocation.lng.toFixed(6)}</span>
@@ -309,12 +302,20 @@ export default function LocationMapDialog({
           </div>
         )}
         
-        <DialogFooter className="mt-5 pt-3 border-t flex flex-col sm:flex-row gap-3 items-center justify-end">
-          <Button variant="outline" onClick={getCurrentLocation} className="w-full sm:w-auto flex items-center gap-2">
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 items-center">
+          <Button 
+            variant="outline" 
+            onClick={getCurrentLocation}
+            className="w-full sm:w-auto flex items-center gap-2"
+          >
             <Navigation className="h-4 w-4" />
             Mi ubicación actual
           </Button>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
+          >
             Cancelar
           </Button>
           <Button 
