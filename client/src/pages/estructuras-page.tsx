@@ -169,6 +169,15 @@ export default function EstructurasPage() {
           entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
           
       generarContenidoMarkdown(entidadSeleccionada, detalleData, observaciones);
+      
+      // Log para depuración
+      console.log("Datos detallados cargados:", {
+        tipo: entidadSeleccionada.tipo,
+        id: entidadSeleccionada.id,
+        tieneUbicaciones: detalleData.ubicaciones ? "Sí" : "No",
+        ubicacionesDirectas: detalleData.ubicaciones?.ubicacionesDirectas?.length || 0,
+        ubicacionesRelacionadas: detalleData.ubicaciones?.ubicacionesRelacionadas?.length || 0
+      });
     }
   }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble]);
 
