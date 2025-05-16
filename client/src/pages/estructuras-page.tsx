@@ -203,7 +203,8 @@ export default function EstructurasPage() {
     md += "## Información del Registro\n\n";
     
     if (entidad.tipo === "persona" && data.personas && data.personas.length > 0) {
-      const persona = data.personas[0];
+      // Buscar la persona correcta por ID
+      const persona = data.personas.find(p => p.id === entidad.id) || data.personas[0];
       md += `**Nombre:** ${persona.nombre}  \n`;
       md += `**Identificación:** ${persona.identificacion}  \n`;
       
@@ -219,14 +220,16 @@ export default function EstructurasPage() {
         md += `**Domicilios:** ${persona.domicilios.join("; ")}  \n`;
       }
     } else if (entidad.tipo === "vehiculo" && data.vehiculos && data.vehiculos.length > 0) {
-      const vehiculo = data.vehiculos[0];
+      // Buscar el vehículo correcto por ID
+      const vehiculo = data.vehiculos.find(v => v.id === entidad.id) || data.vehiculos[0];
       md += `**Marca:** ${vehiculo.marca}  \n`;
       md += `**Modelo:** ${vehiculo.modelo}  \n`;
       md += `**Tipo:** ${vehiculo.tipo}  \n`;
       md += `**Placa:** ${vehiculo.placa}  \n`;
       md += `**Color:** ${vehiculo.color}  \n`;
     } else if (entidad.tipo === "inmueble" && data.inmuebles && data.inmuebles.length > 0) {
-      const inmueble = data.inmuebles[0];
+      // Buscar el inmueble correcto por ID
+      const inmueble = data.inmuebles.find(i => i.id === entidad.id) || data.inmuebles[0];
       md += `**Tipo:** ${inmueble.tipo}  \n`;
       md += `**Dirección:** ${inmueble.direccion}  \n`;
       md += `**Propietario:** ${inmueble.propietario || "No registrado"}  \n`;
