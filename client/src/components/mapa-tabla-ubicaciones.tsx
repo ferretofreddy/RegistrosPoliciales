@@ -81,14 +81,29 @@ export default function MapaTablaUbicaciones({
     // Extraer ubicaciones directas de detalleData
     let directas: any[] = [];
     
-    // Para cualquier tipo de entidad, obtener las ubicaciones directas
+    // Combinar todas las fuentes de ubicaciones disponibles
+    let todasLasUbicaciones = [];
+    
+    // 1. Ubicaciones directas desde el backend
     if (Array.isArray(detalleData.ubicaciones)) {
-      // Filtrar solo las ubicaciones válidas (con coordenadas)
-      directas = detalleData.ubicaciones.filter(
-        (ubi: any) => ubi && typeof ubi.latitud === 'number' && typeof ubi.longitud === 'number'
-      );
-      console.log("Ubicaciones directas encontradas:", directas.length);
+      todasLasUbicaciones.push(...detalleData.ubicaciones);
     }
+    
+    // 2. Ubicaciones de domicilios generadas
+    if (Array.isArray(detalleData.ubicacionesDomicilio)) {
+      todasLasUbicaciones.push(...detalleData.ubicacionesDomicilio);
+    }
+    
+    // Filtrar ubicaciones válidas con coordenadas
+    directas = todasLasUbicaciones.filter(
+      (ubi: any) => ubi && typeof ubi.latitud === 'number' && typeof ubi.longitud === 'number'
+    );
+    
+    console.log("Fuentes combinadas de ubicaciones:", {
+      directasBackend: Array.isArray(detalleData.ubicaciones) ? detalleData.ubicaciones.length : 0,
+      domiciliosGenerados: Array.isArray(detalleData.ubicacionesDomicilio) ? detalleData.ubicacionesDomicilio.length : 0,
+      total: directas.length
+    });
     
     // Actualizar estados
     setUbicacionesDirectas(directas);
