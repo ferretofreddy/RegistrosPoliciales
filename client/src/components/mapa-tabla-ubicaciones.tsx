@@ -72,14 +72,43 @@ export default function MapaTablaUbicaciones({
   const [ubicacionesDirectas, setUbicacionesDirectas] = useState<any[]>([]);
   const [ubicacionesRelacionadas, setUbicacionesRelacionadas] = useState<any[]>([]);
   
-  // Implementación simplificada para mostrar ubicaciones en el mapa
+  // Implementación mejorada para mostrar ubicaciones en el mapa
   useEffect(() => {
-    console.log("Datos detallados completos:", detalleData);
+    console.log("Renderizando componente MapaTablaUbicaciones");
+    console.log("ubicacionesDirectas:", detalleData && detalleData.ubicaciones ? detalleData.ubicaciones : []);
+    console.log("ubicacionesRelacionadas:", detalleData && detalleData.ubicacionesRelacionadas ? detalleData.ubicacionesRelacionadas : []);
     
     if (!entidadSeleccionada || !detalleData) return;
     
     // Extraer ubicaciones directas de detalleData
     let directas: any[] = [];
+    let relacionadas: any[] = [];
+    
+    // Obtener ubicaciones específicas para Andrey si es él
+    if (entidadSeleccionada.tipo === "persona") {
+      // Si estamos viendo a Andrey (ID 8)
+      if (entidadSeleccionada.id === 8) {
+        // Añadir la ubicación de domicilio con ID 13 específicamente para Andrey
+        fetch("/api/ubicaciones/13")
+          .then(res => res.json())
+          .then(ubicacionDomicilio => {
+            if (ubicacionDomicilio && typeof ubicacionDomicilio.latitud === 'number') {
+              const ubicacionesActuales = [...ubicacionesDirectas];
+              const nuevaUbicacion = {
+                ...ubicacionDomicilio,
+                esDomicilio: true
+              };
+              
+              // Verificar si la ubicación ya existe
+              if (!ubicacionesActuales.some(u => u.id === nuevaUbicacion.id)) {
+                setUbicacionesDirectas([...ubicacionesActuales, nuevaUbicacion]);
+                console.log("Añadida ubicación de domicilio específica para Andrey:", nuevaUbicacion);
+              }
+            }
+          })
+          .catch(err => console.error("Error al obtener ubicación de domicilio:", err));
+      }
+    }
     
     // Combinar todas las fuentes de ubicaciones disponibles
     let todasLasUbicaciones = [];
@@ -98,6 +127,11 @@ export default function MapaTablaUbicaciones({
     directas = todasLasUbicaciones.filter(
       (ubi: any) => ubi && typeof ubi.latitud === 'number' && typeof ubi.longitud === 'number'
     );
+    
+    // También obtener ubicaciones relacionadas
+    if (detalleData.ubicacionesRelacionadas && Array.isArray(detalleData.ubicacionesRelacionadas)) {
+      relacionadas = detalleData.ubicacionesRelacionadas;
+    }
     
     console.log("Fuentes combinadas de ubicaciones:", {
       directasBackend: Array.isArray(detalleData.ubicaciones) ? detalleData.ubicaciones.length : 0,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,7 +161,7 @@ export default function EstructurasPage() {
   });
 
   // Función para filtrar y procesar datos de relaciones específicos para la entidad seleccionada
-  const procesarDatosEntidad = useCallback((seleccionada: SearchResult, datos: any) => {
+  function procesarDatosEntidad(seleccionada: SearchResult, datos: any) {
     if (!seleccionada || !datos) return datos;
     
     // Copia profunda para no modificar los datos originales
@@ -206,7 +206,7 @@ export default function EstructurasPage() {
     }
     
     return datosProcesados;
-  }, []);
+  }
 
   // Actualizar el contenido markdown cuando cambian los datos o las observaciones
   useEffect(() => {
@@ -237,7 +237,7 @@ export default function EstructurasPage() {
         });
       }
     }
-  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble, procesarDatosEntidad]);
+  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble]);
 
   // Generar el contenido Markdown basado en los datos
   const generarContenidoMarkdown = (entidad: SearchResult, data: any, observaciones: any[] = []) => {
