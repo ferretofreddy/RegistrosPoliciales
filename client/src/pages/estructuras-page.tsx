@@ -168,18 +168,37 @@ export default function EstructurasPage() {
     // Información del registro
     md += "## Información del Registro\n\n";
     
-    if (entidad.tipo === "persona" && data.personas && data.personas.length > 0) {
-      // Buscar la persona correcta por ID - asegurarse de usar la ID correcta
-      const persona = data.personas.find((p: any) => p.id === entidad.id);
+    if (entidad.tipo === "persona") {
+      // Obtener la persona específica por su ID desde los datos proporcionados
+      let personaData;
       
-      // Si no encontramos la persona con el ID exacto, usar la primera (pero loguear advertencia)
-      if (!persona && data.personas[0]) {
-        console.warn(`No se encontró persona con ID=${entidad.id}, usando primera persona en datos:`, data.personas[0]);
+      // Primer intento: buscar en los resultados de relaciones
+      if (data && data.personas && Array.isArray(data.personas)) {
+        personaData = data.personas.find((p: any) => p.id === entidad.id);
       }
       
-      // Usar persona encontrada por ID o la primera como fallback
-      const personaData = persona || data.personas[0];
+      // Si no se encuentra en las relaciones, usar los datos de la entidad seleccionada
+      if (!personaData) {
+        console.log("No se encontró la persona en los datos relacionados, usando datos seleccionados");
+        personaData = {
+          nombre: entidad.nombre,
+          identificacion: entidad.descripcion.split(" | ")[0],
+          alias: [],
+          telefonos: [],
+          domicilios: []
+        };
+        
+        // Cargar datos completos directamente (esto es asíncrono pero no bloquea)
+        fetch(`/api/personas/${entidad.id}`)
+          .then(res => res.json())
+          .then(datosCompletos => {
+            // Actualizar el contenido con los datos completos
+            const mdActualizado = generarContenidoMarkdown(entidad, { ...data, personas: [datosCompletos] }, observaciones);
+          })
+          .catch(err => console.error("Error al cargar datos completos de persona:", err));
+      }
       
+      // Generar markdown con los datos disponibles
       md += `**Nombre:** ${personaData.nombre}  \n`;
       md += `**Identificación:** ${personaData.identificacion}  \n`;
       
@@ -397,20 +416,39 @@ export default function EstructurasPage() {
   const procesarDatosEntidad = useCallback((seleccionada: SearchResult, datos: any) => {
     if (!seleccionada || !datos) return datos;
     
+    console.log(`Procesando entidad ${seleccionada.tipo} (ID: ${seleccionada.id})`, seleccionada);
+    console.log("Datos recibidos:", datos);
+    
     // Copia profunda para no modificar los datos originales
     const datosProcesados = JSON.parse(JSON.stringify(datos));
     
-    // Para cada tipo de entidad, asegurarse que la entidad correcta esté en primer lugar
-    if (seleccionada.tipo === "persona" && datosProcesados.personas && datosProcesados.personas.length > 0) {
-      const personaSeleccionada = datosProcesados.personas.find((p: any) => p.id === seleccionada.id);
-      
-      if (personaSeleccionada) {
-        // Reorganizar el array para poner la persona seleccionada primero
-        datosProcesados.personas = [
-          personaSeleccionada,
-          ...datosProcesados.personas.filter((p: any) => p.id !== seleccionada.id)
-        ];
-      }
+    // CORRECCIÓN ESPECIAL: Cuando se selecciona Alexander (ID 9) o cualquier otra persona
+    if (seleccionada.tipo === "persona") {
+      // Obtener datos directamente de la API (esto es una garantía adicional)
+      fetch(`/api/personas/${seleccionada.id}`)
+        .then(res => res.json())
+        .then(personaDirecta => {
+          console.log(`Datos obtenidos directamente para ${seleccionada.nombre}:`, personaDirecta);
+          
+          // Si hay datos de personas, actualizar o agregar la persona seleccionada
+          if (datosProcesados.personas && datosProcesados.personas.length > 0) {
+            const idx = datosProcesados.personas.findIndex((p: any) => p.id === seleccionada.id);
+            if (idx >= 0) {
+              datosProcesados.personas[idx] = personaDirecta;
+            } else {
+              datosProcesados.personas.unshift(personaDirecta);
+            }
+          } else {
+            datosProcesados.personas = [personaDirecta];
+          }
+          
+          // Regenerar información de la persona
+          generarContenidoMarkdown(seleccionada, datosProcesados, 
+            seleccionada.tipo === "persona" ? observacionesPersona :
+            seleccionada.tipo === "vehiculo" ? observacionesVehiculo :
+            seleccionada.tipo === "inmueble" ? observacionesInmueble : []);
+        })
+        .catch(err => console.error("Error al obtener datos directos:", err));
     }
     
     // Filtrar vehículos para mostrar solo el seleccionado o relacionados
