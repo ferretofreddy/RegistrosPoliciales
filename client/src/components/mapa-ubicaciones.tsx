@@ -195,7 +195,7 @@ export default function MapaUbicaciones({ ubicacionesDirectas, ubicacionesRelaci
   }, [ubicacionesDirectas, ubicacionesRelacionadas]);
 
   return (
-    <div ref={mapContainerRef} className="h-full w-full">
+    <div ref={mapContainerRef} className="h-full w-full" style={{ minHeight: '400px' }}>
       {totalMarcadores === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80 z-10">
           <div className="text-center">

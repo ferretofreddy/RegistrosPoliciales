@@ -227,7 +227,7 @@ export default function EstructurasPage() {
       
       observaciones.forEach((obs: any) => {
         md += `### ${new Date(obs.fecha).toLocaleString()}\n\n`;
-        md += `${obs.observacion}\n\n`;
+        md += `${obs.detalle || obs.observacion || "Sin detalles"}\n\n`;
       });
     }
     
@@ -688,29 +688,33 @@ export default function EstructurasPage() {
                 </div>
                 
                 <div className="p-6">
-                  {/* Contenido principal en Markdown y Mapa */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Contenido principal en Markdown */}
-                    <div className="lg:col-span-2 prose prose-blue max-w-none">
+                  {/* Contenido principal en Markdown */}
+                  <div className="mb-6">
+                    <div className="prose prose-blue max-w-none">
                       <ReactMarkdown>
                         {markdownContent}
                       </ReactMarkdown>
                     </div>
-                    
-                    {/* Mapa de ubicaciones (si hay) */}
-                    {detalleData && detalleData.ubicaciones && 
-                     ((detalleData.ubicaciones.ubicacionesDirectas && detalleData.ubicaciones.ubicacionesDirectas.length > 0) || 
-                      (detalleData.ubicaciones.ubicacionesRelacionadas && detalleData.ubicaciones.ubicacionesRelacionadas.length > 0)) && (
-                      <div className="lg:col-span-1">
-                        <div className="h-96 border rounded">
+                  </div>
+                  
+                  {/* Mapa de ubicaciones (si hay) */}
+                  {detalleData && detalleData.ubicaciones && 
+                   ((detalleData.ubicaciones.ubicacionesDirectas && detalleData.ubicaciones.ubicacionesDirectas.length > 0) || 
+                    (detalleData.ubicaciones.ubicacionesRelacionadas && detalleData.ubicaciones.ubicacionesRelacionadas.length > 0)) && (
+                    <div className="mb-6">
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h3 className="text-lg font-medium text-gray-900">Mapa de Ubicaciones</h3>
+                      </div>
+                      <div className="border border-gray-200 rounded-b-lg">
+                        <div style={{ height: '400px', width: '100%' }}>
                           <MapaUbicaciones 
                             ubicacionesDirectas={detalleData.ubicaciones.ubicacionesDirectas || []} 
                             ubicacionesRelacionadas={detalleData.ubicaciones.ubicacionesRelacionadas || []}
                           />
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   
                   {/* Tabla de ubicaciones detalladas */}
                   {detalleData && detalleData.ubicaciones && 
@@ -733,7 +737,7 @@ export default function EstructurasPage() {
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                              {detalleData.ubicaciones.ubicacionesDirectas && detalleData.ubicaciones.ubicacionesDirectas.map((ubicacion) => (
+                              {detalleData.ubicaciones.ubicacionesDirectas && detalleData.ubicaciones.ubicacionesDirectas.map((ubicacion: Ubicacion) => (
                                 <tr key={`directa-${ubicacion.id}`}>
                                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{ubicacion.tipo}</td>
                                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -746,7 +750,7 @@ export default function EstructurasPage() {
                                   <td className="px-4 py-3 text-sm text-gray-500">{ubicacion.observaciones || ""}</td>
                                 </tr>
                               ))}
-                              {detalleData.ubicaciones.ubicacionesRelacionadas && detalleData.ubicaciones.ubicacionesRelacionadas.map((item, index) => (
+                              {detalleData.ubicaciones.ubicacionesRelacionadas && detalleData.ubicaciones.ubicacionesRelacionadas.map((item: any, index: number) => (
                                 <tr key={`relacionada-${index}`}>
                                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{item.ubicacion.tipo}</td>
                                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
