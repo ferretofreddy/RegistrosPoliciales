@@ -252,43 +252,92 @@ export default function EstructurasPage() {
     md += "## Información del Registro\n\n";
     
     if (entidad.tipo === "persona" && data.personas && data.personas.length > 0) {
-      // Buscar la persona correcta por ID
-      const persona = data.personas.find((p: any) => p.id === entidad.id) || data.personas[0];
-      md += `**Nombre:** ${persona.nombre}  \n`;
-      md += `**Identificación:** ${persona.identificacion}  \n`;
+      // Buscar la persona correcta por ID - asegurarse de usar la ID correcta
+      const persona = data.personas.find((p: any) => p.id === entidad.id);
       
-      if (persona.alias && persona.alias.length > 0) {
-        md += `**Alias:** ${persona.alias.join(", ")}  \n`;
+      // Si no encontramos la persona con el ID exacto, usar la primera (pero loguear advertencia)
+      if (!persona && data.personas[0]) {
+        console.warn(`No se encontró persona con ID=${entidad.id}, usando primera persona en datos:`, data.personas[0]);
       }
       
-      if (persona.telefonos && persona.telefonos.length > 0) {
-        md += `**Teléfonos:** ${persona.telefonos.join(", ")}  \n`;
+      // Usar persona encontrada por ID o la primera como fallback
+      const personaData = persona || data.personas[0];
+      
+      md += `**Nombre:** ${personaData.nombre}  \n`;
+      md += `**Identificación:** ${personaData.identificacion}  \n`;
+      
+      if (personaData.alias && personaData.alias.length > 0) {
+        md += `**Alias:** ${personaData.alias.join(", ")}  \n`;
       }
       
-      if (persona.domicilios && persona.domicilios.length > 0) {
-        md += `**Domicilios:** ${persona.domicilios.join("; ")}  \n`;
+      if (personaData.telefonos && personaData.telefonos.length > 0) {
+        md += `**Teléfonos:** ${personaData.telefonos.join(", ")}  \n`;
+      }
+      
+      if (personaData.domicilios && personaData.domicilios.length > 0) {
+        md += `**Domicilios:** ${personaData.domicilios.join("; ")}  \n`;
       }
     } else if (entidad.tipo === "vehiculo" && data.vehiculos && data.vehiculos.length > 0) {
       // Buscar el vehículo correcto por ID
-      const vehiculo = data.vehiculos.find((v: any) => v.id === entidad.id) || data.vehiculos[0];
-      md += `**Marca:** ${vehiculo.marca}  \n`;
-      md += `**Modelo:** ${vehiculo.modelo}  \n`;
-      md += `**Tipo:** ${vehiculo.tipo}  \n`;
-      md += `**Placa:** ${vehiculo.placa}  \n`;
-      md += `**Color:** ${vehiculo.color}  \n`;
+      const vehiculo = data.vehiculos.find((v: any) => v.id === entidad.id);
+      
+      // Si no encontramos el vehículo con el ID exacto, usar el primero (pero loguear advertencia)
+      if (!vehiculo && data.vehiculos[0]) {
+        console.warn(`No se encontró vehículo con ID=${entidad.id}, usando primer vehículo en datos:`, data.vehiculos[0]);
+      }
+      
+      // Usar vehículo encontrado por ID o el primero como fallback
+      const vehiculoData = vehiculo || data.vehiculos[0];
+      
+      md += `**Marca:** ${vehiculoData.marca}  \n`;
+      md += `**Modelo:** ${vehiculoData.modelo}  \n`;
+      md += `**Tipo:** ${vehiculoData.tipo}  \n`;
+      md += `**Placa:** ${vehiculoData.placa}  \n`;
+      md += `**Color:** ${vehiculoData.color}  \n`;
     } else if (entidad.tipo === "inmueble" && data.inmuebles && data.inmuebles.length > 0) {
       // Buscar el inmueble correcto por ID
-      const inmueble = data.inmuebles.find((i: any) => i.id === entidad.id) || data.inmuebles[0];
-      md += `**Tipo:** ${inmueble.tipo}  \n`;
-      md += `**Dirección:** ${inmueble.direccion}  \n`;
-      md += `**Propietario:** ${inmueble.propietario || "No registrado"}  \n`;
+      const inmueble = data.inmuebles.find((i: any) => i.id === entidad.id);
+      
+      // Si no encontramos el inmueble con el ID exacto, usar el primero (pero loguear advertencia)
+      if (!inmueble && data.inmuebles[0]) {
+        console.warn(`No se encontró inmueble con ID=${entidad.id}, usando primer inmueble en datos:`, data.inmuebles[0]);
+      }
+      
+      // Usar inmueble encontrado por ID o el primero como fallback
+      const inmuebleData = inmueble || data.inmuebles[0];
+      
+      md += `**Tipo:** ${inmuebleData.tipo}  \n`;
+      md += `**Dirección:** ${inmuebleData.direccion}  \n`;
+      md += `**Propietario:** ${inmuebleData.propietario || "No registrado"}  \n`;
     } else if (entidad.tipo === "ubicacion" && data.ubicaciones && data.ubicaciones.length > 0) {
-      const ubicacion = data.ubicaciones[0];
-      md += `**Tipo:** ${ubicacion.tipo}  \n`;
-      md += `**Coordenadas:** (${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)})  \n`;
-      md += `**Fecha:** ${ubicacion.fecha ? new Date(ubicacion.fecha).toLocaleString() : "No registrada"}  \n`;
-      if (ubicacion.observaciones) {
-        md += `**Observaciones:** ${ubicacion.observaciones}  \n`;
+      // Manejar los diferentes formatos de ubicaciones
+      let ubicacionesArray = Array.isArray(data.ubicaciones) ? data.ubicaciones : [];
+      
+      // Si data.ubicaciones es un objeto con ubicacionesDirectas, usar eso
+      if (!Array.isArray(data.ubicaciones) && data.ubicaciones.ubicacionesDirectas) {
+        ubicacionesArray = data.ubicaciones.ubicacionesDirectas;
+      }
+      
+      // Buscar la ubicación correcta por ID
+      const ubicacion = ubicacionesArray.find((u: any) => u.id === entidad.id);
+      
+      // Si no encontramos la ubicación con el ID exacto, usar la primera (pero loguear advertencia)
+      if (!ubicacion && ubicacionesArray[0]) {
+        console.warn(`No se encontró ubicación con ID=${entidad.id}, usando primera ubicación en datos:`, ubicacionesArray[0]);
+      }
+      
+      // Usar ubicación encontrada por ID o la primera como fallback
+      const ubicacionData = ubicacion || ubicacionesArray[0];
+      
+      if (ubicacionData) {
+        md += `**Tipo:** ${ubicacionData.tipo}  \n`;
+        md += `**Coordenadas:** (${ubicacionData.latitud.toFixed(6)}, ${ubicacionData.longitud.toFixed(6)})  \n`;
+        md += `**Fecha:** ${ubicacionData.fecha ? new Date(ubicacionData.fecha).toLocaleString() : "No registrada"}  \n`;
+        if (ubicacionData.observaciones) {
+          md += `**Observaciones:** ${ubicacionData.observaciones}  \n`;
+        }
+      } else {
+        md += `**No se encontraron datos para esta ubicación**  \n`;
       }
     }
     
@@ -355,6 +404,75 @@ export default function EstructurasPage() {
         });
         md += "\n";
       }
+    }
+    
+    // Ubicaciones relacionadas
+    let ubicacionesParaMostrar: any[] = [];
+    
+    // Verificar diferentes formatos de ubicaciones en los datos
+    if (data.ubicaciones) {
+      // Si es un array directo de ubicaciones
+      if (Array.isArray(data.ubicaciones)) {
+        // Si la entidad actual es una ubicación, filtrarla
+        if (entidad.tipo === "ubicacion") {
+          ubicacionesParaMostrar = data.ubicaciones.filter((u: any) => u.id !== parseInt(entidad.id.toString()));
+        } else {
+          ubicacionesParaMostrar = data.ubicaciones;
+        }
+      } 
+      // Si tiene la estructura con ubicacionesDirectas
+      else if (data.ubicaciones.ubicacionesDirectas) {
+        // Si la entidad actual es una ubicación, filtrarla
+        if (entidad.tipo === "ubicacion") {
+          ubicacionesParaMostrar = data.ubicaciones.ubicacionesDirectas.filter((u: any) => 
+            u.id !== parseInt(entidad.id.toString())
+          );
+        } else {
+          ubicacionesParaMostrar = data.ubicaciones.ubicacionesDirectas;
+        }
+      }
+    }
+    
+    // También añadir ubicaciones relacionadas si están disponibles
+    if (data.ubicacionesRelacionadas && Array.isArray(data.ubicacionesRelacionadas)) {
+      // Extraer ubicaciones de las relaciones
+      const ubicacionesDeRelaciones = data.ubicacionesRelacionadas.map((rel: any) => {
+        if (rel.ubicacion) {
+          return {
+            ...rel.ubicacion,
+            relacionadaCon: rel.entidadRelacionada ? `${rel.entidadRelacionada.tipo} - ${rel.entidadRelacionada.entidad?.nombre || 'Desconocido'}` : undefined
+          };
+        }
+        return rel;
+      });
+      
+      // Añadir al conjunto de ubicaciones, evitando duplicados por ID
+      const idsYaIncluidos = new Set(ubicacionesParaMostrar.map((u: any) => u.id));
+      
+      for (const ubi of ubicacionesDeRelaciones) {
+        if (!idsYaIncluidos.has(ubi.id)) {
+          ubicacionesParaMostrar.push(ubi);
+          idsYaIncluidos.add(ubi.id);
+        }
+      }
+    }
+    
+    // Mostrar ubicaciones si hay alguna
+    if (ubicacionesParaMostrar.length > 0) {
+      md += "### Ubicaciones\n\n";
+      ubicacionesParaMostrar.forEach((ubicacion: any) => {
+        const coords = typeof ubicacion.latitud === 'number' && typeof ubicacion.longitud === 'number' 
+          ? `(${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)})` 
+          : "(coordenadas no disponibles)";
+        
+        let infoAdicional = "";
+        if (ubicacion.relacionadaCon) {
+          infoAdicional = ` | Relacionada con: ${ubicacion.relacionadaCon}`;
+        }
+        
+        md += `- **${ubicacion.tipo}** ${coords}${infoAdicional}\n`;
+      });
+      md += "\n";
     }
     
     // Actualizar el estado con el contenido generado
