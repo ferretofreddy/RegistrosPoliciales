@@ -487,28 +487,53 @@ export default function EstructurasPage() {
     setObservacionesVehiculo([]);
     setObservacionesInmueble([]);
     
-    // Cargar observaciones según el tipo de entidad
-    if (resultado.tipo === "persona") {
-      fetch(`/api/personas/${resultado.id}/observaciones`)
-        .then(res => res.json())
-        .then(data => setObservacionesPersona(data))
-        .catch(err => console.error("Error al cargar observaciones de persona:", err));
-    } else if (resultado.tipo === "vehiculo") {
-      fetch(`/api/vehiculos/${resultado.id}/observaciones`)
-        .then(res => res.json())
-        .then(data => setObservacionesVehiculo(data))
-        .catch(err => console.error("Error al cargar observaciones de vehículo:", err));
-    } else if (resultado.tipo === "inmueble") {
-      fetch(`/api/inmuebles/${resultado.id}/observaciones`)
-        .then(res => res.json())
-        .then(data => setObservacionesInmueble(data))
-        .catch(err => console.error("Error al cargar observaciones de inmueble:", err));
+    console.log(`Seleccionada entidad: ${resultado.tipo} (ID: ${resultado.id}) - ${resultado.nombre}`);
+    
+    // Cargar los datos específicos de la entidad primero
+    let entidadActualizada = { ...resultado };
+    
+    try {
+      if (resultado.tipo === "persona") {
+        // Obtenemos datos específicos de la persona
+        const respPersona = await fetch(`/api/personas/${resultado.id}`);
+        const personaData = await respPersona.json();
+        console.log(`Datos de persona obtenidos directamente:`, personaData);
+        
+        // Cargamos también las observaciones
+        const respObs = await fetch(`/api/personas/${resultado.id}/observaciones`);
+        const obsData = await respObs.json();
+        setObservacionesPersona(obsData);
+        
+      } else if (resultado.tipo === "vehiculo") {
+        // Obtenemos datos específicos del vehículo
+        const respVehiculo = await fetch(`/api/vehiculos/${resultado.id}`);
+        const vehiculoData = await respVehiculo.json();
+        console.log(`Datos de vehículo obtenidos directamente:`, vehiculoData);
+        
+        // Cargamos también las observaciones
+        const respObs = await fetch(`/api/vehiculos/${resultado.id}/observaciones`);
+        const obsData = await respObs.json();
+        setObservacionesVehiculo(obsData);
+        
+      } else if (resultado.tipo === "inmueble") {
+        // Obtenemos datos específicos del inmueble
+        const respInmueble = await fetch(`/api/inmuebles/${resultado.id}`);
+        const inmuebleData = await respInmueble.json();
+        console.log(`Datos de inmueble obtenidos directamente:`, inmuebleData);
+        
+        // Cargamos también las observaciones
+        const respObs = await fetch(`/api/inmuebles/${resultado.id}/observaciones`);
+        const obsData = await respObs.json();
+        setObservacionesInmueble(obsData);
+      }
+    } catch (error) {
+      console.error(`Error al cargar datos específicos para ${resultado.tipo} (ID: ${resultado.id}):`, error);
     }
     
-    // Actualizar entidad seleccionada (esto debe desencadenar la carga de sus relaciones)
-    setEntidadSeleccionada(resultado);
+    // Actualizar entidad seleccionada
+    setEntidadSeleccionada(entidadActualizada);
     
-    // Refetch detalleData
+    // Refetch detalleData para obtener relaciones
     detalleRefetch();
     
     // Mostrar toast de carga
