@@ -362,7 +362,8 @@ export default function EstructurasPage() {
       
       // Detalles según el tipo de entidad
       if (entidadSeleccionada.tipo === "persona" && detalleData.personas && detalleData.personas.length > 0) {
-        const persona = detalleData.personas[0];
+        // Buscar la persona correcta por ID
+        const persona = detalleData.personas.find(p => p.id === entidadSeleccionada.id) || detalleData.personas[0];
         doc.text(`Nombre: ${persona.nombre}`, 14, yPos);
         doc.text(`Identificación: ${persona.identificacion}`, 14, yPos + 8);
         yPos += 16;
@@ -382,7 +383,8 @@ export default function EstructurasPage() {
           yPos += 8;
         }
       } else if (entidadSeleccionada.tipo === "vehiculo" && detalleData.vehiculos && detalleData.vehiculos.length > 0) {
-        const vehiculo = detalleData.vehiculos[0];
+        // Buscar el vehículo correcto por ID
+        const vehiculo = detalleData.vehiculos.find(v => v.id === entidadSeleccionada.id) || detalleData.vehiculos[0];
         doc.text(`Marca: ${vehiculo.marca}`, 14, yPos);
         doc.text(`Modelo: ${vehiculo.modelo}`, 14, yPos + 8);
         doc.text(`Tipo: ${vehiculo.tipo}`, 14, yPos + 16);
@@ -390,7 +392,8 @@ export default function EstructurasPage() {
         doc.text(`Color: ${vehiculo.color}`, 14, yPos + 32);
         yPos += 40;
       } else if (entidadSeleccionada.tipo === "inmueble" && detalleData.inmuebles && detalleData.inmuebles.length > 0) {
-        const inmueble = detalleData.inmuebles[0];
+        // Buscar el inmueble correcto por ID
+        const inmueble = detalleData.inmuebles.find(i => i.id === entidadSeleccionada.id) || detalleData.inmuebles[0];
         doc.text(`Tipo: ${inmueble.tipo}`, 14, yPos);
         doc.text(`Dirección: ${inmueble.direccion}`, 14, yPos + 8);
         doc.text(`Propietario: ${inmueble.propietario || "No registrado"}`, 14, yPos + 16);
