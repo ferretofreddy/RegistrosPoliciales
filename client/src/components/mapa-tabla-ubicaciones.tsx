@@ -72,24 +72,45 @@ export default function MapaTablaUbicaciones({
   const [ubicacionesDirectas, setUbicacionesDirectas] = useState<any[]>([]);
   const [ubicacionesRelacionadas, setUbicacionesRelacionadas] = useState<any[]>([]);
   
-  // Simplificar el procesamiento de ubicaciones para recuperar la estabilidad
+  // Implementación simplificada para mostrar ubicaciones en el mapa
   useEffect(() => {
     console.log("Datos detallados completos:", detalleData);
     
     if (!entidadSeleccionada || !detalleData) return;
     
-    // Extraer las ubicaciones directas de detalleData
+    // Extraer ubicaciones directas de detalleData
     let directas: any[] = [];
     
-    // Para cualquier tipo de entidad, obtener las ubicaciones
+    // Para cualquier tipo de entidad, obtener las ubicaciones directas
     if (Array.isArray(detalleData.ubicaciones)) {
-      directas = detalleData.ubicaciones;
+      // Filtrar solo las ubicaciones válidas (con coordenadas)
+      directas = detalleData.ubicaciones.filter(
+        (ubi: any) => ubi && typeof ubi.latitud === 'number' && typeof ubi.longitud === 'number'
+      );
       console.log("Ubicaciones directas encontradas:", directas.length);
     }
     
-    // Actualizar el estado
+    // Actualizar estados
     setUbicacionesDirectas(directas);
     setUbicacionesRelacionadas([]);
+    
+    // Esto registrará información detallada para depuración
+    if (directas.length === 0) {
+      console.log("Estructura de ubicaciones:", {
+        tipo: entidadSeleccionada.tipo,
+        id: entidadSeleccionada.id,
+        tieneUbicaciones: detalleData.ubicaciones ? "Sí" : "No",
+        tipoUbicaciones: typeof detalleData.ubicaciones,
+        esArray: Array.isArray(detalleData.ubicaciones),
+        propiedades: detalleData.ubicaciones ? Object.keys(detalleData.ubicaciones) : "Ninguna",
+        ubicacionesDirectas: 
+          detalleData.ubicaciones && detalleData.ubicaciones.ubicacionesDirectas ? 
+          detalleData.ubicaciones.ubicacionesDirectas.length : "No disponible",
+        ubicacionesRelacionadas: 
+          detalleData.ubicaciones && detalleData.ubicaciones.ubicacionesRelacionadas ? 
+          detalleData.ubicaciones.ubicacionesRelacionadas.length : "No disponible"
+      });
+    }
     
   }, [entidadSeleccionada, detalleData]);
   const mapRef = useRef<L.Map | null>(null);
