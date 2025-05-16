@@ -11,7 +11,7 @@ import autoTable from "jspdf-autotable";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import DetalleMapaUbicaciones from "@/components/detalle/detalle-mapa-ubicaciones";
+import MapaTablaUbicaciones from "@/components/mapa-tabla-ubicaciones";
 import ReactMarkdown from "react-markdown";
 
 // Tipo para los resultados de búsqueda
@@ -708,7 +708,7 @@ export default function EstructurasPage() {
                     {/* Mapa y Tabla de ubicaciones */}
                     <div id="ubicaciones-container" className="border rounded-lg overflow-hidden">
                       {detalleData && detalleData.ubicaciones && (
-                        <DetalleMapaUbicaciones 
+                        <MapaTablaUbicaciones 
                           ubicacionesDirectas={detalleData.ubicaciones.ubicacionesDirectas || []} 
                           ubicacionesRelacionadas={detalleData.ubicaciones.ubicacionesRelacionadas || []}
                         />

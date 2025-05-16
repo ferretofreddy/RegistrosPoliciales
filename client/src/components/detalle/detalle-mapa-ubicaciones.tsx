@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Ubicacion } from "@shared/schema";
 import MapaUbicaciones from '../mapa-ubicaciones';
 
@@ -37,10 +37,13 @@ export const DetalleMapaUbicaciones: React.FC<DetalleMapaUbicacionesProps> = ({
           <h3 className="text-lg font-medium text-gray-900">Mapa de Ubicaciones</h3>
         </div>
         <div className="border border-gray-200 rounded-b-lg" style={{ height: "400px" }}>
-          <MapaUbicaciones 
-            ubicacionesDirectas={ubicacionesDirectas} 
-            ubicacionesRelacionadas={ubicacionesRelacionadas}
-          />
+          {React.createElement(
+            require('@/components/mapa-ubicaciones').default, 
+            { 
+              ubicacionesDirectas: ubicacionesDirectas, 
+              ubicacionesRelacionadas: ubicacionesRelacionadas
+            }
+          )}
         </div>
       </div>
 
