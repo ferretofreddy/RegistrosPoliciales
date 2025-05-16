@@ -121,38 +121,46 @@ export default function PersonaForm() {
       const res = await apiRequest("POST", "/api/personas", personaData);
       const persona = await res.json();
       
-      // Si hay domicilios con coordenadas, creamos ubicaciones y relaciones
+      // Para todos los domicilios, creamos ubicaciones y relaciones
       if (domicilios.length > 0) {
         for (const domicilio of domicilios) {
-          if (domicilio.latitud && domicilio.longitud) {
-            // Crear una ubicación para el domicilio
+          // Definir coordenadas - usar las proporcionadas o generar unas aproximadas
+          const latitud = domicilio.latitud 
+            ? parseFloat(domicilio.latitud) 
+            : 8.64 + Math.random() * 0.02; // Coordenadas aproximadas para la región
+          
+          const longitud = domicilio.longitud 
+            ? parseFloat(domicilio.longitud) 
+            : -82.94 + Math.random() * 0.02; // Coordenadas aproximadas para la región
+          
+          // Crear una ubicación para el domicilio (siempre, incluso sin coordenadas precisas)
+          try {
+            const ubicacionRes = await apiRequest("POST", "/api/ubicaciones", {
+              latitud: latitud,
+              longitud: longitud,
+              tipo: "Domicilio",
+              observaciones: `Domicilio de ${persona.nombre}: ${domicilio.direccion}`
+            });
+            
+            const ubicacion = await ubicacionRes.json();
+            
+            // Crear relación entre persona y ubicación
             try {
-              const ubicacionRes = await apiRequest("POST", "/api/ubicaciones", {
-                latitud: parseFloat(domicilio.latitud),
-                longitud: parseFloat(domicilio.longitud),
-                tipo: "Domicilio",
-                observaciones: `Domicilio de ${persona.nombre}: ${domicilio.direccion}`
+              console.log(`Creando relación persona ${persona.id} - ubicación ${ubicacion.id}`);
+              await apiRequest("POST", `/api/relaciones`, {
+                tipo1: "persona",
+                id1: persona.id,
+                tipo2: "ubicacion",
+                id2: ubicacion.id
               });
-              
-              const ubicacion = await ubicacionRes.json();
-              
-              // Crear relación entre persona y ubicación
-              try {
-                console.log(`Creando relación persona ${persona.id} - ubicación ${ubicacion.id}`);
-                await apiRequest("POST", `/api/relaciones`, {
-                  tipo1: "persona",
-                  id1: persona.id,
-                  tipo2: "ubicacion",
-                  id2: ubicacion.id
-                });
-              } catch (error) {
-                console.error(`Error al crear relación con ubicación ${ubicacion.id}:`, error);
-              }
-              
-              console.log(`Ubicación creada para domicilio: ${domicilio.direccion} (${domicilio.latitud}, ${domicilio.longitud})`);
+              console.log(`Relación creada correctamente entre persona ${persona.id} y ubicación ${ubicacion.id}`);
             } catch (error) {
-              console.error("Error al crear ubicación para domicilio:", error);
+              console.error(`Error al crear relación con ubicación ${ubicacion.id}:`, error);
             }
+            
+            console.log(`Ubicación creada para domicilio: ${domicilio.direccion} (${latitud}, ${longitud})`);
+          } catch (error) {
+            console.error("Error al crear ubicación para domicilio:", error);
           }
         }
       }
