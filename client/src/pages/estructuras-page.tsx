@@ -160,6 +160,54 @@ export default function EstructurasPage() {
     }
   });
 
+  // Función para filtrar y procesar datos de relaciones específicos para la entidad seleccionada
+  const procesarDatosEntidad = useCallback((seleccionada: SearchResult, datos: any) => {
+    if (!seleccionada || !datos) return datos;
+    
+    // Copia profunda para no modificar los datos originales
+    const datosProcesados = JSON.parse(JSON.stringify(datos));
+    
+    // Filtrar personas para mostrar solo la seleccionada o relacionadas
+    if (seleccionada.tipo === "persona" && datosProcesados.personas && datosProcesados.personas.length > 0) {
+      // Asegurarnos que la primera persona en el array es la seleccionada
+      const personaSeleccionada = datosProcesados.personas.find((p: any) => p.id === seleccionada.id);
+      
+      if (personaSeleccionada) {
+        // Reorganizar el array para poner la persona seleccionada primero
+        datosProcesados.personas = [
+          personaSeleccionada,
+          ...datosProcesados.personas.filter((p: any) => p.id !== seleccionada.id)
+        ];
+      }
+    }
+    
+    // Filtrar vehículos para mostrar solo el seleccionado o relacionados
+    if (seleccionada.tipo === "vehiculo" && datosProcesados.vehiculos && datosProcesados.vehiculos.length > 0) {
+      const vehiculoSeleccionado = datosProcesados.vehiculos.find((v: any) => v.id === seleccionada.id);
+      
+      if (vehiculoSeleccionado) {
+        datosProcesados.vehiculos = [
+          vehiculoSeleccionado,
+          ...datosProcesados.vehiculos.filter((v: any) => v.id !== seleccionada.id)
+        ];
+      }
+    }
+    
+    // Filtrar inmuebles para mostrar solo el seleccionado o relacionados
+    if (seleccionada.tipo === "inmueble" && datosProcesados.inmuebles && datosProcesados.inmuebles.length > 0) {
+      const inmuebleSeleccionado = datosProcesados.inmuebles.find((i: any) => i.id === seleccionada.id);
+      
+      if (inmuebleSeleccionado) {
+        datosProcesados.inmuebles = [
+          inmuebleSeleccionado,
+          ...datosProcesados.inmuebles.filter((i: any) => i.id !== seleccionada.id)
+        ];
+      }
+    }
+    
+    return datosProcesados;
+  }, []);
+
   // Actualizar el contenido markdown cuando cambian los datos o las observaciones
   useEffect(() => {
     if (entidadSeleccionada && detalleData) {
@@ -167,33 +215,29 @@ export default function EstructurasPage() {
           entidadSeleccionada.tipo === "persona" ? observacionesPersona :
           entidadSeleccionada.tipo === "vehiculo" ? observacionesVehiculo :
           entidadSeleccionada.tipo === "inmueble" ? observacionesInmueble : [];
-          
-      generarContenidoMarkdown(entidadSeleccionada, detalleData, observaciones);
+      
+      // Procesar los datos para asegurar que se muestre la información correcta
+      const datosProcesados = procesarDatosEntidad(entidadSeleccionada, detalleData);
+      
+      // Generar contenido Markdown con los datos procesados
+      generarContenidoMarkdown(entidadSeleccionada, datosProcesados, observaciones);
       
       // Log para depuración extendida
-      console.log("Datos detallados completos:", detalleData);
+      console.log("Datos detallados completos:", datosProcesados);
       
       // Verificar estructura de ubicaciones
-      if (detalleData.ubicaciones) {
+      if (datosProcesados.ubicaciones) {
         console.log("Estructura de ubicaciones:", {
           tipo: entidadSeleccionada.tipo,
           id: entidadSeleccionada.id,
-          tieneUbicaciones: detalleData.ubicaciones ? "Sí" : "No",
-          tipoUbicaciones: typeof detalleData.ubicaciones,
-          esArray: Array.isArray(detalleData.ubicaciones),
-          propiedades: Object.keys(detalleData.ubicaciones),
-          ubicacionesDirectas: detalleData.ubicaciones?.ubicacionesDirectas ? {
-            longitud: detalleData.ubicaciones.ubicacionesDirectas.length,
-            muestra: detalleData.ubicaciones.ubicacionesDirectas.slice(0, 2)
-          } : "No disponible",
-          ubicacionesRelacionadas: detalleData.ubicaciones?.ubicacionesRelacionadas ? {
-            longitud: detalleData.ubicaciones.ubicacionesRelacionadas.length,
-            muestra: detalleData.ubicaciones.ubicacionesRelacionadas.slice(0, 2)
-          } : "No disponible"
+          tieneUbicaciones: datosProcesados.ubicaciones ? "Sí" : "No",
+          tipoUbicaciones: typeof datosProcesados.ubicaciones,
+          esArray: Array.isArray(datosProcesados.ubicaciones),
+          propiedades: Object.keys(datosProcesados.ubicaciones)
         });
       }
     }
-  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble]);
+  }, [entidadSeleccionada, detalleData, observacionesPersona, observacionesVehiculo, observacionesInmueble, procesarDatosEntidad]);
 
   // Generar el contenido Markdown basado en los datos
   const generarContenidoMarkdown = (entidad: SearchResult, data: any, observaciones: any[] = []) => {
