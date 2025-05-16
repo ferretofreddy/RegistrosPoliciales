@@ -140,7 +140,7 @@ export default function UbicacionForm() {
         
         // Crear el mapa y configurarlo
         console.log("Creando nuevo mapa");
-        const newMap = L.map(mapContainerRef.current).setView(initialCoords, 8);
+        const newMap = L.map('location-map').setView(initialCoords, 8);
         
         // Agregar la capa de mapa (OpenStreetMap)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -546,7 +546,7 @@ export default function UbicacionForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <FormLabel className="mb-2 block font-semibold">Seleccione la ubicación en el mapa o introduzca las coordenadas</FormLabel>
-          <div id="location-map" className="leaflet-container h-[400px] mt-2 rounded-lg border-2 border-gray-300 shadow-md"></div>
+          <div ref={mapContainerRef} id="location-map" className="leaflet-container h-[400px] mt-2 rounded-lg border-2 border-gray-300 shadow-md"></div>
           <p className="text-xs text-gray-500 mt-1">
             <span className="font-medium">Tip:</span> Haga clic en el mapa para seleccionar una ubicación o arrastre el marcador.
           </p>
