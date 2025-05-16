@@ -1,0 +1,63 @@
+Modificar la página "estructuras" para eliminar el historial de registros, habilitar la búsqueda de múltiples entidades, mostrar resultados detallados con ubicaciones en un mapa, y permitir la exportación a PDF.
+Instrucciones Detalladas:
+1. Eliminar el Cuadro de "Historial de Registros"
+•	Ubicación: Frontend, en la vista de la página "estructuras".
+•	Acción:
+o	Identificar y eliminar el componente o sección que muestra el "historial de registros".
+o	Mantener únicamente el formulario o campo de búsqueda en la interfaz.
+•	Verificación:
+o	Cargar la página "estructuras" y confirmar que el historial de registros no aparece, pero la búsqueda sigue funcional.
+2. Habilitar la Búsqueda de Registros de Diferentes Entidades
+•	Entidades: Personas, vehículos, inmuebles y ubicaciones.
+•	Funcionalidad:
+o	Implementar una búsqueda que soporte todas las entidades mencionadas, similar a la vista de información detallada en la página "consultas".
+o	Mostrar en un mapa las ubicaciones directas y relacionadas de los registros, replicando el estilo de la página "ubicaciones".
+•	Acción:
+o	Backend: Crear o ajustar endpoints para buscar registros por entidad y devolver resultados con ubicaciones asociadas.
+o	Frontend: Adaptar el campo de búsqueda para aceptar consultas de cualquier entidad.
+•	Verificación:
+o	Buscar una persona, un vehículo, un inmueble y una ubicación, y confirmar que los resultados son correctos y el mapa muestra las ubicaciones.
+3. Mostrar Lista de Resultados Después de la Búsqueda
+•	Formato:
+o	Lista con coincidencias en el formato "Nombre, Identificación, Placa, Tipo Inmueble | Entidad" (ej., "Andrey Oviedo Carmona | persona").
+•	Acción al Seleccionar:
+o	Al hacer clic en un resultado, mostrar la información detallada del registro y sus relaciones.
+•	Acción:
+o	Frontend: Diseñar una lista dinámica que se actualice tras la búsqueda y permita seleccionar registros.
+•	Verificación:
+o	Realizar una búsqueda, verificar que la lista muestra las coincidencias correctamente, y seleccionar un registro para confirmar que lleva a la vista detallada.
+4. Mostrar Información Detallada del Registro Seleccionado en formato Markdown
+•	Contenido:
+o	Información del Registro: Detalles completos del registro.
+o	Observaciones: Todas las observaciones relacionadas.
+o	Registros Relacionados: Agrupados por entidades
+o	Mapa y Tabla de Ubicaciones:
+	Título "Ubicaciones" seguido de un mapa con pines (sin información de ayuda).
+	Título "Ubicaciones encontradas" seguido de una tabla con el formato de la página "ubicaciones".
+•	Acción:
+o	Backend: Asegurar que los endpoints devuelvan toda la información (registro, observaciones, relaciones, ubicaciones).
+o	Frontend: Diseñar la vista detallada con el orden y formato especificados, integrando el mapa y la tabla.
+•	Verificación:
+o	Seleccionar un registro y confirmar que la información, observaciones, relaciones, mapa y tabla se muestran correctamente.
+5. Agregar Botón "Exportar en PDF"
+•	Función: Exportar toda la información a un documento PDF.
+•	Formato:
+o	Tamaño de hoja: Carta o Letter.
+o	Evitar que el mapa o la tabla de ubicaciones se corten entre páginas.
+•	Acción:
+o	Frontend/Backend: Implementar una función de exportación usando una librería como jsPDF.
+o	Convertir el mapa en imagen y formatear la tabla para el PDF.
+•	Verificación:
+o	Exportar un PDF y verificar que todo el contenido se incluye sin cortes.
+6. Realizar Pruebas
+•	Pruebas de Búsqueda:
+o	Buscar registros de personas, vehículos e inmuebles, y verificar que los resultados son precisos.
+•	Pruebas de Información Detallada:
+o	Seleccionar registros y comparar la información directa y relacionada con la base de datos.
+•	Pruebas de Exportación:
+o	Generar un PDF y confirmar que el formato es correcto y no hay cortes en el mapa o la tabla.
+Recomendaciones:
+•	Usar datos de prueba representativos en la base de datos.
+Notas:
+•	Si hay errores, revisar los logs del backend y las respuestas del frontend para depurar.
+•	Mantener un diseño consistente con las demás páginas de la aplicación.
