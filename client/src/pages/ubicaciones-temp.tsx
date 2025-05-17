@@ -579,7 +579,7 @@ export default function UbicacionesPage() {
     return () => {
       // Limpiar al desmontar el componente
       if (typeof window !== 'undefined') {
-        window.handleVerRelaciones = function(){};
+        window.handleVerRelaciones = () => {};
       }
     };
   }, []);
@@ -764,19 +764,12 @@ export default function UbicacionesPage() {
                           </div>
                         )}
                         
-                        {/* Ubicaciones relacionadas - FILTRADAS por coordenadas */}
+                        {/* Ubicaciones relacionadas */}
                         {data.ubicacionesRelacionadas?.length > 0 && (
                           <div className="bg-white p-4 rounded-md border border-gray-200">
-                            <h5 className="text-sm font-medium text-gray-700 mb-2">
-                              Ubicaciones relacionadas con entidades 
-                              <span className="text-xs text-gray-500 ml-2">
-                                (solo registros con coordenadas)
-                              </span>
-                            </h5>
+                            <h5 className="text-sm font-medium text-gray-700 mb-2">Ubicaciones relacionadas con entidades</h5>
                             <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
-                              {data.ubicacionesRelacionadas
-                                .filter(relacion => relacion.ubicacion && relacion.ubicacion.latitud && relacion.ubicacion.longitud)
-                                .map((relacion: any, index: number) => (
+                              {data.ubicacionesRelacionadas.map((relacion: any, index: number) => (
                                 <div key={`rel-${index}`} className={`flex items-center p-2 bg-white rounded border ${
                                   entidadSeleccionada && 
                                   relacion.entidadRelacionada.tipo === entidadSeleccionada.tipo && 
