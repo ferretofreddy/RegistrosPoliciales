@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Car, Home, User, MapPin, Calendar, CalendarClock, 
-  List, Link2, Info, AlertCircle 
+  List, Link2, Info, AlertCircle, XCircle
 } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
 
@@ -27,12 +27,78 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface DetalleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tipo: "persona" | "vehiculo" | "inmueble" | "ubicacion";
   dato: Persona | Vehiculo | Inmueble | Ubicacion | null;
+}
+
+// Componente para mostrar las observaciones de una ubicación en un popover
+function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
+  const [open, setOpen] = useState(false);
+  
+  // Consulta para obtener las observaciones de la ubicación
+  const { data: observaciones, isLoading } = useQuery({
+    queryKey: [`/api/ubicaciones/${ubicacionId}/observaciones`],
+    queryFn: async () => {
+      if (!open) return []; // No cargar datos hasta que se abra el popover
+      const response = await fetch(`/api/ubicaciones/${ubicacionId}/observaciones`);
+      if (!response.ok) throw new Error('Error al cargar observaciones');
+      return response.json();
+    },
+    enabled: open, // Solo cargar cuando el popover esté abierto
+  });
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-xs text-left">
+          Ver observaciones
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 max-h-72 overflow-auto" side="right">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="font-medium text-sm">Observaciones de la ubicación</h4>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 w-6 p-0" 
+            onClick={() => setOpen(false)}
+          >
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {isLoading ? (
+          <div className="text-center py-2">Cargando...</div>
+        ) : observaciones && observaciones.length > 0 ? (
+          <div className="space-y-2">
+            {observaciones.map((obs: any) => (
+              <div key={obs.id} className="border rounded-sm p-2 text-xs">
+                <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                  <CalendarClock className="h-3 w-3" />
+                  {obs.fecha ? format(new Date(obs.fecha), "dd/MM/yyyy HH:mm") : "Fecha desconocida"}
+                  <span className="ml-auto">{obs.usuario || "Sistema"}</span>
+                </div>
+                <p>{obs.detalle}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-2 text-muted-foreground text-xs">
+            No hay observaciones registradas
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function DetalleDialog({
@@ -396,17 +462,7 @@ export default function DetalleDialog({
                               {`${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`}
                             </TableCell>
                             <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs text-left"
-                                onClick={() => {
-                                  // Abrir la ubicación en una nueva ventana/pestaña
-                                  window.open(`/ubicaciones?id=${ubicacion.id}`, "_blank");
-                                }}
-                              >
-                                Ver observaciones
-                              </Button>
+                              <UbicacionObservaciones ubicacionId={ubicacion.id} />
                             </TableCell>
                           </TableRow>
                         ))}
