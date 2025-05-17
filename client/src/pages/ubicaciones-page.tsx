@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, MapPin, User, Car, Home } from "lucide-react";
+import { Search, MapPin, User, Car, Home, AlertCircle, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import DetalleEntidadDialog from "@/components/detalle-entidad-dialog";
 
 // Make sure to import Leaflet via CDN in index.html
 declare global {
@@ -22,6 +24,13 @@ export default function UbicacionesPage() {
     inmuebles: true,
   });
   
+  // Estado para entidad seleccionada y sus relaciones en segundo nivel
+  const [entidadSeleccionada, setEntidadSeleccionada] = useState<{
+    tipo: string;
+    id: number;
+    nombre?: string;
+  } | null>(null);
+  
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
@@ -31,6 +40,7 @@ export default function UbicacionesPage() {
   const inmuebleMarkers = useRef<Map<number, any>>(new Map());
   const personaMarkers = useRef<Map<number, any>>(new Map());
 
+  // Consulta principal para buscar ubicaciones
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["/api/ubicaciones", searchTerm, selectedTypes],
     queryFn: async () => {
@@ -50,9 +60,143 @@ export default function UbicacionesPage() {
       
       const data = await response.json();
       console.log("[DEBUG] Datos recibidos:", data);
+      
+      // Resetear entidad seleccionada cuando se hace una nueva búsqueda
+      setEntidadSeleccionada(null);
+      
       return data;
     },
     enabled: false,
+  });
+  
+  // Consulta para obtener relaciones en segundo nivel de una entidad seleccionada
+  const { data: relacionesData, isLoading: isLoadingRelaciones, error: errorRelaciones, refetch: refetchRelaciones } = useQuery({
+    queryKey: ["/api/relaciones-completas", entidadSeleccionada?.tipo, entidadSeleccionada?.id],
+    queryFn: async () => {
+      if (!entidadSeleccionada) return null;
+      
+      console.log(`[DEBUG] Consultando relaciones completas para ${entidadSeleccionada.tipo} con ID ${entidadSeleccionada.id}`);
+      
+      // 1. Obtener relaciones directas
+      const responseRelaciones = await fetch(`/api/relaciones/${entidadSeleccionada.tipo}/${entidadSeleccionada.id}`);
+      if (!responseRelaciones.ok) {
+        throw new Error(`Error al obtener relaciones: ${responseRelaciones.status}`);
+      }
+      const relacionesDirectas = await responseRelaciones.json();
+      
+      // 2. Procesar relaciones y obtener ubicaciones
+      const ubicacionesRelacionadas = [];
+      const entidadesConUbicaciones = [];
+      
+      // 2.1 Procesar personas relacionadas
+      if (relacionesDirectas.personas && relacionesDirectas.personas.length > 0) {
+        for (const persona of relacionesDirectas.personas) {
+          // Buscar ubicaciones de esta persona
+          const responseUbicacionesPersona = await fetch(`/api/relaciones/persona/${persona.id}`);
+          if (responseUbicacionesPersona.ok) {
+            const datosPersona = await responseUbicacionesPersona.json();
+            
+            // Agregar ubicaciones directas de la persona
+            if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
+              for (const ubicacion of datosPersona.ubicaciones) {
+                ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'persona',
+                    entidad: persona,
+                    relacionadoCon: {
+                      tipo: entidadSeleccionada.tipo,
+                      entidad: { id: entidadSeleccionada.id, nombre: entidadSeleccionada.nombre }
+                    }
+                  }
+                });
+              }
+            }
+            
+            entidadesConUbicaciones.push({
+              tipo: 'persona',
+              entidad: persona,
+              ubicaciones: datosPersona.ubicaciones || []
+            });
+          }
+        }
+      }
+      
+      // 2.2 Procesar vehículos relacionados
+      if (relacionesDirectas.vehiculos && relacionesDirectas.vehiculos.length > 0) {
+        for (const vehiculo of relacionesDirectas.vehiculos) {
+          // Buscar ubicaciones de este vehículo
+          const responseUbicacionesVehiculo = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
+          if (responseUbicacionesVehiculo.ok) {
+            const datosVehiculo = await responseUbicacionesVehiculo.json();
+            
+            // Agregar ubicaciones directas del vehículo
+            if (datosVehiculo.ubicaciones && datosVehiculo.ubicaciones.length > 0) {
+              for (const ubicacion of datosVehiculo.ubicaciones) {
+                ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'vehiculo',
+                    entidad: vehiculo,
+                    relacionadoCon: {
+                      tipo: entidadSeleccionada.tipo,
+                      entidad: { id: entidadSeleccionada.id, nombre: entidadSeleccionada.nombre }
+                    }
+                  }
+                });
+              }
+            }
+            
+            entidadesConUbicaciones.push({
+              tipo: 'vehiculo',
+              entidad: vehiculo,
+              ubicaciones: datosVehiculo.ubicaciones || []
+            });
+          }
+        }
+      }
+      
+      // 2.3 Procesar inmuebles relacionados
+      if (relacionesDirectas.inmuebles && relacionesDirectas.inmuebles.length > 0) {
+        for (const inmueble of relacionesDirectas.inmuebles) {
+          // Buscar ubicaciones de este inmueble
+          const responseUbicacionesInmueble = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
+          if (responseUbicacionesInmueble.ok) {
+            const datosInmueble = await responseUbicacionesInmueble.json();
+            
+            // Agregar ubicaciones directas del inmueble
+            if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
+              for (const ubicacion of datosInmueble.ubicaciones) {
+                ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'inmueble',
+                    entidad: inmueble,
+                    relacionadoCon: {
+                      tipo: entidadSeleccionada.tipo,
+                      entidad: { id: entidadSeleccionada.id, nombre: entidadSeleccionada.nombre }
+                    }
+                  }
+                });
+              }
+            }
+            
+            entidadesConUbicaciones.push({
+              tipo: 'inmueble',
+              entidad: inmueble,
+              ubicaciones: datosInmueble.ubicaciones || []
+            });
+          }
+        }
+      }
+      
+      return {
+        relacionesDirectas,
+        ubicacionesRelacionadas,
+        entidadesConUbicaciones
+      };
+    },
+    enabled: !!entidadSeleccionada,
   });
 
   useEffect(() => {
