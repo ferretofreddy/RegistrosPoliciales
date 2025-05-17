@@ -756,6 +756,34 @@ export default function UbicacionesPage() {
       const entidadData = await response.json();
       console.log(`[DEBUG] Datos de entidad encontrada:`, entidadData);
       
+      // Mostrar resultados directamente si la entidad tiene ubicaciones
+      if ((entidadData.ubicacionesDirectas && entidadData.ubicacionesDirectas.length > 0) || 
+          (entidadData.ubicacionesRelacionadas && entidadData.ubicacionesRelacionadas.length > 0)) {
+        
+        // Actualizar directamente el estado de data para que se muestre en el mapa
+        // Este es un enfoque diferente que reemplaza el refetch
+        setData({
+          ubicacionesDirectas: entidadData.ubicacionesDirectas || [],
+          ubicacionesRelacionadas: entidadData.ubicacionesRelacionadas || [],
+          entidadesRelacionadas: entidadData.entidadesRelacionadas || []
+        });
+        
+        // Actualizar estado para mostrar esta entidad
+        setEntidadSeleccionada({
+          tipo: item.tipo,
+          id: item.id,
+          nombre: item.tipo === 'persona' ? item.nombre : 
+                  item.tipo === 'vehiculo' ? `${item.marca} (${item.placa})` : 
+                  `${item.tipoInmueble} - ${item.direccion}`
+        });
+        
+        console.log("[DEBUG] Mostrando datos directamente desde el endpoint de entidad");
+        return;
+      }
+      
+      // Si no hay ubicaciones directas, hacemos la búsqueda estándar
+      console.log("[DEBUG] No se encontraron ubicaciones directas, haciendo búsqueda normal");
+      
       // Actualizar estado para mostrar esta entidad
       setEntidadSeleccionada({
         tipo: item.tipo,
@@ -773,13 +801,17 @@ export default function UbicacionesPage() {
       });
       
       // Actualizamos el término para que sea identificable pero no interfiera con búsqueda
+      let busquedaTermino = '';
+      
       if (item.tipo === 'persona') {
-        setSearchTerm(item.identificacion || item.nombre);
+        busquedaTermino = item.identificacion || item.nombre;
       } else if (item.tipo === 'vehiculo') {
-        setSearchTerm(item.placa);
+        busquedaTermino = item.placa;
       } else if (item.tipo === 'inmueble') {
-        setSearchTerm(item.direccion || item.tipoInmueble);
+        busquedaTermino = item.direccion || item.tipoInmueble;
       }
+      
+      setSearchTerm(busquedaTermino);
       
       // Ejecutar búsqueda automáticamente con el nuevo término
       refetch();
@@ -800,6 +832,15 @@ export default function UbicacionesPage() {
       
       // Actualizar término y refrescar
       setSearchTerm(busquedaTermino);
+      
+      // Filtrar por tipo seleccionado
+      setSelectedTypes({
+        personas: item.tipo === 'persona',
+        vehiculos: item.tipo === 'vehiculo',
+        inmuebles: item.tipo === 'inmueble',
+      });
+      
+      // Ejecutar búsqueda
       refetch();
       
       // Seleccionar la entidad para ver sus relaciones

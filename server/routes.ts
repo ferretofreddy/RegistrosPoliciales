@@ -435,36 +435,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para obtener entidad específica por tipo e ID
+  // Endpoint para obtener entidad específica por tipo e ID con sus ubicaciones
   app.get("/api/entidad/:tipo/:id", async (req, res) => {
     try {
       const { tipo, id } = req.params;
       const tipoNormalizado = tipo.toLowerCase();
       const idNumerico = parseInt(id);
       
-      let entidad = null;
-      let ubicacionesRelacionadas = [];
+      console.log(`[SERVIDOR] Buscando entidad específica: ${tipoNormalizado} con ID ${idNumerico}`);
       
+      let entidad = null;
+      let ubicacionesDirectas = [];
+      let ubicacionesRelacionadas = [];
+      let criteriosBusqueda = [];
+      
+      // Obtener la entidad según su tipo
       if (tipoNormalizado === 'persona') {
         entidad = await storage.getPersona(idNumerico);
         if (entidad) {
-          // Obtener ubicaciones relacionadas para esta persona
-          const resultado = await storage.buscarUbicacionesConCoordenadas(entidad.nombre, ["persona"]);
-          ubicacionesRelacionadas = resultado.ubicacionesRelacionadas || [];
+          console.log(`[SERVIDOR] Encontrada persona con ID ${idNumerico}: ${entidad.nombre}`);
+          criteriosBusqueda = [
+            entidad.nombre,
+            entidad.identificacion,
+            ...(entidad.alias || [])
+          ].filter(Boolean); // Filtrar valores falsy
         }
       } else if (tipoNormalizado === 'vehiculo') {
         entidad = await storage.getVehiculo(idNumerico);
         if (entidad) {
-          // Obtener ubicaciones relacionadas para este vehículo
-          const resultado = await storage.buscarUbicacionesConCoordenadas(entidad.placa, ["vehiculo"]);
-          ubicacionesRelacionadas = resultado.ubicacionesRelacionadas || [];
+          console.log(`[SERVIDOR] Encontrado vehículo con ID ${idNumerico}: ${entidad.placa}`);
+          criteriosBusqueda = [
+            entidad.placa,
+            `${entidad.marca} ${entidad.modelo || ''}`.trim()
+          ].filter(Boolean);
         }
       } else if (tipoNormalizado === 'inmueble') {
         entidad = await storage.getInmueble(idNumerico);
         if (entidad) {
-          // Obtener ubicaciones relacionadas para este inmueble
-          const resultado = await storage.buscarUbicacionesConCoordenadas(entidad.direccion || entidad.tipo, ["inmueble"]);
-          ubicacionesRelacionadas = resultado.ubicacionesRelacionadas || [];
+          console.log(`[SERVIDOR] Encontrado inmueble con ID ${idNumerico}: ${entidad.direccion || entidad.tipo}`);
+          criteriosBusqueda = [
+            entidad.direccion,
+            entidad.tipo,
+            entidad.propietario
+          ].filter(Boolean);
         }
       }
       
@@ -472,11 +485,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: `${tipo} con ID ${id} no encontrado` });
       }
       
-      // Devolver la entidad junto con sus ubicaciones relacionadas
+      // Buscar ubicaciones directas y relacionadas
+      console.log(`[SERVIDOR] Buscando ubicaciones con criterios: ${criteriosBusqueda.join(', ')}`);
+      
+      // Buscar ubicaciones directas e indirectas
+      const resultadosPromises = criteriosBusqueda.map(async criterio => {
+        if (!criterio) return null;
+        
+        try {
+          console.log(`[SERVIDOR] Buscando ubicaciones para criterio: ${criterio}`);
+          const resultado = await storage.buscarUbicacionesConCoordenadas(criterio, [tipoNormalizado]);
+          return resultado;
+        } catch (err) {
+          console.error(`Error buscando ubicaciones para criterio ${criterio}:`, err);
+          return null;
+        }
+      });
+      
+      const resultados = (await Promise.all(resultadosPromises)).filter(Boolean);
+      
+      // Extraer ubicaciones
+      for (const resultado of resultados) {
+        if (resultado.ubicacionesDirectas?.length) {
+          ubicacionesDirectas = [...ubicacionesDirectas, ...resultado.ubicacionesDirectas];
+        }
+        if (resultado.ubicacionesRelacionadas?.length) {
+          ubicacionesRelacionadas = [...ubicacionesRelacionadas, ...resultado.ubicacionesRelacionadas];
+        }
+      }
+      
+      // Eliminar duplicados - comparando por ID
+      const ubicacionesDirectasUnicas = ubicacionesDirectas.filter((ubicacion, index, self) =>
+        index === self.findIndex(u => u.id === ubicacion.id)
+      );
+      
+      const ubicacionesRelacionadasUnicas = ubicacionesRelacionadas.filter((relacion, index, self) =>
+        index === self.findIndex(r => r.ubicacion.id === relacion.ubicacion.id && 
+                                       r.entidadRelacionada.tipo === relacion.entidadRelacionada.tipo && 
+                                       r.entidadRelacionada.entidad.id === relacion.entidadRelacionada.entidad.id)
+      );
+      
+      console.log(`[SERVIDOR] Encontradas ${ubicacionesDirectasUnicas.length} ubicaciones directas y ${ubicacionesRelacionadasUnicas.length} ubicaciones relacionadas`);
+      
+      // Devolver resultados completos
       res.json({
         entidad,
         tipo: tipoNormalizado,
-        ubicacionesRelacionadas
+        ubicacionesDirectas: ubicacionesDirectasUnicas,
+        ubicacionesRelacionadas: ubicacionesRelacionadasUnicas,
+        entidadesRelacionadas: []  // Mantener estructura consistente con otras respuestas
       });
     } catch (error) {
       console.error(`Error al obtener entidad ${req.params.tipo} con ID ${req.params.id}:`, error);
