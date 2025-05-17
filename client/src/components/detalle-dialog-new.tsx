@@ -63,7 +63,7 @@ function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
           Ver observaciones
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[90vw] max-w-[350px] max-h-[80vh] sm:w-80 sm:max-h-72 overflow-auto" side="right" align="start" alignOffset={-5} sideOffset={5}>
+      <PopoverContent className="w-[90vw] max-w-[350px] max-h-[80vh] sm:w-80 sm:max-h-72 overflow-auto mx-auto fixed left-[50%] -translate-x-1/2" side="top" align="center" sideOffset={5}>
         <div className="flex justify-between items-center mb-2">
           <h4 className="font-medium text-sm">Observaciones de la ubicación</h4>
           <Button 
