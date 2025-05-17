@@ -342,7 +342,14 @@ export default function VehiculoForm() {
               <FormItem>
                 <FormLabel>Modelo (Año)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Año del modelo" {...field} />
+                  <Input 
+                    placeholder="Año del modelo" 
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value === null ? "" : field.value} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
