@@ -646,19 +646,27 @@ export default function UbicacionesPage() {
                 <h3 className="text-sm font-medium text-gray-700">Leyenda</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   <div className="flex items-center space-x-2">
-                    <div className="bg-red-500 w-3 h-3 rounded-full"></div>
+                    <div className="flex items-center justify-center bg-red-500 text-white rounded-full w-5 h-5">
+                      <User className="h-3 w-3" />
+                    </div>
                     <span className="text-xs text-gray-600">Personas</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="bg-blue-500 w-3 h-3 rounded-full"></div>
+                    <div className="flex items-center justify-center bg-blue-500 text-white rounded-full w-5 h-5">
+                      <Car className="h-3 w-3" />
+                    </div>
                     <span className="text-xs text-gray-600">Vehículos</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="bg-green-500 w-3 h-3 rounded-full"></div>
+                    <div className="flex items-center justify-center bg-green-500 text-white rounded-full w-5 h-5">
+                      <Home className="h-3 w-3" />
+                    </div>
                     <span className="text-xs text-gray-600">Inmuebles</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="bg-purple-500 w-3 h-3 rounded-full"></div>
+                    <div className="flex items-center justify-center bg-purple-500 text-white rounded-full w-5 h-5">
+                      <MapPin className="h-3 w-3" />
+                    </div>
                     <span className="text-xs text-gray-600">Ubicaciones sin entidad</span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -828,17 +836,7 @@ export default function UbicacionesPage() {
               )}
             </div>
             
-            {/* Instrucciones */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
-              <h4 className="font-medium text-gray-900 mb-2">Instrucciones</h4>
-              <ul className="space-y-1 text-sm text-gray-600 list-disc pl-5">
-                <li>Use la búsqueda para encontrar ubicaciones por nombre o descripción</li>
-                <li>Filtre los resultados según el tipo de entidad relacionada</li>
-                <li>Haga clic en los marcadores para ver más información</li>
-                <li>Las líneas naranja indican relaciones destacadas</li>
-                <li>Puede mover el mapa y hacer zoom con el ratón</li>
-              </ul>
-            </div>
+
           </CardContent>
         </Card>
       </div>
