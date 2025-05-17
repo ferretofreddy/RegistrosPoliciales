@@ -313,11 +313,10 @@ export default function UbicacionForm() {
             const resultado = await apiRequest("POST", `/api/ubicaciones/${ubicacionId}/relaciones`, relacionesData);
             console.log("Resultado de la creación de relaciones:", resultado);
             
-            // Invalidar consultas relacionadas para refrescar datos
-            queryClient.invalidateQueries({ queryKey: ["/api/personas"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/vehiculos"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/inmuebles"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/ubicaciones"] });
+            // Usar la función centralizada para invalidar todas las consultas
+            import("@/lib/cache-utils").then(module => {
+              module.invalidateAllQueries('/api/ubicaciones');
+            });
             
             toast({
               title: "Relaciones creadas",
@@ -343,11 +342,10 @@ export default function UbicacionForm() {
       setRelacionPersonas([]);
       setRelacionVehiculos([]);
       setRelacionInmuebles([]);
-      // Invalidar queries para actualizar todos los datos relacionados
-      queryClient.invalidateQueries({ queryKey: ['/api/ubicaciones'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
+      // Usar la función centralizada para invalidar todas las consultas
+      import("@/lib/cache-utils").then(module => {
+        module.invalidateAllQueries('/api/ubicaciones');
+      });
     },
     onError: (error) => {
       toast({

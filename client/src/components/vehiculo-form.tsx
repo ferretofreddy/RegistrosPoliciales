@@ -181,10 +181,10 @@ export default function VehiculoForm() {
       setRelacionInmuebles([]);
       setObservaciones([]);
       setShowObservacionForm(false);
-      // Invalidar queries para actualizar todos los datos relacionados
-      queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
+      // Usar la función centralizada para invalidar todas las consultas
+      import("@/lib/cache-utils").then(module => {
+        module.invalidateAllQueries('/api/vehiculos');
+      });
     },
     onError: (error) => {
       toast({
