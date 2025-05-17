@@ -248,6 +248,7 @@ export default function DetalleDialog({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[120px]">Fecha</TableHead>
+                      <TableHead className="w-[120px]">Usuario</TableHead>
                       <TableHead>Detalle</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -260,6 +261,7 @@ export default function DetalleDialog({
                             {obs.fecha ? format(new Date(obs.fecha), "dd/MM/yyyy HH:mm") : "Fecha desconocida"}
                           </div>
                         </TableCell>
+                        <TableCell>{obs.usuario || "Sistema"}</TableCell>
                         <TableCell>{obs.detalle}</TableCell>
                       </TableRow>
                     ))}
@@ -380,8 +382,8 @@ export default function DetalleDialog({
                       <TableHeader>
                         <TableRow>
                           <TableHead>Tipo</TableHead>
-                          <TableHead>Fecha</TableHead>
                           <TableHead>Coordenadas</TableHead>
+                          <TableHead>Observaciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -389,10 +391,10 @@ export default function DetalleDialog({
                           <TableRow key={ubicacion.id}>
                             <TableCell>{ubicacion.tipo}</TableCell>
                             <TableCell>
-                              {ubicacion.fecha ? format(new Date(ubicacion.fecha), "dd/MM/yyyy") : "N/A"}
+                              {`${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`}
                             </TableCell>
                             <TableCell>
-                              {`${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`}
+                              {ubicacion.observaciones || "Sin observaciones"}
                             </TableCell>
                           </TableRow>
                         ))}
