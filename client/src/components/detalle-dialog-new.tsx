@@ -6,12 +6,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Car, Home, User, MapPin, Calendar, CalendarClock, 
-  List, Link2, Info, AlertCircle, XCircle
+  List, Link2, Info, AlertCircle, XCircle, Loader2
 } from "lucide-react";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
 
@@ -48,7 +49,6 @@ function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
   const { data: observaciones, isLoading } = useQuery({
     queryKey: [`/api/ubicaciones/${ubicacionId}/observaciones`],
     queryFn: async () => {
-      if (!open) return []; // No cargar datos hasta que se abra el diálogo
       const response = await fetch(`/api/ubicaciones/${ubicacionId}/observaciones`);
       if (!response.ok) throw new Error('Error al cargar observaciones');
       return response.json();
@@ -56,45 +56,60 @@ function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
     enabled: open, // Solo cargar cuando el diálogo esté abierto
   });
 
+  const handleOpenDialog = () => setOpen(true);
+  const handleCloseDialog = () => setOpen(false);
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-xs text-left">
-          Ver observaciones
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="w-[95vw] max-w-[450px] p-4 max-h-[80vh] overflow-auto">
-        <DialogHeader>
-          <DialogTitle className="font-medium text-base">Observaciones de la ubicación</DialogTitle>
-          <DialogDescription className="text-xs">
-            Historial de observaciones registradas
-          </DialogDescription>
-        </DialogHeader>
-        
-        {isLoading ? (
-          <div className="text-center py-2">Cargando...</div>
-        ) : observaciones && observaciones.length > 0 ? (
-          <div className="space-y-2">
-            {observaciones.map((obs: any) => (
-              <div key={obs.id} className="border rounded-sm p-2 text-xs">
-                <div className="flex flex-wrap items-center gap-1 text-muted-foreground mb-1">
-                  <CalendarClock className="h-3 w-3" />
-                  <span className="truncate max-w-[150px] sm:max-w-[180px]">
-                    {obs.fecha ? format(new Date(obs.fecha), "dd/MM/yyyy HH:mm") : "Fecha desconocida"}
-                  </span>
-                  <span className="ml-auto">{obs.usuario || "Sistema"}</span>
-                </div>
-                <p className="break-words">{obs.detalle}</p>
+    <>
+      <Button variant="ghost" size="sm" className="text-xs text-left" onClick={handleOpenDialog}>
+        Ver observaciones
+      </Button>
+      
+      {open && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="w-[95vw] max-w-[450px] p-4 max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="font-medium text-base">Observaciones de la ubicación</DialogTitle>
+              <DialogDescription className="text-xs">
+                Historial de observaciones registradas
+              </DialogDescription>
+            </DialogHeader>
+            
+            {isLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+                <span>Cargando observaciones...</span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-2 text-muted-foreground text-xs">
-            No hay observaciones registradas
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
+            ) : observaciones && observaciones.length > 0 ? (
+              <div className="space-y-2 mt-3">
+                {observaciones.map((obs: any) => (
+                  <div key={obs.id} className="border rounded-sm p-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-1 text-muted-foreground mb-1">
+                      <CalendarClock className="h-3 w-3" />
+                      <span className="truncate max-w-[150px] sm:max-w-[180px]">
+                        {obs.fecha ? format(new Date(obs.fecha), "dd/MM/yyyy HH:mm") : "Fecha desconocida"}
+                      </span>
+                      <span className="ml-auto">{obs.usuario || "Sistema"}</span>
+                    </div>
+                    <p className="break-words">{obs.detalle}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground text-xs">
+                No hay observaciones registradas
+              </div>
+            )}
+            
+            <DialogFooter className="mt-4">
+              <Button onClick={handleCloseDialog} variant="outline" size="sm" className="w-full">
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
 
