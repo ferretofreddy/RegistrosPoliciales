@@ -63,7 +63,7 @@ function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
           Ver observaciones
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 max-h-72 overflow-auto" side="right">
+      <PopoverContent className="w-[90vw] max-w-[350px] max-h-[80vh] sm:w-80 sm:max-h-72 overflow-auto" side="right" align="start" alignOffset={-5} sideOffset={5}>
         <div className="flex justify-between items-center mb-2">
           <h4 className="font-medium text-sm">Observaciones de la ubicación</h4>
           <Button 
@@ -82,12 +82,14 @@ function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
           <div className="space-y-2">
             {observaciones.map((obs: any) => (
               <div key={obs.id} className="border rounded-sm p-2 text-xs">
-                <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                <div className="flex flex-wrap items-center gap-1 text-muted-foreground mb-1">
                   <CalendarClock className="h-3 w-3" />
-                  {obs.fecha ? format(new Date(obs.fecha), "dd/MM/yyyy HH:mm") : "Fecha desconocida"}
+                  <span className="truncate max-w-[150px] sm:max-w-[180px]">
+                    {obs.fecha ? format(new Date(obs.fecha), "dd/MM/yyyy HH:mm") : "Fecha desconocida"}
+                  </span>
                   <span className="ml-auto">{obs.usuario || "Sistema"}</span>
                 </div>
-                <p>{obs.detalle}</p>
+                <p className="break-words">{obs.detalle}</p>
               </div>
             ))}
           </div>
@@ -392,15 +394,18 @@ export default function DetalleDialog({
                       <TableHeader>
                         <TableRow>
                           <TableHead>Marca</TableHead>
-                          <TableHead>Tipo</TableHead>
+                          <TableHead className="hidden sm:table-cell">Tipo</TableHead>
                           <TableHead className="w-[100px]">Placa</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {relaciones.vehiculos.map((vehiculo: any) => (
                           <TableRow key={vehiculo.id}>
-                            <TableCell>{vehiculo.marca}</TableCell>
-                            <TableCell>{vehiculo.tipo}</TableCell>
+                            <TableCell>
+                              {vehiculo.marca}
+                              <span className="sm:hidden text-xs text-muted-foreground ml-1">({vehiculo.tipo})</span>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">{vehiculo.tipo}</TableCell>
                             <TableCell>{vehiculo.placa}</TableCell>
                           </TableRow>
                         ))}
