@@ -69,7 +69,7 @@ export default function UbicacionesPage() {
       const leaflet = window.L;
       if (!leaflet) return;
 
-      const newMap = leaflet.map(mapContainerRef.current).setView([-34.603722, -58.381592], 13);
+      const newMap = leaflet.map(mapContainerRef.current).setView([9.9281, -84.0907], 8);
       
       leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -114,7 +114,7 @@ export default function UbicacionesPage() {
                           </a>`;
         
         div.onclick = function() {
-          newMap.setView([-34.603722, -58.381592], 13);
+          newMap.setView([9.9281, -84.0907], 8);
           return false;
         };
         

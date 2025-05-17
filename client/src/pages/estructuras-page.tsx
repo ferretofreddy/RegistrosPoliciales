@@ -110,11 +110,11 @@ export default function EstructurasPage() {
         console.log("Inicializando mapa en página de estructuras");
         const leaflet = window.L;
         
-        // Coordenadas iniciales (Argentina)
-        const initialCoords = [-34.603722, -58.381592];
+        // Coordenadas iniciales (Costa Rica - San José)
+        const initialCoords = [9.9281, -84.0907];
         
         // Crear mapa
-        const newMap = leaflet.map(mapContainerRef.current).setView(initialCoords, 5);
+        const newMap = leaflet.map(mapContainerRef.current).setView(initialCoords, 8);
         
         // Agregar capa del mapa (OpenStreetMap)
         leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
