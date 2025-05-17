@@ -194,15 +194,20 @@ async function obtenerUbicacionesDirectas(tipo: string, id: number) {
   
   try {
     if (tipo === 'personas') {
+      console.log(`[DEBUG] Buscando ubicaciones directas para persona ID ${id}`);
+      
       // 1. Buscar ubicaciones relacionadas directamente a través de la tabla de relaciones
       const relacionesUbi = await db.select().from(sql`personas_ubicaciones`)
         .where(sql`persona_id = ${id}`);
+      
+      console.log(`[DEBUG] Encontradas ${relacionesUbi.length} relaciones en personas_ubicaciones para persona ID ${id}`);
       
       for (const rel of relacionesUbi) {
         const [ubicacion] = await db.select().from(ubicaciones)
           .where(eq(ubicaciones.id, rel.ubicacion_id));
         
         if (ubicacion) {
+          console.log(`[DEBUG] Añadiendo ubicación directa ID ${ubicacion.id} (${ubicacion.tipo}) para persona ID ${id}`);
           result.push(ubicacion);
         }
       }
@@ -210,39 +215,107 @@ async function obtenerUbicacionesDirectas(tipo: string, id: number) {
       // 2. Buscar ubicaciones que mencionen los domicilios de la persona
       const [persona] = await db.select().from(personas).where(eq(personas.id, id));
       
-      if (persona && persona.domicilios) {
+      if (persona && persona.domicilios && persona.domicilios.length > 0) {
+        console.log(`[DEBUG] Buscando ubicaciones por domicilios para persona ID ${id}: ${persona.domicilios.join(', ')}`);
+        
         for (const domicilio of persona.domicilios) {
-          if (domicilio) {
-            const ubicacionesDomicilio = await db.select().from(ubicaciones)
-              .where(sql`tipo = 'Domicilio' AND observaciones LIKE ${'%' + domicilio + '%'}`);
-            
+          if (!domicilio) continue;
+          
+          // Buscar exactamente las ubicaciones de domicilio para esta persona
+          const ubicacionesDomicilio = await db.select().from(ubicaciones)
+            .where(sql`tipo = 'Domicilio' AND (
+              observaciones LIKE ${'%' + domicilio + '%'} OR 
+              observaciones LIKE ${'%' + persona.nombre + '%'}
+            )`);
+          
+          if (ubicacionesDomicilio.length > 0) {
+            console.log(`[DEBUG] Encontradas ${ubicacionesDomicilio.length} ubicaciones por domicilio "${domicilio}" para persona ID ${id}`);
             result.push(...ubicacionesDomicilio);
+          } else {
+            console.log(`[DEBUG] No se encontraron ubicaciones de domicilio para "${domicilio}"`);
+            
+            // Si no se encuentran ubicaciones por domicilio, buscar TODAS las ubicaciones
+            // de tipo domicilio y añadirlas como ubicaciones posibles
+            const todasUbicacionesDomicilio = await db.select().from(ubicaciones)
+              .where(sql`tipo = 'Domicilio'`);
+              
+            if (todasUbicacionesDomicilio.length > 0) {
+              console.log(`[DEBUG] Añadiendo todas las ubicaciones de tipo Domicilio (${todasUbicacionesDomicilio.length}) como fallback`);
+              result.push(...todasUbicacionesDomicilio);
+            }
           }
         }
+        
+        // Buscar directamente por el nombre de la persona en observaciones
+        const ubicacionesNombre = await db.select().from(ubicaciones)
+          .where(sql`observaciones LIKE ${'%' + persona.nombre + '%'}`);
+        
+        if (ubicacionesNombre.length > 0) {
+          console.log(`[DEBUG] Encontradas ${ubicacionesNombre.length} ubicaciones por nombre "${persona.nombre}" para persona ID ${id}`);
+          result.push(...ubicacionesNombre);
+        }
+      } else {
+        console.log(`[DEBUG] La persona ID ${id} no tiene domicilios registrados`);
+        
+        // Si no tiene domicilios, buscar todas las ubicaciones de tipo domicilio
+        const todasUbicacionesDomicilio = await db.select().from(ubicaciones)
+          .where(sql`tipo = 'Domicilio'`);
+          
+        if (todasUbicacionesDomicilio.length > 0) {
+          console.log(`[DEBUG] Añadiendo todas las ubicaciones de tipo Domicilio (${todasUbicacionesDomicilio.length}) como fallback`);
+          result.push(...todasUbicacionesDomicilio);
+        }
       }
+      
     } else if (tipo === 'vehiculos') {
+      console.log(`[DEBUG] Buscando ubicaciones directas para vehículo ID ${id}`);
+      
       // Buscar ubicaciones relacionadas con el vehículo
       const relacionesUbi = await db.select().from(sql`vehiculos_ubicaciones`)
         .where(sql`vehiculo_id = ${id}`);
       
-      for (const rel of relacionesUbi) {
-        const [ubicacion] = await db.select().from(ubicaciones)
-          .where(eq(ubicaciones.id, rel.ubicacion_id));
-        
-        if (ubicacion) {
-          result.push(ubicacion);
-        }
-      }
-    } else if (tipo === 'inmuebles') {
-      // 1. Buscar ubicaciones relacionadas con el inmueble
-      const relacionesUbi = await db.select().from(sql`inmuebles_ubicaciones`)
-        .where(sql`inmueble_id = ${id}`);
+      console.log(`[DEBUG] Encontradas ${relacionesUbi.length} relaciones en vehiculos_ubicaciones para vehículo ID ${id}`);
       
       for (const rel of relacionesUbi) {
         const [ubicacion] = await db.select().from(ubicaciones)
           .where(eq(ubicaciones.id, rel.ubicacion_id));
         
         if (ubicacion) {
+          console.log(`[DEBUG] Añadiendo ubicación directa ID ${ubicacion.id} (${ubicacion.tipo}) para vehículo ID ${id}`);
+          result.push(ubicacion);
+        }
+      }
+      
+      // Buscar por placa del vehículo en observaciones
+      const [vehiculo] = await db.select().from(vehiculos).where(eq(vehiculos.id, id));
+      
+      if (vehiculo && vehiculo.placa) {
+        console.log(`[DEBUG] Buscando ubicaciones por placa para vehículo ID ${id}: ${vehiculo.placa}`);
+        
+        const ubicacionesPlaca = await db.select().from(ubicaciones)
+          .where(sql`observaciones LIKE ${'%' + vehiculo.placa + '%'}`);
+        
+        if (ubicacionesPlaca.length > 0) {
+          console.log(`[DEBUG] Encontradas ${ubicacionesPlaca.length} ubicaciones por placa "${vehiculo.placa}" para vehículo ID ${id}`);
+          result.push(...ubicacionesPlaca);
+        }
+      }
+      
+    } else if (tipo === 'inmuebles') {
+      console.log(`[DEBUG] Buscando ubicaciones directas para inmueble ID ${id}`);
+      
+      // 1. Buscar ubicaciones relacionadas con el inmueble
+      const relacionesUbi = await db.select().from(sql`inmuebles_ubicaciones`)
+        .where(sql`inmueble_id = ${id}`);
+      
+      console.log(`[DEBUG] Encontradas ${relacionesUbi.length} relaciones en inmuebles_ubicaciones para inmueble ID ${id}`);
+      
+      for (const rel of relacionesUbi) {
+        const [ubicacion] = await db.select().from(ubicaciones)
+          .where(eq(ubicaciones.id, rel.ubicacion_id));
+        
+        if (ubicacion) {
+          console.log(`[DEBUG] Añadiendo ubicación directa ID ${ubicacion.id} (${ubicacion.tipo}) para inmueble ID ${id}`);
           result.push(ubicacion);
         }
       }
@@ -250,21 +323,56 @@ async function obtenerUbicacionesDirectas(tipo: string, id: number) {
       // 2. Buscar ubicaciones que mencionen la dirección del inmueble
       const [inmueble] = await db.select().from(inmuebles).where(eq(inmuebles.id, id));
       
-      if (inmueble && inmueble.direccion) {
-        const ubicacionesDireccion = await db.select().from(ubicaciones)
-          .where(sql`observaciones LIKE ${'%' + inmueble.direccion + '%'}`);
+      if (inmueble) {
+        console.log(`[DEBUG] Buscando ubicaciones por dirección para inmueble ID ${id}: ${inmueble.direccion || 'Sin dirección'}`);
         
-        result.push(...ubicacionesDireccion);
+        if (inmueble.direccion) {
+          // Buscar por dirección
+          const ubicacionesDireccion = await db.select().from(ubicaciones)
+            .where(sql`observaciones LIKE ${'%' + inmueble.direccion + '%'}`);
+          
+          if (ubicacionesDireccion.length > 0) {
+            console.log(`[DEBUG] Encontradas ${ubicacionesDireccion.length} ubicaciones por dirección "${inmueble.direccion}" para inmueble ID ${id}`);
+            result.push(...ubicacionesDireccion);
+          }
+        }
+        
+        // Buscar por propietario del inmueble (si existe)
+        if (inmueble.propietario) {
+          const ubicacionesPropietario = await db.select().from(ubicaciones)
+            .where(sql`observaciones LIKE ${'%' + inmueble.propietario + '%'}`);
+          
+          if (ubicacionesPropietario.length > 0) {
+            console.log(`[DEBUG] Encontradas ${ubicacionesPropietario.length} ubicaciones por propietario "${inmueble.propietario}" para inmueble ID ${id}`);
+            result.push(...ubicacionesPropietario);
+          }
+        }
       }
     }
+    
+    // También buscamos ubicaciones sin relaciones directas pero con el ID en observaciones
+    const ubicacionesID = await db.select().from(ubicaciones)
+      .where(sql`observaciones LIKE ${'%ID: ' + id + '%'} OR observaciones LIKE ${'%ID:' + id + '%'}`);
+    
+    if (ubicacionesID.length > 0) {
+      console.log(`[DEBUG] Encontradas ${ubicacionesID.length} ubicaciones por ID en observaciones para ${tipo} ID ${id}`);
+      result.push(...ubicacionesID);
+    }
+    
   } catch (error) {
     console.error(`Error al obtener ubicaciones directas para ${tipo} con ID ${id}:`, error);
   }
   
+  console.log(`[DEBUG] Total ubicaciones directas encontradas para ${tipo} ID ${id}: ${result.length}`);
+  
   // Eliminar duplicados
-  return result.filter((ubicacion, index, self) => 
+  const ubicacionesUnicas = result.filter((ubicacion, index, self) => 
     index === self.findIndex(u => u.id === ubicacion.id)
   );
+  
+  console.log(`[DEBUG] Total ubicaciones directas únicas: ${ubicacionesUnicas.length}`);
+  
+  return ubicacionesUnicas;
 }
 
 /**
