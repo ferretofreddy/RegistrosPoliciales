@@ -1210,6 +1210,63 @@ export class DatabaseStorage {
             }
           }
           
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Inmuebles relacionados a este inmueble
+          console.log(`Buscando inmuebles relacionados al inmueble ID: ${inmueble.id}`);
+          
+          // Buscar inmuebles donde el inmueble actual es inmueble_id_1
+          const inmueblesRelacionados1Result = await db.execute(
+            sql`SELECT i.* FROM inmuebles i
+                JOIN inmuebles_inmuebles ii ON i.id = ii.inmueble_id_2
+                WHERE ii.inmueble_id_1 = ${inmueble.id}`
+          );
+          
+          // Buscar inmuebles donde el inmueble actual es inmueble_id_2
+          const inmueblesRelacionados2Result = await db.execute(
+            sql`SELECT i.* FROM inmuebles i
+                JOIN inmuebles_inmuebles ii ON i.id = ii.inmueble_id_1
+                WHERE ii.inmueble_id_2 = ${inmueble.id}`
+          );
+          
+          const inmueblesRelacionados = [
+            ...(inmueblesRelacionados1Result.rows || []),
+            ...(inmueblesRelacionados2Result.rows || [])
+          ];
+          
+          console.log(`Inmuebles relacionados al inmueble ID ${inmueble.id}: ${inmueblesRelacionados.length}`);
+          
+          // Para cada inmueble relacionado, buscar ubicaciones
+          for (const inmuebleRelacionado of inmueblesRelacionados) {
+            console.log(`Buscando ubicaciones para inmueble relacionado ID: ${inmuebleRelacionado.id}`);
+            
+            const ubicacionesInmuebleRelaResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+                  WHERE iu.inmueble_id = ${inmuebleRelacionado.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesInmuebleRela = ubicacionesInmuebleRelaResult.rows || [];
+            console.log(`Ubicaciones encontradas para inmueble relacionado ID ${inmuebleRelacionado.id}: ${ubicacionesInmuebleRela.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesInmuebleRela) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'inmueble',
+                    entidad: inmuebleRelacionado,
+                    relacionadoCon: {
+                      tipo: 'inmueble',
+                      entidad: inmueble
+                    }
+                  }
+                });
+              }
+            }
+          }
+        
           // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Personas relacionadas a este inmueble
           console.log(`Buscando personas relacionadas al inmueble ID: ${inmueble.id}`);
           
