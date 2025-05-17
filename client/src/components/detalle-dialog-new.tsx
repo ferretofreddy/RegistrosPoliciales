@@ -399,15 +399,10 @@ export default function DetalleDialog({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-xs text-left" 
+                                className="text-xs text-left"
                                 onClick={() => {
-                                  setDetalleEntidad({
-                                    tipo: 'ubicacion',
-                                    id: ubicacion.id,
-                                    data: ubicacion
-                                  });
-                                  setTabActiva("observaciones");
-                                  setDetalleAbierto(true);
+                                  // Abrir la ubicación en una nueva ventana/pestaña
+                                  window.open(`/ubicaciones?id=${ubicacion.id}`, "_blank");
                                 }}
                               >
                                 Ver observaciones
