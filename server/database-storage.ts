@@ -1141,6 +1141,13 @@ export class DatabaseStorage {
           
           // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Personas relacionadas a este inmueble
           console.log(`Buscando personas relacionadas al inmueble ID: ${inmueble.id}`);
+          
+          // Agregar registro de debug para diagnóstico
+          const sqlLogPersonasInmuebles = await db.execute(
+            sql`SELECT * FROM personas_inmuebles WHERE inmueble_id = ${inmueble.id}`
+          );
+          console.log(`[DEBUG] Raw SQL check personas_inmuebles con inmueble_id=${inmueble.id}:`, sqlLogPersonasInmuebles.rows);
+          
           const personasRelacionadasResult = await db.execute(
             sql`SELECT p.* FROM personas p
                 JOIN personas_inmuebles pi ON p.id = pi.persona_id
@@ -1149,6 +1156,12 @@ export class DatabaseStorage {
           
           const personasRelacionadas = personasRelacionadasResult.rows || [];
           console.log(`Personas relacionadas al inmueble ID ${inmueble.id}: ${personasRelacionadas.length}`);
+          
+          // Mostrar detalle de cada persona encontrada para diagnóstico
+          if (personasRelacionadas.length > 0) {
+            console.log(`[DEBUG] Detalle de personas relacionadas con inmueble ID ${inmueble.id}:`, 
+                        personasRelacionadas.map(p => `ID: ${p.id}, Nombre: ${p.nombre}`));
+          }
           
           // Para cada persona relacionada, buscar ubicaciones
           for (const personaRelacionada of personasRelacionadas) {
