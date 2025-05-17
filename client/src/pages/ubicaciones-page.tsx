@@ -327,6 +327,46 @@ export default function UbicacionesPage() {
             console.log('[DEBUG] Detalle completo de la relación:', JSON.stringify(relacion, null, 2));
           }
           
+          // Crear descripción detallada de la cadena de relaciones
+          let descripcionRelaciones = '';
+          if (relacion.entidadRelacionada.relacionadoCon) {
+            descripcionRelaciones = '<div style="margin-top: 5px; border-top: 1px solid #eee; padding-top: 5px;">';
+            descripcionRelaciones += '<span style="font-weight: 500;">Cadena de relaciones:</span><br>';
+            
+            let relActual = relacion.entidadRelacionada;
+            let nivel = 1;
+            
+            descripcionRelaciones += `<div style="margin-left: ${nivel * 5}px;">✓ ${relActual.tipo.toUpperCase()}: `;
+            
+            if (relActual.tipo === 'persona') {
+              descripcionRelaciones += `${relActual.entidad.nombre}`;
+            } else if (relActual.tipo === 'vehiculo') {
+              descripcionRelaciones += `${relActual.entidad.marca} ${relActual.entidad.modelo || ''} (${relActual.entidad.placa})`;
+            } else if (relActual.tipo === 'inmueble') {
+              descripcionRelaciones += `${relActual.entidad.tipo} - ${relActual.entidad.direccion}`;
+            }
+            descripcionRelaciones += '</div>';
+            
+            while (relActual.relacionadoCon) {
+              nivel++;
+              relActual = relActual.relacionadoCon;
+              
+              descripcionRelaciones += `<div style="margin-left: ${nivel * 5}px;">→ ${relActual.tipo.toUpperCase()}: `;
+              
+              if (relActual.tipo === 'persona') {
+                descripcionRelaciones += `${relActual.entidad.nombre}`;
+              } else if (relActual.tipo === 'vehiculo') {
+                descripcionRelaciones += `${relActual.entidad.marca} ${relActual.entidad.modelo || ''} (${relActual.entidad.placa})`;
+              } else if (relActual.tipo === 'inmueble') {
+                descripcionRelaciones += `${relActual.entidad.tipo} - ${relActual.entidad.direccion}`;
+              }
+              
+              descripcionRelaciones += '</div>';
+            }
+            
+            descripcionRelaciones += '</div>';
+          }
+          
           // Corrección específica para Fabián (ID: 4) y su relación con inmuebles
           if (tipo === 'persona' && entidad.id === 4 && relacion.ubicacion) {
             // Forzar línea adicional entre Fabián y el inmueble (ID: 1) si existe
@@ -362,6 +402,7 @@ export default function UbicacionesPage() {
                 );
               }
             }
+            return; // Evitar agregar marcador duplicado
           }
           
           console.log(`Agregando marcador en [${relacion.ubicacion.latitud}, ${relacion.ubicacion.longitud}] para ${cadenaRelaciones}`);
