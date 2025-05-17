@@ -213,6 +213,22 @@ export class DatabaseStorage {
     const [ubicacion] = await db.insert(ubicaciones).values(insertUbicacion).returning();
     return ubicacion;
   }
+  
+  // Método para crear una ubicación específicamente para un inmueble
+  async createUbicacionForInmueble(insertUbicacion: InsertUbicacion, inmuebleId: number): Promise<Ubicacion> {
+    // Crear primero la ubicación
+    const [ubicacion] = await db.insert(ubicaciones).values(insertUbicacion).returning();
+    
+    // Luego crear la relación entre inmueble y ubicación
+    await db.insert(inmueblesUbicaciones).values({
+      inmuebleId: inmuebleId,
+      ubicacionId: ubicacion.id
+    });
+    
+    console.log(`Creada relación entre inmueble ID ${inmuebleId} y ubicación ID ${ubicacion.id}`);
+    
+    return ubicacion;
+  }
 
   // OBSERVACIONES METHODS
   async getPersonaObservaciones(personaId: number): Promise<PersonaObservacion[]> {

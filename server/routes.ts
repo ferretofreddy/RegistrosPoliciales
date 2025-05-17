@@ -382,9 +382,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("📍 Datos normalizados para guardar:", ubicacionData);
       
-      // Guardar en la base de datos
-      const ubicacion = await storage.createUbicacion(ubicacionData);
-      console.log("✅ Ubicación creada con éxito:", ubicacion);
+      let ubicacion;
+      
+      // Verificar si la ubicación está asociada a un inmueble
+      if (req.body.inmuebleId && parseInt(req.body.inmuebleId) > 0) {
+        const inmuebleId = parseInt(req.body.inmuebleId);
+        console.log(`📍 Creando ubicación para inmueble ID: ${inmuebleId}`);
+        
+        // Verificar si el inmueble existe
+        const inmueble = await storage.getInmueble(inmuebleId);
+        if (!inmueble) {
+          return res.status(404).json({
+            success: false,
+            error: `No se encontró el inmueble con ID: ${inmuebleId}`
+          });
+        }
+        
+        // Crear ubicación con relación al inmueble
+        ubicacion = await storage.createUbicacionForInmueble(ubicacionData, inmuebleId);
+        console.log("✅ Ubicación creada con éxito y relacionada con inmueble:", { 
+          ubicacionId: ubicacion.id, 
+          inmuebleId 
+        });
+      } else {
+        // Crear ubicación normal sin relación
+        ubicacion = await storage.createUbicacion(ubicacionData);
+        console.log("✅ Ubicación creada con éxito:", ubicacion);
+      }
       
       // Asegurar el Content-Type adecuado
       res.setHeader('Content-Type', 'application/json');

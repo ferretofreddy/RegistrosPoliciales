@@ -63,6 +63,7 @@ export interface IStorage {
   getAllUbicaciones(): Promise<Ubicacion[]>;
   getUbicacion(id: number): Promise<Ubicacion | undefined>;
   createUbicacion(ubicacion: InsertUbicacion): Promise<Ubicacion>;
+  createUbicacionForInmueble(ubicacion: InsertUbicacion, inmuebleId: number): Promise<Ubicacion>;
   
   // Ubicaciones observaciones methods
   getUbicacionObservaciones(ubicacionId: number): Promise<UbicacionObservacion[]>;
