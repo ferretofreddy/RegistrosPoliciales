@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { queryClient } from "@/lib/queryClient";
 
 // Make sure to import Leaflet via CDN in index.html
 declare global {
@@ -760,13 +761,21 @@ export default function UbicacionesPage() {
       if ((entidadData.ubicacionesDirectas && entidadData.ubicacionesDirectas.length > 0) || 
           (entidadData.ubicacionesRelacionadas && entidadData.ubicacionesRelacionadas.length > 0)) {
         
-        // Actualizar directamente el estado de data para que se muestre en el mapa
-        // Este es un enfoque diferente que reemplaza el refetch
-        setData({
+        // Usar el resultado de la consulta de entidad directamente
+        // Esto permite mostrar las ubicaciones sin hacer otra búsqueda
+        console.log("[DEBUG] Aplicando datos obtenidos directamente del endpoint de entidad");
+        
+        // Actualizar manualmente los datos mostrados
+        const datosActualizados = {
           ubicacionesDirectas: entidadData.ubicacionesDirectas || [],
           ubicacionesRelacionadas: entidadData.ubicacionesRelacionadas || [],
           entidadesRelacionadas: entidadData.entidadesRelacionadas || []
-        });
+        };
+        
+        // Actualizar el estado local para la visualización
+        // Esto simula lo que haría refetch pero con los datos que ya tenemos
+        const dataKey = ["/api/ubicaciones", searchTerm, selectedTypes];
+        queryClient.setQueryData(dataKey, datosActualizados);
         
         // Actualizar estado para mostrar esta entidad
         setEntidadSeleccionada({
