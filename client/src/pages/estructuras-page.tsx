@@ -18,6 +18,7 @@ declare global {
 
 export default function EstructurasPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [structureSearchTerm, setStructureSearchTerm] = useState("");
   const [selectedEntity, setSelectedEntity] = useState<{
     tipo: string;
     id: number;
@@ -30,6 +31,9 @@ export default function EstructurasPage() {
     vehiculos: true,
     inmuebles: true,
   });
+  
+  // Estado para controlar el tipo de estructura buscado
+  const [structureType, setStructureType] = useState<string>("all");
   
   // Estados para el mapa
   const mapRef = useRef<any>(null);
@@ -84,6 +88,7 @@ export default function EstructurasPage() {
     enabled: !!selectedEntity,
   });
 
+  // Función para buscar entidades por nombre, identificación, etc.
   const handleSearch = () => {
     if (searchTerm.trim()) {
       // Buscar resultados normales
@@ -93,11 +98,70 @@ export default function EstructurasPage() {
       ubicacionesRefetch();
     }
   };
+  
+  // Función para buscar estructuras específicas
+  const handleStructureSearch = () => {
+    if (structureSearchTerm.trim()) {
+      // Implementar búsqueda de estructuras específica
+      // La API debe filtrar por tipo de estructura y término de búsqueda
+      // Esta búsqueda es diferente a la búsqueda general
+      
+      // Crear la URL de búsqueda con parámetros
+      const baseUrl = '/api/buscar-estructuras';
+      const params = new URLSearchParams();
+      params.append('q', structureSearchTerm);
+      
+      if (structureType !== 'all') {
+        params.append('tipo', structureType);
+      }
+      
+      const searchUrl = `${baseUrl}?${params.toString()}`;
+      
+      // Actualizar la consulta con la nueva URL
+      const customSearchRefetch = () => {
+        return fetch(searchUrl)
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`Error en la búsqueda de estructuras: ${res.status}`);
+            }
+            return res.json();
+          })
+          .then(data => {
+            // Actualizar los resultados de búsqueda
+            console.log("Resultados de búsqueda de estructuras:", data);
+            // Aquí podríamos tener un estado específico para estos resultados
+            // Por ahora, usamos el mismo estado de resultados de búsqueda
+            return data;
+          })
+          .catch(err => {
+            console.error("Error al buscar estructuras:", err);
+            toast({
+              title: "Error en la búsqueda",
+              description: err.message,
+              variant: "destructive",
+            });
+          });
+      };
+      
+      // Ejecutar la búsqueda personalizada
+      customSearchRefetch();
+    }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSearch();
     }
+  };
+  
+  const handleStructureKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleStructureSearch();
+    }
+  };
+  
+  const handleStructureTypeChange = (type: string) => {
+    setStructureType(type);
   };
   
   // Inicializar el mapa
