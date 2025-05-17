@@ -12,10 +12,14 @@ import {
   insertUbicacionObservacionSchema,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
+import { registerUbicacionesRoutes } from './ubicacion-routes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
   setupAuth(app);
+  
+  // Registrar rutas específicas para ubicaciones
+  registerUbicacionesRoutes(app);
   
   // Ruta de estado para verificar el servidor
   app.get("/api/status", (req, res) => {
