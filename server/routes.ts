@@ -434,304 +434,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al realizar la búsqueda" });
     }
   });
+  
+  // Búsqueda por ID directo - utilizado por el componente de búsqueda avanzada
+  app.get("/api/buscarporids", async (req, res) => {
+    try {
+      const entidades = {
+        personas: [],
+        vehiculos: [],
+        inmuebles: [],
+        ubicaciones: []
+      };
+      
+      // Obtener parámetros de búsqueda
+      const { personaId, vehiculoId, inmuebleId, ubicacionId } = req.query;
+      
+      // Buscar persona por ID
+      if (personaId) {
+        const persona = await storage.getPersona(parseInt(personaId.toString()));
+        if (persona) entidades.personas.push(persona);
+      }
+      
+      // Buscar vehículo por ID
+      if (vehiculoId) {
+        const vehiculo = await storage.getVehiculo(parseInt(vehiculoId.toString()));
+        if (vehiculo) entidades.vehiculos.push(vehiculo);
+      }
+      
+      // Buscar inmueble por ID
+      if (inmuebleId) {
+        const inmueble = await storage.getInmueble(parseInt(inmuebleId.toString()));
+        if (inmueble) entidades.inmuebles.push(inmueble);
+      }
+      
+      // Buscar ubicación por ID
+      if (ubicacionId) {
+        const ubicacion = await storage.getUbicacion(parseInt(ubicacionId.toString()));
+        if (ubicacion) entidades.ubicaciones.push(ubicacion);
+      }
+      
+      // Si no se encontró ninguna entidad, devolver error
+      if (Object.values(entidades).every(arr => arr.length === 0)) {
+        return res.status(404).json({ message: "No se encontraron entidades con los IDs proporcionados" });
+      }
+      
+      res.json(entidades);
+    } catch (error) {
+      console.error("Error al buscar por IDs:", error);
+      res.status(500).json({ message: "Error al realizar la búsqueda por IDs" });
+    }
+  });
 
   // Endpoint para obtener entidad específica por tipo e ID con todas sus ubicaciones (directas, relacionadas y de segundo nivel)
   app.get("/api/entidad/:tipo/:id", async (req, res) => {
     try {
       const { tipo, id } = req.params;
-      const tipoNormalizado = tipo.toLowerCase();
       const idNumerico = parseInt(id);
       
-      console.log(`[SERVIDOR] Buscando entidad específica: ${tipoNormalizado} con ID ${idNumerico}`);
+      console.log(`[SERVIDOR] Buscando entidad específica: ${tipo} con ID ${idNumerico}`);
       
-      let entidad = null;
-      let ubicacionesDirectas = [];
-      let ubicacionesRelacionadas = [];
-      let entidadesRelacionadas = [];
+      // Usar la utilidad para encontrar todas las relaciones con coordenadas
+      const { findAllRelationsWithCoordinates } = require('./utils/relation-finder');
+      const resultadoCompleto = await findAllRelationsWithCoordinates(tipo, idNumerico);
       
-      // Registro de entidades ya procesadas para evitar ciclos
-      const entidadesProcesadas = new Set();
-      const ubicacionesProcesadas = new Set();
-      
-      // Añadir identificador único de esta entidad a procesadas
-      entidadesProcesadas.add(`${tipoNormalizado}-${idNumerico}`);
-      
-      // Obtener la entidad según su tipo
-      if (tipoNormalizado === 'persona') {
-        entidad = await storage.getPersona(idNumerico);
-      } else if (tipoNormalizado === 'vehiculo') {
-        entidad = await storage.getVehiculo(idNumerico);
-      } else if (tipoNormalizado === 'inmueble') {
-        entidad = await storage.getInmueble(idNumerico);
-      }
-      
-      if (!entidad) {
+      if (!resultadoCompleto.entidad) {
         return res.status(404).json({ message: `${tipo} con ID ${id} no encontrado` });
       }
       
-      console.log(`[SERVIDOR] Obteniendo todas las relaciones para ${tipoNormalizado} con ID ${idNumerico}`);
+      // Formatear el resultado para que sea compatible con el cliente
+      const resultado = {
+        entidad: resultadoCompleto.entidad,
+        tipo: tipo.toLowerCase(),
+        ubicacionesDirectas: resultadoCompleto.ubicacionesDirectas || [],
+        ubicacionesRelacionadas: resultadoCompleto.ubicacionesRelacionadas || [],
+        entidadesRelacionadas: []
+      };
       
-      // 1. Obtener ubicaciones directas
-      let ubicacionesDirectasEntidad = [];
-      
-      // Si es una persona, buscar sus domicilios como ubicaciones
-      if (tipoNormalizado === 'persona' && entidad.domicilios && entidad.domicilios.length > 0) {
-        // Buscar ubicaciones que contengan el domicilio en observaciones
-        for (const domicilio of entidad.domicilios) {
-          if (!domicilio) continue;
-          
-          const domicilioUbicaciones = await db.select().from(ubicaciones)
-            .where(sql`tipo = 'Domicilio' AND observaciones LIKE ${'%' + domicilio + '%'}`);
-          
-          if (domicilioUbicaciones.length > 0) {
-            console.log(`[SERVIDOR] Encontradas ${domicilioUbicaciones.length} ubicaciones por domicilio: ${domicilio}`);
-            ubicacionesDirectasEntidad = [...ubicacionesDirectasEntidad, ...domicilioUbicaciones];
-          }
-        }
-      }
-      
-      // Buscar ubicaciones directamente relacionadas con esta entidad
-      // Para persona, inmueble o vehículo
-      let ubicacionesEntidad = [];
-      let tablasRelacion;
-      
-      if (tipoNormalizado === 'persona') {
-        tablasRelacion = await db.select().from(sql`personas_ubicaciones`)
-          .where(sql`persona_id = ${idNumerico}`);
-      } else if (tipoNormalizado === 'vehiculo') {
-        tablasRelacion = await db.select().from(sql`vehiculos_ubicaciones`)
-          .where(sql`vehiculo_id = ${idNumerico}`);
-      } else if (tipoNormalizado === 'inmueble') {
-        tablasRelacion = await db.select().from(sql`inmuebles_ubicaciones`)
-          .where(sql`inmueble_id = ${idNumerico}`);
-      }
-      
-      if (tablasRelacion && tablasRelacion.length > 0) {
-        for (const relacion of tablasRelacion) {
-          const ubicacion = await db.select().from(ubicaciones)
-            .where(eq(ubicaciones.id, relacion.ubicacion_id));
-          
-          if (ubicacion.length > 0) {
-            ubicacionesEntidad = [...ubicacionesEntidad, ...ubicacion];
-          }
-        }
-      }
-      
-      // Combinar ubicaciones directas
-      ubicacionesDirectas = [...ubicacionesDirectasEntidad, ...ubicacionesEntidad];
-      
-      // Marcar ubicaciones procesadas
-      for (const ubi of ubicacionesDirectas) {
-        ubicacionesProcesadas.add(ubi.id);
-      }
-      
-      // 2. Obtener relaciones de primer nivel
-      console.log(`[SERVIDOR] Obteniendo relaciones de primer nivel...`);
-      const relaciones = await storage.getRelaciones(tipoNormalizado, idNumerico);
-      
-      // Obtener entidades relacionadas
-      const personasRelacionadas = relaciones.personas || [];
-      const vehiculosRelacionados = relaciones.vehiculos || [];
-      const inmueblesRelacionados = relaciones.inmuebles || [];
-      const ubicacionesRelacionadas1 = relaciones.ubicaciones || [];
-      
-      // Registrar todas las entidades relacionadas de primer nivel
-      for (const persona of personasRelacionadas) {
-        entidadesProcesadas.add(`persona-${persona.id}`);
-        entidadesRelacionadas.push({
-          tipo: 'persona',
-          nivel: 1,
-          ...persona
-        });
-      }
-      
-      for (const vehiculo of vehiculosRelacionados) {
-        entidadesProcesadas.add(`vehiculo-${vehiculo.id}`);
-        entidadesRelacionadas.push({
-          tipo: 'vehiculo',
-          nivel: 1,
-          ...vehiculo
-        });
-      }
-      
-      for (const inmueble of inmueblesRelacionados) {
-        entidadesProcesadas.add(`inmueble-${inmueble.id}`);
-        entidadesRelacionadas.push({
-          tipo: 'inmueble',
-          nivel: 1,
-          ...inmueble
-        });
-      }
-      
-      // Añadir ubicaciones relacionadas de primer nivel
-      for (const ubicacion of ubicacionesRelacionadas1) {
-        if (!ubicacionesProcesadas.has(ubicacion.id)) {
-          ubicacionesRelacionadas.push({
-            ubicacion: ubicacion,
-            entidadRelacionada: {
-              tipo: tipoNormalizado,
-              entidad: entidad
-            }
+      // Convertir las relaciones de nivel 1 a un formato compatible
+      for (const tipoRel in resultadoCompleto.relacionesNivel1) {
+        const entidades = resultadoCompleto.relacionesNivel1[tipoRel];
+        
+        for (const entidad of entidades) {
+          resultado.entidadesRelacionadas.push({
+            tipo: tipoRel.endsWith('s') ? tipoRel.slice(0, -1) : tipoRel, // 'personas' -> 'persona'
+            nivel: 1,
+            ...entidad
           });
-          ubicacionesProcesadas.add(ubicacion.id);
         }
       }
       
-      // 3. Para cada entidad relacionada, buscar sus ubicaciones
-      console.log(`[SERVIDOR] Buscando ubicaciones de entidades relacionadas...`);
-      
-      // Funciones para buscar ubicaciones de diferentes tipos de entidades
-      async function buscarUbicacionesPersona(personaId) {
-        // Buscar ubicaciones directas (domicilios)
-        const persona = await storage.getPersona(personaId);
-        if (!persona) return {directas: [], relacionadas: []};
-        
-        let directas = [];
-        let relacionadas = [];
-        
-        // Buscar por domicilio
-        if (persona.domicilios && persona.domicilios.length > 0) {
-          for (const domicilio of persona.domicilios) {
-            if (!domicilio) continue;
-            
-            const ubicacionesDomicilio = await db.select().from(ubicaciones)
-              .where(sql`tipo = 'Domicilio' AND observaciones LIKE ${'%' + domicilio + '%'}`);
-            
-            if (ubicacionesDomicilio.length > 0) {
-              directas = [...directas, ...ubicacionesDomicilio];
-            }
-          }
-        }
-        
-        // Buscar relaciones directas persona-ubicación
-        const relacionesUbi = await db.select().from(sql`personas_ubicaciones`)
-          .where(sql`persona_id = ${personaId}`);
-        
-        if (relacionesUbi.length > 0) {
-          for (const rel of relacionesUbi) {
-            const ubi = await storage.getUbicacion(rel.ubicacion_id);
-            if (ubi) {
-              directas.push(ubi);
-            }
-          }
-        }
-        
-        // Eliminar duplicados
-        directas = directas.filter((ubi, index, self) => 
-          index === self.findIndex(u => u.id === ubi.id)
-        );
-        
-        return {directas, relacionadas};
-      }
-      
-      async function buscarUbicacionesVehiculo(vehiculoId) {
-        let directas = [];
-        let relacionadas = [];
-        
-        // Buscar relaciones directas vehículo-ubicación
-        const relacionesUbi = await db.select().from(sql`vehiculos_ubicaciones`)
-          .where(sql`vehiculo_id = ${vehiculoId}`);
-        
-        if (relacionesUbi.length > 0) {
-          for (const rel of relacionesUbi) {
-            const ubi = await storage.getUbicacion(rel.ubicacion_id);
-            if (ubi) {
-              directas.push(ubi);
-            }
-          }
-        }
-        
-        return {directas, relacionadas};
-      }
-      
-      async function buscarUbicacionesInmueble(inmuebleId) {
-        let directas = [];
-        let relacionadas = [];
-        
-        // Buscar relaciones directas inmueble-ubicación
-        const relacionesUbi = await db.select().from(sql`inmuebles_ubicaciones`)
-          .where(sql`inmueble_id = ${inmuebleId}`);
-        
-        if (relacionesUbi.length > 0) {
-          for (const rel of relacionesUbi) {
-            const ubi = await storage.getUbicacion(rel.ubicacion_id);
-            if (ubi) {
-              directas.push(ubi);
-            }
-          }
-        }
-        
-        // Para inmuebles, también buscar por dirección
-        const inmueble = await storage.getInmueble(inmuebleId);
-        if (inmueble && inmueble.direccion) {
-          const ubicacionesDireccion = await db.select().from(ubicaciones)
-            .where(sql`observaciones LIKE ${'%' + inmueble.direccion + '%'}`);
-          
-          if (ubicacionesDireccion.length > 0) {
-            directas = [...directas, ...ubicacionesDireccion];
-          }
-        }
-        
-        // Eliminar duplicados
-        directas = directas.filter((ubi, index, self) => 
-          index === self.findIndex(u => u.id === ubi.id)
-        );
-        
-        return {directas, relacionadas};
-      }
-      
-      // Procesar ubicaciones de entidades relacionadas
-      for (const entidadRelacionada of entidadesRelacionadas) {
-        let ubicacionesEntidadRelacionada = {directas: [], relacionadas: []};
-        
-        if (entidadRelacionada.tipo === 'persona') {
-          ubicacionesEntidadRelacionada = await buscarUbicacionesPersona(entidadRelacionada.id);
-        } else if (entidadRelacionada.tipo === 'vehiculo') {
-          ubicacionesEntidadRelacionada = await buscarUbicacionesVehiculo(entidadRelacionada.id);
-        } else if (entidadRelacionada.tipo === 'inmueble') {
-          ubicacionesEntidadRelacionada = await buscarUbicacionesInmueble(entidadRelacionada.id);
-        }
-        
-        // Añadir ubicaciones de entidades relacionadas
-        for (const ubicacion of ubicacionesEntidadRelacionada.directas) {
-          if (!ubicacionesProcesadas.has(ubicacion.id)) {
-            ubicacionesRelacionadas.push({
-              ubicacion: ubicacion,
-              entidadRelacionada: {
-                tipo: entidadRelacionada.tipo,
-                entidad: entidadRelacionada,
-                relacionadoCon: {
-                  tipo: tipoNormalizado,
-                  entidad: entidad
-                }
-              }
-            });
-            ubicacionesProcesadas.add(ubicacion.id);
-          }
-        }
-      }
-      
-      // Eliminar duplicados finales por ID
-      const ubicacionesDirectasUnicas = ubicacionesDirectas.filter((ubicacion, index, self) =>
-        index === self.findIndex(u => u.id === ubicacion.id)
-      );
-      
-      const ubicacionesRelacionadasUnicas = ubicacionesRelacionadas.filter((relacion, index, self) =>
-        index === self.findIndex(r => r.ubicacion.id === relacion.ubicacion.id && 
-                                       r.entidadRelacionada.tipo === relacion.entidadRelacionada.tipo && 
-                                       r.entidadRelacionada.entidad.id === relacion.entidadRelacionada.entidad.id)
-      );
-      
-      console.log(`[SERVIDOR] Encontradas ${ubicacionesDirectasUnicas.length} ubicaciones directas y ${ubicacionesRelacionadasUnicas.length} ubicaciones relacionadas`);
+      // Registrar estadísticas
+      console.log(`[SERVIDOR] Resultados para ${tipo} ID ${idNumerico}:`);
+      console.log(`- Ubicaciones directas: ${resultado.ubicacionesDirectas.length}`);
+      console.log(`- Ubicaciones relacionadas: ${resultado.ubicacionesRelacionadas.length}`);
+      console.log(`- Entidades relacionadas: ${resultado.entidadesRelacionadas.length}`);
       
       // Devolver resultados completos
-      res.json({
-        entidad,
-        tipo: tipoNormalizado,
-        ubicacionesDirectas: ubicacionesDirectasUnicas,
-        ubicacionesRelacionadas: ubicacionesRelacionadasUnicas,
-        entidadesRelacionadas: entidadesRelacionadas
-      });
+      res.json(resultado);
     } catch (error) {
       console.error(`Error al obtener entidad ${req.params.tipo} con ID ${req.params.id}:`, error);
       res.status(500).json({ message: "Error al obtener la entidad solicitada", error: error.message });
