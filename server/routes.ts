@@ -428,52 +428,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? tipos 
         : tipos ? [tipos] : ["personas", "vehiculos", "inmuebles"];
       
-      // Búsqueda estándar
+      // Búsqueda estándar como estaba originalmente
       const resultados = await storage.buscar(query.toString(), tiposArray as string[]);
-      
-      // SOLUCIÓN DIRECTA: Si la búsqueda incluye a Fabián o su identificación (ID 4)
-      if (query.toString().includes('603470421') || 
-          query.toString().toLowerCase().includes('fabian') || 
-          query.toString().toLowerCase().includes('azofeifa')) {
-        console.log("[PARCHE-MANUAL] Añadiendo ubicaciones específicas para Fabián Azofeifa");
-        
-        try {
-          // Buscar explícitamente el domicilio de Fabián (ID 9)
-          const [domicilioFabian] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, 9));
-          
-          if (domicilioFabian) {
-            console.log("[PARCHE-MANUAL] Encontrado domicilio de Fabián:", domicilioFabian);
-            
-            // Agregarlo directamente a las ubicaciones relacionadas
-            resultados.ubicacionesRelacionadas = resultados.ubicacionesRelacionadas || [];
-            
-            // Verificar si ya existe
-            const yaExiste = resultados.ubicacionesRelacionadas.some(
-              (r: any) => r.ubicacion && r.ubicacion.id === domicilioFabian.id
-            );
-            
-            if (!yaExiste && resultados.personas && resultados.personas.length > 0) {
-              // Buscar a Fabián en los resultados
-              const fabian = resultados.personas.find(p => p.id === 4);
-              
-              if (fabian) {
-                resultados.ubicacionesRelacionadas.push({
-                  ubicacion: domicilioFabian,
-                  entidadRelacionada: {
-                    tipo: 'persona',
-                    entidad: fabian
-                  }
-                });
-                
-                console.log("[PARCHE-MANUAL] Añadido domicilio de Fabián a resultados");
-              }
-            }
-          }
-        } catch (err) {
-          console.error("[PARCHE-MANUAL] Error al añadir domicilio:", err);
-        }
-      }
-      
       res.json(resultados);
     } catch (error) {
       console.error("Error en búsqueda:", error);
