@@ -287,7 +287,7 @@ export default function UbicacionForm() {
           for (const observacion of observaciones) {
             try {
               const resultado = await apiRequest("POST", `/api/ubicaciones/${ubicacionId}/observaciones`, {
-                texto: observacion.detalle,
+                detalle: observacion.detalle,
                 fecha: observacion.fecha || new Date()
               });
               console.log(`Observación creada exitosamente:`, resultado);
