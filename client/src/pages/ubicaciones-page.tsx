@@ -398,7 +398,7 @@ export default function UbicacionesPage() {
     }
     
     // Ajustar vista del mapa según los marcadores
-    if (hasBounds && !bounds.isEmpty()) {
+    if (hasBounds && bounds && bounds.isValid && bounds.isValid()) {
       map.fitBounds(bounds, { padding: [50, 50] });
     }
     
