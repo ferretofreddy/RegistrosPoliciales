@@ -396,7 +396,22 @@ export default function DetalleDialog({
                               {`${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`}
                             </TableCell>
                             <TableCell>
-                              {ubicacion.observaciones || "Sin observaciones"}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs text-left" 
+                                onClick={() => {
+                                  setDetalleEntidad({
+                                    tipo: 'ubicacion',
+                                    id: ubicacion.id,
+                                    data: ubicacion
+                                  });
+                                  setTabActiva("observaciones");
+                                  setDetalleAbierto(true);
+                                }}
+                              >
+                                Ver observaciones
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
