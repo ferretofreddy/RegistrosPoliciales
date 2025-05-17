@@ -5,9 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, MapPin, User, Car, Home, Network, AlertCircle } from "lucide-react";
+import { Search, MapPin, User, Car, Home, Network, AlertCircle, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 // Make sure to import Leaflet via CDN in index.html
 declare global {
@@ -19,6 +25,10 @@ declare global {
 
 export default function UbicacionesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedSearchItem, setSelectedSearchItem] = useState<any>(null);
+  
   const [selectedTypes, setSelectedTypes] = useState({
     personas: true,
     vehiculos: true,
@@ -70,6 +80,73 @@ export default function UbicacionesPage() {
     enabled: false,
   });
   
+  // Consulta para buscar entidades (personas, vehículos, inmuebles)
+  const { data: busquedaEntidades, isLoading: isLoadingEntidades, refetch: refetchEntidades } = useQuery({
+    queryKey: ["/api/buscar", searchTerm],
+    queryFn: async () => {
+      if (!searchTerm.trim() || searchTerm.trim().length < 2) return null;
+      
+      console.log(`[DEBUG] Buscando entidades con término: "${searchTerm}"`);
+      const response = await fetch(`/api/buscar?query=${encodeURIComponent(searchTerm)}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error al buscar entidades: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("[DEBUG] Entidades encontradas:", data);
+      
+      // Procesar resultados para la lista de búsqueda
+      const resultadosProcesados: any[] = [];
+      
+      // Procesar personas
+      if (data.personas && data.personas.length > 0) {
+        data.personas.forEach((persona: any) => {
+          resultadosProcesados.push({
+            tipo: "persona",
+            id: persona.id,
+            nombre: persona.nombre,
+            identificacion: persona.identificacion,
+            display: `${persona.nombre} - ${persona.identificacion || 'Sin ID'} (Persona)`
+          });
+        });
+      }
+      
+      // Procesar vehículos
+      if (data.vehiculos && data.vehiculos.length > 0) {
+        data.vehiculos.forEach((vehiculo: any) => {
+          resultadosProcesados.push({
+            tipo: "vehiculo",
+            id: vehiculo.id,
+            marca: vehiculo.marca,
+            placa: vehiculo.placa,
+            modelo: vehiculo.modelo,
+            display: `${vehiculo.marca} ${vehiculo.modelo || ''} - ${vehiculo.placa} (Vehículo)`
+          });
+        });
+      }
+      
+      // Procesar inmuebles
+      if (data.inmuebles && data.inmuebles.length > 0) {
+        data.inmuebles.forEach((inmueble: any) => {
+          resultadosProcesados.push({
+            tipo: "inmueble",
+            id: inmueble.id,
+            tipoInmueble: inmueble.tipo,
+            direccion: inmueble.direccion,
+            display: `${inmueble.tipo} - ${inmueble.direccion || 'Sin dirección'} (Inmueble)`
+          });
+        });
+      }
+      
+      // Actualizar resultados de búsqueda
+      setSearchResults(resultadosProcesados);
+      
+      return data;
+    },
+    enabled: false,
+  });
+  
   // Consulta para obtener relaciones de una entidad seleccionada
   const { data: relacionesData, isLoading: isLoadingRelaciones } = useQuery({
     queryKey: ["/api/relaciones", entidadSeleccionada?.tipo, entidadSeleccionada?.id],
@@ -88,6 +165,17 @@ export default function UbicacionesPage() {
     },
     enabled: !!entidadSeleccionada,
   });
+
+  // Buscamos entidades que coincidan con el término de búsqueda
+  useEffect(() => {
+    if (searchTerm.trim().length >= 2) {
+      refetchEntidades();
+      setShowSearchResults(true);
+    } else {
+      setShowSearchResults(false);
+      setSearchResults([]);
+    }
+  }, [searchTerm, refetchEntidades]);
 
   useEffect(() => {
     // Inicializar el mapa si aún no existe
@@ -426,12 +514,13 @@ export default function UbicacionesPage() {
     const entidadKey = `${entidadSeleccionada.tipo}-${entidadSeleccionada.id}`;
     const entidadMarker = entidadMarkers.current.get(entidadKey);
     
-    if (!entidadMarker || !entidadMarker._latlng) {
-      console.log("No se encontró marcador para la entidad seleccionada:", entidadKey);
-      return;
-    }
+    // Si la entidad seleccionada no tiene un marcador (no tiene ubicación directa),
+    // intentamos buscarla en las relaciones para mostrar líneas entre sus relaciones
+    let entidadLatLng: [number, number] | null = null;
     
-    const entidadLatLng = [entidadMarker._latlng.lat, entidadMarker._latlng.lng];
+    if (entidadMarker && entidadMarker._latlng) {
+      entidadLatLng = [entidadMarker._latlng.lat, entidadMarker._latlng.lng];
+    }
     
     // Dibujar líneas para personas relacionadas
     if (relacionesData.personas && relacionesData.personas.length > 0) {
@@ -442,14 +531,21 @@ export default function UbicacionesPage() {
         if (personaMarker && personaMarker._latlng) {
           const personaLatLng = [personaMarker._latlng.lat, personaMarker._latlng.lng];
           
-          const line = mapRef.current.addLine(
-            entidadLatLng,
-            personaLatLng,
-            '#ef4444', // Rojo para personas
-            `Relación: ${entidadSeleccionada.nombre} → ${persona.nombre}`
-          );
-          
-          newLines.push(line);
+          if (entidadLatLng) {
+            // Si la entidad seleccionada tiene ubicación, dibujamos línea desde ella
+            const line = mapRef.current.addLine(
+              entidadLatLng,
+              personaLatLng,
+              '#ef4444', // Rojo para personas
+              `Relación: ${entidadSeleccionada.nombre} → ${persona.nombre}`
+            );
+            
+            newLines.push(line);
+          } else {
+            // Si no tiene ubicación, la marcamos como un punto importante
+            // Podríamos resaltar el marcador de alguna manera
+            personaMarker.setZIndexOffset(1000); // Poner al frente
+          }
         }
       });
     }
@@ -463,14 +559,18 @@ export default function UbicacionesPage() {
         if (vehiculoMarker && vehiculoMarker._latlng) {
           const vehiculoLatLng = [vehiculoMarker._latlng.lat, vehiculoMarker._latlng.lng];
           
-          const line = mapRef.current.addLine(
-            entidadLatLng,
-            vehiculoLatLng,
-            '#3b82f6', // Azul para vehículos
-            `Relación: ${entidadSeleccionada.nombre} → ${vehiculo.marca} ${vehiculo.placa}`
-          );
-          
-          newLines.push(line);
+          if (entidadLatLng) {
+            const line = mapRef.current.addLine(
+              entidadLatLng,
+              vehiculoLatLng,
+              '#3b82f6', // Azul para vehículos
+              `Relación: ${entidadSeleccionada.nombre} → ${vehiculo.marca} ${vehiculo.placa}`
+            );
+            
+            newLines.push(line);
+          } else {
+            vehiculoMarker.setZIndexOffset(1000);
+          }
         }
       });
     }
@@ -484,14 +584,18 @@ export default function UbicacionesPage() {
         if (inmuebleMarker && inmuebleMarker._latlng) {
           const inmuebleLatLng = [inmuebleMarker._latlng.lat, inmuebleMarker._latlng.lng];
           
-          const line = mapRef.current.addLine(
-            entidadLatLng,
-            inmuebleLatLng,
-            '#22c55e', // Verde para inmuebles
-            `Relación: ${entidadSeleccionada.nombre} → ${inmueble.tipo} ${inmueble.direccion}`
-          );
-          
-          newLines.push(line);
+          if (entidadLatLng) {
+            const line = mapRef.current.addLine(
+              entidadLatLng,
+              inmuebleLatLng,
+              '#22c55e', // Verde para inmuebles
+              `Relación: ${entidadSeleccionada.nombre} → ${inmueble.tipo} ${inmueble.direccion}`
+            );
+            
+            newLines.push(line);
+          } else {
+            inmuebleMarker.setZIndexOffset(1000);
+          }
         }
       });
     }
@@ -505,16 +609,113 @@ export default function UbicacionesPage() {
         if (ubicacionMarker && ubicacionMarker._latlng) {
           const ubicacionLatLng = [ubicacionMarker._latlng.lat, ubicacionMarker._latlng.lng];
           
+          if (entidadLatLng) {
+            const line = mapRef.current.addLine(
+              entidadLatLng,
+              ubicacionLatLng,
+              '#8b5cf6', // Púrpura para ubicaciones
+              `Relación: ${entidadSeleccionada.nombre} → Ubicación ${ubicacion.tipo}`
+            );
+            
+            newLines.push(line);
+          } else {
+            ubicacionMarker.setZIndexOffset(1000);
+          }
+        }
+      });
+    }
+    
+    // Si la entidad seleccionada no tiene ubicación, 
+    // conectamos sus entidades relacionadas entre sí
+    if (!entidadLatLng) {
+      // Obtener todos los marcadores de entidades relacionadas con ubicación
+      const marcadoresRelacionados: any[] = [];
+      
+      // Agregar personas con ubicación
+      if (relacionesData.personas) {
+        relacionesData.personas.forEach((persona: any) => {
+          const marker = entidadMarkers.current.get(`persona-${persona.id}`);
+          if (marker && marker._latlng) {
+            marcadoresRelacionados.push({
+              tipo: 'persona',
+              entidad: persona,
+              latLng: [marker._latlng.lat, marker._latlng.lng]
+            });
+          }
+        });
+      }
+      
+      // Agregar vehículos con ubicación
+      if (relacionesData.vehiculos) {
+        relacionesData.vehiculos.forEach((vehiculo: any) => {
+          const marker = entidadMarkers.current.get(`vehiculo-${vehiculo.id}`);
+          if (marker && marker._latlng) {
+            marcadoresRelacionados.push({
+              tipo: 'vehiculo',
+              entidad: vehiculo,
+              latLng: [marker._latlng.lat, marker._latlng.lng]
+            });
+          }
+        });
+      }
+      
+      // Agregar inmuebles con ubicación
+      if (relacionesData.inmuebles) {
+        relacionesData.inmuebles.forEach((inmueble: any) => {
+          const marker = entidadMarkers.current.get(`inmueble-${inmueble.id}`);
+          if (marker && marker._latlng) {
+            marcadoresRelacionados.push({
+              tipo: 'inmueble',
+              entidad: inmueble,
+              latLng: [marker._latlng.lat, marker._latlng.lng]
+            });
+          }
+        });
+      }
+      
+      // Agregar ubicaciones
+      if (relacionesData.ubicaciones) {
+        relacionesData.ubicaciones.forEach((ubicacion: any) => {
+          const marker = entidadMarkers.current.get(`ubicacion-${ubicacion.id}`);
+          if (marker && marker._latlng) {
+            marcadoresRelacionados.push({
+              tipo: 'ubicacion',
+              entidad: ubicacion,
+              latLng: [marker._latlng.lat, marker._latlng.lng]
+            });
+          }
+        });
+      }
+      
+      // Conectar todas las entidades relacionadas entre sí
+      if (marcadoresRelacionados.length > 1) {
+        // Usar el primer marcador como centro de la "estrella"
+        const centro = marcadoresRelacionados[0].latLng;
+        
+        for (let i = 1; i < marcadoresRelacionados.length; i++) {
+          const destino = marcadoresRelacionados[i].latLng;
+          
+          // Determinar color basado en el tipo de entidad
+          let color = '#8b5cf6'; // Púrpura por defecto
+          
+          if (marcadoresRelacionados[i].tipo === 'persona') {
+            color = '#ef4444'; // Rojo para personas
+          } else if (marcadoresRelacionados[i].tipo === 'vehiculo') {
+            color = '#3b82f6'; // Azul para vehículos
+          } else if (marcadoresRelacionados[i].tipo === 'inmueble') {
+            color = '#22c55e'; // Verde para inmuebles
+          }
+          
           const line = mapRef.current.addLine(
-            entidadLatLng,
-            ubicacionLatLng,
-            '#8b5cf6', // Púrpura para ubicaciones
-            `Relación: ${entidadSeleccionada.nombre} → Ubicación ${ubicacion.tipo}`
+            centro,
+            destino,
+            color,
+            `Relación a través de ${entidadSeleccionada.nombre}`
           );
           
           newLines.push(line);
         }
-      });
+      }
     }
     
     // Actualizar el estado de las líneas
@@ -530,14 +731,66 @@ export default function UbicacionesPage() {
   // Manejar clic en botón de búsqueda o Enter en el input
   const handleSearch = () => {
     if (searchTerm.trim() || Object.values(selectedTypes).some(v => v)) {
+      setShowSearchResults(false);
       refetch();
     }
+  };
+  
+  // Manejar selección de un elemento de la lista de búsqueda
+  const handleSearchItemSelect = (item: any) => {
+    setSelectedSearchItem(item);
+    setSearchTerm(item.display);
+    setShowSearchResults(false);
+    
+    // Búsqueda específica basada en la entidad seleccionada
+    const searchParams = new URLSearchParams();
+    
+    if (item.tipo === 'persona') {
+      searchParams.append('buscar', item.nombre);
+      // También podríamos buscar por identificación si es necesario
+    } else if (item.tipo === 'vehiculo') {
+      searchParams.append('buscar', item.placa);
+    } else if (item.tipo === 'inmueble') {
+      // Podemos buscar por dirección o tipo
+      searchParams.append('buscar', item.direccion || item.tipoInmueble);
+    }
+    
+    // Filtrar por el tipo de la entidad seleccionada
+    const tipos = [item.tipo + 's']; // Convertir a plural (persona -> personas)
+    searchParams.append('tipos', tipos.join(','));
+    
+    setSelectedTypes({
+      personas: item.tipo === 'persona',
+      vehiculos: item.tipo === 'vehiculo',
+      inmuebles: item.tipo === 'inmueble',
+    });
+    
+    // Realizar la búsqueda específica
+    refetch();
+  };
+  
+  // Limpiar la selección de búsqueda
+  const handleClearSearch = () => {
+    setSelectedSearchItem(null);
+    setSearchTerm('');
+    setShowSearchResults(false);
+    setSelectedTypes({
+      personas: true,
+      vehiculos: true,
+      inmuebles: true,
+    });
   };
 
   // Manejar tecla Enter en el input
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      if (showSearchResults && searchResults.length > 0) {
+        // Si hay resultados de búsqueda, seleccionamos el primero
+        handleSearchItemSelect(searchResults[0]);
+      } else {
+        // Si no hay resultados o no se muestra la lista, hacemos búsqueda normal
+        handleSearch();
+      }
     }
   };
 
@@ -594,14 +847,47 @@ export default function UbicacionesPage() {
           <CardContent>
             <div className="mb-6">
               <div className="flex flex-col md:flex-row gap-3">
-                <div className="flex-grow">
-                  <Input
-                    type="text"
-                    placeholder="Buscar por nombre, identificación, placa, tipo de inmueble, etc."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleKeyDown}
-                  />
+                <div className="flex-grow relative">
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Buscar por nombre, identificación, placa, tipo de inmueble, etc."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      onKeyDown={handleKeyDown}
+                      className={showSearchResults && searchResults.length > 0 ? "rounded-b-none" : ""}
+                    />
+                    {selectedSearchItem && (
+                      <button 
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={handleClearSearch}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Lista desplegable de coincidencias */}
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div className="absolute z-10 w-full bg-white border border-t-0 border-gray-200 rounded-b-md shadow-lg">
+                      <ul className="max-h-[200px] overflow-y-auto">
+                        {searchResults.map((item, index) => (
+                          <li 
+                            key={`${item.tipo}-${item.id}`} 
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-sm flex items-center"
+                            onClick={() => handleSearchItemSelect(item)}
+                          >
+                            {item.tipo === 'persona' ? <User className="h-4 w-4 mr-2 text-red-600" /> :
+                              item.tipo === 'vehiculo' ? <Car className="h-4 w-4 mr-2 text-blue-600" /> :
+                              item.tipo === 'inmueble' ? <Home className="h-4 w-4 mr-2 text-green-600" /> :
+                              <MapPin className="h-4 w-4 mr-2 text-purple-600" />
+                            }
+                            <span>{item.display}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Button onClick={handleSearch} className="w-full md:w-auto">
