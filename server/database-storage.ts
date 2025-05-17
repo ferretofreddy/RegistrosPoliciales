@@ -4,6 +4,7 @@ import {
   InsertUbicacion, Ubicacion, personasObservaciones, InsertPersonaObservacion, PersonaObservacion,
   vehiculosObservaciones, InsertVehiculoObservacion, VehiculoObservacion,
   inmueblesObservaciones, InsertInmuebleObservacion, InmuebleObservacion,
+  ubicacionesObservaciones, InsertUbicacionObservacion, UbicacionObservacion,
   personasVehiculos, personasInmuebles, personasUbicaciones, vehiculosInmuebles,
   vehiculosUbicaciones, inmueblesUbicaciones, personasPersonas, vehiculosVehiculos,
   inmueblesInmuebles, users, tiposInmuebles, TipoInmueble, InsertTipoInmueble,
@@ -257,6 +258,22 @@ export class DatabaseStorage {
   async createInmuebleObservacion(observacion: InsertInmuebleObservacion): Promise<InmuebleObservacion> {
     const [nuevaObservacion] = await db
       .insert(inmueblesObservaciones)
+      .values(observacion)
+      .returning();
+    return nuevaObservacion;
+  }
+  
+  async getUbicacionObservaciones(ubicacionId: number): Promise<UbicacionObservacion[]> {
+    return await db
+      .select()
+      .from(ubicacionesObservaciones)
+      .where(eq(ubicacionesObservaciones.ubicacionId, ubicacionId))
+      .orderBy(ubicacionesObservaciones.fecha);
+  }
+
+  async createUbicacionObservacion(observacion: InsertUbicacionObservacion): Promise<UbicacionObservacion> {
+    const [nuevaObservacion] = await db
+      .insert(ubicacionesObservaciones)
       .values(observacion)
       .returning();
     return nuevaObservacion;
