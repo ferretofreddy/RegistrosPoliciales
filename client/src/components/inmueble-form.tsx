@@ -468,7 +468,7 @@ export default function InmuebleForm() {
                   size="sm"
                   className="h-7 text-xs"
                 >
-                  Manual
+                  Agregar
                 </Button>
                 <Button 
                   type="button" 
