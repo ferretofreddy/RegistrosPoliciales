@@ -9,6 +9,7 @@ import {
   personas, vehiculos, inmuebles, ubicaciones, tiposInmuebles, tiposUbicaciones,
   insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema,
   insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema,
+  insertUbicacionObservacionSchema,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
 
@@ -469,6 +470,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ruta especial para crear múltiples relaciones para una ubicación de una sola vez
+  // Ubicaciones observaciones
+  app.get("/api/ubicaciones/:id/observaciones", async (req, res) => {
+    try {
+      const observaciones = await storage.getUbicacionObservaciones(parseInt(req.params.id));
+      res.json(observaciones);
+    } catch (error) {
+      console.error("Error al obtener observaciones de ubicación:", error);
+      res.status(500).json({ message: "Error al obtener observaciones" });
+    }
+  });
+
+  app.post("/api/ubicaciones/:id/observaciones", requireRole(["admin", "investigador", "agente"]), async (req, res) => {
+    try {
+      const ubicacionId = parseInt(req.params.id);
+      const usuario = req.user?.nombre || "Sistema"; // El nombre del usuario autenticado
+      
+      const observacionData = insertUbicacionObservacionSchema.parse({
+        ...req.body,
+        ubicacionId,
+        usuario
+      });
+      
+      const observacion = await storage.createUbicacionObservacion(observacionData);
+      res.status(201).json(observacion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      console.error("Error al crear observación de ubicación:", error);
+      res.status(500).json({ message: "Error al crear observación" });
+    }
+  });
+
   app.post("/api/ubicaciones/:id/relaciones", async (req, res) => {
     try {
       const ubicacionId = parseInt(req.params.id);
