@@ -398,7 +398,7 @@ export default function UbicacionesPage() {
       });
     }
     
-    // 3. Manejar la relación especial entre Fabián y Casa
+    // 1. Manejar relaciones especiales (caso Fabián-Casa)
     const fabianEncontrado = data.ubicacionesRelacionadas?.some((rel: any) => 
       rel.entidadRelacionada?.tipo === 'persona' && 
       rel.entidadRelacionada?.entidad?.id === 4
@@ -530,6 +530,124 @@ export default function UbicacionesPage() {
           "Propiedad: Fabián → Casa"
         );
       }
+    }
+    
+    // 2. Procesar relaciones generales entre personas e inmuebles que no tienen ubicaciones
+    // Buscar todas las personas en los resultados
+    const personasEncontradas = data.ubicacionesRelacionadas?.filter((rel: any) => 
+      rel.entidadRelacionada?.tipo === 'persona'
+    );
+    
+    console.log(`[DEBUG] Personas encontradas para procesar relaciones con inmuebles: ${personasEncontradas?.length || 0}`);
+    
+    // Para cada persona, verificar si tiene relaciones con inmuebles
+    if (personasEncontradas && personasEncontradas.length > 0) {
+      personasEncontradas.forEach(async (personaRel: any) => {
+        const persona = personaRel.entidadRelacionada.entidad;
+        
+        // Usar la API de relaciones para obtener los inmuebles relacionados
+        try {
+          const response = await fetch(`/api/relaciones/persona/${persona.id}`);
+          if (response.ok) {
+            const relaciones = await response.json();
+            
+            console.log(`[DEBUG] Relaciones de persona ${persona.id}: inmuebles=${relaciones.inmuebles?.length || 0}`);
+            
+            // Si hay inmuebles relacionados con esta persona
+            if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
+              relaciones.inmuebles.forEach((inmueble: any) => {
+                console.log(`[DEBUG] Procesando relación persona ${persona.id} con inmueble ${inmueble.id}`);
+                
+                // Verificar si este inmueble ya tiene un marcador
+                const inmuebleYaMapeado = data.ubicacionesRelacionadas?.some((rel: any) => 
+                  rel.entidadRelacionada?.tipo === 'inmueble' && 
+                  rel.entidadRelacionada?.entidad?.id === inmueble.id
+                );
+                
+                // Si el inmueble no está ya mapeado, creamos un marcador para él
+                if (!inmuebleYaMapeado && !inmuebleMarkers.current.has(inmueble.id)) {
+                  console.log(`[DEBUG] Creando marcador y relación para inmueble ${inmueble.id} relacionado con persona ${persona.id}`);
+                  
+                  // Coordenadas de la persona
+                  const personaLat = personaRel.ubicacion.latitud;
+                  const personaLng = personaRel.ubicacion.longitud;
+                  
+                  // Crear coordenadas cercanas para el inmueble
+                  const inmuebleLat = personaLat + 0.003;
+                  const inmuebleLng = personaLng + 0.003;
+                  
+                  // Crear marcador para el inmueble
+                  const inmuebleMarker = mapRef.current.addMarker(
+                    inmuebleLat, 
+                    inmuebleLng, 
+                    `
+                      <div style="max-width: 250px;">
+                        <h4 style="margin: 0; font-size: 14px;">Inmueble (${inmueble.tipo})</h4>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                          <strong>Tipo:</strong> ${inmueble.tipo}<br>
+                          <strong>Dirección:</strong> ${inmueble.direccion || 'No especificada'}
+                        </p>
+                        <p style="margin: 5px 0; font-size: 12px; color: #22c55e;">
+                          <strong>Relación:</strong> Relacionado con ${persona.nombre}
+                        </p>
+                      </div>
+                    `,
+                    'inmueble'
+                  );
+                  
+                  inmuebleMarker.entidadId = inmueble.id;
+                  inmuebleMarker.entidadTipo = 'inmueble';
+                  newMarkers.push(inmuebleMarker);
+                  
+                  // Almacenar en referencia para uso posterior
+                  inmuebleMarkers.current.set(inmueble.id, {
+                    latLng: [inmuebleLat, inmuebleLng],
+                    entidad: inmueble
+                  });
+                  
+                  // Extender los límites del mapa
+                  bounds.extend([inmuebleLat, inmuebleLng]);
+                  hasBounds = true;
+                  
+                  // Crear línea entre la persona y el inmueble
+                  mapRef.current.addLine(
+                    [personaLat, personaLng],
+                    [inmuebleLat, inmuebleLng],
+                    "#3b82f6", // Color azul
+                    `${persona.nombre} → ${inmueble.tipo}`
+                  );
+                  
+                  // Agregar el inmueble a los datos para que aparezca en la tabla dinámica
+                  if (!data.ubicacionesRelacionadas) {
+                    data.ubicacionesRelacionadas = [];
+                  }
+                  
+                  data.ubicacionesRelacionadas.push({
+                    ubicacion: {
+                      id: 900 + inmueble.id, // ID ficticio para esta relación
+                      latitud: inmuebleLat,
+                      longitud: inmuebleLng,
+                      tipo: 'Inmueble relacionado',
+                      fecha: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                      observaciones: `Relación detectada con ${persona.nombre}`
+                    },
+                    entidadRelacionada: {
+                      tipo: 'inmueble',
+                      entidad: inmueble,
+                      relacionadoCon: {
+                        tipo: 'persona',
+                        entidad: persona
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`[ERROR] Error al obtener relaciones para persona ${persona.id}:`, error);
+        }
+      });
     }
     
     // Ajustar vista del mapa según los marcadores
