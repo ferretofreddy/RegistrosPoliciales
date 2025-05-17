@@ -4,16 +4,8 @@ import MainLayout from "@/components/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, User, Car, Home, MapPin, FileText, Map, Filter, Database } from "lucide-react";
+import { Search, User, Car, Home, MapPin, FileText, Map } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Persona, Vehiculo, Inmueble, Ubicacion } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,7 +18,6 @@ declare global {
 
 export default function EstructurasPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [structureSearchTerm, setStructureSearchTerm] = useState("");
   const [selectedEntity, setSelectedEntity] = useState<{
     tipo: string;
     id: number;
@@ -39,9 +30,6 @@ export default function EstructurasPage() {
     vehiculos: true,
     inmuebles: true,
   });
-  
-  // Estado para controlar el tipo de estructura buscado
-  const [structureType, setStructureType] = useState<string>("all");
   
   // Estados para el mapa
   const mapRef = useRef<any>(null);
@@ -96,7 +84,6 @@ export default function EstructurasPage() {
     enabled: !!selectedEntity,
   });
 
-  // Función para buscar entidades por nombre, identificación, etc.
   const handleSearch = () => {
     if (searchTerm.trim()) {
       // Buscar resultados normales
@@ -106,70 +93,11 @@ export default function EstructurasPage() {
       ubicacionesRefetch();
     }
   };
-  
-  // Función para buscar estructuras específicas
-  const handleStructureSearch = () => {
-    if (structureSearchTerm.trim()) {
-      // Implementar búsqueda de estructuras específica
-      // La API debe filtrar por tipo de estructura y término de búsqueda
-      // Esta búsqueda es diferente a la búsqueda general
-      
-      // Crear la URL de búsqueda con parámetros
-      const baseUrl = '/api/buscar-estructuras';
-      const params = new URLSearchParams();
-      params.append('q', structureSearchTerm);
-      
-      if (structureType !== 'all') {
-        params.append('tipo', structureType);
-      }
-      
-      const searchUrl = `${baseUrl}?${params.toString()}`;
-      
-      // Actualizar la consulta con la nueva URL
-      const customSearchRefetch = () => {
-        return fetch(searchUrl)
-          .then(res => {
-            if (!res.ok) {
-              throw new Error(`Error en la búsqueda de estructuras: ${res.status}`);
-            }
-            return res.json();
-          })
-          .then(data => {
-            // Actualizar los resultados de búsqueda
-            console.log("Resultados de búsqueda de estructuras:", data);
-            // Aquí podríamos tener un estado específico para estos resultados
-            // Por ahora, usamos el mismo estado de resultados de búsqueda
-            return data;
-          })
-          .catch(err => {
-            console.error("Error al buscar estructuras:", err);
-            toast({
-              title: "Error en la búsqueda",
-              description: err.message,
-              variant: "destructive",
-            });
-          });
-      };
-      
-      // Ejecutar la búsqueda personalizada
-      customSearchRefetch();
-    }
-  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSearch();
     }
-  };
-  
-  const handleStructureKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleStructureSearch();
-    }
-  };
-  
-  const handleStructureTypeChange = (type: string) => {
-    setStructureType(type);
   };
   
   // Inicializar el mapa
@@ -351,138 +279,77 @@ export default function EstructurasPage() {
           </CardHeader>
           <CardContent>
             <div className="mb-6">
-              <Tabs defaultValue="search" className="mb-4">
-                <TabsList className="mb-2">
-                  <TabsTrigger value="search" className="flex items-center">
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-grow">
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nombre, identificación, placa, etc."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                  />
+                </div>
+                <div>
+                  <Button onClick={handleSearch} className="w-full md:w-auto">
                     <Search className="mr-2 h-4 w-4" />
-                    Búsqueda general
-                  </TabsTrigger>
-                  <TabsTrigger value="structure" className="flex items-center">
-                    <Database className="mr-2 h-4 w-4" />
-                    Búsqueda estructural
-                  </TabsTrigger>
-                </TabsList>
+                    Buscar
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Filtros de tipo */}
+              <div className="mt-3 flex flex-wrap gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="filter-personas"
+                    checked={selectedTypes.personas}
+                    onCheckedChange={(checked) => 
+                      setSelectedTypes({...selectedTypes, personas: !!checked})
+                    }
+                  />
+                  <label
+                    htmlFor="filter-personas"
+                    className="text-sm font-medium flex items-center"
+                  >
+                    <User className="h-4 w-4 mr-1 text-blue-600" />
+                    Personas
+                  </label>
+                </div>
                 
-                <TabsContent value="search">
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <div className="flex-grow">
-                      <Input
-                        type="text"
-                        placeholder="Buscar por nombre, identificación, placa, etc."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                      />
-                    </div>
-                    <div>
-                      <Button onClick={handleSearch} className="w-full md:w-auto">
-                        <Search className="mr-2 h-4 w-4" />
-                        Buscar
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Filtros de tipo para búsqueda general */}
-                  <div className="mt-3 flex flex-wrap gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="filter-personas"
-                        checked={selectedTypes.personas}
-                        onCheckedChange={(checked) => 
-                          setSelectedTypes({...selectedTypes, personas: !!checked})
-                        }
-                      />
-                      <label
-                        htmlFor="filter-personas"
-                        className="text-sm font-medium flex items-center"
-                      >
-                        <User className="h-4 w-4 mr-1 text-blue-600" />
-                        Personas
-                      </label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="filter-vehiculos"
-                        checked={selectedTypes.vehiculos}
-                        onCheckedChange={(checked) => 
-                          setSelectedTypes({...selectedTypes, vehiculos: !!checked})
-                        }
-                      />
-                      <label
-                        htmlFor="filter-vehiculos"
-                        className="text-sm font-medium flex items-center"
-                      >
-                        <Car className="h-4 w-4 mr-1 text-green-600" />
-                        Vehículos
-                      </label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="filter-inmuebles"
-                        checked={selectedTypes.inmuebles}
-                        onCheckedChange={(checked) => 
-                          setSelectedTypes({...selectedTypes, inmuebles: !!checked})
-                        }
-                      />
-                      <label
-                        htmlFor="filter-inmuebles"
-                        className="text-sm font-medium flex items-center"
-                      >
-                        <Home className="h-4 w-4 mr-1 text-red-600" />
-                        Inmuebles
-                      </label>
-                    </div>
-                  </div>
-                </TabsContent>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="filter-vehiculos"
+                    checked={selectedTypes.vehiculos}
+                    onCheckedChange={(checked) => 
+                      setSelectedTypes({...selectedTypes, vehiculos: !!checked})
+                    }
+                  />
+                  <label
+                    htmlFor="filter-vehiculos"
+                    className="text-sm font-medium flex items-center"
+                  >
+                    <Car className="h-4 w-4 mr-1 text-green-600" />
+                    Vehículos
+                  </label>
+                </div>
                 
-                <TabsContent value="structure">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="col-span-2">
-                        <Input
-                          type="text"
-                          placeholder="Buscar estructuras específicas..."
-                          value={structureSearchTerm}
-                          onChange={(e) => setStructureSearchTerm(e.target.value)}
-                          onKeyPress={handleStructureKeyPress}
-                          className="w-full"
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <Select
-                          value={structureType}
-                          onValueChange={handleStructureTypeChange}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Tipo de estructura" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todos los tipos</SelectItem>
-                            <SelectItem value="organizacion">Organización</SelectItem>
-                            <SelectItem value="grupo">Grupo</SelectItem>
-                            <SelectItem value="red">Red criminal</SelectItem>
-                            <SelectItem value="familia">Estructura familiar</SelectItem>
-                            <SelectItem value="empresa">Empresa</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={handleStructureSearch} 
-                      className="w-full"
-                      variant="default"
-                    >
-                      <Filter className="mr-2 h-4 w-4" />
-                      Buscar estructuras
-                    </Button>
-                    <p className="text-xs text-gray-500 italic">
-                      La búsqueda estructural permite encontrar relaciones complejas entre entidades organizadas como redes, grupos o jerarquías.
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="filter-inmuebles"
+                    checked={selectedTypes.inmuebles}
+                    onCheckedChange={(checked) => 
+                      setSelectedTypes({...selectedTypes, inmuebles: !!checked})
+                    }
+                  />
+                  <label
+                    htmlFor="filter-inmuebles"
+                    className="text-sm font-medium flex items-center"
+                  >
+                    <Home className="h-4 w-4 mr-1 text-red-600" />
+                    Inmuebles
+                  </label>
+                </div>
+              </div>
             </div>
             
             {/* Mapa de ubicaciones */}
@@ -710,41 +577,7 @@ export default function EstructurasPage() {
               </div>
             )}
             
-            {/* Aquí podríamos agregar una visualización específica de los resultados de la búsqueda estructural */}
-            {selectedEntity && (
-              <div className="mt-6 border rounded-lg overflow-hidden">
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                    <Database className="mr-2 h-5 w-5 text-blue-500" />
-                    Análisis estructural avanzado
-                  </h3>
-                </div>
-                <div className="p-4">
-                  <p className="text-sm text-gray-500 mb-4">
-                    Este análisis muestra las relaciones estructurales más importantes para la entidad seleccionada.
-                    Se calculan métricas de centralidad y se identifican patrones de relación.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="p-3 bg-blue-50 rounded-md">
-                      <h4 className="font-medium text-blue-700 mb-1">Centralidad en la red</h4>
-                      <p className="text-sm">La entidad seleccionada tiene un índice de centralidad alto dentro de su estructura.</p>
-                    </div>
-                    <div className="p-3 bg-green-50 rounded-md">
-                      <h4 className="font-medium text-green-700 mb-1">Patrones de relación</h4>
-                      <p className="text-sm">Se identificaron patrones frecuentes de interacción con otras entidades clave.</p>
-                    </div>
-                  </div>
-                  
-                  {/* Aquí se podría agregar una visualización gráfica de la estructura */}
-                  <div className="border p-4 rounded-md bg-gray-50 text-center mb-4">
-                    <p className="text-sm text-gray-500">
-                      El visualizador de estructuras permite analizar las relaciones de forma interactiva.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* El historial de registros ha sido eliminado */}
           </CardContent>
         </Card>
       </div>
