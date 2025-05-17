@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Upload, Camera, CalendarClock, AlertCircle } from "lucide-react";
+import { X, Plus, CalendarClock, AlertCircle } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
@@ -256,24 +256,7 @@ export default function VehiculoForm() {
     setRelacionInmuebles(relacionInmuebles.filter(i => i.id !== id));
   };
 
-  // Función para capturar imágenes con la cámara
-  const capturePhoto = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'camera';
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
-      if (file) {
-        // Aquí se procesaría el archivo capturado
-        toast({
-          title: "Foto capturada",
-          description: `Imagen "${file.name}" ha sido capturada`,
-        });
-      }
-    };
-    input.click();
-  };
+  // La función capturePhoto ha sido eliminada
 
   return (
     <Form {...form}>
@@ -473,38 +456,7 @@ export default function VehiculoForm() {
           )}
         </div>
         
-        <div>
-          <FormLabel>Fotografías</FormLabel>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-            <div className="space-y-1 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="flex text-sm text-gray-600 justify-center">
-                <label
-                  htmlFor="vehicle-file-upload"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                >
-                  <span>Subir archivos</span>
-                  <input id="vehicle-file-upload" name="vehicle-file-upload" type="file" className="sr-only" multiple />
-                </label>
-                <p className="pl-1">o arrastrar y soltar</p>
-              </div>
-              <div className="flex justify-center mt-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={capturePhoto}
-                  className="text-xs"
-                >
-                  <Camera className="h-3 w-3 mr-1" /> Tomar foto
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500">
-                PNG, JPG, GIF hasta 10MB
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* El campo de fotografías ha sido eliminado */}
         
         <div>
           <FormLabel>Relaciones con Personas</FormLabel>
