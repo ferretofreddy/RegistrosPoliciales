@@ -73,34 +73,32 @@ export default function UbicacionesPage() {
         
         // Método para añadir un marcador al mapa
         addMarker: function(lat: number, lng: number, popupContent: string, tipo: string = '', forceNew: boolean = false) {
-          // Determinar el icono basado en el tipo
-          let iconUrl = '';
-          let iconSize = [25, 41];
+          // Determinar el color basado en el tipo
+          let iconColor = '';
           
-          switch(tipo) {
+          switch(tipo.toLowerCase()) {
             case 'persona':
-              iconUrl = '/images/persona-marker.png';
+              iconColor = '#ef4444'; // bg-red-500
               break;
             case 'vehiculo':
-              iconUrl = '/images/vehiculo-marker.png';
+              iconColor = '#3b82f6'; // bg-blue-500
               break;
             case 'inmueble':
-              iconUrl = '/images/inmueble-marker.png'; 
+              iconColor = '#22c55e'; // bg-green-500
               break;
             default:
-              iconUrl = '/images/ubicacion-marker.png';
+              iconColor = '#8b5cf6'; // bg-purple-500
           }
           
-          // Crear icono personalizado
-          const icon = leaflet.icon({
-            iconUrl: iconUrl,
-            iconSize: iconSize,
-            iconAnchor: [iconSize[0] / 2, iconSize[1]],
-            popupAnchor: [0, -iconSize[1]]
-          });
-          
-          // Crear el marcador
-          const marker = leaflet.marker([lat, lng], { icon }).addTo(newMap);
+          // Crear marcador con círculo coloreado
+          const marker = leaflet.circleMarker([lat, lng], {
+            radius: 8,
+            fillColor: iconColor,
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+          }).addTo(newMap);
           
           // Añadir popup
           marker.bindPopup(popupContent, {
@@ -441,72 +439,75 @@ export default function UbicacionesPage() {
             <CardTitle className="text-xl">Ubicaciones</CardTitle>
           </CardHeader>
           
-          <CardContent className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4">
-            {/* Panel lateral izquierdo: Búsqueda, filtros y resultados */}
-            <div className="space-y-4 border-b md:border-b-0 md:border-r border-gray-200 pb-4 md:pb-0 md:pr-4">
-              {/* Búsqueda */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-700">Buscar ubicaciones</h3>
-                <div className="flex items-center space-x-2">
-                  <Input 
-                    placeholder="Nombre, identidad o descripción" 
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleKeyDown}
-                    className="flex-1"
-                  />
-                  <Button size="sm" onClick={handleSearch}>
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Ingrese texto para buscar ubicaciones
-                </div>
-              </div>
-              
-              {/* Filtros de tipo */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-700">Filtrar por tipo</h3>
+          <CardContent className="grid grid-cols-1 gap-4">
+            {/* Panel superior: Búsqueda y filtros */}
+            <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 border-b border-gray-200 pb-4">
+              {/* Panel lateral izquierdo: Búsqueda y filtros */}
+              <div className="space-y-4">
+                {/* Búsqueda */}
                 <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-gray-700">Buscar ubicaciones</h3>
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="personas" 
-                      checked={selectedTypes.personas}
-                      onCheckedChange={() => handleTypeChange('personas')}
+                    <Input 
+                      placeholder="Nombre, identidad o descripción" 
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      onKeyDown={handleKeyDown}
+                      className="flex-1"
                     />
-                    <label htmlFor="personas" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Personas
-                    </label>
+                    <Button size="sm" onClick={handleSearch}>
+                      <Search className="h-4 w-4" />
+                    </Button>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="vehiculos" 
-                      checked={selectedTypes.vehiculos}
-                      onCheckedChange={() => handleTypeChange('vehiculos')}
-                    />
-                    <label htmlFor="vehiculos" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Vehículos
-                    </label>
+                  <div className="text-xs text-gray-500">
+                    Ingrese texto para buscar ubicaciones
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="inmuebles" 
-                      checked={selectedTypes.inmuebles}
-                      onCheckedChange={() => handleTypeChange('inmuebles')}
-                    />
-                    <label htmlFor="inmuebles" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Inmuebles
-                    </label>
+                </div>
+                
+                {/* Filtros de tipo */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-gray-700">Filtrar por tipo</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="personas" 
+                        checked={selectedTypes.personas}
+                        onCheckedChange={() => handleTypeChange('personas')}
+                      />
+                      <label htmlFor="personas" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Personas
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="vehiculos" 
+                        checked={selectedTypes.vehiculos}
+                        onCheckedChange={() => handleTypeChange('vehiculos')}
+                      />
+                      <label htmlFor="vehiculos" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Vehículos
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="inmuebles" 
+                        checked={selectedTypes.inmuebles}
+                        onCheckedChange={() => handleTypeChange('inmuebles')}
+                      />
+                      <label htmlFor="inmuebles" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Inmuebles
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
               
               {/* Leyenda del mapa */}
-              <div className="space-y-2 pt-2 border-t border-gray-200">
+              <div className="space-y-2">
                 <h3 className="text-sm font-medium text-gray-700">Leyenda</h3>
-                <div className="space-y-1">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   <div className="flex items-center space-x-2">
                     <div className="bg-red-500 w-3 h-3 rounded-full"></div>
                     <span className="text-xs text-gray-600">Personas</span>
@@ -533,166 +534,173 @@ export default function UbicacionesPage() {
                   </div>
                 </div>
               </div>
-              
-              {/* Resultados */}
-              <div className="p-4 bg-gray-50 border-t">
-                <h4 className="font-medium text-gray-900 mb-2">Ubicaciones encontradas</h4>
-                
-                {isLoading ? (
-                  <div className="flex justify-center items-center p-4">
-                    <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                    <span className="ml-2 text-gray-600">Buscando ubicaciones...</span>
-                  </div>
-                ) : data ? (
-                  <>
-                    {/* Contador de resultados */}
-                    {(
-                      (data.ubicacionesDirectas?.length || 0) + 
-                      (data.ubicacionesRelacionadas?.length || 0) +
-                      (data.entidadesRelacionadas?.length || 0) === 0
-                    ) ? (
-                      <div className="text-center py-3 text-gray-500">
-                        No se encontraron ubicaciones con los criterios especificados
-                      </div>
-                    ) : (
-                      <div className="text-right mb-2 text-sm text-gray-500">
-                        {data.ubicacionesDirectas?.length || 0} ubicaciones directas | 
-                        {data.ubicacionesRelacionadas?.length || 0} ubicaciones relacionadas
-                      </div>
-                    )}
-                    
-                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                      {/* Ubicaciones directas */}
-                      {data.ubicacionesDirectas?.length > 0 && (
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-1">Ubicaciones directas</h5>
-                          <div className="space-y-2 ml-2">
-                            {data.ubicacionesDirectas.map((ubicacion: any) => (
-                              <div key={ubicacion.id} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
-                                <div className="bg-purple-500 rounded-full p-1 mr-2">
-                                  <MapPin className="h-3 w-3 text-white" />
-                                </div>
-                                <div className="text-sm flex-grow">
-                                  <div><strong>{ubicacion.tipo}</strong> {ubicacion.observaciones && `- ${ubicacion.observaciones}`}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {ubicacion.latitud && ubicacion.longitud 
-                                      ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
-                                      : 'Sin coordenadas'
-                                    }
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Ubicaciones relacionadas */}
-                      {data.ubicacionesRelacionadas?.length > 0 && (
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-1">Ubicaciones relacionadas con entidades</h5>
-                          <div className="space-y-2 ml-2">
-                            {data.ubicacionesRelacionadas.map((relacion: any, index: number) => (
-                              <div key={`rel-${index}`} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
-                                <div className={`
-                                  ${relacion.entidadRelacionada.tipo === 'persona' ? 'bg-red-500' : 
-                                    relacion.entidadRelacionada.tipo === 'vehiculo' ? 'bg-blue-500' : 
-                                    relacion.entidadRelacionada.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
-                                  rounded-full p-1 mr-2
-                                `}>
-                                  {relacion.entidadRelacionada.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
-                                   relacion.entidadRelacionada.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
-                                   relacion.entidadRelacionada.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
-                                   <MapPin className="h-3 w-3 text-white" />}
-                                </div>
-                                <div className="text-sm flex-grow">
-                                  <div><strong>{relacion.ubicacion.tipo}</strong> {relacion.ubicacion.observaciones && `- ${relacion.ubicacion.observaciones}`}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {relacion.ubicacion.latitud && relacion.ubicacion.longitud 
-                                      ? `Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}`
-                                      : 'Sin coordenadas'
-                                    }
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Entidades relacionadas */}
-                      {data.entidadesRelacionadas?.length > 0 && (
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-1">Entidades relacionadas con ubicaciones</h5>
-                          <div className="space-y-2 ml-2">
-                            {data.entidadesRelacionadas.map((relacion: any, index: number) => {
-                              const { tipo, entidad } = relacion;
-                              
-                              let icon = <MapPin className="h-3 w-3 text-white" />;
-                              let bgColor = 'bg-indigo-500';
-                              let text = '';
-                              
-                              if (tipo === 'persona') {
-                                icon = <User className="h-3 w-3 text-white" />;
-                                bgColor = 'bg-red-500';
-                                text = `${entidad.nombre} - ${entidad.identificacion || 'Sin ID'}`;
-                              } else if (tipo === 'vehiculo') {
-                                icon = <Car className="h-3 w-3 text-white" />;
-                                bgColor = 'bg-blue-500';
-                                text = `${entidad.marca} ${entidad.modelo || ''} (${entidad.placa})`;
-                              } else if (tipo === 'inmueble') {
-                                icon = <Home className="h-3 w-3 text-white" />;
-                                bgColor = 'bg-green-500';
-                                text = `${entidad.tipo} - ${entidad.direccion}`;
-                              }
-                              
-                              return (
-                                <div key={`ent-${index}`} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
-                                  <div className={`${bgColor} rounded-full p-1 mr-2`}>
-                                    {icon}
-                                  </div>
-                                  <div className="text-sm flex-grow">
-                                    <div>{text}</div>
-                                    <div className="text-xs text-gray-500">
-                                      {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-3 text-gray-500">
-                    Ingrese un término de búsqueda y haga clic en buscar
-                  </div>
-                )}
-              </div>
             </div>
             
             {/* Panel central: Mapa */}
-            <div className="flex flex-col space-y-4">
-              {/* Contenedor del mapa */}
+            <div className="w-full">
               <div 
                 ref={mapContainerRef} 
-                className="border border-gray-300 rounded-md h-[600px] w-full bg-gray-100"
+                className="border border-gray-300 rounded-md h-[500px] w-full bg-gray-100"
               >
                 {/* Map will be initialized here */}
               </div>
+            </div>
+            
+            {/* Panel inferior: Resultados */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+              <h4 className="font-medium text-gray-900 mb-2">Ubicaciones encontradas</h4>
               
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <h4 className="font-medium text-gray-900 mb-2">Instrucciones</h4>
-                <ul className="space-y-1 text-sm text-gray-600 list-disc pl-5">
-                  <li>Use la búsqueda para encontrar ubicaciones por nombre o descripción</li>
-                  <li>Filtre los resultados según el tipo de entidad relacionada</li>
-                  <li>Haga clic en los marcadores para ver más información</li>
-                  <li>Las líneas naranja indican relaciones destacadas</li>
-                  <li>Puede mover el mapa y hacer zoom con el ratón</li>
-                </ul>
-              </div>
+              {isLoading ? (
+                <div className="flex justify-center items-center p-4">
+                  <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span className="ml-2 text-gray-600">Buscando ubicaciones...</span>
+                </div>
+              ) : data ? (
+                <>
+                  {/* Contador de resultados */}
+                  {(
+                    (data.ubicacionesDirectas?.length || 0) + 
+                    (data.ubicacionesRelacionadas?.length || 0) +
+                    (data.entidadesRelacionadas?.length || 0) === 0
+                  ) ? (
+                    <div className="text-center py-3 text-gray-500">
+                      No se encontraron ubicaciones con los criterios especificados
+                    </div>
+                  ) : (
+                    <div className="text-right mb-2 text-sm text-gray-500">
+                      {data.ubicacionesDirectas?.length || 0} ubicaciones directas | 
+                      {data.ubicacionesRelacionadas?.length || 0} ubicaciones relacionadas
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Ubicaciones directas */}
+                    {data.ubicacionesDirectas?.length > 0 && (
+                      <div className="bg-white p-4 rounded-md border border-gray-200">
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Ubicaciones directas</h5>
+                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+                          {data.ubicacionesDirectas.map((ubicacion: any) => (
+                            <div key={ubicacion.id} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
+                              <div className="bg-purple-500 rounded-full p-1 mr-2">
+                                <MapPin className="h-3 w-3 text-white" />
+                              </div>
+                              <div className="text-sm flex-grow">
+                                <div><strong>{ubicacion.tipo}</strong> {ubicacion.observaciones && `- ${ubicacion.observaciones}`}</div>
+                                <div className="text-xs text-gray-500">
+                                  {ubicacion.latitud && ubicacion.longitud 
+                                    ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
+                                    : 'Sin coordenadas'
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Ubicaciones relacionadas */}
+                    {data.ubicacionesRelacionadas?.length > 0 && (
+                      <div className="bg-white p-4 rounded-md border border-gray-200">
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Ubicaciones relacionadas con entidades</h5>
+                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+                          {data.ubicacionesRelacionadas.map((relacion: any, index: number) => (
+                            <div key={`rel-${index}`} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
+                              <div className={`
+                                ${relacion.entidadRelacionada.tipo === 'persona' ? 'bg-red-500' : 
+                                  relacion.entidadRelacionada.tipo === 'vehiculo' ? 'bg-blue-500' : 
+                                  relacion.entidadRelacionada.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
+                                rounded-full p-1 mr-2
+                              `}>
+                                {relacion.entidadRelacionada.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
+                                 relacion.entidadRelacionada.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
+                                 relacion.entidadRelacionada.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
+                                 <MapPin className="h-3 w-3 text-white" />}
+                              </div>
+                              <div className="text-sm flex-grow">
+                                <div><strong>{relacion.ubicacion.tipo}</strong> {relacion.ubicacion.observaciones && `- ${relacion.ubicacion.observaciones}`}</div>
+                                <div className="text-xs text-gray-500">
+                                  <span className="font-semibold">{relacion.entidadRelacionada.tipo === 'persona' ? 
+                                    relacion.entidadRelacionada.entidad.nombre : 
+                                    relacion.entidadRelacionada.tipo === 'vehiculo' ? 
+                                    `${relacion.entidadRelacionada.entidad.marca} (${relacion.entidadRelacionada.entidad.placa})` : 
+                                    relacion.entidadRelacionada.tipo === 'inmueble' ? 
+                                    `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion || 'Sin dirección'}` : 
+                                    'Entidad desconocida'}</span><br/>
+                                  {relacion.ubicacion.latitud && relacion.ubicacion.longitud 
+                                    ? `Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}`
+                                    : 'Sin coordenadas'
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Entidades relacionadas */}
+                    {data.entidadesRelacionadas?.length > 0 && (
+                      <div className="bg-white p-4 rounded-md border border-gray-200">
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Entidades relacionadas con ubicaciones</h5>
+                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+                          {data.entidadesRelacionadas.map((relacion: any, index: number) => {
+                            const { tipo, entidad } = relacion;
+                            
+                            let icon = <MapPin className="h-3 w-3 text-white" />;
+                            let bgColor = 'bg-indigo-500';
+                            let text = '';
+                            
+                            if (tipo === 'persona') {
+                              icon = <User className="h-3 w-3 text-white" />;
+                              bgColor = 'bg-red-500';
+                              text = `${entidad.nombre} - ${entidad.identificacion || 'Sin ID'}`;
+                            } else if (tipo === 'vehiculo') {
+                              icon = <Car className="h-3 w-3 text-white" />;
+                              bgColor = 'bg-blue-500';
+                              text = `${entidad.marca} ${entidad.modelo || ''} (${entidad.placa})`;
+                            } else if (tipo === 'inmueble') {
+                              icon = <Home className="h-3 w-3 text-white" />;
+                              bgColor = 'bg-green-500';
+                              text = `${entidad.tipo} - ${entidad.direccion}`;
+                            }
+                            
+                            return (
+                              <div key={`ent-${index}`} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
+                                <div className={`${bgColor} rounded-full p-1 mr-2`}>
+                                  {icon}
+                                </div>
+                                <div className="text-sm flex-grow">
+                                  <div>{text}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-3 text-gray-500">
+                  Ingrese un término de búsqueda y haga clic en buscar
+                </div>
+              )}
+            </div>
+            
+            {/* Instrucciones */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+              <h4 className="font-medium text-gray-900 mb-2">Instrucciones</h4>
+              <ul className="space-y-1 text-sm text-gray-600 list-disc pl-5">
+                <li>Use la búsqueda para encontrar ubicaciones por nombre o descripción</li>
+                <li>Filtre los resultados según el tipo de entidad relacionada</li>
+                <li>Haga clic en los marcadores para ver más información</li>
+                <li>Las líneas naranja indican relaciones destacadas</li>
+                <li>Puede mover el mapa y hacer zoom con el ratón</li>
+              </ul>
             </div>
           </CardContent>
         </Card>
