@@ -292,16 +292,19 @@ export default function DetalleDialog({
         <Tabs defaultValue="informacion" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="informacion">
-              <Info className="h-4 w-4 mr-2" />
-              Información
+              <Info className="h-4 w-4" />
+              <span className="hidden sm:inline-block ml-2">Información</span>
             </TabsTrigger>
             <TabsTrigger value="observaciones">
-              <List className="h-4 w-4 mr-2" />
-              Observaciones{observaciones.length > 0 && ` (${observaciones.length})`}
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline-block ml-2">
+                Observaciones{observaciones.length > 0 && ` (${observaciones.length})`}
+              </span>
+              {observaciones.length > 0 && <span className="sm:hidden ml-1">{observaciones.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="relaciones">
-              <Link2 className="h-4 w-4 mr-2" />
-              Relaciones
+              <Link2 className="h-4 w-4" />
+              <span className="hidden sm:inline-block ml-2">Relaciones</span>
             </TabsTrigger>
           </TabsList>
           
@@ -316,7 +319,7 @@ export default function DetalleDialog({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[120px]">Fecha</TableHead>
-                      <TableHead className="w-[120px]">Usuario</TableHead>
+                      <TableHead className="w-[120px] hidden sm:table-cell">Usuario</TableHead>
                       <TableHead>Detalle</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -327,9 +330,10 @@ export default function DetalleDialog({
                           <div className="flex items-center gap-1 text-xs">
                             <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
                             {obs.fecha ? format(new Date(obs.fecha), "dd/MM/yyyy HH:mm") : "Fecha desconocida"}
+                            <span className="sm:hidden text-xs text-muted-foreground ml-1">({obs.usuario || "Sistema"})</span>
                           </div>
                         </TableCell>
-                        <TableCell>{obs.usuario || "Sistema"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{obs.usuario || "Sistema"}</TableCell>
                         <TableCell>{obs.detalle}</TableCell>
                       </TableRow>
                     ))}
@@ -450,7 +454,7 @@ export default function DetalleDialog({
                       <TableHeader>
                         <TableRow>
                           <TableHead>Tipo</TableHead>
-                          <TableHead>Coordenadas</TableHead>
+                          <TableHead className="hidden sm:table-cell">Coordenadas</TableHead>
                           <TableHead>Observaciones</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -458,7 +462,7 @@ export default function DetalleDialog({
                         {relaciones.ubicaciones.map((ubicacion: any) => (
                           <TableRow key={ubicacion.id}>
                             <TableCell>{ubicacion.tipo}</TableCell>
-                            <TableCell>
+                            <TableCell className="hidden sm:table-cell">
                               {`${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`}
                             </TableCell>
                             <TableCell>
