@@ -42,9 +42,9 @@ export default function LocationMapDialog({
   
   const { toast } = useToast();
   
-  // Default location (Argentina)
-  const defaultLat = initialLocation?.lat || -34.603722;
-  const defaultLng = initialLocation?.lng || -58.381592;
+  // Default location (Costa Rica - San José)
+  const defaultLat = initialLocation?.lat || 9.9281;
+  const defaultLng = initialLocation?.lng || -84.0907;
   
   // ID único para el mapa dentro del diálogo
   const mapDialogId = "map-in-dialog";
