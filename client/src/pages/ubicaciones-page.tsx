@@ -740,118 +740,46 @@ export default function UbicacionesPage() {
   // Manejar selección de un elemento de la lista de búsqueda
   const handleSearchItemSelect = async (item: any) => {
     setSelectedSearchItem(item);
-    setSearchTerm(item.display);
+    
+    // Preparar término de búsqueda según el tipo de entidad
+    let busquedaTermino = '';
+    
+    if (item.tipo === 'persona') {
+      busquedaTermino = item.identificacion;
+    } else if (item.tipo === 'vehiculo') {
+      busquedaTermino = item.placa;
+    } else if (item.tipo === 'inmueble') {
+      busquedaTermino = item.direccion;
+    }
+    
+    // Actualizar término de búsqueda - Usamos ID que es más específico
+    setSearchTerm(busquedaTermino);
     setShowSearchResults(false);
     
-    // Utilizamos el endpoint mejorado para obtener todas las relaciones
-    try {
-      console.log(`[DEBUG] Buscando entidad específica con todas sus relaciones: ${item.tipo} con ID ${item.id}`);
-      
-      // Realizar una búsqueda directa por ID usando nuestro endpoint avanzado
-      const response = await fetch(`/api/entidad/${item.tipo}/${item.id}`);
-      
-      if (!response.ok) {
-        throw new Error(`Error al buscar la entidad: ${response.status}`);
-      }
-      
-      // Obtener todos los datos de la entidad y sus relaciones
-      const entidadData = await response.json();
-      console.log(`[DEBUG] Datos completos de entidad encontrada:`, entidadData);
-      
-      // Mostrar resultados directamente de la respuesta del endpoint
-      // Siempre intentamos usar estos datos primero porque son más completos 
-      // y contienen relaciones de segundo nivel
-      console.log(`[DEBUG] Procesando ${entidadData.ubicacionesDirectas?.length || 0} ubicaciones directas y ` +
-                  `${entidadData.ubicacionesRelacionadas?.length || 0} ubicaciones relacionadas`);
-      
-      // Actualizar manualmente los datos mostrados
-      const datosActualizados = {
-        ubicacionesDirectas: entidadData.ubicacionesDirectas || [],
-        ubicacionesRelacionadas: entidadData.ubicacionesRelacionadas || [],
-        entidadesRelacionadas: entidadData.entidadesRelacionadas || []
-      };
-      
-      // Actualizar el estado para la visualización en el mapa
-      const dataKey = ["/api/ubicaciones", searchTerm, selectedTypes];
-      queryClient.setQueryData(dataKey, datosActualizados);
-      
-      // Actualizar estado para mostrar el panel de relaciones
-      setEntidadSeleccionada({
-        tipo: item.tipo,
-        id: item.id,
-        nombre: item.tipo === 'persona' ? item.nombre : 
-                item.tipo === 'vehiculo' ? `${item.marca} (${item.placa})` : 
-                `${item.tipoInmueble} - ${item.direccion}`
-      });
-      
-      // También actualizamos los filtros para que coincidan con la entidad seleccionada
-      setSelectedTypes({
-        personas: item.tipo === 'persona',
-        vehiculos: item.tipo === 'vehiculo',
-        inmuebles: item.tipo === 'inmueble',
-      });
-      
-      // Si no hay ubicaciones en los datos obtenidos, intentamos con el
-      // endpoint normal como fallback
-      if ((entidadData.ubicacionesDirectas?.length || 0) === 0 && 
-          (entidadData.ubicacionesRelacionadas?.length || 0) === 0) {
-        
-        console.log("[DEBUG] No se encontraron ubicaciones en el endpoint avanzado, intentando con búsqueda normal");
-        
-        // Ajustar el término de búsqueda según el tipo de entidad
-        let busquedaTermino = '';
-        
-        if (item.tipo === 'persona') {
-          busquedaTermino = item.identificacion || item.nombre;
-        } else if (item.tipo === 'vehiculo') {
-          busquedaTermino = item.placa;
-        } else if (item.tipo === 'inmueble') {
-          busquedaTermino = item.direccion || item.tipoInmueble;
-        }
-        
-        setSearchTerm(busquedaTermino);
-        
-        // Ejecutar búsqueda normal como fallback
-        refetch();
-      }
-    } catch (error) {
-      console.error("Error al buscar la entidad:", error);
-      
-      // En caso de error, hacemos una búsqueda sencilla por texto
-      let busquedaTermino = '';
-      
-      if (item.tipo === 'persona') {
-        busquedaTermino = item.identificacion || item.nombre;
-      } else if (item.tipo === 'vehiculo') {
-        busquedaTermino = item.placa;
-      } else if (item.tipo === 'inmueble') {
-        busquedaTermino = item.direccion || item.tipoInmueble;
-      }
-      
-      // Actualizar término y configurar tipos
-      setSearchTerm(busquedaTermino);
-      setSelectedTypes({
-        personas: item.tipo === 'persona',
-        vehiculos: item.tipo === 'vehiculo',
-        inmuebles: item.tipo === 'inmueble',
-      });
-      
-      // Ejecutar búsqueda normal
-      refetch();
-      
-      // También seleccionamos la entidad para mostrar sus relaciones
-      handleVerRelaciones(
-        item.tipo, 
-        item.id, 
-        item.tipo === 'persona' ? 
-          item.nombre : 
-          item.tipo === 'vehiculo' ? 
-          `${item.marca} (${item.placa})` : 
-          item.tipo === 'inmueble' ? 
-          `${item.tipoInmueble} - ${item.direccion}` : 
-          'Entidad'
-      );
-    }
+    console.log(`[DEBUG] Seleccionado ${item.tipo} (ID: ${item.id}): ${item.display}`);
+    
+    // Configurar tipos para la búsqueda
+    setSelectedTypes({
+      personas: item.tipo === 'persona',
+      vehiculos: item.tipo === 'vehiculo',
+      inmuebles: item.tipo === 'inmueble',
+    });
+    
+    // MÉTODO DIRECTO: usar el endpoint normal de búsqueda
+    refetch();
+    
+    // Mostrar el panel de relaciones
+    handleVerRelaciones(
+      item.tipo, 
+      item.id, 
+      item.tipo === 'persona' ? 
+        item.nombre : 
+        item.tipo === 'vehiculo' ? 
+        `${item.marca} (${item.placa})` : 
+        item.tipo === 'inmueble' ? 
+        `${item.tipoInmueble} - ${item.direccion}` : 
+        'Entidad'
+    );
   };
   
   // Limpiar la selección de búsqueda
