@@ -370,8 +370,12 @@ export default function DetalleDialog({
                       <TableBody>
                         {relaciones.personas.map((persona: any) => (
                           <TableRow key={persona.id}>
-                            <TableCell>{persona.nombre}</TableCell>
-                            <TableCell>{persona.identificacion}</TableCell>
+                            <TableCell className="align-top break-words">
+                              <span className="line-clamp-2">{persona.nombre}</span>
+                            </TableCell>
+                            <TableCell className="align-top whitespace-normal">
+                              {persona.identificacion}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
