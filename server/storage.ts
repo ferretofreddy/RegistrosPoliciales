@@ -8,7 +8,8 @@ import {
   inmuebles, Inmueble, InsertInmueble,
   inmueblesObservaciones, InmuebleObservacion, InsertInmuebleObservacion,
   tiposUbicaciones, TipoUbicacion, InsertTipoUbicacion,
-  ubicaciones, Ubicacion, InsertUbicacion
+  ubicaciones, Ubicacion, InsertUbicacion,
+  ubicacionesObservaciones, UbicacionObservacion, InsertUbicacionObservacion
 } from "@shared/schema";
 
 export interface IStorage {
@@ -62,6 +63,10 @@ export interface IStorage {
   getAllUbicaciones(): Promise<Ubicacion[]>;
   getUbicacion(id: number): Promise<Ubicacion | undefined>;
   createUbicacion(ubicacion: InsertUbicacion): Promise<Ubicacion>;
+  
+  // Ubicaciones observaciones methods
+  getUbicacionObservaciones(ubicacionId: number): Promise<UbicacionObservacion[]>;
+  createUbicacionObservacion(observacion: InsertUbicacionObservacion): Promise<UbicacionObservacion>;
   
   // Search and relation methods
   buscar(query: string, tipos: string[]): Promise<any>;

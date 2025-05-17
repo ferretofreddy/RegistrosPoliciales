@@ -173,6 +173,21 @@ export const insertUbicacionSchema = createInsertSchema(ubicaciones).pick({
   observaciones: true,
 });
 
+// Observaciones de Ubicaciones
+export const ubicacionesObservaciones = pgTable("ubicaciones_observaciones", {
+  id: serial("id").primaryKey(),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+  fecha: timestamp("fecha").notNull().defaultNow(),
+  usuario: text("usuario").notNull(),
+  detalle: text("detalle").notNull(),
+});
+
+export const insertUbicacionObservacionSchema = createInsertSchema(ubicacionesObservaciones).pick({
+  ubicacionId: true,
+  usuario: true,
+  detalle: true,
+});
+
 // Relaciones muchos a muchos
 export const personasVehiculos = pgTable("personas_vehiculos", {
   id: serial("id").primaryKey(),
@@ -259,3 +274,6 @@ export type InsertTipoUbicacion = z.infer<typeof insertTipoUbicacionSchema>;
 
 export type Ubicacion = typeof ubicaciones.$inferSelect;
 export type InsertUbicacion = z.infer<typeof insertUbicacionSchema>;
+
+export type UbicacionObservacion = typeof ubicacionesObservaciones.$inferSelect;
+export type InsertUbicacionObservacion = z.infer<typeof insertUbicacionObservacionSchema>;
