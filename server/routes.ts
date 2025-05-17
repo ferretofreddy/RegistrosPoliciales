@@ -435,6 +435,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para obtener entidad específica por tipo e ID
+  app.get("/api/entidad/:tipo/:id", async (req, res) => {
+    try {
+      const { tipo, id } = req.params;
+      const tipoNormalizado = tipo.toLowerCase();
+      const idNumerico = parseInt(id);
+      
+      let entidad = null;
+      let ubicacionesRelacionadas = [];
+      
+      if (tipoNormalizado === 'persona') {
+        entidad = await storage.getPersona(idNumerico);
+        if (entidad) {
+          // Obtener ubicaciones relacionadas para esta persona
+          const resultado = await storage.buscarUbicacionesConCoordenadas(entidad.nombre, ["persona"]);
+          ubicacionesRelacionadas = resultado.ubicacionesRelacionadas || [];
+        }
+      } else if (tipoNormalizado === 'vehiculo') {
+        entidad = await storage.getVehiculo(idNumerico);
+        if (entidad) {
+          // Obtener ubicaciones relacionadas para este vehículo
+          const resultado = await storage.buscarUbicacionesConCoordenadas(entidad.placa, ["vehiculo"]);
+          ubicacionesRelacionadas = resultado.ubicacionesRelacionadas || [];
+        }
+      } else if (tipoNormalizado === 'inmueble') {
+        entidad = await storage.getInmueble(idNumerico);
+        if (entidad) {
+          // Obtener ubicaciones relacionadas para este inmueble
+          const resultado = await storage.buscarUbicacionesConCoordenadas(entidad.direccion || entidad.tipo, ["inmueble"]);
+          ubicacionesRelacionadas = resultado.ubicacionesRelacionadas || [];
+        }
+      }
+      
+      if (!entidad) {
+        return res.status(404).json({ message: `${tipo} con ID ${id} no encontrado` });
+      }
+      
+      // Devolver la entidad junto con sus ubicaciones relacionadas
+      res.json({
+        entidad,
+        tipo: tipoNormalizado,
+        ubicacionesRelacionadas
+      });
+    } catch (error) {
+      console.error(`Error al obtener entidad ${req.params.tipo} con ID ${req.params.id}:`, error);
+      res.status(500).json({ message: "Error al obtener la entidad solicitada" });
+    }
+  });
+
   // Relaciones
   app.post("/api/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
     try {

@@ -737,36 +737,84 @@ export default function UbicacionesPage() {
   };
   
   // Manejar selección de un elemento de la lista de búsqueda
-  const handleSearchItemSelect = (item: any) => {
+  const handleSearchItemSelect = async (item: any) => {
     setSelectedSearchItem(item);
     setSearchTerm(item.display);
     setShowSearchResults(false);
     
-    // Búsqueda específica basada en la entidad seleccionada
-    const searchParams = new URLSearchParams();
-    
-    if (item.tipo === 'persona') {
-      searchParams.append('buscar', item.nombre);
-      // También podríamos buscar por identificación si es necesario
-    } else if (item.tipo === 'vehiculo') {
-      searchParams.append('buscar', item.placa);
-    } else if (item.tipo === 'inmueble') {
-      // Podemos buscar por dirección o tipo
-      searchParams.append('buscar', item.direccion || item.tipoInmueble);
+    // Hacemos búsqueda directa por ID, que es lo más preciso
+    try {
+      console.log(`[DEBUG] Buscando entidad específica: ${item.tipo} con ID ${item.id}`);
+      
+      // Realizar una búsqueda directa por ID
+      const response = await fetch(`/api/entidad/${item.tipo}/${item.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error al buscar la entidad: ${response.status}`);
+      }
+      
+      const entidadData = await response.json();
+      console.log(`[DEBUG] Datos de entidad encontrada:`, entidadData);
+      
+      // Actualizar estado para mostrar esta entidad
+      setEntidadSeleccionada({
+        tipo: item.tipo,
+        id: item.id,
+        nombre: item.tipo === 'persona' ? item.nombre : 
+                item.tipo === 'vehiculo' ? `${item.marca} (${item.placa})` : 
+                `${item.tipoInmueble} - ${item.direccion}`
+      });
+      
+      // Filtrar por tipo seleccionado para la búsqueda principal
+      setSelectedTypes({
+        personas: item.tipo === 'persona',
+        vehiculos: item.tipo === 'vehiculo',
+        inmuebles: item.tipo === 'inmueble',
+      });
+      
+      // Actualizamos el término para que sea identificable pero no interfiera con búsqueda
+      if (item.tipo === 'persona') {
+        setSearchTerm(item.identificacion || item.nombre);
+      } else if (item.tipo === 'vehiculo') {
+        setSearchTerm(item.placa);
+      } else if (item.tipo === 'inmueble') {
+        setSearchTerm(item.direccion || item.tipoInmueble);
+      }
+      
+      // Ejecutar búsqueda automáticamente con el nuevo término
+      refetch();
+      
+    } catch (error) {
+      console.error("Error al buscar la entidad:", error);
+      
+      // Fallback en caso de error: hacer una búsqueda por texto
+      let busquedaTermino = '';
+      
+      if (item.tipo === 'persona') {
+        busquedaTermino = item.identificacion || item.nombre;
+      } else if (item.tipo === 'vehiculo') {
+        busquedaTermino = item.placa;
+      } else if (item.tipo === 'inmueble') {
+        busquedaTermino = item.direccion || item.tipoInmueble;
+      }
+      
+      // Actualizar término y refrescar
+      setSearchTerm(busquedaTermino);
+      refetch();
+      
+      // Seleccionar la entidad para ver sus relaciones
+      handleVerRelaciones(
+        item.tipo, 
+        item.id, 
+        item.tipo === 'persona' ? 
+          item.nombre : 
+          item.tipo === 'vehiculo' ? 
+          `${item.marca} (${item.placa})` : 
+          item.tipo === 'inmueble' ? 
+          `${item.tipoInmueble} - ${item.direccion}` : 
+          'Entidad'
+      );
     }
-    
-    // Filtrar por el tipo de la entidad seleccionada
-    const tipos = [item.tipo + 's']; // Convertir a plural (persona -> personas)
-    searchParams.append('tipos', tipos.join(','));
-    
-    setSelectedTypes({
-      personas: item.tipo === 'persona',
-      vehiculos: item.tipo === 'vehiculo',
-      inmuebles: item.tipo === 'inmueble',
-    });
-    
-    // Realizar la búsqueda específica
-    refetch();
   };
   
   // Limpiar la selección de búsqueda
