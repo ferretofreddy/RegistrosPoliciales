@@ -115,8 +115,8 @@ export default function UbicacionForm() {
           const mapElement = document.getElementById('location-map');
           
           if (mapElement) {
-            // Coordenadas iniciales (puedes cambiarlas según tu ubicación principal)
-            const initialCoords = [-34.603722, -58.381592];
+            // Coordenadas iniciales (Costa Rica - San José)
+            const initialCoords = [9.9281, -84.0907];
             
             // Crear el mapa y configurarlo
             const newMap = leaflet.map('location-map').setView(initialCoords, 13);
