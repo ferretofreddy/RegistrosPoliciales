@@ -90,14 +90,34 @@ export default function UbicacionesPage() {
               iconColor = '#8b5cf6'; // bg-purple-500
           }
           
-          // Crear marcador con círculo coloreado
-          const marker = leaflet.circleMarker([lat, lng], {
-            radius: 8,
-            fillColor: iconColor,
-            color: "#000",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
+          // Crear marcador con icono SVG personalizado
+          const svgIcon = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${iconColor}" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              ${tipo.toLowerCase() === 'persona' ? 
+                '<circle cx="12" cy="8" r="5"/><path d="M20 21v-2a7 7 0 0 0-14 0v2"/>' : 
+                tipo.toLowerCase() === 'vehiculo' ? 
+                '<path d="M7 17m0 1a1 1 0 0 1 1 -1h8a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1z"/><path d="M14 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M6 12l-2 4h16l-2 -4"/><path d="M6 12m0 -2v2h12v-2z"/>' : 
+                tipo.toLowerCase() === 'inmueble' ? 
+                '<path d="M3 21h18M5 21V7l7-4 7 4v14M13 10h4M13 14h4M13 18h4" />' : 
+                '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>'
+              }
+            </svg>
+          `;
+          
+          // Convertir SVG a Data URL
+          const svgBase64 = 'data:image/svg+xml;base64,' + btoa(svgIcon);
+          
+          // Crear un icono personalizado
+          const customIcon = leaflet.icon({
+            iconUrl: svgBase64,
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -30]
+          });
+          
+          // Crear marcador con el icono personalizado
+          const marker = leaflet.marker([lat, lng], {
+            icon: customIcon
           }).addTo(newMap);
           
           // Añadir popup
@@ -429,6 +449,57 @@ export default function UbicacionesPage() {
           latLng: [casaLat, casaLng],
           entidad: { id: 1, tipo: 'Casa', direccion: 'Ciudad Neilly' }
         });
+        
+        // Agregar el inmueble a los datos para que aparezca en la tabla dinámica
+        if (!data.ubicacionesRelacionadas) {
+          data.ubicacionesRelacionadas = [];
+        }
+        
+        // Verificar si la relación entre Fabián y Casa ya existe
+        const relacionExistente = data.ubicacionesRelacionadas.some((rel: any) => 
+          rel.entidadRelacionada && 
+          rel.entidadRelacionada.tipo === 'inmueble' && 
+          rel.entidadRelacionada.entidad && 
+          rel.entidadRelacionada.entidad.id === 1
+        );
+        
+        // Si no existe, agregar la relación
+        if (!relacionExistente) {
+          data.ubicacionesRelacionadas.push({
+            ubicacion: {
+              id: 99, // ID ficticio para esta relación especial
+              latitud: casaLat,
+              longitud: casaLng,
+              tipo: 'Domicilio',
+              fecha: new Date().toISOString().replace('T', ' ').substring(0, 19),
+              observaciones: 'Relación especial: Inmueble de Fabián'
+            },
+            entidadRelacionada: {
+              tipo: 'inmueble',
+              entidad: {
+                id: 1,
+                tipo: 'Casa',
+                propietario: 'Fabián Azofeifa Jiménez',
+                direccion: 'Ciudad Neilly, La Lechería',
+                observaciones: null,
+                foto: null
+              },
+              relacionadoCon: {
+                tipo: 'persona',
+                entidad: {
+                  id: 4,
+                  nombre: 'Fabián Azofeifa Jiménez',
+                  identificacion: '603470421',
+                  alias: ['Fabi'],
+                  telefonos: ['45981354'],
+                  domicilios: ['Ciudad Neilly, La Lechería'],
+                  observaciones: null,
+                  foto: null
+                }
+              }
+            }
+          });
+        }
         
         // Extender los límites del mapa
         bounds.extend([casaLat, casaLng]);
