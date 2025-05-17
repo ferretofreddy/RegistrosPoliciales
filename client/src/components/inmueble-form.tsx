@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { insertInmuebleSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { invalidateAllQueries } from "@/lib/cache-utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
@@ -243,9 +244,7 @@ export default function InmuebleForm() {
       setObservaciones([]);
       setShowObservacionForm(false);
       // Usar la función centralizada para invalidar todas las consultas
-      import("@/lib/cache-utils").then(module => {
-        module.invalidateAllQueries('/api/inmuebles');
-      });
+      invalidateAllQueries('/api/inmuebles');
     },
     onError: (error) => {
       toast({
