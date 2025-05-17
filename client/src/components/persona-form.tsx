@@ -234,11 +234,10 @@ export default function PersonaForm() {
       setRelacionPersonas([]);
       setObservaciones([]);
       setShowObservacionForm(false);
-      // Invalidar queries para actualizar todos los datos relacionados
-      queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/ubicaciones'] });
+      // Usar la función centralizada para invalidar todas las consultas
+      import("@/lib/cache-utils").then(module => {
+        module.invalidateAllQueries('/api/personas');
+      });
     },
     onError: (error) => {
       toast({
