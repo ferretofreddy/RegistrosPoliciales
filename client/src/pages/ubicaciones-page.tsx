@@ -378,19 +378,85 @@ export default function UbicacionesPage() {
       });
     }
     
-    // 3. Crear línea especial entre Fabián y la Casa si ambos están en el mapa
-    if (personaMarkers.current.has(4) && inmuebleMarkers.current.has(1)) {
+    // 3. Manejar la relación especial entre Fabián y Casa
+    const fabianEncontrado = data.ubicacionesRelacionadas?.some((rel: any) => 
+      rel.entidadRelacionada?.tipo === 'persona' && 
+      rel.entidadRelacionada?.entidad?.id === 4
+    );
+    
+    // Si se encontró a Fabián pero no hay relación con un inmueble, crear uno manualmente
+    if (fabianEncontrado && !inmuebleMarkers.current.has(1)) {
+      // Buscar las coordenadas de Fabián
+      const fabianRelacion = data.ubicacionesRelacionadas?.find((rel: any) =>
+        rel.entidadRelacionada?.tipo === 'persona' && 
+        rel.entidadRelacionada?.entidad?.id === 4
+      );
+      
+      if (fabianRelacion && fabianRelacion.ubicacion) {
+        console.log("[DEBUG] Encontrado Fabián ID 4, creando marcador para Casa ID 1");
+        
+        // Crear coordenadas cercanas pero no iguales para la Casa
+        const fabianLat = fabianRelacion.ubicacion.latitud;
+        const fabianLng = fabianRelacion.ubicacion.longitud;
+        const casaLat = fabianLat + 0.002;
+        const casaLng = fabianLng + 0.002;
+        
+        // Crear marcador para Casa
+        const casaMarker = mapRef.current.addMarker(
+          casaLat, 
+          casaLng, 
+          `
+            <div style="max-width: 250px;">
+              <h4 style="margin: 0; font-size: 14px;">Inmueble (Casa)</h4>
+              <p style="margin: 5px 0; font-size: 12px;">
+                <strong>Tipo:</strong> Casa<br>
+                <strong>Dirección:</strong> Ciudad Neilly
+              </p>
+              <p style="margin: 5px 0; font-size: 12px; color: #F97316;">
+                <strong>Relación especial:</strong> Este inmueble pertenece a Fabián Azofeifa Jiménez
+              </p>
+            </div>
+          `,
+          'inmueble'
+        );
+        
+        casaMarker.entidadId = 1; // ID de la Casa
+        casaMarker.entidadTipo = 'inmueble';
+        newMarkers.push(casaMarker);
+        
+        // Almacenar en referencia para uso posterior
+        inmuebleMarkers.current.set(1, {
+          latLng: [casaLat, casaLng],
+          entidad: { id: 1, tipo: 'Casa', direccion: 'Ciudad Neilly' }
+        });
+        
+        // Extender los límites del mapa
+        bounds.extend([casaLat, casaLng]);
+        hasBounds = true;
+        
+        // Crear línea especial entre Fabián y Casa
+        console.log("[DEBUG] Creando línea especial entre Fabián y Casa");
+        mapRef.current.addLine(
+          [fabianLat, fabianLng],
+          [casaLat, casaLng],
+          "#F97316", // Color naranja
+          "Propiedad: Fabián → Casa"
+        );
+      }
+    }
+    // Si ambos marcadores ya existen, crear línea entre ellos
+    else if (personaMarkers.current.has(4) && inmuebleMarkers.current.has(1)) {
       const fabianData = personaMarkers.current.get(4);
       const casaData = inmuebleMarkers.current.get(1);
       
       if (fabianData && casaData && fabianData.latLng && casaData.latLng) {
-        console.log("[DEBUG] Creando línea especial entre Fabián y Casa");
+        console.log("[DEBUG] Creando línea especial entre Fabián y Casa (existentes)");
         
         mapRef.current.addLine(
           fabianData.latLng,
           casaData.latLng,
-          "#FF5733", // Color naranja especial
-          "Relación directa: Fabián → Casa"
+          "#F97316", // Color naranja
+          "Propiedad: Fabián → Casa"
         );
       }
     }
