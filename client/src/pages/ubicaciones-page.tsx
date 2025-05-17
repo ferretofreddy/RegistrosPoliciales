@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, MapPin, User, Car, Home, Network, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Make sure to import Leaflet via CDN in index.html
 declare global {
@@ -23,7 +25,7 @@ export default function UbicacionesPage() {
     inmuebles: true,
   });
   
-  // Estado para entidad seleccionada y sus relaciones en segundo nivel
+  // Estado para entidad seleccionada y sus relaciones
   const [entidadSeleccionada, setEntidadSeleccionada] = useState<{
     tipo: string;
     id: number;
@@ -34,10 +36,10 @@ export default function UbicacionesPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
+  const [relacionLines, setRelacionLines] = useState<any[]>([]);
   
-  // Crear un ref para almacenar marcadores de inmuebles para relaciones especiales
-  const inmuebleMarkers = useRef<Map<number, any>>(new Map());
-  const personaMarkers = useRef<Map<number, any>>(new Map());
+  // Crear un ref para almacenar marcadores para referencias
+  const entidadMarkers = useRef<Map<string, any>>(new Map());
 
   // Consulta principal para buscar ubicaciones
   const { data, isLoading, error, refetch } = useQuery({
@@ -68,132 +70,21 @@ export default function UbicacionesPage() {
     enabled: false,
   });
   
-  // Consulta para obtener relaciones en segundo nivel de una entidad seleccionada
-  const { data: relacionesData, isLoading: isLoadingRelaciones, refetch: refetchRelaciones } = useQuery({
-    queryKey: ["/api/relaciones-completas", entidadSeleccionada?.tipo, entidadSeleccionada?.id],
+  // Consulta para obtener relaciones de una entidad seleccionada
+  const { data: relacionesData, isLoading: isLoadingRelaciones } = useQuery({
+    queryKey: ["/api/relaciones", entidadSeleccionada?.tipo, entidadSeleccionada?.id],
     queryFn: async () => {
       if (!entidadSeleccionada) return null;
       
-      console.log(`[DEBUG] Consultando relaciones completas para ${entidadSeleccionada.tipo} con ID ${entidadSeleccionada.id}`);
+      console.log(`[DEBUG] Consultando relaciones para ${entidadSeleccionada.tipo} con ID ${entidadSeleccionada.id}`);
       
-      // 1. Obtener relaciones directas
-      const responseRelaciones = await fetch(`/api/relaciones/${entidadSeleccionada.tipo}/${entidadSeleccionada.id}`);
-      if (!responseRelaciones.ok) {
-        throw new Error(`Error al obtener relaciones: ${responseRelaciones.status}`);
-      }
-      const relacionesDirectas = await responseRelaciones.json();
-      
-      // 2. Procesar relaciones y obtener ubicaciones
-      const ubicacionesRelacionadas = [];
-      const entidadesConUbicaciones = [];
-      
-      // 2.1 Procesar personas relacionadas
-      if (relacionesDirectas.personas && relacionesDirectas.personas.length > 0) {
-        for (const persona of relacionesDirectas.personas) {
-          // Buscar ubicaciones de esta persona
-          const responseUbicacionesPersona = await fetch(`/api/relaciones/persona/${persona.id}`);
-          if (responseUbicacionesPersona.ok) {
-            const datosPersona = await responseUbicacionesPersona.json();
-            
-            // Agregar ubicaciones directas de la persona
-            if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
-              for (const ubicacion of datosPersona.ubicaciones) {
-                ubicacionesRelacionadas.push({
-                  ubicacion: ubicacion,
-                  entidadRelacionada: {
-                    tipo: 'persona',
-                    entidad: persona,
-                    relacionadoCon: {
-                      tipo: entidadSeleccionada.tipo,
-                      entidad: { id: entidadSeleccionada.id, nombre: entidadSeleccionada.nombre }
-                    }
-                  }
-                });
-              }
-            }
-            
-            entidadesConUbicaciones.push({
-              tipo: 'persona',
-              entidad: persona,
-              ubicaciones: datosPersona.ubicaciones || []
-            });
-          }
-        }
+      const response = await fetch(`/api/relaciones/${entidadSeleccionada.tipo}/${entidadSeleccionada.id}`);
+      if (!response.ok) {
+        throw new Error(`Error al obtener relaciones: ${response.status}`);
       }
       
-      // 2.2 Procesar vehículos relacionados
-      if (relacionesDirectas.vehiculos && relacionesDirectas.vehiculos.length > 0) {
-        for (const vehiculo of relacionesDirectas.vehiculos) {
-          // Buscar ubicaciones de este vehículo
-          const responseUbicacionesVehiculo = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
-          if (responseUbicacionesVehiculo.ok) {
-            const datosVehiculo = await responseUbicacionesVehiculo.json();
-            
-            // Agregar ubicaciones directas del vehículo
-            if (datosVehiculo.ubicaciones && datosVehiculo.ubicaciones.length > 0) {
-              for (const ubicacion of datosVehiculo.ubicaciones) {
-                ubicacionesRelacionadas.push({
-                  ubicacion: ubicacion,
-                  entidadRelacionada: {
-                    tipo: 'vehiculo',
-                    entidad: vehiculo,
-                    relacionadoCon: {
-                      tipo: entidadSeleccionada.tipo,
-                      entidad: { id: entidadSeleccionada.id, nombre: entidadSeleccionada.nombre }
-                    }
-                  }
-                });
-              }
-            }
-            
-            entidadesConUbicaciones.push({
-              tipo: 'vehiculo',
-              entidad: vehiculo,
-              ubicaciones: datosVehiculo.ubicaciones || []
-            });
-          }
-        }
-      }
-      
-      // 2.3 Procesar inmuebles relacionados
-      if (relacionesDirectas.inmuebles && relacionesDirectas.inmuebles.length > 0) {
-        for (const inmueble of relacionesDirectas.inmuebles) {
-          // Buscar ubicaciones de este inmueble
-          const responseUbicacionesInmueble = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
-          if (responseUbicacionesInmueble.ok) {
-            const datosInmueble = await responseUbicacionesInmueble.json();
-            
-            // Agregar ubicaciones directas del inmueble
-            if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
-              for (const ubicacion of datosInmueble.ubicaciones) {
-                ubicacionesRelacionadas.push({
-                  ubicacion: ubicacion,
-                  entidadRelacionada: {
-                    tipo: 'inmueble',
-                    entidad: inmueble,
-                    relacionadoCon: {
-                      tipo: entidadSeleccionada.tipo,
-                      entidad: { id: entidadSeleccionada.id, nombre: entidadSeleccionada.nombre }
-                    }
-                  }
-                });
-              }
-            }
-            
-            entidadesConUbicaciones.push({
-              tipo: 'inmueble',
-              entidad: inmueble,
-              ubicaciones: datosInmueble.ubicaciones || []
-            });
-          }
-        }
-      }
-      
-      return {
-        relacionesDirectas,
-        ubicacionesRelacionadas,
-        entidadesConUbicaciones
-      };
+      const data = await response.json();
+      return data;
     },
     enabled: !!entidadSeleccionada,
   });
@@ -215,7 +106,7 @@ export default function UbicacionesPage() {
         map: newMap,
         
         // Método para añadir un marcador al mapa
-        addMarker: function(lat: number, lng: number, popupContent: string, tipo: string = '', forceNew: boolean = false) {
+        addMarker: function(lat: number, lng: number, popupContent: string, tipo: string = '', entidadId: number = 0) {
           // Determinar el color basado en el tipo
           let iconColor = '';
           
@@ -269,15 +160,14 @@ export default function UbicacionesPage() {
             maxWidth: 300
           });
           
-          // Almacenar el tipo de entidad en el marcador para uso futuro
+          // Almacenar el tipo y ID de entidad en el marcador
           marker.entidadTipo = tipo;
+          marker.entidadId = entidadId;
           
-          // Guardar marcadores especiales para referencias posteriores
-          if (tipo === 'inmueble' && marker.entidadId === 1) {
-            inmuebleMarkers.current.set(1, marker);
-          }
-          if (tipo === 'persona' && marker.entidadId === 4) {
-            personaMarkers.current.set(4, marker);
+          // Guardar marcador para referencia
+          if (entidadId > 0) {
+            const key = `${tipo}-${entidadId}`;
+            entidadMarkers.current.set(key, marker);
           }
           
           return marker;
@@ -305,8 +195,16 @@ export default function UbicacionesPage() {
               newMap.removeLayer(layer);
             }
           });
-          inmuebleMarkers.current.clear();
-          personaMarkers.current.clear();
+          entidadMarkers.current.clear();
+        },
+        
+        // Método para limpiar solo las líneas de relación
+        clearLines: function() {
+          newMap.eachLayer(function(layer: any) {
+            if (layer instanceof leaflet.Polyline) {
+              newMap.removeLayer(layer);
+            }
+          });
         }
       };
       
@@ -377,6 +275,9 @@ export default function UbicacionesPage() {
     // Limpiar marcadores existentes
     mapRef.current.clear();
     
+    // Limpiar referencias de marcadores
+    entidadMarkers.current.clear();
+    
     // Crear nuevos marcadores
     const newMarkers: any[] = [];
     const bounds = window.L.latLngBounds();
@@ -401,7 +302,9 @@ export default function UbicacionesPage() {
                   Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}
                 </p>
               </div>
-            `
+            `,
+            'ubicacion',
+            ubicacion.id
           );
           
           marker.entidadId = ubicacion.id;
@@ -440,79 +343,29 @@ export default function UbicacionesPage() {
             relAux = relAux.relacionadoCon;
           }
           
-          // Verificar si es la relación especial (Fabián y Casa)
-          let infoEspecial = '';
-          const esFabianYCasa = (tipo === 'persona' && entidad.id === 4) || 
-                              (tipo === 'inmueble' && entidad.id === 1);
-                              
-          if (esFabianYCasa) {
-            console.log(`[DEBUG] Detectada relación especial: ${tipo} ID: ${entidad.id}`);
-            infoEspecial = `
+          // Información sobre relaciones
+          let infoRelaciones = '';
+          if (relacion.entidadRelacionada.relacionadoCon) {
+            const relacionadoCon = relacion.entidadRelacionada.relacionadoCon;
+            const tipoRelacionado = relacionadoCon.tipo;
+            const nombreRelacionado = relacionadoCon.entidad.nombre || 
+                                     (tipoRelacionado === 'vehiculo' ? relacionadoCon.entidad.placa : '') ||
+                                     (tipoRelacionado === 'inmueble' ? relacionadoCon.entidad.direccion : '') ||
+                                     `ID: ${relacionadoCon.entidad.id}`;
+            
+            infoRelaciones = `
               <p style="margin: 5px 0; font-size: 12px; color: #3B82F6;">
-                <strong>Relación especial:</strong> ${tipo === 'persona' ? 'Fabián está relacionado con Casa (ID: 1)' : 'Casa está relacionada con Fabián (ID: 4)'}
+                <strong>Relacionado con:</strong> ${nombreRelacionado} (${tipoRelacionado})
               </p>
             `;
-            
-            // Guardar referencias para crear líneas especiales después
-            if (tipo === 'persona' && entidad.id === 4) {
-              personaMarkers.current.set(4, {
-                latLng: [relacion.ubicacion.latitud, relacion.ubicacion.longitud],
-                entidad: entidad
-              });
-            } else if (tipo === 'inmueble' && entidad.id === 1) {
-              inmuebleMarkers.current.set(1, {
-                latLng: [relacion.ubicacion.latitud, relacion.ubicacion.longitud],
-                entidad: entidad
-              });
-            }
           }
           
-          // Crear descripción detallada de la cadena de relaciones
-          let descripcionRelaciones = '';
-          if (relacion.entidadRelacionada.relacionadoCon) {
-            descripcionRelaciones = '<div style="margin-top: 5px; border-top: 1px solid #eee; padding-top: 5px;">';
-            descripcionRelaciones += '<span style="font-weight: 500;">Cadena de relaciones:</span><br>';
-            
-            let relActual = relacion.entidadRelacionada;
-            let nivel = 1;
-            
-            descripcionRelaciones += `<div style="margin-left: ${nivel * 5}px;">✓ ${relActual.tipo.toUpperCase()}: `;
-            
-            if (relActual.tipo === 'persona') {
-              descripcionRelaciones += `${relActual.entidad.nombre}`;
-            } else if (relActual.tipo === 'vehiculo') {
-              descripcionRelaciones += `${relActual.entidad.marca} ${relActual.entidad.modelo || ''} (${relActual.entidad.placa})`;
-            } else if (relActual.tipo === 'inmueble') {
-              descripcionRelaciones += `${relActual.entidad.tipo} - ${relActual.entidad.direccion}`;
-            }
-            descripcionRelaciones += '</div>';
-            
-            while (relActual.relacionadoCon) {
-              nivel++;
-              relActual = relActual.relacionadoCon;
-              
-              descripcionRelaciones += `<div style="margin-left: ${nivel * 5}px;">→ ${relActual.tipo.toUpperCase()}: `;
-              
-              if (relActual.tipo === 'persona') {
-                descripcionRelaciones += `${relActual.entidad.nombre}`;
-              } else if (relActual.tipo === 'vehiculo') {
-                descripcionRelaciones += `${relActual.entidad.marca} ${relActual.entidad.modelo || ''} (${relActual.entidad.placa})`;
-              } else if (relActual.tipo === 'inmueble') {
-                descripcionRelaciones += `${relActual.entidad.tipo} - ${relActual.entidad.direccion}`;
-              }
-              
-              descripcionRelaciones += '</div>';
-            }
-            
-            descripcionRelaciones += '</div>';
-          }
-          
-          // Botón para ver relaciones de segundo nivel
+          // Botón para ver relaciones
           const botonRelaciones = `
             <div style="margin-top: 10px; text-align: center;">
               <button onclick="window.handleVerRelaciones('${tipo}', ${entidad.id}, '${encodeURIComponent(title)}')" 
                 style="padding: 4px 8px; font-size: 12px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer; color: #0369a1;">
-                Ver relaciones de segundo nivel
+                Ver relaciones
               </button>
             </div>
           `;
@@ -525,8 +378,7 @@ export default function UbicacionesPage() {
                 <strong>Ubicación:</strong> ${relacion.ubicacion.tipo || 'Sin especificar'}
                 ${relacion.ubicacion.observaciones ? `<br><em>${relacion.ubicacion.observaciones}</em>` : ''}
               </p>
-              ${infoEspecial}
-              ${descripcionRelaciones}
+              ${infoRelaciones}
               ${botonRelaciones}
             </div>
           `;
@@ -535,7 +387,8 @@ export default function UbicacionesPage() {
             relacion.ubicacion.latitud, 
             relacion.ubicacion.longitud, 
             popupContent,
-            tipo
+            tipo,
+            entidad.id
           );
           
           marker.entidadId = entidad.id;
@@ -544,27 +397,8 @@ export default function UbicacionesPage() {
           newMarkers.push(marker);
           bounds.extend([relacion.ubicacion.latitud, relacion.ubicacion.longitud]);
           hasBounds = true;
-        } else {
-          console.warn(`Ubicación relacionada ${index} sin coordenadas válidas:`, relacion);
         }
       });
-    }
-    
-    // 3. Crear línea especial entre Fabián y la Casa si ambos están en el mapa
-    if (personaMarkers.current.has(4) && inmuebleMarkers.current.has(1)) {
-      const fabianData = personaMarkers.current.get(4);
-      const casaData = inmuebleMarkers.current.get(1);
-      
-      if (fabianData && casaData && fabianData.latLng && casaData.latLng) {
-        console.log("[DEBUG] Creando línea especial entre Fabián y Casa");
-        
-        mapRef.current.addLine(
-          fabianData.latLng,
-          casaData.latLng,
-          "#FF5733", // Color naranja especial
-          "Relación directa: Fabián → Casa"
-        );
-      }
     }
     
     // Ajustar vista del mapa según los marcadores
@@ -574,138 +408,118 @@ export default function UbicacionesPage() {
     
     // Actualizar el estado de los marcadores
     setMarkers(newMarkers);
+    
+    // Limpiar líneas de relación cuando cambian los datos de búsqueda
+    mapRef.current.clearLines();
+    setRelacionLines([]);
+    
   }, [map, data]);
   
-  // Efecto para mostrar relaciones en segundo nivel cuando relacionesData cambia
+  // Efecto para dibujar líneas de relación cuando se selecciona una entidad
   useEffect(() => {
-    if (!map || !mapRef.current || !relacionesData) return;
+    if (!map || !mapRef.current || !relacionesData || !entidadSeleccionada) return;
     
-    console.log("[DEBUG] Actualizando mapa con relaciones en segundo nivel");
+    // Limpiar líneas de relación anteriores
+    mapRef.current.clearLines();
     
-    // Limpiar marcadores existentes
-    mapRef.current.clear();
+    const newLines: any[] = [];
+    const entidadKey = `${entidadSeleccionada.tipo}-${entidadSeleccionada.id}`;
+    const entidadMarker = entidadMarkers.current.get(entidadKey);
     
-    // Crear nuevos marcadores
-    const newMarkers: any[] = [];
-    const bounds = window.L.latLngBounds();
-    let hasBounds = false;
+    if (!entidadMarker || !entidadMarker._latlng) {
+      console.log("No se encontró marcador para la entidad seleccionada:", entidadKey);
+      return;
+    }
     
-    // Procesar ubicaciones relacionadas en segundo nivel
-    if (relacionesData.ubicacionesRelacionadas && relacionesData.ubicacionesRelacionadas.length > 0) {
-      relacionesData.ubicacionesRelacionadas.forEach((relacion: any, index: number) => {
-        if (relacion.ubicacion && relacion.ubicacion.latitud && relacion.ubicacion.longitud) {
-          const entidad = relacion.entidadRelacionada.entidad;
-          const tipo = relacion.entidadRelacionada.tipo;
+    const entidadLatLng = [entidadMarker._latlng.lat, entidadMarker._latlng.lng];
+    
+    // Dibujar líneas para personas relacionadas
+    if (relacionesData.personas && relacionesData.personas.length > 0) {
+      relacionesData.personas.forEach((persona: any) => {
+        const personaKey = `persona-${persona.id}`;
+        const personaMarker = entidadMarkers.current.get(personaKey);
+        
+        if (personaMarker && personaMarker._latlng) {
+          const personaLatLng = [personaMarker._latlng.lat, personaMarker._latlng.lng];
           
-          let title = '';
-          if (tipo === 'persona') {
-            title = `${entidad.nombre}${entidad.identificacion ? ` - ${entidad.identificacion}` : ''}`;
-          } else if (tipo === 'vehiculo') {
-            title = `${entidad.marca} ${entidad.modelo || ''} (${entidad.placa})`;
-          } else if (tipo === 'inmueble') {
-            title = `${entidad.tipo} - ${entidad.direccion}`;
-          }
-          
-          // Información sobre la relación
-          let infoRelacion = '';
-          if (relacion.entidadRelacionada.relacionadoCon) {
-            const relacionadoCon = relacion.entidadRelacionada.relacionadoCon;
-            infoRelacion = `
-              <p style="margin: 5px 0; font-size: 12px; color: #3B82F6;">
-                <strong>Relacionado con:</strong> ${relacionadoCon.entidad.nombre || relacionadoCon.tipo}
-              </p>
-            `;
-          }
-          
-          // Crear el popup con información
-          const popupContent = `
-            <div style="max-width: 250px;">
-              <h4 style="margin: 0; font-size: 14px;">${title}</h4>
-              <p style="margin: 5px 0; font-size: 12px;">
-                <strong>Ubicación:</strong> ${relacion.ubicacion.tipo || 'Sin especificar'}
-                ${relacion.ubicacion.observaciones ? `<br><em>${relacion.ubicacion.observaciones}</em>` : ''}
-              </p>
-              ${infoRelacion}
-            </div>
-          `;
-          
-          const marker = mapRef.current.addMarker(
-            relacion.ubicacion.latitud, 
-            relacion.ubicacion.longitud, 
-            popupContent,
-            tipo
+          const line = mapRef.current.addLine(
+            entidadLatLng,
+            personaLatLng,
+            '#ef4444', // Rojo para personas
+            `Relación: ${entidadSeleccionada.nombre} → ${persona.nombre}`
           );
           
-          marker.entidadId = entidad.id;
-          marker.entidadTipo = tipo;
-          
-          newMarkers.push(marker);
-          bounds.extend([relacion.ubicacion.latitud, relacion.ubicacion.longitud]);
-          hasBounds = true;
+          newLines.push(line);
         }
       });
     }
     
-    // Añadir un marcador para la entidad seleccionada si tiene ubicaciones
-    if (relacionesData.entidadesConUbicaciones) {
-      for (const entidadInfo of relacionesData.entidadesConUbicaciones) {
-        if (entidadInfo.tipo === entidadSeleccionada?.tipo && 
-            entidadInfo.entidad.id === entidadSeleccionada?.id &&
-            entidadInfo.ubicaciones && 
-            entidadInfo.ubicaciones.length > 0) {
+    // Dibujar líneas para vehículos relacionados
+    if (relacionesData.vehiculos && relacionesData.vehiculos.length > 0) {
+      relacionesData.vehiculos.forEach((vehiculo: any) => {
+        const vehiculoKey = `vehiculo-${vehiculo.id}`;
+        const vehiculoMarker = entidadMarkers.current.get(vehiculoKey);
+        
+        if (vehiculoMarker && vehiculoMarker._latlng) {
+          const vehiculoLatLng = [vehiculoMarker._latlng.lat, vehiculoMarker._latlng.lng];
           
-          const ubicacion = entidadInfo.ubicaciones[0]; // Usar la primera ubicación
+          const line = mapRef.current.addLine(
+            entidadLatLng,
+            vehiculoLatLng,
+            '#3b82f6', // Azul para vehículos
+            `Relación: ${entidadSeleccionada.nombre} → ${vehiculo.marca} ${vehiculo.placa}`
+          );
           
-          if (ubicacion.latitud && ubicacion.longitud) {
-            const marker = mapRef.current.addMarker(
-              ubicacion.latitud, 
-              ubicacion.longitud, 
-              `
-                <div style="max-width: 250px;">
-                  <h4 style="margin: 0; font-size: 14px;">ENTIDAD SELECCIONADA</h4>
-                  <p style="margin: 5px 0; font-size: 12px;">
-                    <strong>${entidadSeleccionada.nombre || ''}</strong><br>
-                    ${entidadSeleccionada.tipo}
-                  </p>
-                </div>
-              `,
-              entidadSeleccionada.tipo,
-              true // forzar nuevo marcador
-            );
-            
-            newMarkers.push(marker);
-            bounds.extend([ubicacion.latitud, ubicacion.longitud]);
-            hasBounds = true;
-          }
+          newLines.push(line);
         }
-      }
+      });
     }
     
-    // Dibujar líneas entre la entidad seleccionada y sus relaciones
-    if (hasBounds && newMarkers.length > 1) {
-      const entidadPrincipal = newMarkers[newMarkers.length - 1]; // El último es la entidad seleccionada
-      
-      if (entidadPrincipal && entidadPrincipal._latlng) {
-        for (let i = 0; i < newMarkers.length - 1; i++) {
-          if (newMarkers[i] && newMarkers[i]._latlng) {
-            mapRef.current.addLine(
-              [entidadPrincipal._latlng.lat, entidadPrincipal._latlng.lng],
-              [newMarkers[i]._latlng.lat, newMarkers[i]._latlng.lng],
-              "#5b21b6", // Color morado para relaciones de segundo nivel
-              "Relación de segundo nivel"
-            );
-          }
+    // Dibujar líneas para inmuebles relacionados
+    if (relacionesData.inmuebles && relacionesData.inmuebles.length > 0) {
+      relacionesData.inmuebles.forEach((inmueble: any) => {
+        const inmuebleKey = `inmueble-${inmueble.id}`;
+        const inmuebleMarker = entidadMarkers.current.get(inmuebleKey);
+        
+        if (inmuebleMarker && inmuebleMarker._latlng) {
+          const inmuebleLatLng = [inmuebleMarker._latlng.lat, inmuebleMarker._latlng.lng];
+          
+          const line = mapRef.current.addLine(
+            entidadLatLng,
+            inmuebleLatLng,
+            '#22c55e', // Verde para inmuebles
+            `Relación: ${entidadSeleccionada.nombre} → ${inmueble.tipo} ${inmueble.direccion}`
+          );
+          
+          newLines.push(line);
         }
-      }
+      });
     }
     
-    // Ajustar la vista del mapa según los marcadores
-    if (hasBounds && bounds && bounds.isValid && bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [50, 50] });
+    // Dibujar líneas para ubicaciones relacionadas
+    if (relacionesData.ubicaciones && relacionesData.ubicaciones.length > 0) {
+      relacionesData.ubicaciones.forEach((ubicacion: any) => {
+        const ubicacionKey = `ubicacion-${ubicacion.id}`;
+        const ubicacionMarker = entidadMarkers.current.get(ubicacionKey);
+        
+        if (ubicacionMarker && ubicacionMarker._latlng) {
+          const ubicacionLatLng = [ubicacionMarker._latlng.lat, ubicacionMarker._latlng.lng];
+          
+          const line = mapRef.current.addLine(
+            entidadLatLng,
+            ubicacionLatLng,
+            '#8b5cf6', // Púrpura para ubicaciones
+            `Relación: ${entidadSeleccionada.nombre} → Ubicación ${ubicacion.tipo}`
+          );
+          
+          newLines.push(line);
+        }
+      });
     }
     
-    // Actualizar el estado de los marcadores
-    setMarkers(newMarkers);
+    // Actualizar el estado de las líneas
+    setRelacionLines(newLines);
+    
   }, [map, relacionesData, entidadSeleccionada]);
 
   // Funciones de manejo de eventos
@@ -735,12 +549,18 @@ export default function UbicacionesPage() {
     }));
   };
   
-  // Función para manejar la visualización de relaciones en segundo nivel
+  // Función para manejar la visualización de relaciones
   const handleVerRelaciones = (tipo: string, id: number, nombre?: string) => {
-    console.log(`[DEBUG] Ver relaciones en segundo nivel para ${tipo} con ID ${id}`);
+    console.log(`[DEBUG] Ver relaciones para ${tipo} con ID ${id}`);
     
     // Si el nombre viene codificado, decodificarlo
     const nombreDecoded = nombre ? decodeURIComponent(nombre) : undefined;
+    
+    // Si es la misma entidad, deseleccionarla
+    if (entidadSeleccionada && entidadSeleccionada.tipo === tipo && entidadSeleccionada.id === id) {
+      setEntidadSeleccionada(null);
+      return;
+    }
     
     // Actualizar el estado de la entidad seleccionada
     setEntidadSeleccionada({
@@ -752,11 +572,15 @@ export default function UbicacionesPage() {
   
   // Exponer la función handleVerRelaciones al objeto window para que sea accesible desde los popups
   useEffect(() => {
-    window.handleVerRelaciones = handleVerRelaciones;
+    if (typeof window !== 'undefined') {
+      window.handleVerRelaciones = handleVerRelaciones;
+    }
     
     return () => {
       // Limpiar al desmontar el componente
-      delete window.handleVerRelaciones;
+      if (typeof window !== 'undefined') {
+        window.handleVerRelaciones = () => {};
+      }
     };
   }, []);
 
@@ -841,7 +665,7 @@ export default function UbicacionesPage() {
                   <div className="flex items-center">
                     <Network className="h-5 w-5 mr-2 text-blue-600" />
                     <span className="text-sm font-medium text-blue-800">
-                      Visualizando relaciones de segundo nivel para: 
+                      Visualizando relaciones para: 
                       <span className="ml-1 font-bold">{entidadSeleccionada.nombre}</span>
                     </span>
                   </div>
@@ -890,221 +714,301 @@ export default function UbicacionesPage() {
                   ) : (
                     <div className="text-right mb-2 text-sm text-gray-500">
                       {data.ubicacionesDirectas?.length || 0} ubicaciones directas | 
-                      {data.ubicacionesRelacionadas?.length || 0} ubicaciones relacionadas
+                      {data.ubicacionesRelacionadas?.length || 0} ubicaciones relacionadas |
+                      {data.entidadesRelacionadas?.length || 0} entidades relacionadas
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Ubicaciones directas */}
-                    {data.ubicacionesDirectas?.length > 0 && (
-                      <div className="bg-white p-4 rounded-md border border-gray-200">
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">Ubicaciones directas</h5>
-                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
-                          {data.ubicacionesDirectas.map((ubicacion: any) => (
-                            <div key={ubicacion.id} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
-                              <div className="bg-purple-500 rounded-full p-1 mr-2">
-                                <MapPin className="h-3 w-3 text-white" />
-                              </div>
-                              <div className="text-sm flex-grow">
-                                <div><strong>{ubicacion.tipo}</strong> {ubicacion.observaciones && `- ${ubicacion.observaciones}`}</div>
-                                <div className="text-xs text-gray-500">
-                                  {ubicacion.latitud && ubicacion.longitud 
-                                    ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
-                                    : 'Sin coordenadas'
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <Tabs defaultValue="todas" className="mb-4">
+                    <TabsList>
+                      <TabsTrigger value="todas">Todas las ubicaciones</TabsTrigger>
+                      {entidadSeleccionada && relacionesData && (
+                        <TabsTrigger value="relaciones">
+                          Relaciones de {entidadSeleccionada.nombre}
+                          <Badge variant="outline" className="ml-2 bg-blue-100">
+                            {
+                              (relacionesData.personas?.length || 0) +
+                              (relacionesData.vehiculos?.length || 0) +
+                              (relacionesData.inmuebles?.length || 0) +
+                              (relacionesData.ubicaciones?.length || 0)
+                            }
+                          </Badge>
+                        </TabsTrigger>
+                      )}
+                    </TabsList>
                     
-                    {/* Ubicaciones relacionadas */}
-                    {data.ubicacionesRelacionadas?.length > 0 && (
-                      <div className="bg-white p-4 rounded-md border border-gray-200">
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">Ubicaciones relacionadas con entidades</h5>
-                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
-                          {data.ubicacionesRelacionadas.map((relacion: any, index: number) => (
-                            <div key={`rel-${index}`} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
-                              <div className={`
-                                ${relacion.entidadRelacionada.tipo === 'persona' ? 'bg-red-500' : 
-                                  relacion.entidadRelacionada.tipo === 'vehiculo' ? 'bg-blue-500' : 
-                                  relacion.entidadRelacionada.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
-                                rounded-full p-1 mr-2
-                              `}>
-                                {relacion.entidadRelacionada.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
-                                 relacion.entidadRelacionada.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
-                                 relacion.entidadRelacionada.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
-                                 <MapPin className="h-3 w-3 text-white" />}
-                              </div>
-                              <div className="text-sm flex-grow">
-                                <div className="flex justify-between">
-                                  <div>
-                                    <strong>{relacion.ubicacion.tipo}</strong> {relacion.ubicacion.observaciones && `- ${relacion.ubicacion.observaciones}`}
+                    <TabsContent value="todas">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Ubicaciones directas */}
+                        {data.ubicacionesDirectas?.length > 0 && (
+                          <div className="bg-white p-4 rounded-md border border-gray-200">
+                            <h5 className="text-sm font-medium text-gray-700 mb-2">Ubicaciones directas</h5>
+                            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+                              {data.ubicacionesDirectas.map((ubicacion: any) => (
+                                <div key={ubicacion.id} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
+                                  <div className="bg-purple-500 rounded-full p-1 mr-2">
+                                    <MapPin className="h-3 w-3 text-white" />
                                   </div>
-                                  <button 
-                                    className="text-xs text-blue-600 hover:text-blue-800"
-                                    onClick={() => handleVerRelaciones(
-                                      relacion.entidadRelacionada.tipo, 
-                                      relacion.entidadRelacionada.entidad.id,
-                                      relacion.entidadRelacionada.tipo === 'persona' ? 
+                                  <div className="text-sm flex-grow">
+                                    <div><strong>{ubicacion.tipo}</strong> {ubicacion.observaciones && `- ${ubicacion.observaciones}`}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {ubicacion.latitud && ubicacion.longitud 
+                                        ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
+                                        : 'Sin coordenadas'
+                                      }
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Ubicaciones relacionadas */}
+                        {data.ubicacionesRelacionadas?.length > 0 && (
+                          <div className="bg-white p-4 rounded-md border border-gray-200">
+                            <h5 className="text-sm font-medium text-gray-700 mb-2">Ubicaciones relacionadas con entidades</h5>
+                            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+                              {data.ubicacionesRelacionadas.map((relacion: any, index: number) => (
+                                <div key={`rel-${index}`} className={`flex items-center p-2 bg-white rounded border ${
+                                  entidadSeleccionada && 
+                                  relacion.entidadRelacionada.tipo === entidadSeleccionada.tipo && 
+                                  relacion.entidadRelacionada.entidad.id === entidadSeleccionada.id 
+                                    ? 'border-blue-400 bg-blue-50' 
+                                    : 'border-gray-200'
+                                } shadow-sm`}>
+                                  <div className={`
+                                    ${relacion.entidadRelacionada.tipo === 'persona' ? 'bg-red-500' : 
+                                      relacion.entidadRelacionada.tipo === 'vehiculo' ? 'bg-blue-500' : 
+                                      relacion.entidadRelacionada.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
+                                    rounded-full p-1 mr-2
+                                  `}>
+                                    {relacion.entidadRelacionada.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
+                                     relacion.entidadRelacionada.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
+                                     relacion.entidadRelacionada.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
+                                     <MapPin className="h-3 w-3 text-white" />}
+                                  </div>
+                                  <div className="text-sm flex-grow">
+                                    <div className="flex justify-between">
+                                      <div>
+                                        <strong>{relacion.ubicacion.tipo}</strong> {relacion.ubicacion.observaciones && `- ${relacion.ubicacion.observaciones}`}
+                                      </div>
+                                      <button 
+                                        className="text-xs text-blue-600 hover:text-blue-800"
+                                        onClick={() => handleVerRelaciones(
+                                          relacion.entidadRelacionada.tipo, 
+                                          relacion.entidadRelacionada.entidad.id,
+                                          relacion.entidadRelacionada.tipo === 'persona' ? 
+                                            relacion.entidadRelacionada.entidad.nombre : 
+                                            relacion.entidadRelacionada.tipo === 'vehiculo' ? 
+                                            `${relacion.entidadRelacionada.entidad.marca} (${relacion.entidadRelacionada.entidad.placa})` : 
+                                            relacion.entidadRelacionada.tipo === 'inmueble' ? 
+                                            `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion}` : 
+                                            'Entidad'
+                                        )}
+                                      >
+                                        {entidadSeleccionada && 
+                                         relacion.entidadRelacionada.tipo === entidadSeleccionada.tipo && 
+                                         relacion.entidadRelacionada.entidad.id === entidadSeleccionada.id 
+                                          ? 'Ocultar relaciones' 
+                                          : 'Ver relaciones'
+                                        }
+                                      </button>
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      <span className="font-semibold">{relacion.entidadRelacionada.tipo === 'persona' ? 
                                         relacion.entidadRelacionada.entidad.nombre : 
                                         relacion.entidadRelacionada.tipo === 'vehiculo' ? 
                                         `${relacion.entidadRelacionada.entidad.marca} (${relacion.entidadRelacionada.entidad.placa})` : 
                                         relacion.entidadRelacionada.tipo === 'inmueble' ? 
-                                        `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion}` : 
-                                        'Entidad'
-                                    )}
-                                  >
-                                    Ver relaciones
-                                  </button>
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  <span className="font-semibold">{relacion.entidadRelacionada.tipo === 'persona' ? 
-                                    relacion.entidadRelacionada.entidad.nombre : 
-                                    relacion.entidadRelacionada.tipo === 'vehiculo' ? 
-                                    `${relacion.entidadRelacionada.entidad.marca} (${relacion.entidadRelacionada.entidad.placa})` : 
-                                    relacion.entidadRelacionada.tipo === 'inmueble' ? 
-                                    `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion || 'Sin dirección'}` : 
-                                    'Entidad desconocida'}</span><br/>
-                                  {relacion.ubicacion.latitud && relacion.ubicacion.longitud 
-                                    ? `Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}`
-                                    : 'Sin coordenadas'
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Entidades relacionadas */}
-                    {data.entidadesRelacionadas?.length > 0 && (
-                      <div className="bg-white p-4 rounded-md border border-gray-200">
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">Entidades relacionadas</h5>
-                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
-                          {data.entidadesRelacionadas.map((entidad: any, index: number) => (
-                            <div key={`ent-${index}`} className="flex items-center p-2 bg-white rounded border border-gray-200 shadow-sm">
-                              <div className={`
-                                ${entidad.tipo === 'persona' ? 'bg-red-500' : 
-                                  entidad.tipo === 'vehiculo' ? 'bg-blue-500' : 
-                                  entidad.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
-                                rounded-full p-1 mr-2
-                              `}>
-                                {entidad.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
-                                 entidad.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
-                                 entidad.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
-                                 <MapPin className="h-3 w-3 text-white" />}
-                              </div>
-                              <div className="text-sm flex-grow">
-                                <div className="font-medium flex justify-between">
-                                  <div>
-                                    {entidad.tipo === 'persona' ? 
-                                      entidad.nombre : 
-                                      entidad.tipo === 'vehiculo' ? 
-                                      `${entidad.marca} (${entidad.placa})` : 
-                                      entidad.tipo === 'inmueble' ? 
-                                      `${entidad.tipo} - ${entidad.direccion || 'Sin dirección'}` : 
-                                      'Entidad desconocida'}
+                                        `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion || 'Sin dirección'}` : 
+                                        'Entidad desconocida'}</span>
+                                      
+                                      {relacion.entidadRelacionada.relacionadoCon && (
+                                        <span className="ml-1 text-blue-600">
+                                          → {relacion.entidadRelacionada.relacionadoCon.tipo}: {
+                                            relacion.entidadRelacionada.relacionadoCon.entidad.nombre ||
+                                            (relacion.entidadRelacionada.relacionadoCon.tipo === 'vehiculo' ? 
+                                              relacion.entidadRelacionada.relacionadoCon.entidad.placa : 
+                                              relacion.entidadRelacionada.relacionadoCon.tipo === 'inmueble' ?
+                                              relacion.entidadRelacionada.relacionadoCon.entidad.direccion : '')
+                                          }
+                                        </span>
+                                      )}
+                                      
+                                      <br/>
+                                      {relacion.ubicacion.latitud && relacion.ubicacion.longitud 
+                                        ? `Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}`
+                                        : 'Sin coordenadas'
+                                      }
+                                    </div>
                                   </div>
-                                  <button 
-                                    className="text-xs text-blue-600 hover:text-blue-800 ml-2 flex items-center"
-                                    onClick={() => handleVerRelaciones(
-                                      entidad.tipo, 
-                                      entidad.id, 
-                                      entidad.tipo === 'persona' ? 
-                                        entidad.nombre : 
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Entidades relacionadas */}
+                        {data.entidadesRelacionadas?.length > 0 && (
+                          <div className="bg-white p-4 rounded-md border border-gray-200">
+                            <h5 className="text-sm font-medium text-gray-700 mb-2">Entidades relacionadas</h5>
+                            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+                              {data.entidadesRelacionadas.map((entidad: any, index: number) => (
+                                <div key={`ent-${index}`} className={`flex items-center p-2 bg-white rounded border ${
+                                  entidadSeleccionada && 
+                                  entidadSeleccionada.tipo === entidad.tipo && 
+                                  entidadSeleccionada.id === entidad.id 
+                                    ? 'border-blue-400 bg-blue-50' 
+                                    : 'border-gray-200'
+                                } shadow-sm`}>
+                                  <div className={`
+                                    ${entidad.tipo === 'persona' ? 'bg-red-500' : 
+                                      entidad.tipo === 'vehiculo' ? 'bg-blue-500' : 
+                                      entidad.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
+                                    rounded-full p-1 mr-2
+                                  `}>
+                                    {entidad.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
+                                     entidad.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
+                                     entidad.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
+                                     <MapPin className="h-3 w-3 text-white" />}
+                                  </div>
+                                  <div className="text-sm flex-grow">
+                                    <div className="font-medium flex justify-between">
+                                      <div>
+                                        {entidad.tipo === 'persona' ? 
+                                          entidad.nombre : 
+                                          entidad.tipo === 'vehiculo' ? 
+                                          `${entidad.marca} (${entidad.placa})` : 
+                                          entidad.tipo === 'inmueble' ? 
+                                          `${entidad.tipo} - ${entidad.direccion || 'Sin dirección'}` : 
+                                          'Entidad desconocida'}
+                                      </div>
+                                      <button 
+                                        className="text-xs text-blue-600 hover:text-blue-800 ml-2 flex items-center"
+                                        onClick={() => handleVerRelaciones(
+                                          entidad.tipo, 
+                                          entidad.id, 
+                                          entidad.tipo === 'persona' ? 
+                                            entidad.nombre : 
+                                            entidad.tipo === 'vehiculo' ? 
+                                            `${entidad.marca} (${entidad.placa})` : 
+                                            entidad.tipo === 'inmueble' ? 
+                                            `${entidad.tipo} - ${entidad.direccion}` : 
+                                            'Entidad'
+                                        )}
+                                      >
+                                        {entidadSeleccionada && 
+                                         entidadSeleccionada.tipo === entidad.tipo && 
+                                         entidadSeleccionada.id === entidad.id 
+                                          ? 'Ocultar relaciones' 
+                                          : 'Ver relaciones'
+                                        }
+                                      </button>
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {entidad.tipo === 'persona' ? 
+                                        `Identificación: ${entidad.identificacion || 'N/A'}` : 
                                         entidad.tipo === 'vehiculo' ? 
-                                        `${entidad.marca} (${entidad.placa})` : 
+                                        `${entidad.modelo || ''} - ${entidad.color || 'Sin color'}` : 
                                         entidad.tipo === 'inmueble' ? 
-                                        `${entidad.tipo} - ${entidad.direccion}` : 
-                                        'Entidad'
-                                    )}
-                                  >
-                                    Ver relaciones
-                                  </button>
+                                        `${entidad.propietario || 'Sin propietario'}` : 
+                                        ''}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  {entidad.tipo === 'persona' ? 
-                                    `Identificación: ${entidad.identificacion || 'N/A'}` : 
-                                    entidad.tipo === 'vehiculo' ? 
-                                    `${entidad.modelo || ''} - ${entidad.color || 'Sin color'}` : 
-                                    entidad.tipo === 'inmueble' ? 
-                                    `${entidad.propietario || 'Sin propietario'}` : 
-                                    ''}
-                                </div>
-                              </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </TabsContent>
                     
-                    {/* Relaciones en segundo nivel */}
-                    {entidadSeleccionada && relacionesData && relacionesData.ubicacionesRelacionadas?.length > 0 && (
-                      <div className="bg-blue-50 p-4 rounded-md border border-blue-200 col-span-1 md:col-span-2 lg:col-span-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <h5 className="text-sm font-medium text-blue-700 flex items-center">
-                            <Network className="mr-2 h-4 w-4" />
-                            Relaciones de segundo nivel: {entidadSeleccionada.nombre}
+                    {entidadSeleccionada && relacionesData && (
+                      <TabsContent value="relaciones">
+                        <div className="border rounded-md p-4 mb-4 bg-white">
+                          <h5 className="font-medium text-gray-800 mb-3 flex items-center">
+                            <Network className="h-4 w-4 mr-2 text-blue-600" />
+                            Relaciones de {entidadSeleccionada.nombre}
                           </h5>
-                          <button 
-                            className="text-xs flex items-center text-blue-600 hover:text-blue-800"
-                            onClick={() => setEntidadSeleccionada(null)}
-                          >
-                            <span className="mr-1">×</span> Cerrar
-                          </button>
-                        </div>
-                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
-                          {relacionesData.ubicacionesRelacionadas.map((relacion: any, index: number) => (
-                            <div key={`rel-sec-${index}`} className="flex items-center p-2 bg-white rounded border border-blue-200 shadow-sm">
-                              <div className={`
-                                ${relacion.entidadRelacionada.tipo === 'persona' ? 'bg-red-500' : 
-                                  relacion.entidadRelacionada.tipo === 'vehiculo' ? 'bg-blue-500' : 
-                                  relacion.entidadRelacionada.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
-                                rounded-full p-1 mr-2
-                              `}>
-                                {relacion.entidadRelacionada.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
-                                 relacion.entidadRelacionada.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
-                                 relacion.entidadRelacionada.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
-                                 <MapPin className="h-3 w-3 text-white" />}
-                              </div>
-                              <div className="text-sm flex-grow">
-                                <div>
-                                  <strong>{relacion.ubicacion.tipo}</strong> 
-                                  {relacion.ubicacion.observaciones && ` - ${relacion.ubicacion.observaciones}`}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  <span className="font-semibold">
-                                    {relacion.entidadRelacionada.tipo === 'persona' ? 
-                                      relacion.entidadRelacionada.entidad.nombre : 
-                                      relacion.entidadRelacionada.tipo === 'vehiculo' ? 
-                                      `${relacion.entidadRelacionada.entidad.marca} (${relacion.entidadRelacionada.entidad.placa})` : 
-                                      relacion.entidadRelacionada.tipo === 'inmueble' ? 
-                                      `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion || 'Sin dirección'}` : 
-                                      'Entidad desconocida'}
-                                  </span>
-                                  {relacion.entidadRelacionada.relacionadoCon && (
-                                    <span className="ml-1 text-blue-600">
-                                      → {relacion.entidadRelacionada.relacionadoCon.entidad.nombre || 
-                                      relacion.entidadRelacionada.relacionadoCon.tipo}
-                                    </span>
-                                  )}
-                                  <br/>
-                                  {relacion.ubicacion.latitud && relacion.ubicacion.longitud 
-                                    ? `Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}`
-                                    : 'Sin coordenadas'
-                                  }
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Personas relacionadas */}
+                            {relacionesData.personas?.length > 0 && (
+                              <div className="border rounded-md p-3">
+                                <h6 className="text-sm font-medium mb-2 flex items-center">
+                                  <User className="h-3 w-3 mr-1 text-red-600" />
+                                  Personas ({relacionesData.personas.length})
+                                </h6>
+                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                  {relacionesData.personas.map((persona: any) => (
+                                    <div key={`persona-${persona.id}`} className="text-xs p-2 border rounded-sm">
+                                      <div className="font-medium">{persona.nombre}</div>
+                                      <div className="text-gray-500">ID: {persona.identificacion || 'N/A'}</div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            )}
+                            
+                            {/* Vehículos relacionados */}
+                            {relacionesData.vehiculos?.length > 0 && (
+                              <div className="border rounded-md p-3">
+                                <h6 className="text-sm font-medium mb-2 flex items-center">
+                                  <Car className="h-3 w-3 mr-1 text-blue-600" />
+                                  Vehículos ({relacionesData.vehiculos.length})
+                                </h6>
+                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                  {relacionesData.vehiculos.map((vehiculo: any) => (
+                                    <div key={`vehiculo-${vehiculo.id}`} className="text-xs p-2 border rounded-sm">
+                                      <div className="font-medium">{vehiculo.marca} {vehiculo.modelo}</div>
+                                      <div className="text-gray-500">Placa: {vehiculo.placa}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Inmuebles relacionados */}
+                            {relacionesData.inmuebles?.length > 0 && (
+                              <div className="border rounded-md p-3">
+                                <h6 className="text-sm font-medium mb-2 flex items-center">
+                                  <Home className="h-3 w-3 mr-1 text-green-600" />
+                                  Inmuebles ({relacionesData.inmuebles.length})
+                                </h6>
+                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                  {relacionesData.inmuebles.map((inmueble: any) => (
+                                    <div key={`inmueble-${inmueble.id}`} className="text-xs p-2 border rounded-sm">
+                                      <div className="font-medium">{inmueble.tipo}</div>
+                                      <div className="text-gray-500">{inmueble.direccion}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Ubicaciones relacionadas */}
+                            {relacionesData.ubicaciones?.length > 0 && (
+                              <div className="border rounded-md p-3">
+                                <h6 className="text-sm font-medium mb-2 flex items-center">
+                                  <MapPin className="h-3 w-3 mr-1 text-purple-600" />
+                                  Ubicaciones ({relacionesData.ubicaciones.length})
+                                </h6>
+                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                  {relacionesData.ubicaciones.map((ubicacion: any) => (
+                                    <div key={`ubicacion-${ubicacion.id}`} className="text-xs p-2 border rounded-sm">
+                                      <div className="font-medium">{ubicacion.tipo}</div>
+                                      <div className="text-gray-500">{ubicacion.observaciones || 'Sin observaciones'}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      </TabsContent>
                     )}
-                  </div>
+                  </Tabs>
                 </>
               ) : error ? (
                 <div className="text-center py-3 text-red-500 flex items-center justify-center">
