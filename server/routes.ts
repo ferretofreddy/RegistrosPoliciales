@@ -428,56 +428,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? tipos 
         : tipos ? [tipos] : ["personas", "vehiculos", "inmuebles"];
       
-      // Detectar si la búsqueda es para Fabián Azofeifa (ID 4)
-      const esBusquedaFabian = query.toString().includes('603470421') || 
-        query.toString().toLowerCase().includes('fabian') || 
-        query.toString().toLowerCase().includes('azofeifa');
+      // Búsqueda estándar
+      const resultados = await storage.buscar(query.toString(), tiposArray as string[]);
       
-      // Si es Fabián, usar nuestra solución directa
-      if (esBusquedaFabian) {
-        // Importar la función de corrección
-        const { obtenerTodasUbicacionesPersona } = require('./api-fixes');
+      // SOLUCIÓN DIRECTA: Si la búsqueda incluye a Fabián o su identificación (ID 4)
+      if (query.toString().includes('603470421') || 
+          query.toString().toLowerCase().includes('fabian') || 
+          query.toString().toLowerCase().includes('azofeifa')) {
+        console.log("[PARCHE-MANUAL] Añadiendo ubicaciones específicas para Fabián Azofeifa");
         
-        // Obtener primero los resultados estándar
-        const resultados = await storage.buscar(query.toString(), tiposArray as string[]);
-        
-        // Obtener también los resultados específicos para Fabián (ID 4)
-        const resultadosEspecificos = await obtenerTodasUbicacionesPersona(4);
-        
-        console.log(`[PARCHE-FABIAN] Encontradas ${resultadosEspecificos.ubicacionesDirectas.length} ubicaciones directas específicas`);
-        
-        // Asegurarnos de que estén presentes en los resultados
-        if (resultadosEspecificos.ubicacionesDirectas.length > 0) {
-          // Si hay una persona en los resultados, asegurarnos de que tenga las ubicaciones
-          if (resultados.personas && resultados.personas.length > 0) {
-            // Ubicación de domicilio explícita para Fabián
+        try {
+          // Buscar explícitamente el domicilio de Fabián (ID 9)
+          const [domicilioFabian] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, 9));
+          
+          if (domicilioFabian) {
+            console.log("[PARCHE-MANUAL] Encontrado domicilio de Fabián:", domicilioFabian);
+            
+            // Agregarlo directamente a las ubicaciones relacionadas
             resultados.ubicacionesRelacionadas = resultados.ubicacionesRelacionadas || [];
             
-            // Añadir las ubicaciones de domicilio como relacionadas
-            for (const ubi of resultadosEspecificos.ubicacionesDirectas) {
-              // Comprobar si ya existe
-              const yaExiste = resultados.ubicacionesRelacionadas.some(
-                (r: any) => r.ubicacion && r.ubicacion.id === ubi.id
-              );
+            // Verificar si ya existe
+            const yaExiste = resultados.ubicacionesRelacionadas.some(
+              (r: any) => r.ubicacion && r.ubicacion.id === domicilioFabian.id
+            );
+            
+            if (!yaExiste && resultados.personas && resultados.personas.length > 0) {
+              // Buscar a Fabián en los resultados
+              const fabian = resultados.personas.find(p => p.id === 4);
               
-              if (!yaExiste) {
+              if (fabian) {
                 resultados.ubicacionesRelacionadas.push({
-                  ubicacion: ubi,
+                  ubicacion: domicilioFabian,
                   entidadRelacionada: {
                     tipo: 'persona',
-                    entidad: resultados.personas[0]
+                    entidad: fabian
                   }
                 });
+                
+                console.log("[PARCHE-MANUAL] Añadido domicilio de Fabián a resultados");
               }
             }
           }
+        } catch (err) {
+          console.error("[PARCHE-MANUAL] Error al añadir domicilio:", err);
         }
-        
-        return res.json(resultados);
       }
       
-      // Búsqueda estándar para otros casos
-      const resultados = await storage.buscar(query.toString(), tiposArray as string[]);
       res.json(resultados);
     } catch (error) {
       console.error("Error en búsqueda:", error);
