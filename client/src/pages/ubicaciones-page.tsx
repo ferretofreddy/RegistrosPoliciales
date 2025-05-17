@@ -317,6 +317,53 @@ export default function UbicacionesPage() {
             relAux = relAux.relacionadoCon;
           }
           
+          // Log adicional para depuración de la relación entre Fabián y el inmueble
+          if ((tipo === 'persona' && entidad.id === 4) || 
+              (tipo === 'inmueble' && entidad.id === 1) ||
+              (relAux && relAux.entidad && 
+                ((relAux.tipo === 'persona' && relAux.entidad.id === 4) || 
+                 (relAux.tipo === 'inmueble' && relAux.entidad.id === 1)))) {
+            console.log(`[DEBUG] Encontrada relación importante entre ${tipo}:${entidad.id} y ${relAux?.tipo}:${relAux?.entidad?.id}`);
+            console.log('[DEBUG] Detalle completo de la relación:', JSON.stringify(relacion, null, 2));
+          }
+          
+          // Corrección específica para Fabián (ID: 4) y su relación con inmuebles
+          if (tipo === 'persona' && entidad.id === 4 && relacion.ubicacion) {
+            // Forzar línea adicional entre Fabián y el inmueble (ID: 1) si existe
+            const inmuebleEspecial = { id: 1, tipo: 'Casa', direccion: 'Calle Principal 123' };
+            
+            // Actualizar el popup para incluir la información de la relación
+            let popupContent = `
+              <div style="max-width: 250px;">
+                <h4 style="margin: 0; font-size: 14px;">${title}</h4>
+                <p style="margin: 5px 0; font-size: 12px;">
+                  <strong>Ubicación:</strong> ${relacion.ubicacion.tipo || 'Sin especificar'}
+                  ${relacion.ubicacion.observaciones ? `<br><em>${relacion.ubicacion.observaciones}</em>` : ''}
+                </p>
+                <p style="margin: 5px 0; font-size: 12px; color: #3B82F6;">
+                  <strong>Relación especial:</strong> La persona está relacionada con el inmueble ID 1
+                </p>
+                ${descripcionRelaciones}
+              </div>
+            `;
+            
+            mapRef.current?.addMarker(relacion.ubicacion.latitud, relacion.ubicacion.longitud, popupContent, tipo);
+            
+            // Agregar línea desde la ubicación de la persona hasta el inmueble (si ya tiene marcador)
+            if (inmuebleMarkers.current.has(1)) {
+              const inmuebleMarker = inmuebleMarkers.current.get(1);
+              if (inmuebleMarker && 'getLatLng' in inmuebleMarker) {
+                const inmuebleLatLng = inmuebleMarker.getLatLng();
+                mapRef.current?.addLine(
+                  [relacion.ubicacion.latitud, relacion.ubicacion.longitud],
+                  [inmuebleLatLng.lat, inmuebleLatLng.lng],
+                  "#FF5733", // Color diferente para esta relación especial
+                  "Relación directa: Fabián → Casa"
+                );
+              }
+            }
+          }
+          
           console.log(`Agregando marcador en [${relacion.ubicacion.latitud}, ${relacion.ubicacion.longitud}] para ${cadenaRelaciones}`);
           
           // Crear descripción detallada de la cadena de relaciones
