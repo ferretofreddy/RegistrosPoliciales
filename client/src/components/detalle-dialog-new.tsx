@@ -40,7 +40,7 @@ interface DetalleDialogProps {
   dato: Persona | Vehiculo | Inmueble | Ubicacion | null;
 }
 
-// Componente para mostrar las observaciones de una ubicación en un popover
+// Componente para mostrar las observaciones de una ubicación en un diálogo modal
 function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
   const [open, setOpen] = useState(false);
   
@@ -48,33 +48,28 @@ function UbicacionObservaciones({ ubicacionId }: { ubicacionId: number }) {
   const { data: observaciones, isLoading } = useQuery({
     queryKey: [`/api/ubicaciones/${ubicacionId}/observaciones`],
     queryFn: async () => {
-      if (!open) return []; // No cargar datos hasta que se abra el popover
+      if (!open) return []; // No cargar datos hasta que se abra el diálogo
       const response = await fetch(`/api/ubicaciones/${ubicacionId}/observaciones`);
       if (!response.ok) throw new Error('Error al cargar observaciones');
       return response.json();
     },
-    enabled: open, // Solo cargar cuando el popover esté abierto
+    enabled: open, // Solo cargar cuando el diálogo esté abierto
   });
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="text-xs text-left">
           Ver observaciones
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[90vw] max-w-[350px] max-h-[80vh] sm:w-80 sm:max-h-72 overflow-auto mx-auto fixed left-[50%] -translate-x-1/2" side="top" align="center" sideOffset={5}>
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="font-medium text-sm">Observaciones de la ubicación</h4>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-6 w-6 p-0" 
-            onClick={() => setOpen(false)}
-          >
-            <XCircle className="h-4 w-4" />
-          </Button>
-        </div>
+      </DialogTrigger>
+      <DialogContent className="w-[95vw] max-w-[450px] p-4 max-h-[80vh] overflow-auto">
+        <DialogHeader>
+          <DialogTitle className="font-medium text-base">Observaciones de la ubicación</DialogTitle>
+          <DialogDescription className="text-xs">
+            Historial de observaciones registradas
+          </DialogDescription>
+        </DialogHeader>
         
         {isLoading ? (
           <div className="text-center py-2">Cargando...</div>
