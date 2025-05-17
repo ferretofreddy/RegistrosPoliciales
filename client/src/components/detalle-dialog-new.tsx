@@ -280,7 +280,7 @@ export default function DetalleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:max-h-[90vh] overflow-y-auto w-[95vw] mx-auto">
         <DialogHeader>
           <div className={`rounded-full p-2 ${color} w-fit mb-2`}>
             {icon}
@@ -428,15 +428,15 @@ export default function DetalleDialog({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Tipo</TableHead>
+                          <TableHead className="w-1/3">Tipo</TableHead>
                           <TableHead>Dirección</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {relaciones.inmuebles.map((inmueble: any) => (
                           <TableRow key={inmueble.id}>
-                            <TableCell>{inmueble.tipo}</TableCell>
-                            <TableCell>{inmueble.direccion}</TableCell>
+                            <TableCell className="align-top">{inmueble.tipo}</TableCell>
+                            <TableCell className="break-words">{inmueble.direccion}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -466,11 +466,16 @@ export default function DetalleDialog({
                       <TableBody>
                         {relaciones.ubicaciones.map((ubicacion: any) => (
                           <TableRow key={ubicacion.id}>
-                            <TableCell>{ubicacion.tipo}</TableCell>
+                            <TableCell className="align-top">
+                              {ubicacion.tipo}
+                              <div className="sm:hidden text-xs text-muted-foreground mt-1">
+                                {`${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`}
+                              </div>
+                            </TableCell>
                             <TableCell className="hidden sm:table-cell">
                               {`${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="align-top">
                               <UbicacionObservaciones ubicacionId={ubicacion.id} />
                             </TableCell>
                           </TableRow>
