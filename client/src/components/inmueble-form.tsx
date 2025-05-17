@@ -36,6 +36,7 @@ const inmuebleFormSchema = insertInmuebleSchema.extend({
   personaSeleccionada: z.string().optional(),
   vehiculoSeleccionado: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),
+  propietarioId: z.string().optional(),
   latitud: z.string().optional(),
   longitud: z.string().optional(),
   nuevaObservacion: z.string().optional(),
@@ -92,6 +93,9 @@ export default function InmuebleForm() {
     }
   });
 
+  // Estado para manejar si se ingresa propietario manual o se selecciona
+  const [propietarioManual, setPropietarioManual] = useState(true);
+
   // Configurar el formulario
   const form = useForm<InmuebleFormValues>({
     resolver: zodResolver(inmuebleFormSchema),
@@ -118,6 +122,7 @@ export default function InmuebleForm() {
         direccion: values.direccion,
       };
 
+      // Crear el inmueble
       const res = await apiRequest("POST", "/api/inmuebles", inmuebleData);
       const inmueble = await res.json();
       
@@ -127,6 +132,21 @@ export default function InmuebleForm() {
           await apiRequest("POST", `/api/inmuebles/${inmueble.id}/observaciones`, {
             detalle: obs.detalle
           });
+        }
+      }
+      
+      // Si se seleccionó una persona como propietario, crear la relación automáticamente
+      if (!propietarioManual && values.personaSeleccionada) {
+        try {
+          await apiRequest("POST", "/api/relaciones", {
+            tipo1: "inmueble",
+            id1: inmueble.id,
+            tipo2: "persona",
+            id2: parseInt(values.personaSeleccionada)
+          });
+          console.log(`Relación automática creada: inmueble ${inmueble.id} - persona ${values.personaSeleccionada}`);
+        } catch (error) {
+          console.error("Error al crear relación automática con propietario:", error);
         }
       }
       
@@ -437,19 +457,88 @@ export default function InmuebleForm() {
             )}
           />
           
-          <FormField
-            control={form.control}
-            name="propietario"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Propietario</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nombre del propietario" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <FormLabel>Propietario</FormLabel>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  type="button" 
+                  variant={propietarioManual ? "default" : "outline"} 
+                  onClick={() => setPropietarioManual(true)}
+                  size="sm"
+                  className="h-7 text-xs"
+                >
+                  Manual
+                </Button>
+                <Button 
+                  type="button" 
+                  variant={!propietarioManual ? "default" : "outline"} 
+                  onClick={() => setPropietarioManual(false)}
+                  size="sm"
+                  className="h-7 text-xs"
+                >
+                  Seleccionar
+                </Button>
+              </div>
+            </div>
+            
+            {propietarioManual ? (
+              <FormField
+                control={form.control}
+                name="propietario"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Nombre del propietario" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name="personaSeleccionada"
+                render={({ field }) => (
+                  <FormItem>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Si se selecciona una persona, actualizar el campo propietario
+                        if (value && personas) {
+                          const persona = personas.find((p: any) => p.id.toString() === value);
+                          if (persona) {
+                            form.setValue("propietario", persona.nombre);
+                          }
+                        }
+                      }}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar persona" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {!personas ? (
+                          <SelectItem value="loading">Cargando...</SelectItem>
+                        ) : personas.length > 0 ? (
+                          personas.map((persona: any) => (
+                            <SelectItem key={persona.id} value={persona.id.toString()}>
+                              {persona.nombre} ({persona.identificacion})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-data">No hay personas registradas</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
-          />
+          </div>
         </div>
         
         <FormField
