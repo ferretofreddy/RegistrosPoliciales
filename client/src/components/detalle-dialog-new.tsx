@@ -198,10 +198,12 @@ export default function DetalleDialog({
 
   // Obtener observaciones del elemento seleccionado
   const { data: observaciones = [] } = useQuery({
-    queryKey: [`/api/${tipo}s/${dato?.id}/observaciones`],
+    queryKey: [`/api/${tipo === 'ubicacion' ? 'ubicaciones' : tipo + 's'}/${dato?.id}/observaciones`],
     queryFn: async () => {
       if (!dato) return [];
-      const res = await fetch(`/api/${tipo}s/${dato.id}/observaciones`);
+      // Manejar el caso especial para ubicaciones ya que no sigue el patrón regular de pluralización
+      const endpoint = tipo === 'ubicacion' ? 'ubicaciones' : `${tipo}s`;
+      const res = await fetch(`/api/${endpoint}/${dato.id}/observaciones`);
       if (!res.ok) return [];
       return res.json();
     },
