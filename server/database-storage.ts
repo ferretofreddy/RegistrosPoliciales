@@ -749,6 +749,61 @@ export class DatabaseStorage {
             }
           }
           
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Personas relacionadas a esta persona
+          console.log(`Buscando personas relacionadas a la persona ID: ${persona.id}`);
+          
+          const personasRelacionadas1Result = await db.execute(
+            sql`SELECT p.* FROM personas p
+                JOIN personas_personas pp ON p.id = pp.persona_id_2
+                WHERE pp.persona_id_1 = ${persona.id}`
+          );
+          
+          const personasRelacionadas2Result = await db.execute(
+            sql`SELECT p.* FROM personas p
+                JOIN personas_personas pp ON p.id = pp.persona_id_1
+                WHERE pp.persona_id_2 = ${persona.id}`
+          );
+          
+          const personasRelacionadas = [
+            ...(personasRelacionadas1Result.rows || []),
+            ...(personasRelacionadas2Result.rows || [])
+          ];
+          
+          console.log(`Personas relacionadas a la persona ID ${persona.id}: ${personasRelacionadas.length}`);
+          
+          // Para cada persona relacionada, buscar ubicaciones
+          for (const personaRelacionada of personasRelacionadas) {
+            console.log(`Buscando ubicaciones para persona relacionada ID: ${personaRelacionada.id}`);
+            
+            const ubicacionesPersonaRelaResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                  WHERE pu.persona_id = ${personaRelacionada.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesPersonaRela = ubicacionesPersonaRelaResult.rows || [];
+            console.log(`Ubicaciones encontradas para persona relacionada ID ${personaRelacionada.id}: ${ubicacionesPersonaRela.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesPersonaRela) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'persona',
+                    entidad: personaRelacionada,
+                    relacionadoCon: {
+                      tipo: 'persona',
+                      entidad: persona
+                    }
+                  }
+                });
+              }
+            }
+          }
+          
           // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Vehículos relacionados a esta persona
           console.log(`Buscando vehículos relacionados a la persona ID: ${persona.id}`);
           const vehiculosRelacionadosResult = await db.execute(
