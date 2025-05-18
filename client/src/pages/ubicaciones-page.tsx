@@ -8,6 +8,13 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Search } from "lucide-react";
 import { SearchResult, EntityType } from "@/components/search-component";
+import { 
+  PersonaEntity, 
+  VehiculoEntity, 
+  InmuebleEntity, 
+  UbicacionEntity, 
+  RelacionesResponse 
+} from "@/types/api-types";
 
 export default function UbicacionesPage() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
@@ -17,21 +24,22 @@ export default function UbicacionesPage() {
 
   // Manejar la selección de un resultado
   const handleResultSelect = (result: SearchResult) => {
-    if (result.tipo === "todas") return;
     setSelectedResult(result);
     console.log("Resultado seleccionado:", result);
   };
 
   // Obtener datos de la entidad seleccionada
-  const { data: entityData, isLoading: isLoadingEntity } = useQuery({
-    queryKey: [selectedResult?.tipo && `api/${selectedResult.tipo}s/${selectedResult.id}`],
-    enabled: !!selectedResult && selectedResult.tipo !== "todas"
+  const { data: entityData, isLoading: isLoadingEntity } = useQuery<
+    PersonaEntity | VehiculoEntity | InmuebleEntity | UbicacionEntity
+  >({
+    queryKey: [selectedResult ? `api/${selectedResult.tipo}s/${selectedResult.id}` : null],
+    enabled: !!selectedResult
   });
 
   // Obtener relaciones para buscar ubicaciones
-  const { data: relationData, isLoading: isLoadingRelations } = useQuery({
-    queryKey: [selectedResult?.tipo && `api/relaciones/${selectedResult.tipo}/${selectedResult.id}`],
-    enabled: !!selectedResult && selectedResult.tipo !== "todas"
+  const { data: relationData, isLoading: isLoadingRelations } = useQuery<RelacionesResponse>({
+    queryKey: [selectedResult ? `api/relaciones/${selectedResult.tipo}/${selectedResult.id}` : null],
+    enabled: !!selectedResult
   });
 
   // Procesar los datos y crear las ubicaciones para el mapa y la tabla
@@ -46,39 +54,82 @@ export default function UbicacionesPage() {
     // Procesar los datos según el tipo de entidad seleccionada
     if (entityData) {
       // Para ubicaciones directas
-      if (selectedResult.tipo === "ubicacion" && entityData.latitud && entityData.longitud) {
-        newLocations.push({
-          id: entityData.id,
-          lat: entityData.latitud,
-          lng: entityData.longitud,
-          title: entityData.tipo || "Ubicación",
-          description: entityData.observaciones || "Sin descripción",
-          type: "ubicacion",
-          relation: "direct",
-          entityId: entityData.id
-        });
-        
-        // Centrar el mapa en la ubicación
-        setMapCenter([entityData.latitud, entityData.longitud]);
+      if (selectedResult.tipo === "ubicacion") {
+        const ubicacion = entityData as UbicacionEntity;
+        if (ubicacion.latitud && ubicacion.longitud) {
+          newLocations.push({
+            id: ubicacion.id,
+            lat: ubicacion.latitud,
+            lng: ubicacion.longitud,
+            title: ubicacion.tipo || "Ubicación",
+            description: ubicacion.observaciones || "Sin descripción",
+            type: "ubicacion",
+            relation: "direct",
+            entityId: ubicacion.id
+          });
+          
+          // Centrar el mapa en la ubicación
+          setMapCenter([ubicacion.latitud, ubicacion.longitud]);
+        }
       }
       
-      // Para personas, vehículos o inmuebles que tengan coordenadas
-      if (selectedResult.tipo === "persona" || selectedResult.tipo === "vehiculo" || selectedResult.tipo === "inmueble") {
-        // Si la entidad tiene coordenadas propias (algunos inmuebles pueden tenerlas)
-        if (entityData.latitud && entityData.longitud) {
+      // Para personas
+      else if (selectedResult.tipo === "persona") {
+        const persona = entityData as PersonaEntity;
+        if (persona.latitud && persona.longitud) {
           newLocations.push({
-            id: entityData.id,
-            lat: entityData.latitud,
-            lng: entityData.longitud,
-            title: entityData.nombre || entityData.direccion || "Sin nombre",
-            description: entityData.identificacion || entityData.referencia || "Sin descripción",
-            type: selectedResult.tipo,
+            id: persona.id,
+            lat: persona.latitud,
+            lng: persona.longitud,
+            title: persona.nombre || "Persona",
+            description: persona.identificacion || "Sin identificación",
+            type: "persona",
             relation: "direct",
-            entityId: entityData.id
+            entityId: persona.id
           });
           
           // Centrar el mapa en esta ubicación
-          setMapCenter([entityData.latitud, entityData.longitud]);
+          setMapCenter([persona.latitud, persona.longitud]);
+        }
+      }
+      
+      // Para vehículos
+      else if (selectedResult.tipo === "vehiculo") {
+        const vehiculo = entityData as VehiculoEntity;
+        if (vehiculo.latitud && vehiculo.longitud) {
+          newLocations.push({
+            id: vehiculo.id,
+            lat: vehiculo.latitud,
+            lng: vehiculo.longitud,
+            title: `${vehiculo.marca} ${vehiculo.modelo}` || "Vehículo",
+            description: vehiculo.placa || "Sin placa",
+            type: "vehiculo",
+            relation: "direct",
+            entityId: vehiculo.id
+          });
+          
+          // Centrar el mapa en esta ubicación
+          setMapCenter([vehiculo.latitud, vehiculo.longitud]);
+        }
+      }
+      
+      // Para inmuebles
+      else if (selectedResult.tipo === "inmueble") {
+        const inmueble = entityData as InmuebleEntity;
+        if (inmueble.latitud && inmueble.longitud) {
+          newLocations.push({
+            id: inmueble.id,
+            lat: inmueble.latitud,
+            lng: inmueble.longitud,
+            title: inmueble.tipo || "Inmueble",
+            description: inmueble.direccion || "Sin dirección",
+            type: "inmueble",
+            relation: "direct",
+            entityId: inmueble.id
+          });
+          
+          // Centrar el mapa en esta ubicación
+          setMapCenter([inmueble.latitud, inmueble.longitud]);
         }
       }
     }
@@ -87,8 +138,8 @@ export default function UbicacionesPage() {
     if (relationData) {
       // Procesar ubicaciones relacionadas
       if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-        relationData.ubicaciones.forEach((ubicacion: any) => {
-          if (ubicacion && ubicacion.latitud && ubicacion.longitud) {
+        relationData.ubicaciones.forEach((ubicacion) => {
+          if (ubicacion.latitud && ubicacion.longitud) {
             newLocations.push({
               id: ubicacion.id,
               lat: ubicacion.latitud,
@@ -111,8 +162,8 @@ export default function UbicacionesPage() {
       
       // Procesar inmuebles relacionados (si tienen coordenadas)
       if (relationData.inmuebles && relationData.inmuebles.length > 0) {
-        relationData.inmuebles.forEach((inmueble: any) => {
-          if (inmueble && inmueble.latitud && inmueble.longitud) {
+        relationData.inmuebles.forEach((inmueble) => {
+          if (inmueble.latitud && inmueble.longitud) {
             newLocations.push({
               id: inmueble.id,
               lat: inmueble.latitud,
@@ -135,8 +186,8 @@ export default function UbicacionesPage() {
       
       // Procesar personas relacionadas (si tienen coordenadas en su dirección)
       if (relationData.personas && relationData.personas.length > 0) {
-        relationData.personas.forEach((persona: any) => {
-          if (persona && persona.latitud && persona.longitud) {
+        relationData.personas.forEach((persona) => {
+          if (persona.latitud && persona.longitud) {
             newLocations.push({
               id: persona.id,
               lat: persona.latitud,
@@ -154,8 +205,8 @@ export default function UbicacionesPage() {
       
       // Procesar vehículos relacionados (si tienen ubicaciones registradas)
       if (relationData.vehiculos && relationData.vehiculos.length > 0) {
-        relationData.vehiculos.forEach((vehiculo: any) => {
-          if (vehiculo && vehiculo.latitud && vehiculo.longitud) {
+        relationData.vehiculos.forEach((vehiculo) => {
+          if (vehiculo.latitud && vehiculo.longitud) {
             newLocations.push({
               id: vehiculo.id,
               lat: vehiculo.latitud,
