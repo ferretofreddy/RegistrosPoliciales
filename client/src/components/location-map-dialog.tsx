@@ -268,10 +268,10 @@ export default function LocationMapDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="sm:max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col" 
-        style={{ width: "90vw", maxWidth: "800px" }}
+        className="sm:max-w-[90vw] max-h-[95vh] overflow-y-auto" 
+        style={{ width: "95vw", maxWidth: "800px" }}
       >
-        <DialogHeader>
+        <DialogHeader className="sticky top-0 bg-white z-10 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
             {title}
@@ -281,11 +281,23 @@ export default function LocationMapDialog({
           </DialogDescription>
         </DialogHeader>
         
+        {/* Botón para obtener ubicación actual */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          <Button 
+            onClick={getCurrentLocation}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            size="sm"
+          >
+            <Navigation className="h-4 w-4" />
+            Mi ubicación actual
+          </Button>
+        </div>
+        
         {/* Contenedor del mapa */}
         <div className="relative">
           <div 
             id={mapDialogId} 
-            className="leaflet-container h-[500px] rounded-md border border-border"
+            className="leaflet-container h-[400px] sm:h-[500px] rounded-md border border-border"
           />
           
           {!mapInitialized && (
@@ -301,14 +313,14 @@ export default function LocationMapDialog({
         {/* Coordenadas seleccionadas */}
         {selectedLocation && (
           <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
-            <p className="text-sm text-blue-800 flex justify-between">
-              <span><strong>Latitud:</strong> {selectedLocation.lat.toFixed(6)}</span>
+            <p className="text-sm text-blue-800 flex flex-wrap justify-between">
+              <span className="mr-4"><strong>Latitud:</strong> {selectedLocation.lat.toFixed(6)}</span>
               <span><strong>Longitud:</strong> {selectedLocation.lng.toFixed(6)}</span>
             </p>
           </div>
         )}
         
-        <DialogFooter className="mt-5 pt-3 border-t flex flex-col sm:flex-row gap-3 items-center justify-end">
+        <DialogFooter className="mt-5 pt-3 border-t flex flex-col sm:flex-row gap-3 items-center justify-end sticky bottom-0 bg-white pb-1">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancelar
           </Button>
