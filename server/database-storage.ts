@@ -1529,6 +1529,48 @@ export class DatabaseStorage {
             }
           });
         }
+        
+        // Buscar ubicaciones relacionadas con esta ubicación (relaciones del mismo tipo)
+        // Buscar ubicaciones donde la ubicación actual es ubicacion_id_1
+        const ubicacionesRelacionadas1Result = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u
+              JOIN ubicaciones_ubicaciones uu ON u.id = uu.ubicacion_id_2
+              WHERE uu.ubicacion_id_1 = ${ubicacion.id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+        );
+        
+        // Buscar ubicaciones donde la ubicación actual es ubicacion_id_2
+        const ubicacionesRelacionadas2Result = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u
+              JOIN ubicaciones_ubicaciones uu ON u.id = uu.ubicacion_id_1
+              WHERE uu.ubicacion_id_2 = ${ubicacion.id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+        );
+        
+        const ubicacionesRelacionadas = [
+          ...(ubicacionesRelacionadas1Result.rows || []),
+          ...(ubicacionesRelacionadas2Result.rows || [])
+        ];
+        
+        console.log(`Ubicaciones relacionadas a la ubicación ID ${ubicacion.id}: ${ubicacionesRelacionadas.length}`);
+        
+        // Para cada ubicación relacionada, agregarla al resultado
+        for (const ubicacionRelacionada of ubicacionesRelacionadas) {
+          if (!ubicacionesEncontradas.has(ubicacionRelacionada.id)) {
+            ubicacionesEncontradas.add(ubicacionRelacionada.id);
+            resultado.ubicacionesRelacionadas.push({
+              ubicacion: ubicacionRelacionada,
+              entidadRelacionada: {
+                tipo: 'ubicacion',
+                entidad: ubicacionRelacionada,
+                relacionadoCon: {
+                  tipo: 'ubicacion',
+                  entidad: ubicacion
+                }
+              }
+            });
+          }
+        }
       }
       
       // Terminamos aquí y retornamos los resultados
