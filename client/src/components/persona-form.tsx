@@ -162,7 +162,8 @@ export default function PersonaForm() {
       if (observaciones.length > 0) {
         for (const obs of observaciones) {
           await apiRequest("POST", `/api/personas/${persona.id}/observaciones`, {
-            detalle: obs.detalle
+            detalle: obs.detalle,
+            usuario: "Usuario del sistema"
           });
         }
       }
