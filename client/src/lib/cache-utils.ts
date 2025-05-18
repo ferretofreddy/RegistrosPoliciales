@@ -4,6 +4,10 @@ import { queryClient } from "./queryClient";
  * Función centralizada para invalidar todas las consultas relevantes cuando
  * se crean, actualizan o eliminan registros en la aplicación.
  * 
+ * Esta función garantiza que todos los selectores y listas desplegables
+ * de la aplicación muestren los datos más recientes inmediatamente después
+ * de guardar un registro en cualquier formulario.
+ * 
  * @param specificQueryKey Clave específica de consulta a invalidar (opcional)
  */
 export function invalidateAllQueries(specificQueryKey?: string) {
@@ -27,16 +31,20 @@ export function invalidateAllQueries(specificQueryKey?: string) {
     queryClient.invalidateQueries({ queryKey: [specificQueryKey] });
     
     // Forzar un refetch inmediato
-    queryClient.refetchQueries({ queryKey: [specificQueryKey] });
+    queryClient.refetchQueries({ queryKey: [specificQueryKey], exact: false });
   }
   
-  // Invalidar todas las consultas relevantes
+  // Invalidar todas las consultas relevantes inmediatamente
+  const promises = [];
+  
   for (const key of queryKeysToInvalidate) {
     console.log(`🔄 Invalidando consulta: ${key}`);
     
-    // Invalidar la consulta exacta y forzar refetch
+    // Invalidar la consulta exacta
     queryClient.invalidateQueries({ queryKey: [key] });
-    queryClient.refetchQueries({ queryKey: [key] });
+    
+    // Añadir la promesa de refetch a la lista
+    promises.push(queryClient.refetchQueries({ queryKey: [key], exact: false }));
     
     // También invalidar cualquier consulta que use esta clave como parte de un arreglo
     queryClient.invalidateQueries({ 
@@ -47,13 +55,15 @@ export function invalidateAllQueries(specificQueryKey?: string) {
     });
   }
   
-  // Forzar un refetch global después de un pequeño retraso para asegurar que todas las invalidaciones se apliquen
-  setTimeout(() => {
-    console.log("🔄 Forzando refetch global de todas las consultas activas");
-    queryClient.refetchQueries();
-  }, 300);
+  // Forzar un refetch global inmediato
+  promises.push(queryClient.refetchQueries());
   
-  console.log("✅ Todas las consultas invalidadas correctamente");
+  // Esperar a que todas las operaciones de refetch se completen
+  Promise.all(promises)
+    .then(() => console.log("✅ Todas las consultas han sido actualizadas correctamente"))
+    .catch(error => console.error("❌ Error al actualizar consultas:", error));
+  
+  console.log("✅ Proceso de invalidación de consultas iniciado correctamente");
 }
 
 /**
