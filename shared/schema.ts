@@ -282,3 +282,7 @@ export type InsertTipoInmueble = z.infer<typeof insertTipoInmuebleSchema>;
 
 export type TipoUbicacion = typeof tiposUbicaciones.$inferSelect;
 export type InsertTipoUbicacion = z.infer<typeof insertTipoUbicacionSchema>;
+
+// Tipos para las nuevas relaciones
+export type VehiculoInmueble = typeof vehiculosInmuebles.$inferSelect;
+export type VehiculoVehiculo = typeof vehiculosVehiculos.$inferSelect;

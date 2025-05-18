@@ -636,21 +636,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }).returning();
         resultado = relacion;
       }
-      // Relaciones entre vehículo e inmueble
-      else if (tipo1 === "vehiculo" && tipo2 === "inmueble") {
-        const [relacion] = await db.insert(vehiculosInmuebles).values({
-          vehiculoId: id1,
-          inmuebleId: id2
-        }).returning();
-        resultado = relacion;
+      // Relaciones entre vehículo e inmueble (ambas direcciones)
+      else if ((tipo1 === "vehiculo" && tipo2 === "inmueble") || (tipo1 === "inmueble" && tipo2 === "vehiculo")) {
+        // Usar SQL directo para evitar problemas con Drizzle
+        let vehiculoId, inmuebleId;
+        
+        if (tipo1 === "vehiculo") {
+          vehiculoId = id1;
+          inmuebleId = id2;
+        } else {
+          vehiculoId = id2;
+          inmuebleId = id1;
+        }
+        
+        const result = await db.execute(
+          sql`INSERT INTO vehiculos_inmuebles (vehiculo_id, inmueble_id) VALUES (${vehiculoId}, ${inmuebleId}) RETURNING *`
+        );
+        resultado = result.rows[0];
       }
       // Relaciones entre vehículos
       else if (tipo1 === "vehiculo" && tipo2 === "vehiculo") {
-        const [relacion] = await db.insert(vehiculosVehiculos).values({
-          vehiculoId1: id1,
-          vehiculoId2: id2
-        }).returning();
-        resultado = relacion;
+        // Usar SQL directo para evitar problemas con Drizzle
+        const result = await db.execute(
+          sql`INSERT INTO vehiculos_vehiculos (vehiculo_id_1, vehiculo_id_2) VALUES (${id1}, ${id2}) RETURNING *`
+        );
+        resultado = result.rows[0];
+      }
+      // Relaciones entre inmuebles
+      else if (tipo1 === "inmueble" && tipo2 === "inmueble") {
+        // Primero, crearemos la tabla si no existe
+        await db.execute(
+          sql`CREATE TABLE IF NOT EXISTS inmuebles_inmuebles (
+            id SERIAL PRIMARY KEY,
+            inmueble_id_1 INTEGER NOT NULL REFERENCES inmuebles(id),
+            inmueble_id_2 INTEGER NOT NULL REFERENCES inmuebles(id)
+          )`
+        );
+        // Luego, insertamos la relación
+        const result = await db.execute(
+          sql`INSERT INTO inmuebles_inmuebles (inmueble_id_1, inmueble_id_2) VALUES (${id1}, ${id2}) RETURNING *`
+        );
+        resultado = result.rows[0];
       }
       else {
         return res.status(400).json({ message: "Tipo de relación no soportada" });
