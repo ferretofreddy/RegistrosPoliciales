@@ -334,32 +334,52 @@ export default function UbicacionesPage() {
                   </Card>
                 </div>
                 
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Tabla de ubicaciones directas */}
                   <Card className="w-full">
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-center gap-2 text-lg">
-                        <Search className="h-5 w-5" />
-                        <span>Ubicaciones Encontradas</span>
+                        <MapPin className="h-5 w-5" />
+                        <span>Ubicaciones Directas</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {isLoading ? (
                         <p className="text-center py-4 text-gray-500">Cargando...</p>
-                      ) : locations.length > 0 ? (
-                        <>
-                          {selectedResult.tipo === 'vehiculo' && (
-                            <div className="mb-3 p-2 bg-blue-50 text-blue-700 rounded text-xs">
-                              <p>Los vehículos no tienen ubicaciones directas. Se muestran las ubicaciones de personas relacionadas.</p>
-                            </div>
-                          )}
-                          <LocationsTable 
-                            locations={locations}
-                            onLocationClick={handleLocationClick}
-                          />
-                        </>
+                      ) : locations.filter(loc => loc.relation === 'direct').length > 0 ? (
+                        <LocationsTable 
+                          locations={locations.filter(loc => loc.relation === 'direct')}
+                          onLocationClick={handleLocationClick}
+                        />
                       ) : (
                         <p className="text-center py-4 text-gray-500">
-                          No se encontraron ubicaciones para esta entidad
+                          {selectedResult.tipo === 'vehiculo' 
+                            ? 'Los vehículos no tienen ubicaciones directas' 
+                            : 'No se encontraron ubicaciones directas para esta entidad'}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Tabla de ubicaciones relacionadas */}
+                  <Card className="w-full">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Search className="h-5 w-5" />
+                        <span>Ubicaciones Relacionadas</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? (
+                        <p className="text-center py-4 text-gray-500">Cargando...</p>
+                      ) : locations.filter(loc => loc.relation === 'related').length > 0 ? (
+                        <LocationsTable 
+                          locations={locations.filter(loc => loc.relation === 'related')}
+                          onLocationClick={handleLocationClick}
+                        />
+                      ) : (
+                        <p className="text-center py-4 text-gray-500">
+                          No se encontraron ubicaciones relacionadas
                         </p>
                       )}
                     </CardContent>
