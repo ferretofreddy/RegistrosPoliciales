@@ -891,9 +891,67 @@ export class DatabaseStorage {
               }
             }
             
-            // Si no hay ubicaciones específicas para el inmueble pero tiene coordenadas propias,
-            // agregarlo directamente como ubicación
-            if (ubicacionesInmueble.length === 0 && 
+            // Si no hay ubicaciones específicas, pero el inmueble tiene coordenadas propias
+            // lo agregamos directamente como ubicación
+            if (ubicacionesInmueble.length === 0) {
+              // Verificamos si el inmueble tiene coordenadas propias
+              const inmuebleConCoordenadas = await db.execute(
+                sql`SELECT * FROM inmuebles WHERE id = ${inmuebleRelacionado.id}
+                    AND latitud IS NOT NULL AND longitud IS NOT NULL
+                    AND latitud != 0 AND longitud != 0`
+              );
+              
+              if (inmuebleConCoordenadas.rows && inmuebleConCoordenadas.rows.length > 0) {
+                const inmuebleInfo = inmuebleConCoordenadas.rows[0];
+                console.log(`El inmueble ID ${inmuebleRelacionado.id} tiene coordenadas propias: [${inmuebleInfo.latitud}, ${inmuebleInfo.longitud}]`);
+                
+                // Creamos una ubicación virtual a partir del inmueble
+                const ubicacionVirtual = {
+                  id: `inmueble-${inmuebleRelacionado.id}`,
+                  latitud: inmuebleInfo.latitud,
+                  longitud: inmuebleInfo.longitud,
+                  tipo: inmuebleInfo.tipo || "Inmueble",
+                  observaciones: `Inmueble relacionado con ${persona.nombre}: ${inmuebleInfo.direccion || "Sin dirección"}`
+                };
+                
+                // Usamos una clave especial que no colisione con IDs numéricos
+                const ubicacionKey = `virtual-inmueble-${inmuebleRelacionado.id}`;
+                if (!ubicacionesEncontradas.has(ubicacionKey)) {
+                  ubicacionesEncontradas.add(ubicacionKey);
+                  resultado.ubicacionesRelacionadas.push({
+                    ubicacion: ubicacionVirtual,
+                    entidadRelacionada: {
+                      tipo: 'inmueble',
+                      entidad: inmuebleRelacionado,
+                      relacionadoCon: {
+                        tipo: 'persona',
+                        entidad: persona
+                      }
+                    }
+                  });
+                  console.log(`Agregada ubicación virtual para inmueble ID ${inmuebleRelacionado.id}`);
+                }
+              } else {
+                // Si el inmueble tampoco tiene coordenadas propias, aun así queremos mostrarlo en los resultados
+                // pero en este caso lo incluimos en un arreglo especial de entidades relacionadas sin ubicación
+                console.log(`El inmueble ID ${inmuebleRelacionado.id} no tiene coordenadas propias ni ubicaciones relacionadas`);
+                
+                if (!resultado.entidadesRelacionadasSinUbicacion) {
+                  resultado.entidadesRelacionadasSinUbicacion = [];
+                }
+                
+                resultado.entidadesRelacionadasSinUbicacion.push({
+                  tipo: 'inmueble',
+                  entidad: inmuebleRelacionado,
+                  relacionadoCon: {
+                    tipo: 'persona',
+                    entidad: persona
+                  }
+                });
+              }
+            }
+            
+            // Este bloque está duplicado, lo eliminamos
                 inmuebleRelacionado.latitud && 
                 inmuebleRelacionado.longitud && 
                 inmuebleRelacionado.latitud !== 0 && 
