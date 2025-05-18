@@ -232,18 +232,18 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Fecha</TableHead>
             <TableHead>Detalle</TableHead>
-            <TableHead className="w-[150px]">Usuario</TableHead>
+            <TableHead className="w-[100px]">Fecha</TableHead>
+            <TableHead className="w-[120px]">Usuario</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {observaciones.map((obs: any, index: number) => (
             <TableRow key={index}>
+              <TableCell>{obs.detalle}</TableCell>
               <TableCell className="font-medium">
                 {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A"}
               </TableCell>
-              <TableCell>{obs.detalle}</TableCell>
               <TableCell>{obs.usuario || "Usuario del sistema"}</TableCell>
             </TableRow>
           ))}
