@@ -13,7 +13,7 @@ import {
   ubicaciones, insertUbicacionSchema,
   ubicacionesObservaciones, insertUbicacionObservacionSchema,
   personasVehiculos, personasInmuebles, personasPersonas, personasUbicaciones,
-  vehiculosUbicaciones, inmueblesUbicaciones,
+  vehiculosUbicaciones, inmueblesUbicaciones, vehiculosInmuebles, vehiculosVehiculos,
   tiposInmuebles, tiposUbicaciones,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
@@ -633,6 +633,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const [relacion] = await db.insert(inmueblesUbicaciones).values({
           inmuebleId: id1,
           ubicacionId: id2
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre vehículo e inmueble
+      else if (tipo1 === "vehiculo" && tipo2 === "inmueble") {
+        const [relacion] = await db.insert(vehiculosInmuebles).values({
+          vehiculoId: id1,
+          inmuebleId: id2
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre vehículos
+      else if (tipo1 === "vehiculo" && tipo2 === "vehiculo") {
+        const [relacion] = await db.insert(vehiculosVehiculos).values({
+          vehiculoId1: id1,
+          vehiculoId2: id2
         }).returning();
         resultado = relacion;
       }

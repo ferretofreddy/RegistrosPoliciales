@@ -167,6 +167,20 @@ export const vehiculosUbicaciones = pgTable("vehiculos_ubicaciones", {
   ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
 });
 
+// Relación Vehículos-Inmuebles
+export const vehiculosInmuebles = pgTable("vehiculos_inmuebles", {
+  id: serial("id").primaryKey(),
+  vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
+  inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
+});
+
+// Relación Vehículos-Vehículos
+export const vehiculosVehiculos = pgTable("vehiculos_vehiculos", {
+  id: serial("id").primaryKey(),
+  vehiculoId1: integer("vehiculo_id_1").notNull().references(() => vehiculos.id),
+  vehiculoId2: integer("vehiculo_id_2").notNull().references(() => vehiculos.id),
+});
+
 // Relación Inmuebles-Ubicaciones
 export const inmueblesUbicaciones = pgTable("inmuebles_ubicaciones", {
   id: serial("id").primaryKey(),
