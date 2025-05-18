@@ -384,39 +384,56 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {entityType === "persona" && "Persona"}
-          {entityType === "vehiculo" && "Vehículo"}
-          {entityType === "inmueble" && "Inmueble"}
-          {entityType === "ubicacion" && "Ubicación"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Información Detallada</TabsTrigger>
-            <TabsTrigger value="observaciones" className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              <span>Observaciones</span>
-            </TabsTrigger>
-            <TabsTrigger value="relaciones" className="flex items-center gap-1">
-              <Link2 className="h-4 w-4" />
-              <span>Relaciones</span>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="details" className="p-4">
+    <div className="space-y-6">
+      {/* Información Detallada */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {entityType === "persona" && "Persona"}
+            {entityType === "vehiculo" && "Vehículo"}
+            {entityType === "inmueble" && "Inmueble"}
+            {entityType === "ubicacion" && "Ubicación"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center mb-3">
+            <h3 className="text-lg font-semibold">Información Detallada</h3>
+          </div>
+          <div className="p-2">
             {renderEntityDetails()}
-          </TabsContent>
-          <TabsContent value="observaciones" className="p-4">
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Observaciones */}
+      <Card className="w-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Calendar className="h-5 w-5" />
+            <span>Observaciones</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="p-1">
             {renderObservaciones()}
-          </TabsContent>
-          <TabsContent value="relaciones" className="p-4">
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Relaciones */}
+      <Card className="w-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Link2 className="h-5 w-5" />
+            <span>Relaciones</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="p-1">
             {renderRelaciones()}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
