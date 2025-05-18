@@ -1030,9 +1030,12 @@ export class DatabaseStorage {
           }
         }
       }
+    } catch (error) {
+      console.error("Error en la búsqueda de personas:", error);
+    }
       
-      // 2. BÚSQUEDA DE VEHÍCULOS (Implementemos correctamente todas las búsquedas)
-      if (tipos.includes('vehiculo') || tipos.includes('vehiculos')) {
+    // 2. BÚSQUEDA DE VEHÍCULOS (Implementemos correctamente todas las búsquedas)
+    if (tipos.includes('vehiculo') || tipos.includes('vehiculos')) {
         console.log(`Buscando vehículos con ID/placa/marca/modelo: ${queryExacto}`);
         
         // Verificar si el término de búsqueda podría ser un ID numérico
