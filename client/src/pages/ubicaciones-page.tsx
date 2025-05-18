@@ -49,7 +49,12 @@ export default function UbicacionesPage() {
       return;
     }
 
+    console.log("Procesando datos para:", selectedResult);
+    console.log("Entity Data:", entityData);
+    console.log("Relation Data:", relationData);
+
     const newLocations: LocationData[] = [];
+    let hasCenteredMap = false;
     
     // Procesar los datos según el tipo de entidad seleccionada
     if (entityData) {
@@ -70,6 +75,7 @@ export default function UbicacionesPage() {
           
           // Centrar el mapa en la ubicación
           setMapCenter([ubicacion.latitud, ubicacion.longitud]);
+          hasCenteredMap = true;
         }
       }
       
@@ -90,6 +96,7 @@ export default function UbicacionesPage() {
           
           // Centrar el mapa en esta ubicación
           setMapCenter([persona.latitud, persona.longitud]);
+          hasCenteredMap = true;
         }
       }
       
@@ -110,6 +117,7 @@ export default function UbicacionesPage() {
           
           // Centrar el mapa en esta ubicación
           setMapCenter([vehiculo.latitud, vehiculo.longitud]);
+          hasCenteredMap = true;
         }
       }
       
@@ -130,6 +138,7 @@ export default function UbicacionesPage() {
           
           // Centrar el mapa en esta ubicación
           setMapCenter([inmueble.latitud, inmueble.longitud]);
+          hasCenteredMap = true;
         }
       }
     }
@@ -138,6 +147,7 @@ export default function UbicacionesPage() {
     if (relationData) {
       // Procesar ubicaciones relacionadas
       if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
+        console.log("Procesando ubicaciones relacionadas:", relationData.ubicaciones);
         relationData.ubicaciones.forEach((ubicacion) => {
           if (ubicacion.latitud && ubicacion.longitud) {
             newLocations.push({
@@ -153,8 +163,9 @@ export default function UbicacionesPage() {
             });
             
             // Si no hay ubicación directa, centrar en la primera ubicación relacionada
-            if (newLocations.length === 1) {
+            if (!hasCenteredMap) {
               setMapCenter([ubicacion.latitud, ubicacion.longitud]);
+              hasCenteredMap = true;
             }
           }
         });
@@ -162,6 +173,7 @@ export default function UbicacionesPage() {
       
       // Procesar inmuebles relacionados (si tienen coordenadas)
       if (relationData.inmuebles && relationData.inmuebles.length > 0) {
+        console.log("Procesando inmuebles relacionados:", relationData.inmuebles);
         relationData.inmuebles.forEach((inmueble) => {
           if (inmueble.latitud && inmueble.longitud) {
             newLocations.push({
@@ -177,8 +189,9 @@ export default function UbicacionesPage() {
             });
             
             // Si no hay ubicación directa, centrar en el primer inmueble
-            if (newLocations.length === 1) {
+            if (!hasCenteredMap) {
               setMapCenter([inmueble.latitud, inmueble.longitud]);
+              hasCenteredMap = true;
             }
           }
         });
@@ -186,6 +199,7 @@ export default function UbicacionesPage() {
       
       // Procesar personas relacionadas (si tienen coordenadas en su dirección)
       if (relationData.personas && relationData.personas.length > 0) {
+        console.log("Procesando personas relacionadas:", relationData.personas);
         relationData.personas.forEach((persona) => {
           if (persona.latitud && persona.longitud) {
             newLocations.push({
@@ -199,12 +213,19 @@ export default function UbicacionesPage() {
               entityId: persona.id,
               relationInfo: "Persona relacionada"
             });
+            
+            // Si no hay ubicación directa, centrar en la persona
+            if (!hasCenteredMap) {
+              setMapCenter([persona.latitud, persona.longitud]);
+              hasCenteredMap = true;
+            }
           }
         });
       }
       
       // Procesar vehículos relacionados (si tienen ubicaciones registradas)
       if (relationData.vehiculos && relationData.vehiculos.length > 0) {
+        console.log("Procesando vehículos relacionados:", relationData.vehiculos);
         relationData.vehiculos.forEach((vehiculo) => {
           if (vehiculo.latitud && vehiculo.longitud) {
             newLocations.push({
@@ -218,11 +239,18 @@ export default function UbicacionesPage() {
               entityId: vehiculo.id,
               relationInfo: "Vehículo relacionado"
             });
+            
+            // Si no hay ubicación directa, centrar en el vehículo
+            if (!hasCenteredMap) {
+              setMapCenter([vehiculo.latitud, vehiculo.longitud]);
+              hasCenteredMap = true;
+            }
           }
         });
       }
     }
     
+    console.log("Ubicaciones encontradas:", newLocations);
     setLocations(newLocations);
     
     // Si no hay ubicaciones, mostrar mensaje
