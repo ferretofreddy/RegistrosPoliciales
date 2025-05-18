@@ -159,6 +159,45 @@ export const personasPersonas = pgTable("personas_personas", {
   personaId2: integer("persona_id_2").notNull().references(() => personas.id),
 });
 
+// Relación Personas-Ubicaciones
+export const personasUbicaciones = pgTable("personas_ubicaciones", {
+  id: serial("id").primaryKey(),
+  personaId: integer("persona_id").notNull().references(() => personas.id),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+});
+
+// Relación Vehiculos-Ubicaciones
+export const vehiculosUbicaciones = pgTable("vehiculos_ubicaciones", {
+  id: serial("id").primaryKey(),
+  vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+});
+
+// Relación Inmuebles-Ubicaciones
+export const inmueblesUbicaciones = pgTable("inmuebles_ubicaciones", {
+  id: serial("id").primaryKey(),
+  inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+});
+
+// Ubicaciones
+export const ubicaciones = pgTable("ubicaciones", {
+  id: serial("id").primaryKey(),
+  latitud: doublePrecision("latitud"),
+  longitud: doublePrecision("longitud"),
+  fecha: timestamp("fecha").defaultNow(),
+  tipo: text("tipo"),
+  observaciones: text("observaciones"),
+});
+
+export const insertUbicacionSchema = createInsertSchema(ubicaciones).pick({
+  latitud: true,
+  longitud: true,
+  fecha: true,
+  tipo: true,
+  observaciones: true,
+});
+
 // Tipos
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -180,3 +219,6 @@ export type InsertInmueble = z.infer<typeof insertInmuebleSchema>;
 
 export type InmuebleObservacion = typeof inmueblesObservaciones.$inferSelect;
 export type InsertInmuebleObservacion = z.infer<typeof insertInmuebleObservacionSchema>;
+
+export type Ubicacion = typeof ubicaciones.$inferSelect;
+export type InsertUbicacion = z.infer<typeof insertUbicacionSchema>;
