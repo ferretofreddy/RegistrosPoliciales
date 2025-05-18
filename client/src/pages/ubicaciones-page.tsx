@@ -325,7 +325,7 @@ export default function UbicacionesPage() {
                           <p className="mb-2 text-lg">No se encontraron ubicaciones</p>
                           <p className="text-sm text-center max-w-md">
                             {selectedResult.tipo === 'vehiculo' 
-                              ? 'Los vehículos no tienen ubicaciones directas. Consulte los propietarios para ver sus domicilios.'
+                              ? 'Los vehículos no tienen ubicaciones directas. Se mostrarán los domicilios de sus propietarios como ubicaciones relacionadas.'
                               : 'Esta entidad no tiene coordenadas registradas'}
                           </p>
                         </div>
@@ -346,10 +346,17 @@ export default function UbicacionesPage() {
                       {isLoading ? (
                         <p className="text-center py-4 text-gray-500">Cargando...</p>
                       ) : locations.length > 0 ? (
-                        <LocationsTable 
-                          locations={locations}
-                          onLocationClick={handleLocationClick}
-                        />
+                        <>
+                          {selectedResult.tipo === 'vehiculo' && (
+                            <div className="mb-3 p-2 bg-blue-50 text-blue-700 rounded text-xs">
+                              <p>Los vehículos no tienen ubicaciones directas. Se muestran las ubicaciones de sus propietarios.</p>
+                            </div>
+                          )}
+                          <LocationsTable 
+                            locations={locations}
+                            onLocationClick={handleLocationClick}
+                          />
+                        </>
                       ) : (
                         <p className="text-center py-4 text-gray-500">
                           No se encontraron ubicaciones para esta entidad
