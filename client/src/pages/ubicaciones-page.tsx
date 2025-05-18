@@ -236,8 +236,8 @@ export default function UbicacionesPage() {
                           id: ubicacionPropietario.id,
                           lat: lat,
                           lng: lng,
-                          title: ubicacionPropietario.tipo || "Domicilio de propietario",
-                          description: `Domicilio de ${persona.nombre} (propietario de ${selectedResult.nombre})`,
+                          title: ubicacionPropietario.tipo || "Domicilio",
+                          description: `Domicilio de ${persona.nombre} (persona relacionada con ${selectedResult.nombre})`,
                           type: "ubicacion",
                           relation: "related",
                           entityId: persona.id
@@ -325,7 +325,7 @@ export default function UbicacionesPage() {
                           <p className="mb-2 text-lg">No se encontraron ubicaciones</p>
                           <p className="text-sm text-center max-w-md">
                             {selectedResult.tipo === 'vehiculo' 
-                              ? 'Los vehículos no tienen ubicaciones directas. Se mostrarán los domicilios de sus propietarios como ubicaciones relacionadas.'
+                              ? 'Los vehículos no tienen ubicaciones directas. Se mostrarán los domicilios de personas relacionadas.'
                               : 'Esta entidad no tiene coordenadas registradas'}
                           </p>
                         </div>
@@ -349,7 +349,7 @@ export default function UbicacionesPage() {
                         <>
                           {selectedResult.tipo === 'vehiculo' && (
                             <div className="mb-3 p-2 bg-blue-50 text-blue-700 rounded text-xs">
-                              <p>Los vehículos no tienen ubicaciones directas. Se muestran las ubicaciones de sus propietarios.</p>
+                              <p>Los vehículos no tienen ubicaciones directas. Se muestran las ubicaciones de personas relacionadas.</p>
                             </div>
                           )}
                           <LocationsTable 
