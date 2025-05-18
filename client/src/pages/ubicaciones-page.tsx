@@ -45,15 +45,32 @@ export default function UbicacionesPage() {
   const personaMarkers = useRef<Map<number, any>>(new Map());
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["/api/ubicaciones", searchTerm, selectedTypes],
+    queryKey: ["/api/ubicaciones", searchTerm, selectedTypes, selectedResult],
     queryFn: async () => {
       console.log("[DEBUG] Iniciando búsqueda de ubicaciones"); 
       const tipos = Object.entries(selectedTypes)
         .filter(([_, value]) => value)
         .map(([key]) => key);
       
-      console.log(`[DEBUG] Búsqueda con término: "${searchTerm}" y tipos: ${tipos.join(', ')}`);
-      const response = await fetch(`/api/ubicaciones?buscar=${encodeURIComponent(searchTerm)}&tipos=${tipos.join(',')}`);
+      // Construir la URL base
+      let url = '/api/ubicaciones?';
+      
+      // Si hay un resultado seleccionado específico, usar esa información
+      if (selectedResult) {
+        console.log(`[DEBUG] Búsqueda específica por ${selectedResult.tipo} con ID: ${selectedResult.id}`);
+        url += `entidadTipo=${selectedResult.tipo}&entidadId=${selectedResult.id}`;
+        
+        // También podemos incluir el término de búsqueda como referencia
+        if (searchTerm.trim()) {
+          url += `&buscar=${encodeURIComponent(searchTerm)}`;
+        }
+      } else {
+        // Búsqueda general por término
+        console.log(`[DEBUG] Búsqueda general con término: "${searchTerm}" y tipos: ${tipos.join(', ')}`);
+        url += `buscar=${encodeURIComponent(searchTerm)}&tipos=${tipos.join(',')}`;
+      }
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -673,13 +690,110 @@ export default function UbicacionesPage() {
   }, [map, data]);
 
   // Manejar cambio en el término de búsqueda
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+  // Búsqueda de coincidencias mientras se escribe
+  const searchCoincidencias = async (query: string) => {
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+    
+    try {
+      const tipos = Object.entries(selectedTypes)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
+      
+      const response = await fetch(`/api/buscar?q=${encodeURIComponent(query)}&tipos=${tipos.join(',')}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error en la búsqueda: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Formatear los resultados para la lista desplegable
+      const formattedResults: Array<{id: number, tipo: string, texto: string, entidad: any}> = [];
+      
+      // Añadir personas
+      if (data.personas && data.personas.length > 0) {
+        data.personas.forEach((persona: any) => {
+          formattedResults.push({
+            id: persona.id,
+            tipo: 'persona',
+            texto: `${persona.nombre}${persona.identificacion ? ` - ${persona.identificacion}` : ''}`,
+            entidad: persona
+          });
+        });
+      }
+      
+      // Añadir vehículos
+      if (data.vehiculos && data.vehiculos.length > 0) {
+        data.vehiculos.forEach((vehiculo: any) => {
+          formattedResults.push({
+            id: vehiculo.id,
+            tipo: 'vehiculo',
+            texto: `${vehiculo.marca} ${vehiculo.modelo || ''} (${vehiculo.placa})`,
+            entidad: vehiculo
+          });
+        });
+      }
+      
+      // Añadir inmuebles
+      if (data.inmuebles && data.inmuebles.length > 0) {
+        data.inmuebles.forEach((inmueble: any) => {
+          formattedResults.push({
+            id: inmueble.id,
+            tipo: 'inmueble',
+            texto: `${inmueble.tipo} - ${inmueble.direccion || 'Sin dirección'}`,
+            entidad: inmueble
+          });
+        });
+      }
+      
+      setSearchResults(formattedResults);
+      setShowSearchResults(formattedResults.length > 0);
+      
+    } catch (error) {
+      console.error("Error buscando coincidencias:", error);
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
   };
 
+  // Manejar cambio en el campo de búsqueda
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setSelectedResult(null);
+    
+    // Búsqueda de coincidencias mientras se escribe
+    if (value.trim().length >= 2) {
+      searchCoincidencias(value);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  };
+  
+  // Manejar selección de un resultado de la lista
+  const handleSelectResult = (result: {id: number, tipo: string, texto: string, entidad: any}) => {
+    setSelectedResult(result);
+    setSearchTerm(result.texto);
+    setShowSearchResults(false);
+  };
+  
   // Manejar clic en botón de búsqueda o Enter en el input
   const handleSearch = () => {
     if (searchTerm.trim() || Object.values(selectedTypes).some(v => v)) {
+      // Ocultar la lista de resultados
+      setShowSearchResults(false);
+      
+      // Si hay un resultado seleccionado, buscar por ID y tipo específico
+      if (selectedResult) {
+        console.log(`Buscando específicamente: ${selectedResult.tipo} con ID ${selectedResult.id}`);
+        // La búsqueda específica se realiza a través del queryFn en useQuery
+      }
+      
       refetch();
     }
   };
@@ -688,6 +802,8 @@ export default function UbicacionesPage() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearch();
+    } else if (e.key === 'Escape') {
+      setShowSearchResults(false);
     }
   };
 
