@@ -16,6 +16,19 @@ declare global {
 
 export default function UbicacionesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{
+    id: number,
+    tipo: string,
+    texto: string,
+    entidad: any
+  }>>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<{
+    id: number,
+    tipo: string,
+    texto: string,
+    entidad: any
+  } | null>(null);
   const [selectedTypes, setSelectedTypes] = useState({
     personas: true,
     vehiculos: true,
