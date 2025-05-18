@@ -310,6 +310,23 @@ export default function UbicacionesPage() {
           if (!isNaN(latitud) && !isNaN(longitud)) {
             console.log(`Añadiendo vehículo: ${latitud}, ${longitud}`);
             
+            // Generamos un mensaje más informativo sobre la relación con el vehículo
+            let infoRelacion = "";
+            
+            if (selectedResult.tipo === "persona") {
+              const persona = entityData as PersonaEntity;
+              infoRelacion = `Vehículo relacionado con ${persona.nombre}`;
+            } else if (selectedResult.tipo === "inmueble") {
+              const inmueble = entityData as InmuebleEntity;
+              infoRelacion = `Vehículo relacionado con inmueble en ${inmueble.direccion}`;
+            } else if (selectedResult.tipo === "ubicacion") {
+              const ubicacion = entityData as UbicacionEntity;
+              infoRelacion = `Vehículo relacionado con ubicación ${ubicacion.tipo || ""}`;
+            } else if (selectedResult.tipo === "vehiculo") {
+              const otroVehiculo = entityData as VehiculoEntity;
+              infoRelacion = `Vehículo relacionado con ${otroVehiculo.marca} ${otroVehiculo.modelo}`;
+            }
+            
             newLocations.push({
               id: vehiculo.id,
               lat: latitud,
@@ -319,7 +336,7 @@ export default function UbicacionesPage() {
               type: "vehiculo",
               relation: "related",
               entityId: vehiculo.id,
-              relationInfo: "Vehículo relacionado"
+              relationInfo: infoRelacion
             });
             
             // Si no hay ubicación directa, centrar en el vehículo
