@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, json, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, json, timestamp, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -183,8 +183,8 @@ export const inmueblesUbicaciones = pgTable("inmuebles_ubicaciones", {
 // Ubicaciones
 export const ubicaciones = pgTable("ubicaciones", {
   id: serial("id").primaryKey(),
-  latitud: doublePrecision("latitud"),
-  longitud: doublePrecision("longitud"),
+  latitud: integer("latitud"),
+  longitud: integer("longitud"),
   fecha: timestamp("fecha").defaultNow(),
   tipo: text("tipo"),
   observaciones: text("observaciones"),
@@ -196,6 +196,22 @@ export const insertUbicacionSchema = createInsertSchema(ubicaciones).pick({
   fecha: true,
   tipo: true,
   observaciones: true,
+});
+
+// Observaciones de ubicaciones
+export const ubicacionesObservaciones = pgTable("ubicaciones_observaciones", {
+  id: serial("id").primaryKey(),
+  ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
+  fecha: timestamp("fecha").defaultNow(),
+  detalle: text("detalle"),
+  usuario: text("usuario"),
+});
+
+export const insertUbicacionObservacionSchema = createInsertSchema(ubicacionesObservaciones).pick({
+  ubicacionId: true,
+  fecha: true,
+  detalle: true,
+  usuario: true,
 });
 
 // Tipos
@@ -222,3 +238,6 @@ export type InsertInmuebleObservacion = z.infer<typeof insertInmuebleObservacion
 
 export type Ubicacion = typeof ubicaciones.$inferSelect;
 export type InsertUbicacion = z.infer<typeof insertUbicacionSchema>;
+
+export type UbicacionObservacion = typeof ubicacionesObservaciones.$inferSelect;
+export type InsertUbicacionObservacion = z.infer<typeof insertUbicacionObservacionSchema>;
