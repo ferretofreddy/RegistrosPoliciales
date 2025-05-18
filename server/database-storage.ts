@@ -1472,7 +1472,11 @@ export class DatabaseStorage {
       // Antes de terminar, busquemos relaciones adicionales para todas las ubicaciones directas
       console.log("Buscando relaciones para las ubicaciones directas encontradas...");
       
-      for (const ubicacion of resultado.ubicacionesDirectas) {
+      // Creamos una copia de las ubicaciones directas para procesar las relaciones
+      // Esto es necesario porque el arreglo original puede cambiar mientras iteramos
+      const ubicacionesParaProcesar = [...resultado.ubicacionesDirectas];
+      
+      for (const ubicacion of ubicacionesParaProcesar) {
         // Buscar personas relacionadas con esta ubicación
         const personasRelacionadas = await db
           .select({
@@ -1556,9 +1560,15 @@ export class DatabaseStorage {
         
         // Para cada ubicación relacionada, agregarla al resultado
         for (const ubicacionRelacionada of ubicacionesRelacionadas) {
+          // Convertir el ID a número para comparación consistente
           const relacionadaId = Number(ubicacionRelacionada.id);
+          console.log(`Procesando ubicación relacionada ID: ${relacionadaId}, ya en conjunto: ${ubicacionesEncontradas.has(relacionadaId)}`);
+          
+          // Solo agregar si no está ya en el conjunto
           if (!ubicacionesEncontradas.has(relacionadaId)) {
             ubicacionesEncontradas.add(relacionadaId);
+            
+            // Agregar a las ubicaciones relacionadas en el resultado
             resultado.ubicacionesRelacionadas.push({
               ubicacion: ubicacionRelacionada,
               entidadRelacionada: {
@@ -1570,6 +1580,8 @@ export class DatabaseStorage {
                 }
               }
             });
+            
+            console.log(`Agregada ubicación relacionada ID: ${relacionadaId} al resultado`);
           }
         }
       }
