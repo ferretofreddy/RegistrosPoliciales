@@ -639,8 +639,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Obtener personas relacionadas
       if (tipo === "persona") {
-        // Las personas relacionadas con esta persona
-        const relacionesPersonas = await db
+        // Las personas relacionadas con esta persona (búsqueda bidireccional)
+        const relacionesPersonas1 = await db
           .select({
             persona: personas
           })
@@ -648,7 +648,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .innerJoin(personas, eq(personasPersonas.personaId2, personas.id))
           .where(eq(personasPersonas.personaId1, id));
           
-        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        const relacionesPersonas2 = await db
+          .select({
+            persona: personas
+          })
+          .from(personasPersonas)
+          .innerJoin(personas, eq(personasPersonas.personaId1, personas.id))
+          .where(eq(personasPersonas.personaId2, id));
+          
+        // Combinar los resultados de ambas direcciones
+        relaciones.personas = [
+          ...relacionesPersonas1.map(r => r.persona),
+          ...relacionesPersonas2.map(r => r.persona)
+        ];
         
         // Vehículos relacionados con esta persona
         const relacionesVehiculos = await db
