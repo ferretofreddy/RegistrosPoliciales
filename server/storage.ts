@@ -107,7 +107,19 @@ export class DatabaseStorage implements IStorage {
   // === PERSONAS ===
   async getAllPersonas(): Promise<Persona[]> {
     try {
-      return await db.select().from(personas).orderBy(personas.nombre);
+      const query = `
+        SELECT * FROM personas 
+        ORDER BY nombre
+      `;
+      const result = await pool.query(query);
+      
+      // Aseguramos que los arrays se procesen correctamente
+      return result.rows.map(row => ({
+        ...row,
+        alias: Array.isArray(row.alias) ? row.alias : [],
+        telefonos: Array.isArray(row.telefonos) ? row.telefonos : [],
+        domicilios: Array.isArray(row.domicilios) ? row.domicilios : []
+      }));
     } catch (error) {
       console.error("Error en getAllPersonas:", error);
       return [];
@@ -116,8 +128,25 @@ export class DatabaseStorage implements IStorage {
 
   async getPersona(id: number): Promise<Persona | undefined> {
     try {
-      const [persona] = await db.select().from(personas).where(eq(personas.id, id));
-      return persona;
+      const query = `
+        SELECT * FROM personas 
+        WHERE id = $1
+      `;
+      const result = await pool.query(query, [id]);
+      
+      if (result.rows.length === 0) {
+        return undefined;
+      }
+      
+      const persona = result.rows[0];
+      
+      // Aseguramos que los arrays se procesen correctamente
+      return {
+        ...persona,
+        alias: Array.isArray(persona.alias) ? persona.alias : [],
+        telefonos: Array.isArray(persona.telefonos) ? persona.telefonos : [],
+        domicilios: Array.isArray(persona.domicilios) ? persona.domicilios : []
+      };
     } catch (error) {
       console.error("Error en getPersona:", error);
       return undefined;
@@ -126,34 +155,33 @@ export class DatabaseStorage implements IStorage {
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
     try {
-      // Preparamos los datos para asegurarnos que los arrays se manejen correctamente
-      // Creamos explícitamente un objeto nuevo para evitar problemas con los tipos
-      const personaData = {
+      // Aseguramos que los arrays se manejen correctamente
+      const insertValues = {
         nombre: insertPersona.nombre,
         identificacion: insertPersona.identificacion,
-        alias: insertPersona.alias ?? [],
-        telefonos: insertPersona.telefonos ?? [],
-        domicilios: insertPersona.domicilios ?? [],
+        alias: Array.isArray(insertPersona.alias) ? insertPersona.alias : [],
+        telefonos: Array.isArray(insertPersona.telefonos) ? insertPersona.telefonos : [],
+        domicilios: Array.isArray(insertPersona.domicilios) ? insertPersona.domicilios : [],
         foto: insertPersona.foto
       };
       
-      // Convertimos los campos que deben ser arrays a arrays si no lo son
-      if (!Array.isArray(personaData.alias)) personaData.alias = [];
-      if (!Array.isArray(personaData.telefonos)) personaData.telefonos = [];
-      if (!Array.isArray(personaData.domicilios)) personaData.domicilios = [];
+      // Usamos SQL directamente para garantizar que los campos JSON se manejen correctamente
+      const query = `
+        INSERT INTO personas (nombre, identificacion, alias, telefonos, domicilios, foto)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `;
       
-      // Introducimos un tipo explícito para la inserción
-      const insertValues = {
-        nombre: personaData.nombre,
-        identificacion: personaData.identificacion,
-        alias: personaData.alias,
-        telefonos: personaData.telefonos,
-        domicilios: personaData.domicilios,
-        foto: personaData.foto
-      };
+      const result = await pool.query(query, [
+        insertValues.nombre,
+        insertValues.identificacion,
+        JSON.stringify(insertValues.alias),
+        JSON.stringify(insertValues.telefonos),
+        JSON.stringify(insertValues.domicilios),
+        insertValues.foto
+      ]);
       
-      const [persona] = await db.insert(personas).values(insertValues).returning();
-      return persona;
+      return result.rows[0];
     } catch (error) {
       console.error("Error en createPersona:", error);
       throw error;
@@ -209,8 +237,26 @@ export class DatabaseStorage implements IStorage {
 
   async createVehiculo(insertVehiculo: InsertVehiculo): Promise<Vehiculo> {
     try {
-      const [vehiculo] = await db.insert(vehiculos).values(insertVehiculo).returning();
-      return vehiculo;
+      // Usamos SQL directo para mayor control
+      const query = `
+        INSERT INTO vehiculos (placa, marca, modelo, color, anio, propietario, tipo, observaciones, foto)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
+      `;
+      
+      const result = await pool.query(query, [
+        insertVehiculo.placa,
+        insertVehiculo.marca,
+        insertVehiculo.modelo,
+        insertVehiculo.color,
+        insertVehiculo.anio || null,
+        insertVehiculo.propietario || null,
+        insertVehiculo.tipo || null,
+        insertVehiculo.observaciones || null,
+        insertVehiculo.foto || null
+      ]);
+      
+      return result.rows[0];
     } catch (error) {
       console.error("Error en createVehiculo:", error);
       throw error;
@@ -266,8 +312,23 @@ export class DatabaseStorage implements IStorage {
 
   async createInmueble(insertInmueble: InsertInmueble): Promise<Inmueble> {
     try {
-      const [inmueble] = await db.insert(inmuebles).values(insertInmueble).returning();
-      return inmueble;
+      // Usamos SQL directo para mayor control
+      const query = `
+        INSERT INTO inmuebles (tipo, direccion, descripcion, propietario, observaciones, foto)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `;
+      
+      const result = await pool.query(query, [
+        insertInmueble.tipo,
+        insertInmueble.direccion,
+        insertInmueble.descripcion || null,
+        insertInmueble.propietario || null,
+        insertInmueble.observaciones || null,
+        insertInmueble.foto || null
+      ]);
+      
+      return result.rows[0];
     } catch (error) {
       console.error("Error en createInmueble:", error);
       throw error;
@@ -370,27 +431,32 @@ export class DatabaseStorage implements IStorage {
   async crearRelacionPersonaVehiculo(personaId: number, vehiculoId: number, relacion?: string): Promise<any> {
     try {
       // Verificar si ya existe
-      const [existingRelation] = await db
-        .select()
-        .from(personasVehiculos)
-        .where(sql`persona_id = ${personaId} AND vehiculo_id = ${vehiculoId}`);
+      const checkQuery = `
+        SELECT * FROM personas_vehiculos 
+        WHERE persona_id = $1 AND vehiculo_id = $2
+      `;
       
-      if (existingRelation) {
-        return existingRelation;
+      const existingRelation = await pool.query(checkQuery, [personaId, vehiculoId]);
+      
+      if (existingRelation.rows.length > 0) {
+        return existingRelation.rows[0];
       }
       
       // Crear nueva relación
-      const [newRelation] = await db
-        .insert(personasVehiculos)
-        .values({
-          personaId,
-          vehiculoId,
-          relacion: relacion || null,
-          observaciones: null
-        })
-        .returning();
+      const insertQuery = `
+        INSERT INTO personas_vehiculos (persona_id, vehiculo_id, relacion, observaciones)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+      `;
+      
+      const result = await pool.query(insertQuery, [
+        personaId,
+        vehiculoId,
+        relacion || null,
+        null
+      ]);
         
-      return newRelation;
+      return result.rows[0];
     } catch (error) {
       console.error("Error en crearRelacionPersonaVehiculo:", error);
       throw error;
@@ -400,27 +466,32 @@ export class DatabaseStorage implements IStorage {
   async crearRelacionPersonaInmueble(personaId: number, inmuebleId: number, relacion?: string): Promise<any> {
     try {
       // Verificar si ya existe
-      const [existingRelation] = await db
-        .select()
-        .from(personasInmuebles)
-        .where(sql`persona_id = ${personaId} AND inmueble_id = ${inmuebleId}`);
+      const checkQuery = `
+        SELECT * FROM personas_inmuebles 
+        WHERE persona_id = $1 AND inmueble_id = $2
+      `;
       
-      if (existingRelation) {
-        return existingRelation;
+      const existingRelation = await pool.query(checkQuery, [personaId, inmuebleId]);
+      
+      if (existingRelation.rows.length > 0) {
+        return existingRelation.rows[0];
       }
       
       // Crear nueva relación
-      const [newRelation] = await db
-        .insert(personasInmuebles)
-        .values({
-          personaId,
-          inmuebleId,
-          relacion: relacion || null,
-          observaciones: null
-        })
-        .returning();
+      const insertQuery = `
+        INSERT INTO personas_inmuebles (persona_id, inmueble_id, relacion, observaciones)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+      `;
+      
+      const result = await pool.query(insertQuery, [
+        personaId,
+        inmuebleId,
+        relacion || null,
+        null
+      ]);
         
-      return newRelation;
+      return result.rows[0];
     } catch (error) {
       console.error("Error en crearRelacionPersonaInmueble:", error);
       throw error;
