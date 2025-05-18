@@ -31,13 +31,13 @@ function useDebounce<T>(value: T, delay: number = 500): T {
 }
 
 // Tipo de entidad para la búsqueda
-type EntityType = "todas" | "persona" | "vehiculo" | "inmueble" | "ubicacion";
+export type EntityType = "todas" | "persona" | "vehiculo" | "inmueble" | "ubicacion";
 
 // Tipo para los resultados de búsqueda
-type SearchResult = {
+export type SearchResult = {
   id: number;
   nombre: string;
-  tipo: EntityType;
+  tipo: Exclude<EntityType, "todas">;
   referencia: string;
 };
 
