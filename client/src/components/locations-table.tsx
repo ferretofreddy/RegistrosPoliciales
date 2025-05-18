@@ -83,10 +83,8 @@ export default function LocationsTable({ locations, onLocationClick }: Locations
                   {getEntityIcon(location.type, location.relation)}
                   <div>
                     <p>{location.title}</p>
-                    <p className="text-xs text-gray-500 md:hidden">
-                      {location.description.length > 40 
-                        ? location.description.substring(0, 40) + '...' 
-                        : location.description}
+                    <p className="text-xs text-gray-500 md:hidden whitespace-normal break-words">
+                      {location.description}
                     </p>
                     <p className="text-xs font-mono text-gray-500 sm:hidden mt-1">
                       {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
