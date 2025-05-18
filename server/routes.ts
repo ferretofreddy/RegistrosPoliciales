@@ -12,6 +12,7 @@ import {
   insertUbicacionObservacionSchema,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
+import { buscarCoincidencias, obtenerRelaciones } from "./busqueda-handler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
