@@ -46,6 +46,16 @@ export default function VehiculoForm() {
   const [relacionVehiculos, setRelacionVehiculos] = useState<{ id: number; nombre: string }[]>([]);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
+  
+  // Obtener usuario autenticado
+  const { data: usuarioActual } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      const res = await fetch('/api/user');
+      if (!res.ok) return null;
+      return res.json();
+    }
+  });
 
   // Obtener lista de personas para las relaciones
   const { data: personas } = useQuery({
@@ -113,7 +123,7 @@ export default function VehiculoForm() {
         for (const obs of observaciones) {
           await apiRequest("POST", `/api/vehiculos/${vehiculo.id}/observaciones`, {
             detalle: obs.detalle,
-            usuario: "Usuario del sistema"
+            usuario: usuarioActual?.nombre || "Usuario Anónimo"
           });
         }
       }

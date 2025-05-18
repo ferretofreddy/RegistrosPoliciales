@@ -58,6 +58,16 @@ export default function PersonaForm() {
   const [showNewDomicilio, setShowNewDomicilio] = useState(false);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
   const [showMapDialog, setShowMapDialog] = useState(false);
+  
+  // Obtener usuario autenticado
+  const { data: usuarioActual } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      const res = await fetch('/api/user');
+      if (!res.ok) return null;
+      return res.json();
+    }
+  });
 
   // Obtener lista de vehículos disponibles para las relaciones
   const { data: vehiculos } = useQuery({
@@ -163,7 +173,7 @@ export default function PersonaForm() {
         for (const obs of observaciones) {
           await apiRequest("POST", `/api/personas/${persona.id}/observaciones`, {
             detalle: obs.detalle,
-            usuario: "Usuario del sistema"
+            usuario: usuarioActual?.nombre || "Usuario Anónimo"
           });
         }
       }
