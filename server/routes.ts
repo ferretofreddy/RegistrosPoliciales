@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = insertPersonaObservacionSchema.safeParse({
         ...req.body,
         personaId,
-        usuario: user.nombre || `Usuario-${user.id}`
+        usuario: user.nombre || `Usuario ${user.id}`
       });
       
       if (!result.success) {
@@ -255,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = insertVehiculoObservacionSchema.safeParse({
         ...req.body,
         vehiculoId,
-        usuario: user.nombre || `Usuario-${user.id}`
+        usuario: user.nombre || `Usuario ${user.id}`
       });
       
       if (!result.success) {
@@ -375,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = insertInmuebleObservacionSchema.safeParse({
         ...req.body,
         inmuebleId,
-        usuario: user.nombre || `Usuario-${user.id}`
+        usuario: user.nombre || `Usuario ${user.id}`
       });
       
       if (!result.success) {
