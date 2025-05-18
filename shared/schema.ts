@@ -67,8 +67,6 @@ export const vehiculos = pgTable("vehiculos", {
   marca: text("marca").notNull(),
   modelo: text("modelo").notNull(),
   color: text("color").notNull(),
-  anio: text("anio"),
-  propietario: text("propietario"),
   tipo: text("tipo"),
   observaciones: text("observaciones"),
   foto: text("foto"), // URL to photo
@@ -79,8 +77,6 @@ export const insertVehiculoSchema = createInsertSchema(vehiculos).pick({
   marca: true,
   modelo: true,
   color: true,
-  anio: true,
-  propietario: true,
   tipo: true,
   observaciones: true,
   foto: true,
@@ -107,7 +103,6 @@ export const inmuebles = pgTable("inmuebles", {
   id: serial("id").primaryKey(),
   tipo: text("tipo").notNull(),
   direccion: text("direccion").notNull(),
-  descripcion: text("descripcion"),
   propietario: text("propietario"),
   observaciones: text("observaciones"),
   foto: text("foto"), // URL to photo
@@ -116,7 +111,6 @@ export const inmuebles = pgTable("inmuebles", {
 export const insertInmuebleSchema = createInsertSchema(inmuebles).pick({
   tipo: true,
   direccion: true,
-  descripcion: true,
   propietario: true,
   observaciones: true,
   foto: true,

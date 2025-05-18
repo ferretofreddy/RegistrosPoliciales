@@ -239,8 +239,8 @@ export class DatabaseStorage implements IStorage {
     try {
       // Usamos SQL directo para mayor control
       const query = `
-        INSERT INTO vehiculos (placa, marca, modelo, color, anio, propietario, tipo, observaciones, foto)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO vehiculos (placa, marca, modelo, color, tipo, observaciones, foto)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `;
       
@@ -249,8 +249,6 @@ export class DatabaseStorage implements IStorage {
         insertVehiculo.marca,
         insertVehiculo.modelo,
         insertVehiculo.color,
-        insertVehiculo.anio || null,
-        insertVehiculo.propietario || null,
         insertVehiculo.tipo || null,
         insertVehiculo.observaciones || null,
         insertVehiculo.foto || null
@@ -314,15 +312,14 @@ export class DatabaseStorage implements IStorage {
     try {
       // Usamos SQL directo para mayor control
       const query = `
-        INSERT INTO inmuebles (tipo, direccion, descripcion, propietario, observaciones, foto)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO inmuebles (tipo, direccion, propietario, observaciones, foto)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING *
       `;
       
       const result = await pool.query(query, [
         insertInmueble.tipo,
         insertInmueble.direccion,
-        insertInmueble.descripcion || null,
         insertInmueble.propietario || null,
         insertInmueble.observaciones || null,
         insertInmueble.foto || null
