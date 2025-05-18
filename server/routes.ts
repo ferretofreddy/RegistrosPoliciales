@@ -6,7 +6,7 @@ import { z } from "zod";
 import { eq, or, sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { 
-  personas, vehiculos, inmuebles,
+  users, personas, vehiculos, inmuebles,
   personasObservaciones, vehiculosObservaciones, inmueblesObservaciones,
   insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema,
   insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
@@ -114,9 +114,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Persona no encontrada" });
       }
       
+      // Agregar el usuario autenticado a la observación
+      const user = req.user as User;
+      console.log("Usuario autenticado:", `ID=${user.id}, Nombre=${user.nombre}, Rol=${user.rol}`);
+      
       const result = insertPersonaObservacionSchema.safeParse({
         ...req.body,
-        personaId
+        personaId,
+        usuario: user.nombre || `Usuario-${user.id}`
       });
       
       if (!result.success) {
@@ -230,9 +235,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Vehículo no encontrado" });
       }
       
+      // Agregar el usuario autenticado a la observación
+      const user = req.user as User;
+      
       const result = insertVehiculoObservacionSchema.safeParse({
         ...req.body,
-        vehiculoId
+        vehiculoId,
+        usuario: user.nombre || `Usuario-${user.id}`
       });
       
       if (!result.success) {
@@ -346,9 +355,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Inmueble no encontrado" });
       }
       
+      // Agregar el usuario autenticado a la observación
+      const user = req.user as User;
+      
       const result = insertInmuebleObservacionSchema.safeParse({
         ...req.body,
-        inmuebleId
+        inmuebleId,
+        usuario: user.nombre || `Usuario-${user.id}`
       });
       
       if (!result.success) {
