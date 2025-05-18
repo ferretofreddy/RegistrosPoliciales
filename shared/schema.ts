@@ -91,15 +91,15 @@ export const vehiculosObservaciones = pgTable("vehiculos_observaciones", {
   id: serial("id").primaryKey(),
   vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
   fecha: timestamp("fecha").notNull().defaultNow(),
-  texto: text("texto").notNull(),
-  creador: text("creador"),
+  usuario: text("usuario"),
+  detalle: text("detalle").notNull(),
 });
 
 export const insertVehiculoObservacionSchema = createInsertSchema(vehiculosObservaciones).pick({
   vehiculoId: true,
   fecha: true,
-  texto: true,
-  creador: true,
+  usuario: true,
+  detalle: true,
 });
 
 // Inmuebles
@@ -127,15 +127,15 @@ export const inmueblesObservaciones = pgTable("inmuebles_observaciones", {
   id: serial("id").primaryKey(),
   inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
   fecha: timestamp("fecha").notNull().defaultNow(),
-  texto: text("texto").notNull(),
-  creador: text("creador"),
+  usuario: text("usuario"),
+  detalle: text("detalle").notNull(),
 });
 
 export const insertInmuebleObservacionSchema = createInsertSchema(inmueblesObservaciones).pick({
   inmuebleId: true,
   fecha: true,
-  texto: true,
-  creador: true,
+  usuario: true,
+  detalle: true,
 });
 
 // Relación Personas-Vehículos
@@ -150,6 +150,13 @@ export const personasInmuebles = pgTable("personas_inmuebles", {
   id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
+});
+
+// Relación Personas-Personas
+export const personasPersonas = pgTable("personas_personas", {
+  id: serial("id").primaryKey(),
+  personaId1: integer("persona_id_1").notNull().references(() => personas.id),
+  personaId2: integer("persona_id_2").notNull().references(() => personas.id),
 });
 
 // Tipos
