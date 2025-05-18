@@ -28,10 +28,20 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
   // Asegurarse de que los íconos se carguen correctamente en el cliente
   useEffect(() => {
     setMapLoaded(true);
-  }, []);
+    console.log("Marcadores recibidos en el mapa:", markers);
+  }, [markers]);
 
   if (!mapLoaded) {
     return <div className="w-full h-96 bg-gray-100 flex items-center justify-center">Cargando mapa...</div>;
+  }
+  
+  if (markers.length === 0) {
+    return (
+      <div className="w-full h-96 bg-gray-100 flex items-center justify-center flex-col">
+        <p className="mb-2">No hay ubicaciones para mostrar</p>
+        <p className="text-sm text-gray-500">No se encontraron coordenadas geográficas</p>
+      </div>
+    );
   }
 
   // Crear iconos personalizados para cada tipo de entidad
