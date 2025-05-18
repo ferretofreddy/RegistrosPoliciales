@@ -236,9 +236,9 @@ export default function InmuebleForm() {
             const ubicacion = await res.json();
             // Relacionar la ubicación con el inmueble
             apiRequest("POST", "/api/relaciones", {
-              tipo1: "inmuebles",
+              tipo1: "inmueble",
               id1: data.id,
-              tipo2: "ubicaciones",
+              tipo2: "ubicacion",
               id2: ubicacion.id
             });
           });
