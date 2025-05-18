@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { useEffect, useState, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { Icon, LatLngBounds, LatLng } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { User, Building, MapPin, Car } from 'lucide-react';
 
@@ -22,6 +22,32 @@ interface LocationMapProps {
   markers: MapMarker[];
   center?: [number, number];
   zoom?: number;
+}
+
+// Componente para ajustar automáticamente el mapa para mostrar todos los marcadores
+function MapBoundsAdjuster({ markers }: { markers: MapMarker[] }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (markers.length > 0) {
+      // Crear un bounds que contenga todos los marcadores
+      const bounds = new LatLngBounds([]);
+      
+      markers.forEach(marker => {
+        bounds.extend(new LatLng(marker.lat, marker.lng));
+      });
+      
+      // Ajustar el mapa a los límites con padding
+      map.fitBounds(bounds, { 
+        padding: [50, 50], // Añadir padding para que los marcadores no estén en el borde
+        maxZoom: 15 // No hacer zoom demasiado cercano
+      });
+      
+      console.log("Ajustando mapa para mostrar todos los marcadores");
+    }
+  }, [markers, map]);
+  
+  return null;
 }
 
 export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom = 10 }: LocationMapProps) {
@@ -98,6 +124,7 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          {markers.length > 1 && <MapBoundsAdjuster markers={markers} />}
           
           {markers.map((marker) => (
             <Marker 
