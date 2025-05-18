@@ -91,13 +91,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Aseguramos que los arrays se pasen correctamente
-const personaData = {
-  ...result.data,
-  alias: Array.isArray(result.data.alias) ? result.data.alias : [],
-  telefonos: Array.isArray(result.data.telefonos) ? result.data.telefonos : [],
-  domicilios: Array.isArray(result.data.domicilios) ? result.data.domicilios : []
-};
-const [persona] = await db.insert(personas).values(personaData).returning();
+      const personaData = {
+        ...result.data,
+        alias: Array.isArray(result.data.alias) ? result.data.alias : [],
+        telefonos: Array.isArray(result.data.telefonos) ? result.data.telefonos : [],
+        domicilios: Array.isArray(result.data.domicilios) ? result.data.domicilios : []
+      };
+      const [persona] = await db.insert(personas).values(personaData).returning();
       
       res.status(201).json(persona);
     } catch (error) {
@@ -131,7 +131,8 @@ const [persona] = await db.insert(personas).values(personaData).returning();
         });
       }
       
-      const [observacion] = await db.insert(personasObservaciones).values(result.data).returning();
+      // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente 
+      const observacion = await storage.createPersonaObservacion(result.data);
       
       res.status(201).json(observacion);
     } catch (error) {
@@ -147,11 +148,8 @@ const [persona] = await db.insert(personas).values(personaData).returning();
         return res.status(400).json({ message: "ID de persona inválido" });
       }
       
-      const observaciones = await db
-        .select()
-        .from(personasObservaciones)
-        .where(eq(personasObservaciones.personaId, personaId))
-        .orderBy(sql`${personasObservaciones.fecha} DESC`);
+      // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente
+      const observaciones = await storage.getPersonaObservaciones(personaId);
       
       res.json(observaciones);
     } catch (error) {
@@ -236,7 +234,8 @@ const [persona] = await db.insert(personas).values(personaData).returning();
         });
       }
       
-      const [observacion] = await db.insert(vehiculosObservaciones).values(result.data).returning();
+      // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente
+      const observacion = await storage.createVehiculoObservacion(result.data);
       
       res.status(201).json(observacion);
     } catch (error) {
@@ -252,11 +251,8 @@ const [persona] = await db.insert(personas).values(personaData).returning();
         return res.status(400).json({ message: "ID de vehículo inválido" });
       }
       
-      const observaciones = await db
-        .select()
-        .from(vehiculosObservaciones)
-        .where(eq(vehiculosObservaciones.vehiculoId, vehiculoId))
-        .orderBy(sql`${vehiculosObservaciones.fecha} DESC`);
+      // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente
+      const observaciones = await storage.getVehiculoObservaciones(vehiculoId);
       
       res.json(observaciones);
     } catch (error) {
@@ -341,7 +337,8 @@ const [persona] = await db.insert(personas).values(personaData).returning();
         });
       }
       
-      const [observacion] = await db.insert(inmueblesObservaciones).values(result.data).returning();
+      // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente
+      const observacion = await storage.createInmuebleObservacion(result.data);
       
       res.status(201).json(observacion);
     } catch (error) {
@@ -357,11 +354,8 @@ const [persona] = await db.insert(personas).values(personaData).returning();
         return res.status(400).json({ message: "ID de inmueble inválido" });
       }
       
-      const observaciones = await db
-        .select()
-        .from(inmueblesObservaciones)
-        .where(eq(inmueblesObservaciones.inmuebleId, inmuebleId))
-        .orderBy(sql`${inmueblesObservaciones.fecha} DESC`);
+      // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente
+      const observaciones = await storage.getInmuebleObservaciones(inmuebleId);
       
       res.json(observaciones);
     } catch (error) {
