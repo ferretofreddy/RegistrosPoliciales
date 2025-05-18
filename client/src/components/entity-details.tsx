@@ -391,7 +391,6 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           {entityType === "vehiculo" && "Vehículo"}
           {entityType === "inmueble" && "Inmueble"}
           {entityType === "ubicacion" && "Ubicación"}
-          <Badge>{`ID: ${entityId}`}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -25,14 +25,6 @@ export default function ConsultasPage() {
             <SearchComponent onResultSelect={handleResultSelect} />
           </div>
           
-          <Alert className="mb-6">
-            <InfoIcon className="h-4 w-4" />
-            <AlertTitle>Búsqueda centralizada</AlertTitle>
-            <AlertDescription>
-              Utilice el buscador para encontrar información sobre personas, vehículos, inmuebles o ubicaciones registradas en el sistema.
-            </AlertDescription>
-          </Alert>
-          
           {selectedResult ? (
             <div className="mt-6">
               <div className="flex items-center mb-4">
@@ -44,9 +36,6 @@ export default function ConsultasPage() {
                     {selectedResult.tipo === 'vehiculo' && 'Vehículo'}
                     {selectedResult.tipo === 'inmueble' && 'Inmueble'}
                     {selectedResult.tipo === 'ubicacion' && 'Ubicación'}
-                  </div>
-                  <div className="px-3 py-1 rounded bg-gray-100 text-gray-800 text-sm font-medium">
-                    ID: {selectedResult.id}
                   </div>
                 </div>
               </div>
