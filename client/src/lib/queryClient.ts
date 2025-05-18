@@ -76,8 +76,9 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      refetchOnWindowFocus: true,  // Ahora actualizará al volver a enfocar la ventana
+      staleTime: 10000,  // Los datos se consideran obsoletos después de 10 segundos
+      cacheTime: 300000, // Los datos se mantienen en caché durante 5 minutos
       retry: (failureCount, error: any) => {
         // No reintentar cuando el error es 401 o 403
         if (error?.status === 401 || error?.status === 403) {
