@@ -588,19 +588,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let resultado;
       
-      // Relaciones entre persona y vehículo
-      if (tipo1 === "persona" && tipo2 === "vehiculo") {
+      // Relaciones entre persona y vehículo (ambas direcciones)
+      if ((tipo1 === "persona" && tipo2 === "vehiculo") || (tipo1 === "vehiculo" && tipo2 === "persona")) {
+        let personaId, vehiculoId;
+        
+        if (tipo1 === "persona") {
+          personaId = id1;
+          vehiculoId = id2;
+        } else {
+          personaId = id2;
+          vehiculoId = id1;
+        }
+        
         const [relacion] = await db.insert(personasVehiculos).values({
-          personaId: id1,
-          vehiculoId: id2
+          personaId: personaId,
+          vehiculoId: vehiculoId
         }).returning();
         resultado = relacion;
       }
-      // Relaciones entre persona e inmueble
-      else if (tipo1 === "persona" && tipo2 === "inmueble") {
+      // Relaciones entre persona e inmueble (ambas direcciones)
+      else if ((tipo1 === "persona" && tipo2 === "inmueble") || (tipo1 === "inmueble" && tipo2 === "persona")) {
+        let personaId, inmuebleId;
+        
+        if (tipo1 === "persona") {
+          personaId = id1;
+          inmuebleId = id2;
+        } else {
+          personaId = id2;
+          inmuebleId = id1;
+        }
+        
         const [relacion] = await db.insert(personasInmuebles).values({
-          personaId: id1,
-          inmuebleId: id2
+          personaId: personaId,
+          inmuebleId: inmuebleId
         }).returning();
         resultado = relacion;
       }
@@ -612,27 +632,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }).returning();
         resultado = relacion;
       }
-      // Relaciones entre persona y ubicación
-      else if (tipo1 === "persona" && tipo2 === "ubicacion") {
+      // Relaciones entre persona y ubicación (ambas direcciones)
+      else if ((tipo1 === "persona" && tipo2 === "ubicacion") || (tipo1 === "ubicacion" && tipo2 === "persona")) {
+        let personaId, ubicacionId;
+        
+        if (tipo1 === "persona") {
+          personaId = id1;
+          ubicacionId = id2;
+        } else {
+          personaId = id2;
+          ubicacionId = id1;
+        }
+        
         const [relacion] = await db.insert(personasUbicaciones).values({
-          personaId: id1,
-          ubicacionId: id2
+          personaId: personaId,
+          ubicacionId: ubicacionId
         }).returning();
         resultado = relacion;
       }
-      // Relaciones entre vehículo y ubicación
-      else if (tipo1 === "vehiculo" && tipo2 === "ubicacion") {
+      // Relaciones entre vehículo y ubicación (ambas direcciones)
+      else if ((tipo1 === "vehiculo" && tipo2 === "ubicacion") || (tipo1 === "ubicacion" && tipo2 === "vehiculo")) {
+        let vehiculoId, ubicacionId;
+        
+        if (tipo1 === "vehiculo") {
+          vehiculoId = id1;
+          ubicacionId = id2;
+        } else {
+          vehiculoId = id2;
+          ubicacionId = id1;
+        }
+        
         const [relacion] = await db.insert(vehiculosUbicaciones).values({
-          vehiculoId: id1,
-          ubicacionId: id2
+          vehiculoId: vehiculoId,
+          ubicacionId: ubicacionId
         }).returning();
         resultado = relacion;
       }
-      // Relaciones entre inmueble y ubicación
-      else if (tipo1 === "inmueble" && tipo2 === "ubicacion") {
+      // Relaciones entre inmueble y ubicación (ambas direcciones)
+      else if ((tipo1 === "inmueble" && tipo2 === "ubicacion") || (tipo1 === "ubicacion" && tipo2 === "inmueble")) {
+        let inmuebleId, ubicacionId;
+        
+        if (tipo1 === "inmueble") {
+          inmuebleId = id1;
+          ubicacionId = id2;
+        } else {
+          inmuebleId = id2;
+          ubicacionId = id1;
+        }
+        
         const [relacion] = await db.insert(inmueblesUbicaciones).values({
-          inmuebleId: id1,
-          ubicacionId: id2
+          inmuebleId: inmuebleId,
+          ubicacionId: ubicacionId
         }).returning();
         resultado = relacion;
       }
