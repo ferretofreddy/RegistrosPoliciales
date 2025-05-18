@@ -32,7 +32,7 @@ export default function UbicacionesPage() {
   const { data: entityData, isLoading: isLoadingEntity } = useQuery<
     PersonaEntity | VehiculoEntity | InmuebleEntity | UbicacionEntity
   >({
-    queryKey: [selectedResult ? `api/${selectedResult.tipo}s/${selectedResult.id}` : null],
+    queryKey: [selectedResult ? `api/${selectedResult.tipo === "ubicacion" ? "ubicaciones" : selectedResult.tipo + "s"}/${selectedResult.id}` : null],
     enabled: !!selectedResult
   });
 
