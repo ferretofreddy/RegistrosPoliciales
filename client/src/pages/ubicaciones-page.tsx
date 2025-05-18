@@ -109,9 +109,9 @@ export default function UbicacionesPage() {
         // 1. Procesar según el tipo de entidad
         switch (selectedResult.tipo) {
           case "persona":
-            // Verificar si hay datos de relaciones
+            // 1. Ubicaciones directas de la persona consultada (domicilios)
             if (relationData && relationData.ubicaciones) {
-              console.log("Ubicaciones encontradas para persona:", relationData.ubicaciones);
+              console.log("Ubicaciones directas encontradas para persona:", relationData.ubicaciones);
               
               // Buscar ubicaciones directas (domicilios) de la persona
               const ubicacionesPersona = relationData.ubicaciones || [];
@@ -122,7 +122,7 @@ export default function UbicacionesPage() {
                 const lng = parseFloat(String(ubicacion.longitud));
                 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                  console.log(`Agregando ubicación de persona: ${ubicacion.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
+                  console.log(`Agregando ubicación directa de persona: ${ubicacion.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
                   
                   ubicacionesEncontradas.push({
                     id: ubicacion.id,
@@ -141,7 +141,84 @@ export default function UbicacionesPage() {
                   }
                 }
               }
-            } else {
+            }
+
+            // 2. Personas relacionadas con la persona consultada
+            if (relationData && relationData.personas && relationData.personas.length > 0) {
+              console.log("Personas relacionadas:", relationData.personas);
+              
+              for (const personaRelacionada of relationData.personas) {
+                try {
+                  // Obtener datos específicos de la persona relacionada
+                  const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
+                  const datosPersona = await respuestaPersona.json();
+                  
+                  // Buscar ubicaciones de la persona relacionada
+                  if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
+                    for (const ubicacionRelacionada of datosPersona.ubicaciones) {
+                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
+                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        console.log(`Agregando ubicación de persona relacionada: ${ubicacionRelacionada.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
+                        
+                        ubicacionesEncontradas.push({
+                          id: ubicacionRelacionada.id,
+                          lat: lat,
+                          lng: lng,
+                          title: ubicacionRelacionada.tipo || "Domicilio",
+                          description: ubicacionRelacionada.observaciones || `Domicilio de ${personaRelacionada.nombre} (persona relacionada con ${selectedResult.nombre})`,
+                          type: "ubicacion",
+                          relation: "related",
+                          entityId: personaRelacionada.id
+                        });
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener ubicaciones de persona relacionada:", error);
+                }
+              }
+            }
+            
+            // 3. Inmuebles relacionados con la persona consultada
+            if (relationData && relationData.inmuebles && relationData.inmuebles.length > 0) {
+              console.log("Inmuebles relacionados con persona:", relationData.inmuebles);
+              
+              for (const inmueble of relationData.inmuebles) {
+                try {
+                  // Obtener datos específicos del inmueble
+                  const respuestaInmueble = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
+                  const datosInmueble = await respuestaInmueble.json();
+                  
+                  if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
+                    for (const ubicacionInmueble of datosInmueble.ubicaciones) {
+                      const lat = parseFloat(String(ubicacionInmueble.latitud));
+                      const lng = parseFloat(String(ubicacionInmueble.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        console.log(`Agregando ubicación de inmueble relacionado: ${inmueble.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
+                        
+                        ubicacionesEncontradas.push({
+                          id: ubicacionInmueble.id,
+                          lat: lat,
+                          lng: lng,
+                          title: inmueble.tipo || "Inmueble",
+                          description: `${inmueble.tipo || "Inmueble"} en ${inmueble.direccion || "dirección desconocida"} (relacionado con ${selectedResult.nombre})`,
+                          type: "inmueble",
+                          relation: "related",
+                          entityId: inmueble.id
+                        });
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener ubicaciones del inmueble:", error);
+                }
+              }
+            }
+            
+            if (!ubicacionesEncontradas.length) {
               console.log("No se encontraron ubicaciones para esta persona");
             }
             break;
