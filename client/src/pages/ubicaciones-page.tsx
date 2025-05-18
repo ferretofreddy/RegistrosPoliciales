@@ -299,7 +299,7 @@ export default function UbicacionesPage() {
                           lat: lat,
                           lng: lng,
                           title: ubicacionPropietario.tipo || "Domicilio",
-                          description: `Domicilio de ${persona.nombre} (persona relacionada con ${selectedResult.nombre})`,
+                          description: `Domicilio de ${persona.nombre} (persona relacionada con ${selectedResult.marca} ${selectedResult.modelo} - Placa: ${selectedResult.placa})`,
                           type: "ubicacion",
                           relation: "related",
                           entityId: persona.id
@@ -349,7 +349,11 @@ export default function UbicacionesPage() {
             <div className="space-y-6">
               <div className="flex items-center mb-4">
                 <h2 className="text-xl font-bold">
-                  Ubicaciones de {selectedResult.nombre} 
+                  Ubicaciones de{' '}
+                  {selectedResult.tipo === 'persona' && selectedResult.nombre}
+                  {selectedResult.tipo === 'vehiculo' && `${selectedResult.marca} ${selectedResult.modelo} - Placa: ${selectedResult.placa}`}
+                  {selectedResult.tipo === 'inmueble' && `${selectedResult.tipo} en ${selectedResult.direccion}`}
+                  {selectedResult.tipo === 'ubicacion' && `${selectedResult.tipo || 'Ubicación'}`}
                   <span className="ml-2 text-sm bg-primary-100 text-primary-800 px-2 py-1 rounded">
                     {selectedResult.tipo === 'persona' && 'Persona'}
                     {selectedResult.tipo === 'vehiculo' && 'Vehículo'}

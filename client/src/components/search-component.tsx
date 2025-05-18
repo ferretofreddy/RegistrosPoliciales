@@ -39,6 +39,16 @@ export type SearchResult = {
   nombre: string;
   tipo: Exclude<EntityType, "todas">;
   referencia: string;
+  // Propiedades específicas para vehículos
+  marca?: string;
+  modelo?: string;
+  placa?: string;
+  // Propiedades específicas para inmuebles
+  direccion?: string;
+  // Propiedades específicas para ubicaciones
+  observaciones?: string;
+  latitud?: number;
+  longitud?: number;
 };
 
 interface SearchComponentProps {
@@ -87,6 +97,12 @@ export default function SearchComponent({ onResultSelect }: SearchComponentProps
       let nombre = '';
       let referencia = '';
       let tipo: Exclude<EntityType, "todas"> = 'persona';
+      const result: SearchResult = {
+        id: item.id,
+        nombre: '',
+        referencia: '',
+        tipo: 'persona'
+      };
       
       if (item.tipo === 'persona') {
         nombre = item.nombre || 'Sin nombre';
@@ -96,22 +112,28 @@ export default function SearchComponent({ onResultSelect }: SearchComponentProps
         nombre = `${item.marca} ${item.modelo}` || 'Vehículo sin datos';
         referencia = item.placa || 'Sin placa';
         tipo = 'vehiculo';
+        result.marca = item.marca;
+        result.modelo = item.modelo;
+        result.placa = item.placa;
       } else if (item.tipo === 'inmueble') {
         nombre = item.direccion || 'Inmueble sin dirección';
         referencia = item.tipo || 'Sin tipo';
         tipo = 'inmueble';
+        result.direccion = item.direccion;
       } else if (item.tipo === 'ubicacion') {
         nombre = item.observaciones || 'Ubicación';
         referencia = item.tipo || 'Sin tipo';
         tipo = 'ubicacion';
+        result.observaciones = item.observaciones;
+        result.latitud = item.latitud;
+        result.longitud = item.longitud;
       }
       
-      return {
-        id: item.id,
-        nombre,
-        referencia,
-        tipo
-      };
+      result.nombre = nombre;
+      result.referencia = referencia;
+      result.tipo = tipo;
+      
+      return result;
     });
   };
   
