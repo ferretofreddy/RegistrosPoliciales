@@ -7,6 +7,7 @@ import { eq, or, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
   personas, vehiculos, inmuebles,
+  personasObservaciones, vehiculosObservaciones, inmueblesObservaciones,
   insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema,
   insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
 } from "@shared/schema";
@@ -89,7 +90,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const [persona] = await db.insert(personas).values(result.data).returning();
+      // Aseguramos que los arrays se pasen correctamente
+const personaData = {
+  ...result.data,
+  alias: Array.isArray(result.data.alias) ? result.data.alias : [],
+  telefonos: Array.isArray(result.data.telefonos) ? result.data.telefonos : [],
+  domicilios: Array.isArray(result.data.domicilios) ? result.data.domicilios : []
+};
+const [persona] = await db.insert(personas).values(personaData).returning();
       
       res.status(201).json(persona);
     } catch (error) {
