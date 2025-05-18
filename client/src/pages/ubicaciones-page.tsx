@@ -299,7 +299,7 @@ export default function UbicacionesPage() {
                           lat: lat,
                           lng: lng,
                           title: ubicacionPropietario.tipo || "Domicilio",
-                          description: `Domicilio de ${persona.nombre} (persona relacionada con ${selectedResult.marca} ${selectedResult.modelo} - Placa: ${selectedResult.placa})`,
+                          description: `Domicilio de ${persona.nombre} (persona relacionada con ${selectedResult.marca || ''} ${selectedResult.modelo || ''} - Placa: ${selectedResult.placa || 'Sin placa'})`,
                           type: "ubicacion",
                           relation: "related",
                           entityId: persona.id
@@ -351,9 +351,9 @@ export default function UbicacionesPage() {
                 <h2 className="text-xl font-bold">
                   Ubicaciones de{' '}
                   {selectedResult.tipo === 'persona' && selectedResult.nombre}
-                  {selectedResult.tipo === 'vehiculo' && `${selectedResult.marca} ${selectedResult.modelo} - Placa: ${selectedResult.placa}`}
-                  {selectedResult.tipo === 'inmueble' && `${selectedResult.tipo} en ${selectedResult.direccion}`}
-                  {selectedResult.tipo === 'ubicacion' && `${selectedResult.tipo || 'Ubicación'}`}
+                  {selectedResult.tipo === 'vehiculo' && `${selectedResult.marca || ''} ${selectedResult.modelo || ''} - Placa: ${selectedResult.placa || 'Sin placa'}`}
+                  {selectedResult.tipo === 'inmueble' && `${selectedResult.referencia || 'Inmueble'} en ${selectedResult.direccion || 'ubicación desconocida'}`}
+                  {selectedResult.tipo === 'ubicacion' && `${selectedResult.referencia || 'Ubicación'}`}
                   <span className="ml-2 text-sm bg-primary-100 text-primary-800 px-2 py-1 rounded">
                     {selectedResult.tipo === 'persona' && 'Persona'}
                     {selectedResult.tipo === 'vehiculo' && 'Vehículo'}
