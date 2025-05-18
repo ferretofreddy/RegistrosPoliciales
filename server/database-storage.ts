@@ -668,23 +668,32 @@ export class DatabaseStorage {
     };
 
     try {
+      // Normalizar tipo (convertir plurales a singular)
+      if (tipo === "personas") tipo = "persona";
+      if (tipo === "vehiculos") tipo = "vehiculo";
+      if (tipo === "inmuebles") tipo = "inmueble";
+      if (tipo === "ubicaciones") tipo = "ubicacion";
+      
       // Validar tipo
       const tiposValidos = ["persona", "vehiculo", "inmueble", "ubicacion"];
       if (!tiposValidos.includes(tipo)) {
         throw new Error(`Tipo inválido. Debe ser uno de: ${tiposValidos.join(', ')}`);
       }
+      
+      console.log(`[DEBUG] Buscando relaciones para: ${tipo}(${id})`);
+      
 
       // Obtener relaciones según el tipo
       if (tipo === "persona") {
         // Personas relacionadas (directamente)
         const personasResult = await db.execute(
           sql`SELECT p.* FROM personas p
-              JOIN personas_personas pp ON p.id = pp.persona_id2
-              WHERE pp.persona_id1 = ${id}
+              JOIN personas_personas pp ON p.id = pp.persona_id_2
+              WHERE pp.persona_id_1 = ${id}
               UNION
               SELECT p.* FROM personas p
-              JOIN personas_personas pp ON p.id = pp.persona_id1
-              WHERE pp.persona_id2 = ${id}`
+              JOIN personas_personas pp ON p.id = pp.persona_id_1
+              WHERE pp.persona_id_2 = ${id}`
         );
         resultado.personas = personasResult.rows || [];
         
@@ -927,12 +936,12 @@ export class DatabaseStorage {
             console.log(`Buscando personas relacionadas a la persona ID: ${persona.id}`);
             const personasRelacionadasResult = await db.execute(
               sql`SELECT p.* FROM personas p
-                  JOIN personas_personas pp ON p.id = pp.persona_id2
-                  WHERE pp.persona_id1 = ${persona.id}
+                  JOIN personas_personas pp ON p.id = pp.persona_id_2
+                  WHERE pp.persona_id_1 = ${persona.id}
                   UNION
                   SELECT p.* FROM personas p
-                  JOIN personas_personas pp ON p.id = pp.persona_id1
-                  WHERE pp.persona_id2 = ${persona.id}`
+                  JOIN personas_personas pp ON p.id = pp.persona_id_1
+                  WHERE pp.persona_id_2 = ${persona.id}`
             );
             
             const personasRelacionadas = personasRelacionadasResult.rows || [];
