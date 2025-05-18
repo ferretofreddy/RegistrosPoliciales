@@ -872,12 +872,14 @@ export default function UbicacionesPage() {
                               <div className={`
                                 ${relacion.entidadRelacionada.tipo === 'persona' ? 'bg-red-500' : 
                                   relacion.entidadRelacionada.tipo === 'vehiculo' ? 'bg-blue-500' : 
-                                  relacion.entidadRelacionada.tipo === 'inmueble' ? 'bg-green-500' : 'bg-purple-500'} 
+                                  relacion.entidadRelacionada.tipo === 'inmueble' ? 'bg-green-500' : 
+                                  relacion.entidadRelacionada.tipo === 'ubicacion' ? 'bg-yellow-500' : 'bg-purple-500'} 
                                 rounded-full p-1 mr-2
                               `}>
                                 {relacion.entidadRelacionada.tipo === 'persona' ? <User className="h-3 w-3 text-white" /> :
                                  relacion.entidadRelacionada.tipo === 'vehiculo' ? <Car className="h-3 w-3 text-white" /> :
                                  relacion.entidadRelacionada.tipo === 'inmueble' ? <Home className="h-3 w-3 text-white" /> :
+                                 relacion.entidadRelacionada.tipo === 'ubicacion' ? <MapPin className="h-3 w-3 text-white" /> :
                                  <MapPin className="h-3 w-3 text-white" />}
                               </div>
                               <div className="text-sm flex-grow">
@@ -889,6 +891,8 @@ export default function UbicacionesPage() {
                                     `${relacion.entidadRelacionada.entidad.marca} (${relacion.entidadRelacionada.entidad.placa})` : 
                                     relacion.entidadRelacionada.tipo === 'inmueble' ? 
                                     `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion || 'Sin dirección'}` : 
+                                    relacion.entidadRelacionada.tipo === 'ubicacion' ? 
+                                    `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.observaciones || 'Sin observaciones'}` : 
                                     'Entidad desconocida'}</span><br/>
                                   
                                   {/* Mostrar información sobre la relación si es un inmueble relacionado con otro inmueble */}
@@ -900,6 +904,8 @@ export default function UbicacionesPage() {
                                         `${relacion.entidadRelacionada.relacionadoCon.entidad.nombre}` :
                                         relacion.entidadRelacionada.relacionadoCon.tipo === 'vehiculo' ?
                                         `${relacion.entidadRelacionada.relacionadoCon.entidad.marca} (${relacion.entidadRelacionada.relacionadoCon.entidad.placa})` :
+                                        relacion.entidadRelacionada.relacionadoCon.tipo === 'ubicacion' ?
+                                        `${relacion.entidadRelacionada.relacionadoCon.entidad.tipo} - ${relacion.entidadRelacionada.relacionadoCon.entidad.observaciones || 'Sin observaciones'}` :
                                         'Entidad desconocida'}
                                     </div>
                                   )}

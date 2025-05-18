@@ -1556,8 +1556,9 @@ export class DatabaseStorage {
         
         // Para cada ubicación relacionada, agregarla al resultado
         for (const ubicacionRelacionada of ubicacionesRelacionadas) {
-          if (!ubicacionesEncontradas.has(ubicacionRelacionada.id)) {
-            ubicacionesEncontradas.add(ubicacionRelacionada.id);
+          const relacionadaId = Number(ubicacionRelacionada.id);
+          if (!ubicacionesEncontradas.has(relacionadaId)) {
+            ubicacionesEncontradas.add(relacionadaId);
             resultado.ubicacionesRelacionadas.push({
               ubicacion: ubicacionRelacionada,
               entidadRelacionada: {
