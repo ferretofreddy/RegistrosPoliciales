@@ -699,7 +699,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener relaciones
-      const relaciones = await storage.getRelaciones(tipoNormalizado, idNumerico);
+      // Implementación directa de getRelaciones para corregir los problemas con JSON
+      const relaciones: any = {
+        personas: [],
+        vehiculos: [],
+        inmuebles: [],
+        ubicaciones: []
+      };
+      
+      console.log(`[DEBUG] Buscando relaciones para entidad tipo: ${tipoNormalizado}, ID: ${idNumerico}`);
+      
+      try {
+        if (tipoNormalizado === "persona" || tipoNormalizado === "personas") {
+          // Vehiculos relacionados
+          console.log(`[DEBUG] Buscando vehículos relacionados a persona ID ${idNumerico}`);
+          const vehiculosResult = await db.execute(
+            sql`SELECT v.* FROM vehiculos v
+                JOIN personas_vehiculos pv ON v.id = pv.vehiculo_id
+                WHERE pv.persona_id = ${idNumerico}`
+          );
+          relaciones.vehiculos = vehiculosResult.rows || [];
+          console.log(`[DEBUG] Encontrados ${relaciones.vehiculos.length} vehículos relacionados`);
+          
+          // Inmuebles relacionados
+          console.log(`[DEBUG] Buscando inmuebles relacionados a persona ID ${idNumerico}`);
+          const inmueblesResult = await db.execute(
+            sql`SELECT i.* FROM inmuebles i
+                JOIN personas_inmuebles pi ON i.id = pi.inmueble_id
+                WHERE pi.persona_id = ${idNumerico}`
+          );
+          relaciones.inmuebles = inmueblesResult.rows || [];
+          console.log(`[DEBUG] Encontrados ${relaciones.inmuebles.length} inmuebles relacionados`);
+          
+          // Ubicaciones relacionadas
+          console.log(`[DEBUG] Buscando ubicaciones relacionadas a persona ID ${idNumerico}`);
+          const ubicacionesResult = await db.execute(
+            sql`SELECT u.* FROM ubicaciones u
+                JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                WHERE pu.persona_id = ${idNumerico}`
+          );
+          relaciones.ubicaciones = ubicacionesResult.rows || [];
+          console.log(`[DEBUG] Encontradas ${relaciones.ubicaciones.length} ubicaciones directas relacionadas`);
+          
+          // También mostrar ubicaciones de los inmuebles relacionados
+          if (relaciones.inmuebles.length > 0) {
+            console.log(`[DEBUG] Buscando ubicaciones de inmuebles relacionados`);
+            for (const inmueble of relaciones.inmuebles) {
+              const ubicacionesInmuebleResult = await db.execute(
+                sql`SELECT u.* FROM ubicaciones u
+                    JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+                    WHERE iu.inmueble_id = ${inmueble.id}`
+              );
+              
+              // Añadir ubicaciones que no estén ya en el resultado
+              const ubicacionesInmueble = ubicacionesInmuebleResult.rows || [];
+              console.log(`[DEBUG] Encontradas ${ubicacionesInmueble.length} ubicaciones para inmueble ID ${inmueble.id}`);
+              
+              for (const ubicacion of ubicacionesInmueble) {
+                const yaExiste = relaciones.ubicaciones.some((u: any) => u.id === ubicacion.id);
+                if (!yaExiste) {
+                  relaciones.ubicaciones.push(ubicacion);
+                }
+              }
+            }
+          }
+        } 
+        else if (tipoNormalizado === "inmueble" || tipoNormalizado === "inmuebles") {
+          // Personas relacionadas
+          console.log(`[DEBUG] Buscando personas relacionadas a inmueble ID ${idNumerico}`);
+          const personasResult = await db.execute(
+            sql`SELECT p.* FROM personas p
+                JOIN personas_inmuebles pi ON p.id = pi.persona_id
+                WHERE pi.inmueble_id = ${idNumerico}`
+          );
+          relaciones.personas = personasResult.rows || [];
+          console.log(`[DEBUG] Encontradas ${relaciones.personas.length} personas relacionadas`);
+          
+          // Ubicaciones relacionadas
+          console.log(`[DEBUG] Buscando ubicaciones relacionadas a inmueble ID ${idNumerico}`);
+          const ubicacionesResult = await db.execute(
+            sql`SELECT u.* FROM ubicaciones u
+                JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+                WHERE iu.inmueble_id = ${idNumerico}`
+          );
+          relaciones.ubicaciones = ubicacionesResult.rows || [];
+          console.log(`[DEBUG] Encontradas ${relaciones.ubicaciones.length} ubicaciones relacionadas`);
+        }
+        else if (tipoNormalizado === "vehiculo" || tipoNormalizado === "vehiculos") {
+          // Personas relacionadas
+          console.log(`[DEBUG] Buscando personas relacionadas a vehículo ID ${idNumerico}`);
+          const personasResult = await db.execute(
+            sql`SELECT p.* FROM personas p
+                JOIN personas_vehiculos pv ON p.id = pv.persona_id
+                WHERE pv.vehiculo_id = ${idNumerico}`
+          );
+          relaciones.personas = personasResult.rows || [];
+          console.log(`[DEBUG] Encontradas ${relaciones.personas.length} personas relacionadas`);
+          
+          // Ubicaciones relacionadas
+          console.log(`[DEBUG] Buscando ubicaciones relacionadas a vehículo ID ${idNumerico}`);
+          const ubicacionesResult = await db.execute(
+            sql`SELECT u.* FROM ubicaciones u
+                JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
+                WHERE vu.vehiculo_id = ${idNumerico}`
+          );
+          relaciones.ubicaciones = ubicacionesResult.rows || [];
+          console.log(`[DEBUG] Encontradas ${relaciones.ubicaciones.length} ubicaciones relacionadas`);
+        }
+        else if (tipoNormalizado === "ubicacion" || tipoNormalizado === "ubicaciones") {
+          // Personas relacionadas
+          console.log(`[DEBUG] Buscando personas relacionadas a ubicación ID ${idNumerico}`);
+          const personasResult = await db.execute(
+            sql`SELECT p.* FROM personas p
+                JOIN personas_ubicaciones pu ON p.id = pu.persona_id
+                WHERE pu.ubicacion_id = ${idNumerico}`
+          );
+          relaciones.personas = personasResult.rows || [];
+          console.log(`[DEBUG] Encontradas ${relaciones.personas.length} personas relacionadas`);
+          
+          // Inmuebles relacionados
+          console.log(`[DEBUG] Buscando inmuebles relacionados a ubicación ID ${idNumerico}`);
+          const inmueblesResult = await db.execute(
+            sql`SELECT i.* FROM inmuebles i
+                JOIN inmuebles_ubicaciones iu ON i.id = iu.inmueble_id
+                WHERE iu.ubicacion_id = ${idNumerico}`
+          );
+          relaciones.inmuebles = inmueblesResult.rows || [];
+          console.log(`[DEBUG] Encontrados ${relaciones.inmuebles.length} inmuebles relacionados`);
+          
+          // Vehículos relacionados
+          console.log(`[DEBUG] Buscando vehículos relacionados a ubicación ID ${idNumerico}`);
+          const vehiculosResult = await db.execute(
+            sql`SELECT v.* FROM vehiculos v
+                JOIN vehiculos_ubicaciones vu ON v.id = vu.vehiculo_id
+                WHERE vu.ubicacion_id = ${idNumerico}`
+          );
+          relaciones.vehiculos = vehiculosResult.rows || [];
+          console.log(`[DEBUG] Encontrados ${relaciones.vehiculos.length} vehículos relacionados`);
+        }
+      } catch (error) {
+        console.error(`Error al buscar relaciones para ${tipoNormalizado} ID ${idNumerico}:`, error);
+      }
       
       console.log(`[DEBUG] Relaciones obtenidas:`, {
         tipoEntidad: tipoNormalizado,
