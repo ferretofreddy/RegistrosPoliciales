@@ -1,5 +1,5 @@
 import { 
-  users, personas, personas_inmuebles, inmuebles, inmuebles_ubicaciones, ubicaciones,
+  users, personas, personasInmuebles, inmuebles, inmueblesUbicaciones, ubicaciones,
   type User, type InsertUser, type Persona, type InsertPersona, 
   type Inmueble, type InsertInmueble, type Ubicacion, type InsertUbicacion
 } from "@shared/schema";
