@@ -9,8 +9,22 @@ import {
   users, personas, vehiculos, inmuebles,
   personasObservaciones, vehiculosObservaciones, inmueblesObservaciones,
   insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema,
-  insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
+  insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema,
+  ubicaciones, insertUbicacionSchema,
+  ubicacionesObservaciones, insertUbicacionObservacionSchema,
+  tiposInmuebles, tiposUbicaciones,
+  personasVehiculos, personasInmuebles, personasPersonas, personasUbicaciones,
+  vehiculosUbicaciones, inmueblesUbicaciones,
+  insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
+
+// Definir un tipo para el usuario autenticado basado en el objeto req.user
+interface User {
+  id: number;
+  email: string;
+  nombre?: string;
+  rol?: string;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
