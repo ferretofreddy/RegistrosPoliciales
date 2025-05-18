@@ -96,7 +96,7 @@ export default function UbicacionesPage() {
   // Procesar ubicaciones cuando tengamos datos
   useEffect(() => {
     const cargarUbicaciones = async () => {
-      if (!selectedResult || !entityData || !relationData) return;
+      if (!selectedResult || !entityData) return;
       
       setIsLoading(true);
       const ubicacionesEncontradas: LocationData[] = [];
@@ -109,51 +109,63 @@ export default function UbicacionesPage() {
         // 1. Procesar según el tipo de entidad
         switch (selectedResult.tipo) {
           case "persona":
-            // Buscar ubicaciones directas (domicilios) de la persona
-            const ubicacionesPersona = relationData.ubicaciones || [];
-            if (ubicacionesPersona.length > 0) {
+            // Verificar si hay datos de relaciones
+            if (relationData && relationData.ubicaciones) {
+              console.log("Ubicaciones encontradas para persona:", relationData.ubicaciones);
+              
+              // Buscar ubicaciones directas (domicilios) de la persona
+              const ubicacionesPersona = relationData.ubicaciones || [];
+              
               for (const ubicacion of ubicacionesPersona) {
-                if (ubicacion.tipo === "domicilio" || !ubicacion.tipo) {
-                  const lat = parseFloat(String(ubicacion.latitud));
-                  const lng = parseFloat(String(ubicacion.longitud));
+                // Filtrar por tipo domicilio o cualquier ubicación asociada a persona
+                const lat = parseFloat(String(ubicacion.latitud));
+                const lng = parseFloat(String(ubicacion.longitud));
+                
+                if (!isNaN(lat) && !isNaN(lng)) {
+                  console.log(`Agregando ubicación de persona: ${ubicacion.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
                   
-                  if (!isNaN(lat) && !isNaN(lng)) {
-                    ubicacionesEncontradas.push({
-                      id: ubicacion.id,
-                      lat: lat,
-                      lng: lng,
-                      title: ubicacion.tipo || "Domicilio",
-                      description: `Domicilio de ${selectedResult.nombre}`,
-                      type: "ubicacion",
-                      relation: "direct",
-                      entityId: selectedResult.id
-                    });
-                    
-                    if (!hasCenteredMap) {
-                      setMapCenter([lat, lng]);
-                      hasCenteredMap = true;
-                    }
+                  ubicacionesEncontradas.push({
+                    id: ubicacion.id,
+                    lat: lat,
+                    lng: lng,
+                    title: ubicacion.tipo || "Domicilio",
+                    description: ubicacion.observaciones || `Domicilio de ${selectedResult.nombre}`,
+                    type: "ubicacion",
+                    relation: "direct",
+                    entityId: selectedResult.id
+                  });
+                  
+                  if (!hasCenteredMap) {
+                    setMapCenter([lat, lng]);
+                    hasCenteredMap = true;
                   }
                 }
               }
+            } else {
+              console.log("No se encontraron ubicaciones para esta persona");
             }
             break;
             
           case "inmueble":
             // Buscar ubicaciones directas del inmueble
-            const ubicacionesInmueble = relationData.ubicaciones || [];
-            if (ubicacionesInmueble.length > 0) {
+            if (relationData && relationData.ubicaciones) {
+              console.log("Ubicaciones encontradas para inmueble:", relationData.ubicaciones);
+              
+              const ubicacionesInmueble = relationData.ubicaciones || [];
+              
               for (const ubicacion of ubicacionesInmueble) {
                 const lat = parseFloat(String(ubicacion.latitud));
                 const lng = parseFloat(String(ubicacion.longitud));
                 
                 if (!isNaN(lat) && !isNaN(lng)) {
+                  console.log(`Agregando ubicación de inmueble: ${ubicacion.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
+                  
                   ubicacionesEncontradas.push({
                     id: ubicacion.id,
                     lat: lat,
                     lng: lng,
                     title: ubicacion.tipo || "Inmueble",
-                    description: `Ubicación de inmueble: ${selectedResult.nombre}`,
+                    description: ubicacion.observaciones || `Ubicación de inmueble: ${selectedResult.nombre}`,
                     type: "inmueble",
                     relation: "direct",
                     entityId: selectedResult.id
@@ -165,6 +177,8 @@ export default function UbicacionesPage() {
                   }
                 }
               }
+            } else {
+              console.log("No se encontraron ubicaciones para este inmueble");
             }
             break;
             
@@ -176,6 +190,8 @@ export default function UbicacionesPage() {
               const lng = parseFloat(String(ubicacion.longitud));
               
               if (!isNaN(lat) && !isNaN(lng)) {
+                console.log(`Agregando ubicación directa: id=${ubicacion.id} - lat: ${lat}, lng: ${lng}`);
+                
                 ubicacionesEncontradas.push({
                   id: ubicacion.id,
                   lat: lat,
@@ -195,8 +211,52 @@ export default function UbicacionesPage() {
             
           case "vehiculo":
             // Los vehículos no tienen ubicaciones directas, pero podemos
-            // buscar ubicaciones de sus propietarios si es necesario
-            console.log("Los vehículos no tienen ubicaciones directas");
+            // buscar las ubicaciones de sus propietarios
+            if (relationData && relationData.personas) {
+              console.log("Personas propietarias encontradas para vehículo:", relationData.personas);
+              
+              // Obtener personas relacionadas con el vehículo
+              for (const persona of relationData.personas) {
+                // Hacer una consulta adicional para obtener las ubicaciones de esta persona
+                try {
+                  const respuesta = await fetch(`/api/relaciones/persona/${persona.id}`);
+                  const datosPersona = await respuesta.json();
+                  
+                  if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
+                    console.log(`Ubicaciones de propietario ${persona.nombre}:`, datosPersona.ubicaciones);
+                    
+                    for (const ubicacionPropietario of datosPersona.ubicaciones) {
+                      const lat = parseFloat(String(ubicacionPropietario.latitud));
+                      const lng = parseFloat(String(ubicacionPropietario.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        console.log(`Agregando ubicación de propietario de vehículo: ${ubicacionPropietario.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
+                        
+                        ubicacionesEncontradas.push({
+                          id: ubicacionPropietario.id,
+                          lat: lat,
+                          lng: lng,
+                          title: ubicacionPropietario.tipo || "Domicilio de propietario",
+                          description: `Domicilio de ${persona.nombre} (propietario de ${selectedResult.nombre})`,
+                          type: "ubicacion",
+                          relation: "related",
+                          entityId: persona.id
+                        });
+                        
+                        if (!hasCenteredMap) {
+                          setMapCenter([lat, lng]);
+                          hasCenteredMap = true;
+                        }
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener ubicaciones del propietario:", error);
+                }
+              }
+            } else {
+              console.log("No se encontraron propietarios para este vehículo");
+            }
             break;
         }
         
