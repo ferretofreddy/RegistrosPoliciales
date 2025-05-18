@@ -4,9 +4,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import fs from 'fs';
 import path from 'path';
 
-// Importar el servidor de ubicación independiente
-import { ubicacionServer } from './ubicacion-handler';
-
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -153,15 +150,5 @@ app.use((req, res, next) => {
     log(`Server timeout set to ${server.timeout}ms`);
   });
   
-  // Iniciar servidor de ubicaciones independiente en un puerto diferente
-  // En producción, es posible que necesitemos deshabilitar este servidor adicional
-  // ya que algunos entornos no permiten múltiples puertos abiertos
-  if (process.env.NODE_ENV !== 'production') {
-    const ubicacionPort = 5001;
-    ubicacionServer.listen(ubicacionPort, "0.0.0.0", () => {
-      log(`Servidor de ubicaciones escuchando en puerto ${ubicacionPort}`);
-    });
-  } else {
-    log(`Servidor de ubicaciones no iniciado en modo producción`);
-  }
+  // Servidor principal iniciado correctamente
 })();
