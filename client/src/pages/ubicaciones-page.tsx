@@ -652,14 +652,18 @@ export default function UbicacionesPage() {
                     data.ubicacionesRelacionadas = [];
                   }
                   
-                  data.ubicacionesRelacionadas.push({
+                  // Generar un ID único para este nuevo elemento
+                  const uniqueId = 900 + inmueble.id + (data.ubicacionesRelacionadas.length * 1000);
+                  
+                  // Crear la nueva relación con el inmueble para que aparezca en la lista
+                  const nuevaRelacion = {
                     ubicacion: {
-                      id: 900 + inmueble.id, // ID ficticio para esta relación
+                      id: uniqueId, // ID ficticio para esta relación
                       latitud: inmuebleLat,
                       longitud: inmuebleLng,
                       tipo: 'Inmueble relacionado',
                       fecha: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                      observaciones: `Relación detectada con ${persona.nombre}`
+                      observaciones: `Propiedad relacionada con ${persona.nombre}`
                     },
                     entidadRelacionada: {
                       tipo: 'inmueble',
@@ -669,7 +673,39 @@ export default function UbicacionesPage() {
                         entidad: persona
                       }
                     }
-                  });
+                  };
+                  
+                  // Verificar que esta relación no existe ya en el array (para evitar duplicados)
+                  const yaExiste = data.ubicacionesRelacionadas.some((rel: any) => 
+                    rel.entidadRelacionada?.tipo === 'inmueble' && 
+                    rel.entidadRelacionada?.entidad?.id === inmueble.id
+                  );
+                  
+                  if (!yaExiste) {
+                    console.log(`[DEBUG] Agregando inmueble ID ${inmueble.id} a la lista de ubicaciones relacionadas`);
+                    data.ubicacionesRelacionadas.push(nuevaRelacion);
+                    
+                    // Actualizar entidadesRelacionadas si existe
+                    if (!data.entidadesRelacionadas) {
+                      data.entidadesRelacionadas = [];
+                    }
+                    
+                    // Agregar esta relación también a entidadesRelacionadas para que aparezca en esa sección
+                    const yaExisteEnEntidades = data.entidadesRelacionadas.some((ent: any) => 
+                      ent.tipo === 'inmueble' && ent.entidad?.id === inmueble.id
+                    );
+                    
+                    if (!yaExisteEnEntidades) {
+                      data.entidadesRelacionadas.push({
+                        tipo: 'inmueble',
+                        entidad: inmueble,
+                        relacionadoCon: {
+                          tipo: 'persona',
+                          entidad: persona
+                        }
+                      });
+                    }
+                  }
                 }
               });
             }
@@ -768,7 +804,12 @@ export default function UbicacionesPage() {
     
     // Búsqueda de coincidencias mientras se escribe
     if (value.trim().length >= 2) {
-      searchCoincidencias(value);
+      // Pequeño retraso para evitar demasiadas peticiones mientras se escribe
+      setTimeout(() => {
+        if (value === e.target.value) { // Verificar que el valor no ha cambiado
+          searchCoincidencias(value);
+        }
+      }, 300);
     } else {
       setSearchResults([]);
       setShowSearchResults(false);
@@ -847,9 +888,15 @@ export default function UbicacionesPage() {
                     
                     {/* Lista desplegable de coincidencias */}
                     {showSearchResults && searchResults.length > 0 && (
-                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        <div className="p-1 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
-                          {searchResults.length} coincidencias encontradas
+                      <div className="fixed md:absolute z-50 mt-1 w-[calc(100%-2rem)] md:w-full left-4 md:left-auto right-4 md:right-auto top-16 md:top-auto bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                          <span>{searchResults.length} coincidencias encontradas</span>
+                          <button 
+                            onClick={() => setShowSearchResults(false)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            ✕
+                          </button>
                         </div>
                         <div className="py-1">
                           {searchResults.map((result, index) => {
@@ -874,14 +921,14 @@ export default function UbicacionesPage() {
                             return (
                               <div
                                 key={`${result.tipo}-${result.id}`}
-                                className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-sm flex items-center"
+                                className="px-2 py-2 hover:bg-gray-100 cursor-pointer text-sm flex items-center"
                                 onClick={() => handleSelectResult(result)}
                               >
                                 <div className={`${bgColor} rounded-full p-1 mr-2 flex-shrink-0`}>
                                   {icon}
                                 </div>
                                 <div className="flex-grow truncate">
-                                  <div className="truncate">{result.texto}</div>
+                                  <div className="truncate font-medium">{result.texto}</div>
                                   <div className="text-xs text-gray-500">
                                     {result.tipo.charAt(0).toUpperCase() + result.tipo.slice(1)} ID: {result.id}
                                   </div>
