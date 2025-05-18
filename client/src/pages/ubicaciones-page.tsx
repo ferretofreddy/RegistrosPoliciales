@@ -42,323 +42,319 @@ export default function UbicacionesPage() {
     enabled: !!selectedResult
   });
 
-  // Procesar los datos y crear las ubicaciones para el mapa y la tabla
-  useEffect(() => {
-    if (!selectedResult) {
-      setLocations([]);
-      return;
-    }
-
-    console.log("Procesando datos para:", selectedResult);
-    console.log("Entity Data:", entityData);
-    console.log("Relation Data:", relationData);
-
-    const newLocations: LocationData[] = [];
-    let hasCenteredMap = false;
-    
-    // Procesar los datos según el tipo de entidad seleccionada
-    if (entityData) {
-      // Para ubicaciones directas
-      if (selectedResult.tipo === "ubicacion") {
-        const ubicacion = entityData as UbicacionEntity;
-        if (ubicacion.latitud && ubicacion.longitud) {
-          newLocations.push({
-            id: ubicacion.id,
-            lat: ubicacion.latitud,
-            lng: ubicacion.longitud,
-            title: ubicacion.tipo || "Ubicación",
-            description: ubicacion.observaciones || "Sin descripción",
-            type: "ubicacion",
-            relation: "direct",
-            entityId: ubicacion.id
-          });
-          
-          // Centrar el mapa en la ubicación
-          setMapCenter([ubicacion.latitud, ubicacion.longitud]);
-          hasCenteredMap = true;
-        }
-      }
+  // Función para obtener ubicaciones relacionadas con personas
+  const obtenerUbicacionesDePersonas = async (persona: PersonaEntity) => {
+    try {
+      const respuesta = await fetch(`/api/relaciones/persona/${persona.id}`);
+      const data = await respuesta.json();
+      const ubicaciones: LocationData[] = [];
       
-      // Para personas
-      else if (selectedResult.tipo === "persona") {
-        const persona = entityData as PersonaEntity;
-        if (persona.latitud && persona.longitud) {
-          newLocations.push({
-            id: persona.id,
-            lat: persona.latitud,
-            lng: persona.longitud,
-            title: persona.nombre || "Persona",
-            description: persona.identificacion || "Sin identificación",
-            type: "persona",
-            relation: "direct",
-            entityId: persona.id
-          });
+      // Añadir ubicaciones directamente relacionadas con esta persona
+      if (data.ubicaciones && data.ubicaciones.length > 0) {
+        data.ubicaciones.forEach((ubicacion: any) => {
+          const lat = parseFloat(String(ubicacion.latitud));
+          const lng = parseFloat(String(ubicacion.longitud));
           
-          // Centrar el mapa en esta ubicación
-          setMapCenter([persona.latitud, persona.longitud]);
-          hasCenteredMap = true;
-        }
-      }
-      
-      // Para vehículos
-      else if (selectedResult.tipo === "vehiculo") {
-        const vehiculo = entityData as VehiculoEntity;
-        if (vehiculo.latitud && vehiculo.longitud) {
-          newLocations.push({
-            id: vehiculo.id,
-            lat: vehiculo.latitud,
-            lng: vehiculo.longitud,
-            title: `${vehiculo.marca} ${vehiculo.modelo}` || "Vehículo",
-            description: vehiculo.placa || "Sin placa",
-            type: "vehiculo",
-            relation: "direct",
-            entityId: vehiculo.id
-          });
-          
-          // Centrar el mapa en esta ubicación
-          setMapCenter([vehiculo.latitud, vehiculo.longitud]);
-          hasCenteredMap = true;
-        }
-      }
-      
-      // Para inmuebles
-      else if (selectedResult.tipo === "inmueble") {
-        const inmueble = entityData as InmuebleEntity;
-        if (inmueble.latitud && inmueble.longitud) {
-          newLocations.push({
-            id: inmueble.id,
-            lat: inmueble.latitud,
-            lng: inmueble.longitud,
-            title: inmueble.tipo || "Inmueble",
-            description: inmueble.direccion || "Sin dirección",
-            type: "inmueble",
-            relation: "direct",
-            entityId: inmueble.id
-          });
-          
-          // Centrar el mapa en esta ubicación
-          setMapCenter([inmueble.latitud, inmueble.longitud]);
-          hasCenteredMap = true;
-        }
-      }
-    }
-    
-    // Procesar relaciones
-    if (relationData) {
-      // Procesar ubicaciones relacionadas
-      if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-        console.log("Procesando ubicaciones relacionadas:", relationData.ubicaciones);
-        
-        // Mostramos cada ubicación relacionada
-        relationData.ubicaciones.forEach((ubicacion) => {
-          console.log("Verificando ubicación:", ubicacion);
-          
-          // Nos aseguramos de que tenga coordenadas y sean números válidos
-          const latitud = parseFloat(String(ubicacion.latitud));
-          const longitud = parseFloat(String(ubicacion.longitud));
-          
-          if (!isNaN(latitud) && !isNaN(longitud)) {
-            console.log(`Añadiendo ubicación: ${latitud}, ${longitud}`);
-            
-            // Generamos un mensaje más informativo sobre la relación
-            let infoRelacion = "";
-            
-            if (selectedResult.tipo === "persona") {
-              const persona = entityData as PersonaEntity;
-              infoRelacion = `Ubicación relacionada con ${persona.nombre}`;
-            } else if (selectedResult.tipo === "vehiculo") {
-              const vehiculo = entityData as VehiculoEntity;
-              infoRelacion = `Ubicación relacionada con vehículo ${vehiculo.marca} ${vehiculo.modelo}`;
-            } else if (selectedResult.tipo === "inmueble") {
-              const inmueble = entityData as InmuebleEntity;
-              infoRelacion = `Ubicación relacionada con inmueble ${inmueble.tipo} en ${inmueble.direccion}`;
-            }
-            
-            newLocations.push({
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log(`Añadiendo ubicación de ${persona.nombre}:`, ubicacion);
+            ubicaciones.push({
               id: ubicacion.id,
-              lat: latitud,
-              lng: longitud,
-              title: ubicacion.tipo || "Ubicación",
-              description: ubicacion.observaciones || "Sin descripción",
+              lat: lat,
+              lng: lng,
+              title: ubicacion.tipo || "Domicilio",
+              description: ubicacion.observaciones || `Domicilio de ${persona.nombre}`,
               type: "ubicacion",
-              relation: "related",
-              entityId: ubicacion.id,
-              relationInfo: infoRelacion
+              relation: "direct",
+              entityId: persona.id
             });
-            
-            // Si no hay ubicación directa, centrar en la primera ubicación relacionada
-            if (!hasCenteredMap) {
-              console.log(`Centrando mapa en: ${latitud}, ${longitud}`);
-              setMapCenter([latitud, longitud]);
-              hasCenteredMap = true;
-            }
-          } else {
-            console.log(`Ubicación sin coordenadas válidas: ${ubicacion.id}`);
           }
         });
       }
+      return ubicaciones;
+    } catch (error) {
+      console.error(`Error al obtener ubicaciones de persona ${persona.id}:`, error);
+      return [];
+    }
+  };
+  
+  // Función para obtener ubicaciones relacionadas con inmuebles
+  const obtenerUbicacionesDeInmuebles = async (inmueble: InmuebleEntity) => {
+    try {
+      const respuesta = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
+      const data = await respuesta.json();
+      const ubicaciones: LocationData[] = [];
       
-      // Procesar inmuebles relacionados (si tienen coordenadas)
-      if (relationData.inmuebles && relationData.inmuebles.length > 0) {
-        console.log("Procesando inmuebles relacionados:", relationData.inmuebles);
-        relationData.inmuebles.forEach((inmueble) => {
-          // Nos aseguramos de que tenga coordenadas y sean números válidos
-          const latitud = parseFloat(String(inmueble.latitud));
-          const longitud = parseFloat(String(inmueble.longitud));
+      // Añadir ubicaciones directamente relacionadas con este inmueble
+      if (data.ubicaciones && data.ubicaciones.length > 0) {
+        data.ubicaciones.forEach((ubicacion: any) => {
+          const lat = parseFloat(String(ubicacion.latitud));
+          const lng = parseFloat(String(ubicacion.longitud));
           
-          if (!isNaN(latitud) && !isNaN(longitud)) {
-            console.log(`Añadiendo inmueble: ${latitud}, ${longitud}`);
-            
-            // Generamos un mensaje más informativo sobre la relación con el inmueble
-            let infoRelacion = "";
-            
-            if (selectedResult.tipo === "persona") {
-              const persona = entityData as PersonaEntity;
-              infoRelacion = `Inmueble relacionado con ${persona.nombre}`;
-            } else if (selectedResult.tipo === "vehiculo") {
-              const vehiculo = entityData as VehiculoEntity;
-              infoRelacion = `Inmueble relacionado con vehículo ${vehiculo.marca} ${vehiculo.modelo}`;
-            } else if (selectedResult.tipo === "ubicacion") {
-              const ubicacion = entityData as UbicacionEntity;
-              infoRelacion = `Inmueble cercano a ubicación ${ubicacion.tipo || ""}`;
-            }
-            
-            newLocations.push({
-              id: inmueble.id,
-              lat: latitud,
-              lng: longitud,
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log(`Añadiendo ubicación de inmueble ${inmueble.id}:`, ubicacion);
+            ubicaciones.push({
+              id: ubicacion.id,
+              lat: lat,
+              lng: lng,
               title: inmueble.tipo || "Inmueble",
               description: inmueble.direccion || "Sin dirección",
               type: "inmueble",
-              relation: "related",
-              entityId: inmueble.id,
-              relationInfo: infoRelacion
+              relation: "direct",
+              entityId: inmueble.id
             });
-            
-            // Si no hay ubicación directa, centrar en el primer inmueble
-            if (!hasCenteredMap) {
-              console.log(`Centrando mapa en inmueble: ${latitud}, ${longitud}`);
-              setMapCenter([latitud, longitud]);
-              hasCenteredMap = true;
-            }
-          } else {
-            console.log(`Inmueble sin coordenadas válidas: ${inmueble.id}`);
           }
         });
       }
+      return ubicaciones;
+    } catch (error) {
+      console.error(`Error al obtener ubicaciones de inmueble ${inmueble.id}:`, error);
+      return [];
+    }
+  };
+  
+  // Función para obtener ubicaciones relacionadas con vehículos
+  const obtenerUbicacionesDeVehiculos = async (vehiculo: VehiculoEntity) => {
+    try {
+      const respuesta = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
+      const data = await respuesta.json();
+      const ubicaciones: LocationData[] = [];
       
-      // Procesar personas relacionadas (si tienen coordenadas en su dirección)
-      if (relationData.personas && relationData.personas.length > 0) {
-        console.log("Procesando personas relacionadas:", relationData.personas);
-        relationData.personas.forEach((persona) => {
-          // Nos aseguramos de que tenga coordenadas y sean números válidos
-          const latitud = parseFloat(String(persona.latitud));
-          const longitud = parseFloat(String(persona.longitud));
+      // Añadir ubicaciones directamente relacionadas con este vehículo
+      if (data.ubicaciones && data.ubicaciones.length > 0) {
+        data.ubicaciones.forEach((ubicacion: any) => {
+          const lat = parseFloat(String(ubicacion.latitud));
+          const lng = parseFloat(String(ubicacion.longitud));
           
-          if (!isNaN(latitud) && !isNaN(longitud)) {
-            console.log(`Añadiendo persona: ${latitud}, ${longitud}`);
-            
-            // Generamos un mensaje más informativo sobre la relación con la persona
-            let infoRelacion = "";
-            
-            if (selectedResult.tipo === "vehiculo") {
-              const vehiculo = entityData as VehiculoEntity;
-              infoRelacion = `Persona relacionada con vehículo ${vehiculo.marca} ${vehiculo.modelo}`;
-            } else if (selectedResult.tipo === "inmueble") {
-              const inmueble = entityData as InmuebleEntity;
-              infoRelacion = `Persona relacionada con inmueble en ${inmueble.direccion}`;
-            } else if (selectedResult.tipo === "ubicacion") {
-              const ubicacion = entityData as UbicacionEntity;
-              infoRelacion = `Persona relacionada con ubicación ${ubicacion.tipo || ""}`;
-            } else if (selectedResult.tipo === "persona") {
-              const otraPersona = entityData as PersonaEntity;
-              infoRelacion = `Persona relacionada con ${otraPersona.nombre}`;
-            }
-            
-            newLocations.push({
-              id: persona.id,
-              lat: latitud,
-              lng: longitud,
-              title: persona.nombre || "Persona",
-              description: persona.identificacion || "Sin identificación",
-              type: "persona",
-              relation: "related",
-              entityId: persona.id,
-              relationInfo: infoRelacion
-            });
-            
-            // Si no hay ubicación directa, centrar en la persona
-            if (!hasCenteredMap) {
-              console.log(`Centrando mapa en persona: ${latitud}, ${longitud}`);
-              setMapCenter([latitud, longitud]);
-              hasCenteredMap = true;
-            }
-          } else {
-            console.log(`Persona sin coordenadas válidas: ${persona.id}`);
-          }
-        });
-      }
-      
-      // Procesar vehículos relacionados (si tienen ubicaciones registradas)
-      if (relationData.vehiculos && relationData.vehiculos.length > 0) {
-        console.log("Procesando vehículos relacionados:", relationData.vehiculos);
-        relationData.vehiculos.forEach((vehiculo) => {
-          // Nos aseguramos de que tenga coordenadas y sean números válidos
-          const latitud = parseFloat(String(vehiculo.latitud));
-          const longitud = parseFloat(String(vehiculo.longitud));
-          
-          if (!isNaN(latitud) && !isNaN(longitud)) {
-            console.log(`Añadiendo vehículo: ${latitud}, ${longitud}`);
-            
-            // Generamos un mensaje más informativo sobre la relación con el vehículo
-            let infoRelacion = "";
-            
-            if (selectedResult.tipo === "persona") {
-              const persona = entityData as PersonaEntity;
-              infoRelacion = `Vehículo relacionado con ${persona.nombre}`;
-            } else if (selectedResult.tipo === "inmueble") {
-              const inmueble = entityData as InmuebleEntity;
-              infoRelacion = `Vehículo relacionado con inmueble en ${inmueble.direccion}`;
-            } else if (selectedResult.tipo === "ubicacion") {
-              const ubicacion = entityData as UbicacionEntity;
-              infoRelacion = `Vehículo relacionado con ubicación ${ubicacion.tipo || ""}`;
-            } else if (selectedResult.tipo === "vehiculo") {
-              const otroVehiculo = entityData as VehiculoEntity;
-              infoRelacion = `Vehículo relacionado con ${otroVehiculo.marca} ${otroVehiculo.modelo}`;
-            }
-            
-            newLocations.push({
-              id: vehiculo.id,
-              lat: latitud,
-              lng: longitud,
-              title: `${vehiculo.marca} ${vehiculo.modelo}` || "Vehículo",
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log(`Añadiendo ubicación de vehículo ${vehiculo.id}:`, ubicacion);
+            ubicaciones.push({
+              id: ubicacion.id,
+              lat: lat,
+              lng: lng,
+              title: `${vehiculo.marca} ${vehiculo.modelo}`,
               description: vehiculo.placa || "Sin placa",
               type: "vehiculo",
-              relation: "related",
-              entityId: vehiculo.id,
-              relationInfo: infoRelacion
+              relation: "direct",
+              entityId: vehiculo.id
             });
-            
-            // Si no hay ubicación directa, centrar en el vehículo
-            if (!hasCenteredMap) {
-              console.log(`Centrando mapa en vehículo: ${latitud}, ${longitud}`);
-              setMapCenter([latitud, longitud]);
-              hasCenteredMap = true;
-            }
-          } else {
-            console.log(`Vehículo sin coordenadas válidas: ${vehiculo.id}`);
           }
         });
       }
+      return ubicaciones;
+    } catch (error) {
+      console.error(`Error al obtener ubicaciones de vehículo ${vehiculo.id}:`, error);
+      return [];
     }
+  };
+  
+  // Procesamiento principal de datos para el mapa
+  useEffect(() => {
+    const cargarUbicaciones = async () => {
+      if (!selectedResult) {
+        setLocations([]);
+        return;
+      }
+
+      console.log("Procesando datos para:", selectedResult);
+      console.log("Entity Data:", entityData);
+      console.log("Relation Data:", relationData);
+
+      const todasLasUbicaciones: LocationData[] = [];
+      let hasCenteredMap = false;
+      
+      // Paso 1: Procesar la entidad principal seleccionada
+      if (entityData) {
+        if (selectedResult.tipo === "ubicacion") {
+          // Si es una ubicación directa
+          const ubicacion = entityData as UbicacionEntity;
+          if (ubicacion.latitud && ubicacion.longitud) {
+            todasLasUbicaciones.push({
+              id: ubicacion.id,
+              lat: ubicacion.latitud,
+              lng: ubicacion.longitud,
+              title: ubicacion.tipo || "Ubicación",
+              description: ubicacion.observaciones || "Sin descripción",
+              type: "ubicacion",
+              relation: "direct",
+              entityId: ubicacion.id
+            });
+            
+            setMapCenter([ubicacion.latitud, ubicacion.longitud]);
+            hasCenteredMap = true;
+          }
+        } else if (selectedResult.tipo === "persona") {
+          // Si es una persona, obtener sus ubicaciones directas (domicilios)
+          const persona = entityData as PersonaEntity;
+          const ubicacionesPersona = await obtenerUbicacionesDePersonas(persona);
+          
+          if (ubicacionesPersona.length > 0) {
+            todasLasUbicaciones.push(...ubicacionesPersona);
+            
+            if (!hasCenteredMap) {
+              setMapCenter([ubicacionesPersona[0].lat, ubicacionesPersona[0].lng]);
+              hasCenteredMap = true;
+            }
+          }
+        } else if (selectedResult.tipo === "inmueble") {
+          // Si es un inmueble, obtener sus ubicaciones directas
+          const inmueble = entityData as InmuebleEntity;
+          const ubicacionesInmueble = await obtenerUbicacionesDeInmuebles(inmueble);
+          
+          if (ubicacionesInmueble.length > 0) {
+            todasLasUbicaciones.push(...ubicacionesInmueble);
+            
+            if (!hasCenteredMap) {
+              setMapCenter([ubicacionesInmueble[0].lat, ubicacionesInmueble[0].lng]);
+              hasCenteredMap = true;
+            }
+          }
+        } else if (selectedResult.tipo === "vehiculo") {
+          // Si es un vehículo, obtener sus ubicaciones directas
+          const vehiculo = entityData as VehiculoEntity;
+          const ubicacionesVehiculo = await obtenerUbicacionesDeVehiculos(vehiculo);
+          
+          if (ubicacionesVehiculo.length > 0) {
+            todasLasUbicaciones.push(...ubicacionesVehiculo);
+            
+            if (!hasCenteredMap) {
+              setMapCenter([ubicacionesVehiculo[0].lat, ubicacionesVehiculo[0].lng]);
+              hasCenteredMap = true;
+            }
+          }
+        }
+      }
+      
+      // Paso 2: Procesar relaciones para obtener ubicaciones relacionadas
+      if (relationData) {
+        // Procesar personas relacionadas y sus ubicaciones
+        if (relationData.personas && relationData.personas.length > 0) {
+          console.log("Procesando ubicaciones de personas relacionadas");
+          
+          for (const persona of relationData.personas) {
+            const ubicacionesPersonaRelacionada = await obtenerUbicacionesDePersonas(persona);
+            
+            // Marcar estas ubicaciones como relacionadas
+            const ubicacionesRelacionadas = ubicacionesPersonaRelacionada.map(ub => ({
+              ...ub,
+              relation: "related" as "related"
+            }));
+            
+            todasLasUbicaciones.push(...ubicacionesRelacionadas);
+            
+            if (!hasCenteredMap && ubicacionesRelacionadas.length > 0) {
+              setMapCenter([ubicacionesRelacionadas[0].lat, ubicacionesRelacionadas[0].lng]);
+              hasCenteredMap = true;
+            }
+          }
+        }
+        
+        // Procesar inmuebles relacionados y sus ubicaciones
+        if (relationData.inmuebles && relationData.inmuebles.length > 0) {
+          console.log("Procesando ubicaciones de inmuebles relacionados");
+          
+          for (const inmueble of relationData.inmuebles) {
+            const ubicacionesInmuebleRelacionado = await obtenerUbicacionesDeInmuebles(inmueble);
+            
+            // Marcar estas ubicaciones como relacionadas
+            const ubicacionesRelacionadas = ubicacionesInmuebleRelacionado.map(ub => ({
+              ...ub,
+              relation: "related" as "related"
+            }));
+            
+            todasLasUbicaciones.push(...ubicacionesRelacionadas);
+            
+            if (!hasCenteredMap && ubicacionesRelacionadas.length > 0) {
+              setMapCenter([ubicacionesRelacionadas[0].lat, ubicacionesRelacionadas[0].lng]);
+              hasCenteredMap = true;
+            }
+          }
+        }
+        
+        // Procesar vehículos relacionados y sus ubicaciones
+        if (relationData.vehiculos && relationData.vehiculos.length > 0) {
+          console.log("Procesando ubicaciones de vehículos relacionados");
+          
+          for (const vehiculo of relationData.vehiculos) {
+            const ubicacionesVehiculoRelacionado = await obtenerUbicacionesDeVehiculos(vehiculo);
+            
+            // Marcar estas ubicaciones como relacionadas
+            const ubicacionesRelacionadas = ubicacionesVehiculoRelacionado.map(ub => ({
+              ...ub,
+              relation: "related" as "related"
+            }));
+            
+            todasLasUbicaciones.push(...ubicacionesRelacionadas);
+            
+            if (!hasCenteredMap && ubicacionesRelacionadas.length > 0) {
+              setMapCenter([ubicacionesRelacionadas[0].lat, ubicacionesRelacionadas[0].lng]);
+              hasCenteredMap = true;
+            }
+            
+            // Buscar las personas relacionadas con este vehículo y sus ubicaciones
+            const respuestaVehiculo = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
+            const dataVehiculo = await respuestaVehiculo.json();
+            
+            if (dataVehiculo.personas && dataVehiculo.personas.length > 0) {
+              for (const personaVehiculo of dataVehiculo.personas) {
+                const ubicacionesPersonaVehiculo = await obtenerUbicacionesDePersonas(personaVehiculo);
+                
+                // Marcar estas ubicaciones como relacionadas
+                const ubicacionesRelPersonaVehiculo = ubicacionesPersonaVehiculo.map(ub => ({
+                  ...ub,
+                  relation: "related" as "related",
+                  description: `Domicilio de ${personaVehiculo.nombre} (relacionado con vehículo ${vehiculo.marca} ${vehiculo.modelo})`
+                }));
+                
+                todasLasUbicaciones.push(...ubicacionesRelPersonaVehiculo);
+                
+                if (!hasCenteredMap && ubicacionesRelPersonaVehiculo.length > 0) {
+                  setMapCenter([ubicacionesRelPersonaVehiculo[0].lat, ubicacionesRelPersonaVehiculo[0].lng]);
+                  hasCenteredMap = true;
+                }
+              }
+            }
+          }
+        }
+        
+        // Procesar ubicaciones directamente relacionadas
+        if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
+          console.log("Procesando ubicaciones directamente relacionadas");
+          
+          relationData.ubicaciones.forEach((ubicacion) => {
+            const lat = parseFloat(String(ubicacion.latitud));
+            const lng = parseFloat(String(ubicacion.longitud));
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+              todasLasUbicaciones.push({
+                id: ubicacion.id,
+                lat: lat,
+                lng: lng,
+                title: ubicacion.tipo || "Ubicación",
+                description: ubicacion.observaciones || "Sin descripción",
+                type: "ubicacion",
+                relation: "direct",
+                entityId: ubicacion.id
+              });
+              
+              if (!hasCenteredMap) {
+                setMapCenter([lat, lng]);
+                hasCenteredMap = true;
+              }
+            }
+          });
+        }
+      }
+      
+      console.log("Todas las ubicaciones encontradas:", todasLasUbicaciones);
+      setLocations(todasLasUbicaciones);
+      
+      // Si no hay ubicaciones, mostrar mensaje
+      if (todasLasUbicaciones.length === 0) {
+        console.log("No se encontraron ubicaciones para la entidad seleccionada o sus relaciones.");
+      }
+    };
     
-    console.log("Ubicaciones encontradas:", newLocations);
-    setLocations(newLocations);
-    
-    // Si no hay ubicaciones, mostrar mensaje
-    if (newLocations.length === 0) {
-      console.log("No se encontraron ubicaciones para la entidad seleccionada o sus relaciones.");
-    }
+    cargarUbicaciones();
   }, [selectedResult, entityData, relationData]);
 
   // Manejar clic en una ubicación de la tabla
