@@ -27,6 +27,9 @@ export interface IStorage {
   getPersonaObservaciones(personaId: number): Promise<PersonaObservacion[]>;
   createPersonaObservacion(observacion: InsertPersonaObservacion): Promise<PersonaObservacion>;
   
+  // Relaciones methods
+  getInmueblesRelacionadosConPersona(personaId: number): Promise<any[]>;
+  
   // Vehiculos methods
   getAllVehiculos(): Promise<Vehiculo[]>;
   getVehiculo(id: number): Promise<Vehiculo | undefined>;

@@ -951,15 +951,7 @@ export class DatabaseStorage {
               }
             }
             
-            // Este bloque está duplicado, lo eliminamos
-                inmuebleRelacionado.latitud && 
-                inmuebleRelacionado.longitud && 
-                inmuebleRelacionado.latitud !== 0 && 
-                inmuebleRelacionado.longitud !== 0) {
-              
-              console.log(`El inmueble ID ${inmuebleRelacionado.id} tiene coordenadas propias: Lat=${inmuebleRelacionado.latitud}, Lng=${inmuebleRelacionado.longitud}`);
-              
-              // Crear una ubicación virtual a partir del inmueble
+            // Fin del bloque de procesamiento de inmuebles relacionados
               const ubicacionId = `inmueble-${inmuebleRelacionado.id}`; // ID único para evitar duplicados
               
               if (!ubicacionesEncontradas.has(ubicacionId)) {

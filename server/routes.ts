@@ -258,6 +258,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Obtener inmuebles relacionados con una persona
+  app.get("/api/personas/:id/inmuebles", async (req, res) => {
+    try {
+      const personaId = parseInt(req.params.id);
+      
+      // Consulta SQL directa para obtener inmuebles relacionados con una persona
+      const inmueblesResult = await db.execute(
+        sql`SELECT i.* FROM inmuebles i
+            JOIN personas_inmuebles pi ON i.id = pi.inmueble_id
+            WHERE pi.persona_id = ${personaId}`
+      );
+      
+      // Buscamos la persona para incluir sus datos
+      const personaResult = await db.execute(
+        sql`SELECT * FROM personas WHERE id = ${personaId}`
+      );
+      
+      const persona = personaResult.rows && personaResult.rows.length > 0 
+                     ? personaResult.rows[0] 
+                     : null;
+      
+      const inmuebles = inmueblesResult.rows || [];
+      
+      // Para cada inmueble, verificamos si tiene ubicaciones relacionadas
+      const respuesta = [];
+      
+      for (const inmueble of inmuebles) {
+        // Verificamos si el inmueble tiene ubicaciones
+        const ubicacionesResult = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u 
+              JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+              WHERE iu.inmueble_id = ${inmueble.id}`
+        );
+        
+        const ubicaciones = ubicacionesResult.rows || [];
+        
+        respuesta.push({
+          inmueble: inmueble,
+          ubicaciones: ubicaciones,
+          persona: persona
+        });
+      }
+      
+      res.json(respuesta);
+    } catch (error) {
+      console.error("Error al obtener inmuebles relacionados:", error);
+      res.status(500).json({ message: "Error al obtener inmuebles relacionados" });
+    }
+  });
+  
   app.post("/api/inmuebles/:id/observaciones", requireRole(["admin", "investigador", "agente"]), async (req, res) => {
     try {
       const inmuebleId = parseInt(req.params.id);
