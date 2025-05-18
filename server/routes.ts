@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
-import { eq, or, sql } from "drizzle-orm";
+import { eq, or, sql, like } from "drizzle-orm";
 import { db, pool } from "./db";
 import { 
   users, personas, vehiculos, inmuebles,
@@ -974,6 +974,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al crear relación:", error);
       res.status(500).json({ message: "Error al crear relación" });
+    }
+  });
+
+  // API de búsqueda centralizada para todas las entidades
+  app.get("/api/buscar", async (req, res) => {
+    try {
+      const query = req.query.q?.toString() || '';
+      const tipo = req.query.tipo?.toString() || 'todas';
+      
+      if (!query || query.length < 2) {
+        return res.json([]);
+      }
+
+      const results = [];
+      const searchTerm = `%${query}%`;
+      
+      // Buscar en personas si el tipo es 'todas' o 'persona'
+      if (tipo === 'todas' || tipo === 'persona') {
+        const personasResults = await db
+          .select()
+          .from(personas)
+          .where(
+            or(
+              like(personas.nombre, searchTerm),
+              like(personas.identificacion, searchTerm)
+            )
+          )
+          .limit(5);
+          
+        results.push(...personasResults.map(p => ({ ...p, tipo: 'persona' })));
+      }
+      
+      // Buscar en vehículos si el tipo es 'todas' o 'vehiculo'
+      if (tipo === 'todas' || tipo === 'vehiculo') {
+        const vehiculosResults = await db
+          .select()
+          .from(vehiculos)
+          .where(
+            or(
+              like(vehiculos.placa, searchTerm),
+              like(vehiculos.marca, searchTerm),
+              like(vehiculos.modelo, searchTerm)
+            )
+          )
+          .limit(5);
+          
+        results.push(...vehiculosResults.map(v => ({ ...v, tipo: 'vehiculo' })));
+      }
+      
+      // Buscar en inmuebles si el tipo es 'todas' o 'inmueble'
+      if (tipo === 'todas' || tipo === 'inmueble') {
+        const inmueblesResults = await db
+          .select()
+          .from(inmuebles)
+          .where(
+            or(
+              like(inmuebles.direccion, searchTerm),
+              like(inmuebles.tipo, searchTerm)
+            )
+          )
+          .limit(5);
+          
+        results.push(...inmueblesResults.map(i => ({ ...i, tipo: 'inmueble' })));
+      }
+      
+      // Buscar en ubicaciones si el tipo es 'todas' o 'ubicacion'
+      if (tipo === 'todas' || tipo === 'ubicacion') {
+        const ubicacionesResults = await db
+          .select()
+          .from(ubicaciones)
+          .where(
+            or(
+              like(ubicaciones.tipo, searchTerm),
+              like(ubicaciones.observaciones, searchTerm)
+            )
+          )
+          .limit(5);
+          
+        results.push(...ubicacionesResults.map(u => ({ ...u, tipo: 'ubicacion' })));
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error en búsqueda:", error);
+      res.status(500).json({ message: "Error al realizar la búsqueda" });
     }
   });
 

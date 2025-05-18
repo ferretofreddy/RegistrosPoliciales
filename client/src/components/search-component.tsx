@@ -12,7 +12,23 @@ import {
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { useDebounce } from "@/hooks/use-debounce";
+
+// Hook de debounce interno para evitar problemas de importación
+function useDebounce<T>(value: T, delay: number = 500): T {
+  const [debouncedValue, setDebouncedValue] = useDebounceState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 // Tipo de entidad para la búsqueda
 type EntityType = "todas" | "persona" | "vehiculo" | "inmueble" | "ubicacion";
