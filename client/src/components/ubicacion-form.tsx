@@ -273,6 +273,9 @@ export default function UbicacionForm() {
           description: "Ubicación creada pero no se pudo procesar su ID para relaciones",
           variant: "destructive",
         });
+        
+        // Aún así, invalidamos las consultas para refrescar los datos
+        invalidateAllQueries();
         return; // Salir si no tenemos ID
       }
       
@@ -314,9 +317,7 @@ export default function UbicacionForm() {
             console.log("Resultado de la creación de relaciones:", resultado);
             
             // Usar la función centralizada para invalidar todas las consultas
-            import("@/lib/cache-utils").then(module => {
-              module.invalidateAllQueries('/api/ubicaciones');
-            });
+            invalidateAllQueries();  // Invalidamos todas las consultas relevantes
             
             toast({
               title: "Relaciones creadas",
