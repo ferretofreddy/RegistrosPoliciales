@@ -168,7 +168,10 @@ export default function UbicacionesPage() {
                     description: ubicacion.observaciones || `Ubicación de inmueble: ${selectedResult.nombre}`,
                     type: "inmueble",
                     relation: "direct",
-                    entityId: selectedResult.id
+                    entityId: selectedResult.id,
+                    relationInfo: relationData && relationData.personas && relationData.personas.length > 0 
+                      ? `Relacionado con ${relationData.personas.map(p => p.nombre).join(', ')}`
+                      : "Sin relaciones"
                   });
                   
                   if (!hasCenteredMap) {
@@ -200,7 +203,10 @@ export default function UbicacionesPage() {
                   description: ubicacion.observaciones || "Sin descripción",
                   type: "ubicacion",
                   relation: "direct",
-                  entityId: ubicacion.id
+                  entityId: ubicacion.id,
+                  relationInfo: relationData && relationData.personas && relationData.personas.length > 0 
+                    ? `Personas relacionadas: ${relationData.personas.map(p => p.nombre).join(', ')}`
+                    : "Sin relaciones"
                 });
                 
                 setMapCenter([lat, lng]);
