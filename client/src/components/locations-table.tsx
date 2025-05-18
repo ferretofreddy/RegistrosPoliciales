@@ -66,8 +66,7 @@ export default function LocationsTable({ locations, onLocationClick }: Locations
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[60px]">Tipo</TableHead>
-            <TableHead>Título</TableHead>
+            <TableHead>Ubicación</TableHead>
             <TableHead className="hidden md:table-cell">Descripción</TableHead>
             <TableHead className="w-[150px] hidden sm:table-cell">Coordenadas</TableHead>
           </TableRow>
@@ -79,22 +78,20 @@ export default function LocationsTable({ locations, onLocationClick }: Locations
               className="cursor-pointer hover:bg-gray-50"
               onClick={() => onLocationClick(location)}
             >
-              <TableCell>
-                <div className="flex justify-center">
-                  {getEntityIcon(location.type, location.relation)}
-                </div>
-              </TableCell>
               <TableCell className="font-medium">
-                <div>
-                  <p>{location.title}</p>
-                  <p className="text-xs text-gray-500 md:hidden">
-                    {location.description.length > 40 
-                      ? location.description.substring(0, 40) + '...' 
-                      : location.description}
-                  </p>
-                  <p className="text-xs font-mono text-gray-500 sm:hidden mt-1">
-                    {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-                  </p>
+                <div className="flex items-center gap-2">
+                  {getEntityIcon(location.type, location.relation)}
+                  <div>
+                    <p>{location.title}</p>
+                    <p className="text-xs text-gray-500 md:hidden">
+                      {location.description.length > 40 
+                        ? location.description.substring(0, 40) + '...' 
+                        : location.description}
+                    </p>
+                    <p className="text-xs font-mono text-gray-500 sm:hidden mt-1">
+                      {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+                    </p>
+                  </div>
                 </div>
               </TableCell>
               <TableCell className="hidden md:table-cell">
