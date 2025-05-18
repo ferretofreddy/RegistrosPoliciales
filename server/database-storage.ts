@@ -891,6 +891,45 @@ export class DatabaseStorage {
               }
             }
             
+            // Si no hay ubicaciones específicas para el inmueble pero tiene coordenadas propias,
+            // agregarlo directamente como ubicación
+            if (ubicacionesInmueble.length === 0 && 
+                inmuebleRelacionado.latitud && 
+                inmuebleRelacionado.longitud && 
+                inmuebleRelacionado.latitud !== 0 && 
+                inmuebleRelacionado.longitud !== 0) {
+              
+              console.log(`El inmueble ID ${inmuebleRelacionado.id} tiene coordenadas propias: Lat=${inmuebleRelacionado.latitud}, Lng=${inmuebleRelacionado.longitud}`);
+              
+              // Crear una ubicación virtual a partir del inmueble
+              const ubicacionId = `inmueble-${inmuebleRelacionado.id}`; // ID único para evitar duplicados
+              
+              if (!ubicacionesEncontradas.has(ubicacionId)) {
+                ubicacionesEncontradas.add(ubicacionId);
+                
+                const ubicacionInmueble = {
+                  id: ubicacionId,
+                  latitud: inmuebleRelacionado.latitud,
+                  longitud: inmuebleRelacionado.longitud,
+                  tipo: inmuebleRelacionado.tipo || "Inmueble",
+                  observaciones: `Inmueble: ${inmuebleRelacionado.direccion || "Sin dirección"}`
+                };
+                
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacionInmueble,
+                  entidadRelacionada: {
+                    tipo: 'inmueble',
+                    entidad: inmuebleRelacionado,
+                    relacionadoCon: {
+                      tipo: 'persona',
+                      entidad: persona
+                    }
+                  }
+                });
+                console.log(`Agregada ubicación virtual para inmueble ID ${inmuebleRelacionado.id} relacionado con persona ${persona.nombre}`);
+              }
+            }
+            
             // NIVEL 3: Buscar vehículos relacionados con este inmueble
             console.log(`Buscando vehículos relacionados al inmueble ID: ${inmuebleRelacionado.id} (de la persona ID: ${persona.id})`);
             const vehiculosInmuebleResult = await db.execute(
