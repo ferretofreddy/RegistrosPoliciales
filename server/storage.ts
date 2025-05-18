@@ -58,8 +58,8 @@ export interface IStorage {
   getInmueblesRelacionadosConPersona(personaId: number): Promise<Inmueble[]>;
   
   // Relaciones CRUD
-  crearRelacionPersonaVehiculo(personaId: number, vehiculoId: number, relacion?: string): Promise<any>;
-  crearRelacionPersonaInmueble(personaId: number, inmuebleId: number, relacion?: string): Promise<any>;
+  crearRelacionPersonaVehiculo(personaId: number, vehiculoId: number): Promise<any>;
+  crearRelacionPersonaInmueble(personaId: number, inmuebleId: number): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
