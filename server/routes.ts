@@ -6,13 +6,10 @@ import { z } from "zod";
 import { eq, or, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  personas, vehiculos, inmuebles, ubicaciones, tiposInmuebles, tiposUbicaciones,
-  insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema, insertUbicacionSchema,
-  insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema,
-  insertUbicacionObservacionSchema,
-  insertTipoInmuebleSchema, insertTipoUbicacionSchema
+  personas, vehiculos, inmuebles,
+  insertPersonaSchema, insertVehiculoSchema, insertInmuebleSchema,
+  insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema
 } from "@shared/schema";
-import { buscarCoincidencias } from "./search-api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
