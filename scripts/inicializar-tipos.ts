@@ -1,103 +1,60 @@
+// Este script inicializa los tipos básicos necesarios para el sistema
 import { db } from '../server/db';
 import { tiposInmuebles, tiposUbicaciones } from '../shared/schema';
-import { eq, sql } from 'drizzle-orm';
 
 async function inicializarTipos() {
-  console.log('Iniciando la inicialización de tipos...');
-
-  // Tipos de inmuebles predefinidos
-  const tiposInmueblesDefault = [
-    { nombre: 'Casa', descripcion: 'Vivienda unifamiliar', activo: true },
-    { nombre: 'Apartamento', descripcion: 'Vivienda en edificio multifamiliar', activo: true },
-    { nombre: 'Local Comercial', descripcion: 'Espacio para negocios', activo: true },
-    { nombre: 'Bodega', descripcion: 'Espacio para almacenamiento', activo: true },
-    { nombre: 'Terreno', descripcion: 'Espacio de tierra sin construcción', activo: true },
-    { nombre: 'Oficina', descripcion: 'Espacio para trabajo administrativo', activo: true },
-    { nombre: 'Otro', descripcion: 'Otro tipo de inmueble', activo: true }
-  ];
-
-  // Tipos de ubicaciones predefinidos
-  const tiposUbicacionesDefault = [
-    { nombre: 'Domicilio', descripcion: 'Lugar de residencia', activo: true },
-    { nombre: 'Avistamiento', descripcion: 'Lugar donde se ha visto a la persona', activo: true },
-    { nombre: 'Frecuente', descripcion: 'Lugar que frecuenta la persona', activo: true },
-    { nombre: 'Trabajo', descripcion: 'Lugar de trabajo', activo: true },
-    { nombre: 'Estacionamiento', descripcion: 'Lugar donde se estaciona un vehículo', activo: true },
-    { nombre: 'Otro', descripcion: 'Otro tipo de ubicación', activo: true }
-  ];
-
+  console.log('========================================');
+  console.log('INICIANDO INICIALIZACIÓN DE TIPOS BÁSICOS');
+  console.log('========================================');
+  
   try {
-    // Crear tablas si no existen
-    console.log('Verificando si existen las tablas necesarias...');
+    // 1. Inicializar tipos de inmuebles
+    console.log('\n1. Inicializando tipos de inmuebles...');
     
-    // Crear tabla tipos_inmuebles si no existe
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS tipos_inmuebles (
-        id SERIAL PRIMARY KEY,
-        nombre TEXT NOT NULL,
-        descripcion TEXT,
-        activo BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('Tabla tipos_inmuebles verificada');
+    const tiposInmueblesData = [
+      { nombre: 'Casa', descripcion: 'Vivienda unifamiliar' },
+      { nombre: 'Apartamento', descripcion: 'Vivienda en edificio multifamiliar' },
+      { nombre: 'Local Comercial', descripcion: 'Establecimiento para actividades comerciales' },
+      { nombre: 'Bodega', descripcion: 'Espacio para almacenamiento' },
+      { nombre: 'Finca', descripcion: 'Propiedad rural destinada a actividades agrícolas o ganaderas' },
+      { nombre: 'Oficina', descripcion: 'Espacio para actividades administrativas o profesionales' }
+    ];
     
-    // Crear tabla tipos_ubicaciones si no existe
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS tipos_ubicaciones (
-        id SERIAL PRIMARY KEY,
-        nombre TEXT NOT NULL,
-        descripcion TEXT,
-        activo BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('Tabla tipos_ubicaciones verificada');
-    
-    // Verificar si ya existen tipos de inmuebles usando SQL directo
-    const resultInmuebles = await db.execute(sql`SELECT COUNT(*) FROM tipos_inmuebles`);
-    const countInmuebles = parseInt(resultInmuebles.rows[0].count.toString());
-    console.log(`Encontrados ${countInmuebles} tipos de inmuebles en la base de datos`);
-
-    if (countInmuebles === 0) {
-      console.log('Insertando tipos de inmuebles predefinidos...');
-      for (const tipo of tiposInmueblesDefault) {
-        await db.execute(sql`
-          INSERT INTO tipos_inmuebles (nombre, descripcion, activo)
-          VALUES (${tipo.nombre}, ${tipo.descripcion}, ${tipo.activo})
-        `);
-      }
-      console.log('Tipos de inmuebles insertados correctamente');
-    } else {
-      console.log('Ya existen tipos de inmuebles. No se realizarán inserciones.');
+    for (const tipo of tiposInmueblesData) {
+      await db.insert(tiposInmuebles).values(tipo);
+      console.log(`  ✓ Agregado tipo de inmueble: ${tipo.nombre}`);
     }
-
-    // Verificar si ya existen tipos de ubicaciones usando SQL directo
-    const resultUbicaciones = await db.execute(sql`SELECT COUNT(*) FROM tipos_ubicaciones`);
-    const countUbicaciones = parseInt(resultUbicaciones.rows[0].count.toString());
-    console.log(`Encontrados ${countUbicaciones} tipos de ubicaciones en la base de datos`);
-
-    if (countUbicaciones === 0) {
-      console.log('Insertando tipos de ubicaciones predefinidos...');
-      for (const tipo of tiposUbicacionesDefault) {
-        await db.execute(sql`
-          INSERT INTO tipos_ubicaciones (nombre, descripcion, activo)
-          VALUES (${tipo.nombre}, ${tipo.descripcion}, ${tipo.activo})
-        `);
-      }
-      console.log('Tipos de ubicaciones insertados correctamente');
-    } else {
-      console.log('Ya existen tipos de ubicaciones. No se realizarán inserciones.');
+    
+    // 2. Inicializar tipos de ubicaciones
+    console.log('\n2. Inicializando tipos de ubicaciones...');
+    
+    const tiposUbicacionesData = [
+      { nombre: 'Domicilio', descripcion: 'Lugar de residencia habitual' },
+      { nombre: 'Lugar de trabajo', descripcion: 'Ubicación donde la persona trabaja' },
+      { nombre: 'Avistamiento', descripcion: 'Lugar donde se ha visto a la persona o vehículo' },
+      { nombre: 'Punto de interés', descripcion: 'Ubicación relevante para una investigación' },
+      { nombre: 'Incidente', descripcion: 'Lugar donde ocurrió un incidente reportado' }
+    ];
+    
+    for (const tipo of tiposUbicacionesData) {
+      await db.insert(tiposUbicaciones).values(tipo);
+      console.log(`  ✓ Agregado tipo de ubicación: ${tipo.nombre}`);
     }
-
-    console.log('Inicialización de tipos completada con éxito');
+    
+    console.log('\n✅ Tipos básicos inicializados con éxito!');
   } catch (error) {
-    console.error('Error durante la inicialización de tipos:', error);
-  } finally {
-    // No es necesario cerrar la conexión aquí
-    console.log('Finalizado');
+    console.error('\n❌ Error al inicializar tipos básicos:', error);
+    throw error;
   }
 }
 
-// Ejecutar la función
-inicializarTipos();
+// Ejecutar la función de inicialización
+inicializarTipos()
+  .then(() => {
+    console.log('\nProceso de inicialización finalizado.');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('Error en el proceso de inicialización:', error);
+    process.exit(1);
+  });
