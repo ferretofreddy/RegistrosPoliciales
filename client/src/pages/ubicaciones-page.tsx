@@ -2,11 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, MapPin, User, Car, Home } from "lucide-react";
-import BusquedaDesplegable, { SearchResult } from "@/components/busqueda-desplegable";
+import AutocompleteSearch, { SearchResult } from "@/components/autocomplete-search";
 
 // Make sure to import Leaflet via CDN in index.html
 declare global {
@@ -928,18 +926,16 @@ export default function UbicacionesPage() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    setSelectedResult(null);
     
-    // Búsqueda de coincidencias mientras se escribe
+    // Si el usuario está borrando o cambiando el término, resetear la selección
+    if (!selectedResult || !value.includes(selectedResult.texto)) {
+      setSelectedResult(null);
+    }
+    
+    // Mostrar u ocultar la lista desplegable según si hay texto
     if (value.trim().length >= 2) {
-      // Pequeño retraso para evitar demasiadas peticiones mientras se escribe
-      setTimeout(() => {
-        if (value === e.target.value) { // Verificar que el valor no ha cambiado
-          searchCoincidencias(value);
-        }
-      }, 300);
+      setShowSearchResults(true);
     } else {
-      setSearchResults([]);
       setShowSearchResults(false);
     }
   };
@@ -1000,48 +996,24 @@ export default function UbicacionesPage() {
                 {/* Búsqueda */}
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-gray-700">Buscar ubicaciones</h3>
-                  <div className="relative">
-                    <div className="flex items-center space-x-2">
-                      <Input 
-                        placeholder="Nombre, identidad o descripción" 
-                        value={searchTerm}
-                        onChange={handleSearchChange}
-                        onKeyDown={handleKeyDown}
-                        className="flex-1"
-                      />
-                      <Button size="sm" onClick={handleSearch}>
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    {/* Lista desplegable de coincidencias mejorada */}
-                    {showSearchResults && searchTerm.trim().length >= 2 && (
-                      <BusquedaDesplegable
-                        searchTerm={searchTerm}
-                        onSelectResult={handleSelectResult}
-                        onClose={() => setShowSearchResults(false)}
-                      />
-                    )}
-                  </div>
                   
-                  <div className="text-xs text-gray-500 flex items-center">
-                    {selectedResult ? (
-                      <div className="flex items-center text-blue-600">
-                        <span>Búsqueda específica: </span>
-                        <span className="font-medium ml-1">{selectedResult.texto}</span>
-                        <button 
-                          onClick={() => {
-                            setSelectedResult(null);
-                            setSearchTerm('');
-                          }}
-                          className="ml-2 text-xs text-gray-500 hover:text-red-500"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <span>Ingrese texto para buscar ubicaciones</span>
-                    )}
+                  {/* Componente mejorado de búsqueda con autocompletado */}
+                  <AutocompleteSearch
+                    placeholder="Nombre, identidad o descripción"
+                    initialValue={searchTerm}
+                    onSearch={(term, selected) => {
+                      setSearchTerm(term);
+                      setSelectedResult(selected || null);
+                      handleSearch(); // Ejecutar la búsqueda
+                    }}
+                  />
+                  
+                  <div className="text-xs text-gray-500">
+                    <span>
+                      {selectedResult 
+                        ? `Mostrando resultados para: ${selectedResult.texto}`
+                        : "Ingrese texto para buscar personas, vehículos, inmuebles o ubicaciones"}
+                    </span>
                   </div>
                 </div>
                 
