@@ -60,6 +60,7 @@ interface RelacionesResponse {
   vehiculos?: VehiculoEntity[];
   inmuebles?: InmuebleEntity[];
   ubicaciones?: UbicacionEntity[];
+  [key: string]: any; // Para permitir otras propiedades que puedan venir en la respuesta
 }
 
 export default function UbicacionesPage() {
@@ -69,13 +70,13 @@ export default function UbicacionesPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Obtener datos de la entidad seleccionada
-  const { data: entityData } = useQuery({
+  const { data: entityData } = useQuery<any>({
     queryKey: [selectedResult ? `api/${selectedResult.tipo === "ubicacion" ? "ubicaciones" : selectedResult.tipo + "s"}/${selectedResult.id}` : null],
     enabled: !!selectedResult
   });
 
   // Obtener relaciones para buscar ubicaciones
-  const { data: relationData } = useQuery({
+  const { data: relationData } = useQuery<RelacionesResponse>({
     queryKey: [selectedResult ? `api/relaciones/${selectedResult.tipo}/${selectedResult.id}` : null],
     enabled: !!selectedResult
   });
@@ -103,13 +104,15 @@ export default function UbicacionesPage() {
 
       try {
         console.log("Procesando entidad:", selectedResult.tipo, entityData);
+        console.log("Datos de relaciones:", relationData);
         
         // 1. Procesar según el tipo de entidad
         switch (selectedResult.tipo) {
           case "persona":
             // Buscar ubicaciones directas (domicilios) de la persona
-            if (relationData && relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-              for (const ubicacion of relationData.ubicaciones) {
+            const ubicacionesPersona = relationData.ubicaciones || [];
+            if (ubicacionesPersona.length > 0) {
+              for (const ubicacion of ubicacionesPersona) {
                 if (ubicacion.tipo === "domicilio" || !ubicacion.tipo) {
                   const lat = parseFloat(String(ubicacion.latitud));
                   const lng = parseFloat(String(ubicacion.longitud));
@@ -138,8 +141,9 @@ export default function UbicacionesPage() {
             
           case "inmueble":
             // Buscar ubicaciones directas del inmueble
-            if (relationData && relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-              for (const ubicacion of relationData.ubicaciones) {
+            const ubicacionesInmueble = relationData.ubicaciones || [];
+            if (ubicacionesInmueble.length > 0) {
+              for (const ubicacion of ubicacionesInmueble) {
                 const lat = parseFloat(String(ubicacion.latitud));
                 const lng = parseFloat(String(ubicacion.longitud));
                 
