@@ -86,7 +86,7 @@ export default function SearchComponent({ onResultSelect }: SearchComponentProps
     return apiResults.map(item => {
       let nombre = '';
       let referencia = '';
-      let tipo: EntityType = 'persona';
+      let tipo: Exclude<EntityType, "todas"> = 'persona';
       
       if (item.tipo === 'persona') {
         nombre = item.nombre || 'Sin nombre';
