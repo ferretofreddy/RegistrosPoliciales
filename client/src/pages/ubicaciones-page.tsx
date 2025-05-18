@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, MapPin, User, Car, Home } from "lucide-react";
+import BusquedaDesplegable, { SearchResult } from "@/components/busqueda-desplegable";
 
 // Make sure to import Leaflet via CDN in index.html
 declare global {
@@ -1013,58 +1014,13 @@ export default function UbicacionesPage() {
                       </Button>
                     </div>
                     
-                    {/* Lista desplegable de coincidencias */}
-                    {showSearchResults && searchResults.length > 0 && (
-                      <div className="fixed md:absolute z-50 mt-1 w-[calc(100%-2rem)] md:w-full left-4 md:left-auto right-4 md:right-auto top-16 md:top-auto bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                          <span>{searchResults.length} coincidencias encontradas</span>
-                          <button 
-                            onClick={() => setShowSearchResults(false)}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                        <div className="py-1">
-                          {searchResults.map((result, index) => {
-                            // Determinar el icono basado en el tipo
-                            let icon;
-                            let bgColor;
-                            
-                            if (result.tipo === 'persona') {
-                              icon = <User className="h-3 w-3 text-white" />;
-                              bgColor = 'bg-red-500';
-                            } else if (result.tipo === 'vehiculo') {
-                              icon = <Car className="h-3 w-3 text-white" />;
-                              bgColor = 'bg-blue-500';
-                            } else if (result.tipo === 'inmueble') {
-                              icon = <Home className="h-3 w-3 text-white" />;
-                              bgColor = 'bg-green-500';
-                            } else {
-                              icon = <MapPin className="h-3 w-3 text-white" />;
-                              bgColor = 'bg-purple-500';
-                            }
-                            
-                            return (
-                              <div
-                                key={`${result.tipo}-${result.id}`}
-                                className="px-2 py-2 hover:bg-gray-100 cursor-pointer text-sm flex items-center"
-                                onClick={() => handleSelectResult(result)}
-                              >
-                                <div className={`${bgColor} rounded-full p-1 mr-2 flex-shrink-0`}>
-                                  {icon}
-                                </div>
-                                <div className="flex-grow truncate">
-                                  <div className="truncate font-medium">{result.texto}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {result.tipo.charAt(0).toUpperCase() + result.tipo.slice(1)} ID: {result.id}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                    {/* Lista desplegable de coincidencias mejorada */}
+                    {showSearchResults && searchTerm.trim().length >= 2 && (
+                      <BusquedaDesplegable
+                        searchTerm={searchTerm}
+                        onSelectResult={handleSelectResult}
+                        onClose={() => setShowSearchResults(false)}
+                      />
                     )}
                   </div>
                   
