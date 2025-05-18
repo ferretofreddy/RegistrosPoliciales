@@ -224,9 +224,9 @@ export default function UbicacionesPage() {
             break;
             
           case "inmueble":
-            // Buscar ubicaciones directas del inmueble
+            // 1. Ubicaciones directas del inmueble
             if (relationData && relationData.ubicaciones) {
-              console.log("Ubicaciones encontradas para inmueble:", relationData.ubicaciones);
+              console.log("Ubicaciones directas encontradas para inmueble:", relationData.ubicaciones);
               
               const ubicacionesInmueble = relationData.ubicaciones || [];
               
@@ -235,14 +235,14 @@ export default function UbicacionesPage() {
                 const lng = parseFloat(String(ubicacion.longitud));
                 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                  console.log(`Agregando ubicación de inmueble: ${ubicacion.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
+                  console.log(`Agregando ubicación directa de inmueble: ${ubicacion.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
                   
                   ubicacionesEncontradas.push({
                     id: ubicacion.id,
                     lat: lat,
                     lng: lng,
                     title: ubicacion.tipo || "Inmueble",
-                    description: ubicacion.observaciones || `Ubicación de inmueble: ${selectedResult.nombre}`,
+                    description: ubicacion.observaciones || `Ubicación de inmueble: ${selectedResult.direccion || selectedResult.nombre}`,
                     type: "inmueble",
                     relation: "direct",
                     entityId: selectedResult.id,
@@ -285,13 +285,122 @@ export default function UbicacionesPage() {
                   }
                 }
               }
-            } else {
+            }
+            
+            // 2. Personas relacionadas con este inmueble
+            if (relationData && relationData.personas && relationData.personas.length > 0) {
+              console.log("Personas relacionadas con inmueble:", relationData.personas);
+              
+              for (const personaRelacionada of relationData.personas) {
+                try {
+                  // Obtener datos específicos de las personas relacionadas
+                  const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
+                  const datosPersona = await respuestaPersona.json();
+                  
+                  // Buscar ubicaciones de la persona relacionada
+                  if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
+                    for (const ubicacionRelacionada of datosPersona.ubicaciones) {
+                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
+                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        console.log(`Agregando ubicación de persona relacionada con inmueble: ${ubicacionRelacionada.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
+                        
+                        ubicacionesEncontradas.push({
+                          id: ubicacionRelacionada.id,
+                          lat: lat,
+                          lng: lng,
+                          title: ubicacionRelacionada.tipo || "Domicilio",
+                          description: ubicacionRelacionada.observaciones || `Domicilio de ${personaRelacionada.nombre} (persona relacionada con ${selectedResult.referencia || "Inmueble"} en ${selectedResult.direccion || "ubicación desconocida"})`,
+                          type: "ubicacion",
+                          relation: "related",
+                          entityId: personaRelacionada.id
+                        });
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener ubicaciones de persona relacionada con inmueble:", error);
+                }
+              }
+            }
+            
+            // 3. Inmuebles relacionados con este inmueble
+            if (relationData && relationData.inmuebles && relationData.inmuebles.length > 0) {
+              console.log("Inmuebles relacionados con este inmueble:", relationData.inmuebles);
+              
+              for (const inmuebleRelacionado of relationData.inmuebles) {
+                try {
+                  // Obtener datos específicos del inmueble relacionado
+                  const respuestaInmueble = await fetch(`/api/relaciones/inmueble/${inmuebleRelacionado.id}`);
+                  const datosInmueble = await respuestaInmueble.json();
+                  
+                  if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
+                    for (const ubicacionInmueble of datosInmueble.ubicaciones) {
+                      const lat = parseFloat(String(ubicacionInmueble.latitud));
+                      const lng = parseFloat(String(ubicacionInmueble.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        console.log(`Agregando ubicación de inmueble relacionado: ${inmuebleRelacionado.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
+                        
+                        ubicacionesEncontradas.push({
+                          id: ubicacionInmueble.id,
+                          lat: lat,
+                          lng: lng,
+                          title: inmuebleRelacionado.tipo || "Inmueble",
+                          description: `${inmuebleRelacionado.tipo || "Inmueble"} en ${inmuebleRelacionado.direccion || "dirección desconocida"} (relacionado con ${selectedResult.referencia || "Inmueble"} en ${selectedResult.direccion || "ubicación desconocida"})`,
+                          type: "inmueble",
+                          relation: "related",
+                          entityId: inmuebleRelacionado.id
+                        });
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener ubicaciones del inmueble relacionado:", error);
+                }
+              }
+            }
+            
+            // 4. Ubicaciones relacionadas directamente con este inmueble
+            if (relationData && relationData.ubicaciones && relationData.ubicaciones.length > 0) {
+              console.log("Ubicaciones adicionales relacionadas con este inmueble:", relationData.ubicaciones);
+              
+              for (const ubicacion of relationData.ubicaciones) {
+                // Solo procesar si no se ha agregado antes como ubicación directa
+                const ubicacionYaProcesada = ubicacionesEncontradas.some(u => 
+                  u.id === ubicacion.id && u.type === "inmueble" && u.relation === "direct"
+                );
+                
+                if (!ubicacionYaProcesada) {
+                  const lat = parseFloat(String(ubicacion.latitud));
+                  const lng = parseFloat(String(ubicacion.longitud));
+                  
+                  if (!isNaN(lat) && !isNaN(lng)) {
+                    console.log(`Agregando ubicación relacionada con inmueble: ${ubicacion.tipo || "Ubicación"} - lat: ${lat}, lng: ${lng}`);
+                    
+                    ubicacionesEncontradas.push({
+                      id: ubicacion.id,
+                      lat: lat,
+                      lng: lng,
+                      title: ubicacion.tipo || "Ubicación",
+                      description: ubicacion.observaciones || `Ubicación relacionada con ${selectedResult.referencia || "Inmueble"} en ${selectedResult.direccion || "ubicación desconocida"}`,
+                      type: "ubicacion",
+                      relation: "related",
+                      entityId: ubicacion.id
+                    });
+                  }
+                }
+              }
+            }
+            
+            if (!ubicacionesEncontradas.length) {
               console.log("No se encontraron ubicaciones para este inmueble");
             }
             break;
             
           case "ubicacion":
-            // La ubicación tiene coordenadas propias
+            // 1. La ubicación tiene coordenadas propias
             const ubicacion = entityData as UbicacionEntity;
             if (ubicacion.latitud && ubicacion.longitud) {
               const lat = parseFloat(String(ubicacion.latitud));
@@ -344,6 +453,165 @@ export default function UbicacionesPage() {
                 
                 setMapCenter([lat, lng]);
                 hasCenteredMap = true;
+              }
+            }
+            
+            // 2. Personas relacionadas con esta ubicación
+            if (relationData && relationData.personas && relationData.personas.length > 0) {
+              console.log("Personas relacionadas con ubicación:", relationData.personas);
+              
+              for (const personaRelacionada of relationData.personas) {
+                try {
+                  // Obtener datos específicos de las personas relacionadas
+                  const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
+                  const datosPersona = await respuestaPersona.json();
+                  
+                  // Buscar ubicaciones (domicilios) de la persona relacionada
+                  if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
+                    for (const ubicacionRelacionada of datosPersona.ubicaciones) {
+                      // No incluir la ubicación actual
+                      if (ubicacionRelacionada.id === ubicacion.id) continue;
+                      
+                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
+                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        console.log(`Agregando domicilio de persona relacionada con ubicación: ${ubicacionRelacionada.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
+                        
+                        ubicacionesEncontradas.push({
+                          id: ubicacionRelacionada.id,
+                          lat: lat,
+                          lng: lng,
+                          title: ubicacionRelacionada.tipo || "Domicilio",
+                          description: ubicacionRelacionada.observaciones || `Domicilio de ${personaRelacionada.nombre} (persona relacionada con ${ubicacion.tipo || "Ubicación"})`,
+                          type: "ubicacion",
+                          relation: "related",
+                          entityId: personaRelacionada.id
+                        });
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener ubicaciones de persona relacionada con ubicación:", error);
+                }
+              }
+            }
+            
+            // 3. Inmuebles relacionados con esta ubicación
+            if (relationData && relationData.inmuebles && relationData.inmuebles.length > 0) {
+              console.log("Inmuebles relacionados con ubicación:", relationData.inmuebles);
+              
+              for (const inmuebleRelacionado of relationData.inmuebles) {
+                try {
+                  // Obtener datos específicos del inmueble relacionado
+                  const respuestaInmueble = await fetch(`/api/relaciones/inmueble/${inmuebleRelacionado.id}`);
+                  const datosInmueble = await respuestaInmueble.json();
+                  
+                  if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
+                    for (const ubicacionInmueble of datosInmueble.ubicaciones) {
+                      // No incluir la ubicación actual
+                      if (ubicacionInmueble.id === ubicacion.id) continue;
+                      
+                      const lat = parseFloat(String(ubicacionInmueble.latitud));
+                      const lng = parseFloat(String(ubicacionInmueble.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        console.log(`Agregando ubicación de inmueble relacionado: ${inmuebleRelacionado.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
+                        
+                        ubicacionesEncontradas.push({
+                          id: ubicacionInmueble.id,
+                          lat: lat,
+                          lng: lng,
+                          title: inmuebleRelacionado.tipo || "Inmueble",
+                          description: `${inmuebleRelacionado.tipo || "Inmueble"} en ${inmuebleRelacionado.direccion || "dirección desconocida"} (relacionado con ${ubicacion.tipo || "Ubicación"})`,
+                          type: "inmueble",
+                          relation: "related",
+                          entityId: inmuebleRelacionado.id
+                        });
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener ubicaciones del inmueble relacionado:", error);
+                }
+              }
+            }
+            
+            // 4. Vehículos relacionados con esta ubicación
+            if (relationData && relationData.vehiculos && relationData.vehiculos.length > 0) {
+              console.log("Vehículos relacionados con ubicación:", relationData.vehiculos);
+              
+              for (const vehiculoRelacionado of relationData.vehiculos) {
+                try {
+                  // Obtener datos específicos del vehículo relacionado
+                  const respuestaVehiculo = await fetch(`/api/relaciones/vehiculo/${vehiculoRelacionado.id}`);
+                  const datosVehiculo = await respuestaVehiculo.json();
+                  
+                  // Los vehículos no tienen ubicaciones directas, pero buscar personas relacionadas
+                  if (datosVehiculo.personas && datosVehiculo.personas.length > 0) {
+                    for (const personaRelacionada of datosVehiculo.personas) {
+                      // Obtener datos específicos de las personas relacionadas con el vehículo
+                      const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
+                      const datosPersona = await respuestaPersona.json();
+                      
+                      if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
+                        for (const ubicacionPersona of datosPersona.ubicaciones) {
+                          // No incluir la ubicación actual
+                          if (ubicacionPersona.id === ubicacion.id) continue;
+                          
+                          const lat = parseFloat(String(ubicacionPersona.latitud));
+                          const lng = parseFloat(String(ubicacionPersona.longitud));
+                          
+                          if (!isNaN(lat) && !isNaN(lng)) {
+                            console.log(`Agregando domicilio de persona (${personaRelacionada.nombre}) relacionada con vehículo relacionado con ubicación: ${ubicacionPersona.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
+                            
+                            ubicacionesEncontradas.push({
+                              id: ubicacionPersona.id,
+                              lat: lat,
+                              lng: lng,
+                              title: ubicacionPersona.tipo || "Domicilio",
+                              description: ubicacionPersona.observaciones || 
+                                `Domicilio de ${personaRelacionada.nombre} (propietario de ${vehiculoRelacionado.marca} ${vehiculoRelacionado.modelo} - Placa: ${vehiculoRelacionado.placa}, relacionado con ${ubicacion.tipo || "Ubicación"})`,
+                              type: "ubicacion",
+                              relation: "related",
+                              entityId: personaRelacionada.id
+                            });
+                          }
+                        }
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error al obtener relaciones del vehículo relacionado con ubicación:", error);
+                }
+              }
+            }
+            
+            // 5. Ubicaciones relacionadas con esta ubicación
+            if (relationData && relationData.ubicaciones && relationData.ubicaciones.length > 0) {
+              console.log("Ubicaciones relacionadas con esta ubicación:", relationData.ubicaciones);
+              
+              for (const ubicacionRelacionada of relationData.ubicaciones) {
+                // No incluir la ubicación actual
+                if (ubicacionRelacionada.id === ubicacion.id) continue;
+                
+                const lat = parseFloat(String(ubicacionRelacionada.latitud));
+                const lng = parseFloat(String(ubicacionRelacionada.longitud));
+                
+                if (!isNaN(lat) && !isNaN(lng)) {
+                  console.log(`Agregando ubicación relacionada con esta ubicación: ${ubicacionRelacionada.tipo || "Ubicación"} - lat: ${lat}, lng: ${lng}`);
+                  
+                  ubicacionesEncontradas.push({
+                    id: ubicacionRelacionada.id,
+                    lat: lat,
+                    lng: lng,
+                    title: ubicacionRelacionada.tipo || "Ubicación",
+                    description: ubicacionRelacionada.observaciones || `Ubicación relacionada con ${ubicacion.tipo || "Ubicación"}`,
+                    type: "ubicacion",
+                    relation: "related",
+                    entityId: ubicacionRelacionada.id
+                  });
+                }
               }
             }
             break;
