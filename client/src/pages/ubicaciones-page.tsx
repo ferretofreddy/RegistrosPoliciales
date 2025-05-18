@@ -148,12 +148,22 @@ export default function UbicacionesPage() {
       // Procesar ubicaciones relacionadas
       if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
         console.log("Procesando ubicaciones relacionadas:", relationData.ubicaciones);
+        
+        // Mostramos cada ubicación relacionada
         relationData.ubicaciones.forEach((ubicacion) => {
-          if (ubicacion.latitud && ubicacion.longitud) {
+          console.log("Verificando ubicación:", ubicacion);
+          
+          // Nos aseguramos de que tenga coordenadas y sean números válidos
+          const latitud = parseFloat(String(ubicacion.latitud));
+          const longitud = parseFloat(String(ubicacion.longitud));
+          
+          if (!isNaN(latitud) && !isNaN(longitud)) {
+            console.log(`Añadiendo ubicación: ${latitud}, ${longitud}`);
+            
             newLocations.push({
               id: ubicacion.id,
-              lat: ubicacion.latitud,
-              lng: ubicacion.longitud,
+              lat: latitud,
+              lng: longitud,
               title: ubicacion.tipo || "Ubicación",
               description: ubicacion.observaciones || "Sin descripción",
               type: "ubicacion",
@@ -164,9 +174,12 @@ export default function UbicacionesPage() {
             
             // Si no hay ubicación directa, centrar en la primera ubicación relacionada
             if (!hasCenteredMap) {
-              setMapCenter([ubicacion.latitud, ubicacion.longitud]);
+              console.log(`Centrando mapa en: ${latitud}, ${longitud}`);
+              setMapCenter([latitud, longitud]);
               hasCenteredMap = true;
             }
+          } else {
+            console.log(`Ubicación sin coordenadas válidas: ${ubicacion.id}`);
           }
         });
       }
@@ -175,11 +188,17 @@ export default function UbicacionesPage() {
       if (relationData.inmuebles && relationData.inmuebles.length > 0) {
         console.log("Procesando inmuebles relacionados:", relationData.inmuebles);
         relationData.inmuebles.forEach((inmueble) => {
-          if (inmueble.latitud && inmueble.longitud) {
+          // Nos aseguramos de que tenga coordenadas y sean números válidos
+          const latitud = parseFloat(String(inmueble.latitud));
+          const longitud = parseFloat(String(inmueble.longitud));
+          
+          if (!isNaN(latitud) && !isNaN(longitud)) {
+            console.log(`Añadiendo inmueble: ${latitud}, ${longitud}`);
+            
             newLocations.push({
               id: inmueble.id,
-              lat: inmueble.latitud,
-              lng: inmueble.longitud,
+              lat: latitud,
+              lng: longitud,
               title: inmueble.tipo || "Inmueble",
               description: inmueble.direccion || "Sin dirección",
               type: "inmueble",
@@ -190,9 +209,12 @@ export default function UbicacionesPage() {
             
             // Si no hay ubicación directa, centrar en el primer inmueble
             if (!hasCenteredMap) {
-              setMapCenter([inmueble.latitud, inmueble.longitud]);
+              console.log(`Centrando mapa en inmueble: ${latitud}, ${longitud}`);
+              setMapCenter([latitud, longitud]);
               hasCenteredMap = true;
             }
+          } else {
+            console.log(`Inmueble sin coordenadas válidas: ${inmueble.id}`);
           }
         });
       }
@@ -201,11 +223,17 @@ export default function UbicacionesPage() {
       if (relationData.personas && relationData.personas.length > 0) {
         console.log("Procesando personas relacionadas:", relationData.personas);
         relationData.personas.forEach((persona) => {
-          if (persona.latitud && persona.longitud) {
+          // Nos aseguramos de que tenga coordenadas y sean números válidos
+          const latitud = parseFloat(String(persona.latitud));
+          const longitud = parseFloat(String(persona.longitud));
+          
+          if (!isNaN(latitud) && !isNaN(longitud)) {
+            console.log(`Añadiendo persona: ${latitud}, ${longitud}`);
+            
             newLocations.push({
               id: persona.id,
-              lat: persona.latitud,
-              lng: persona.longitud,
+              lat: latitud,
+              lng: longitud,
               title: persona.nombre || "Persona",
               description: persona.identificacion || "Sin identificación",
               type: "persona",
@@ -216,9 +244,12 @@ export default function UbicacionesPage() {
             
             // Si no hay ubicación directa, centrar en la persona
             if (!hasCenteredMap) {
-              setMapCenter([persona.latitud, persona.longitud]);
+              console.log(`Centrando mapa en persona: ${latitud}, ${longitud}`);
+              setMapCenter([latitud, longitud]);
               hasCenteredMap = true;
             }
+          } else {
+            console.log(`Persona sin coordenadas válidas: ${persona.id}`);
           }
         });
       }
@@ -227,11 +258,17 @@ export default function UbicacionesPage() {
       if (relationData.vehiculos && relationData.vehiculos.length > 0) {
         console.log("Procesando vehículos relacionados:", relationData.vehiculos);
         relationData.vehiculos.forEach((vehiculo) => {
-          if (vehiculo.latitud && vehiculo.longitud) {
+          // Nos aseguramos de que tenga coordenadas y sean números válidos
+          const latitud = parseFloat(String(vehiculo.latitud));
+          const longitud = parseFloat(String(vehiculo.longitud));
+          
+          if (!isNaN(latitud) && !isNaN(longitud)) {
+            console.log(`Añadiendo vehículo: ${latitud}, ${longitud}`);
+            
             newLocations.push({
               id: vehiculo.id,
-              lat: vehiculo.latitud,
-              lng: vehiculo.longitud,
+              lat: latitud,
+              lng: longitud,
               title: `${vehiculo.marca} ${vehiculo.modelo}` || "Vehículo",
               description: vehiculo.placa || "Sin placa",
               type: "vehiculo",
@@ -242,9 +279,12 @@ export default function UbicacionesPage() {
             
             // Si no hay ubicación directa, centrar en el vehículo
             if (!hasCenteredMap) {
-              setMapCenter([vehiculo.latitud, vehiculo.longitud]);
+              console.log(`Centrando mapa en vehículo: ${latitud}, ${longitud}`);
+              setMapCenter([latitud, longitud]);
               hasCenteredMap = true;
             }
+          } else {
+            console.log(`Vehículo sin coordenadas válidas: ${vehiculo.id}`);
           }
         });
       }
