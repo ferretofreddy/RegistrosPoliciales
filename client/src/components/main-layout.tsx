@@ -173,19 +173,59 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+              {/* La página de consultas es accesible para todos los usuarios */}
+              <Link
+                href="/consultas"
+                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  location === "/consultas" || location === "/"
+                    ? "bg-primary-900 text-white"
+                    : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Consultas
+              </Link>
+              
               {(user?.rol === "admin" || user?.rol === "investigador") && (
-                <Link
-                  href="/registros"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location === "/registros" || location === "/"
-                      ? "bg-primary-900 text-white"
-                      : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Registros
-                </Link>
+                <>
+                  <Link
+                    href="/registros"
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      location === "/registros"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Registros
+                  </Link>
+                  
+                  <Link
+                    href="/ubicaciones"
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      location === "/ubicaciones"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Ubicaciones
+                  </Link>
+                  
+                  <Link
+                    href="/estructuras"
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      location === "/estructuras"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Estructuras
+                  </Link>
+                </>
               )}
+              
               {user?.rol === "admin" && (
                 <>
                   <Link
