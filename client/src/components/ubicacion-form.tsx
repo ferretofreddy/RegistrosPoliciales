@@ -51,6 +51,16 @@ export default function UbicacionForm() {
   const [marker, setMarker] = useState<any>(null);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
   const [showObservacionForm, setShowObservacionForm] = useState(false);
+  
+  // Obtener usuario autenticado
+  const { data: usuarioActual } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      const res = await fetch('/api/user');
+      if (!res.ok) return null;
+      return res.json();
+    }
+  });
 
   // Obtener lista de personas para las relaciones
   const { data: personas } = useQuery({
@@ -292,7 +302,7 @@ export default function UbicacionForm() {
               const resultado = await apiRequest("POST", `/api/ubicaciones/${ubicacionId}/observaciones`, {
                 detalle: observacion.detalle,
                 fecha: observacion.fecha || new Date(),
-                usuario: "Usuario del sistema"
+                usuario: usuarioActual?.nombre || "Usuario Anónimo"
               });
               console.log(`Observación creada exitosamente:`, resultado);
             } catch (error) {

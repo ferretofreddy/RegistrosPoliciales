@@ -48,6 +48,16 @@ type InmuebleFormValues = z.infer<typeof inmuebleFormSchema>;
 export default function InmuebleForm() {
   const { toast } = useToast();
   const [relacionPersonas, setRelacionPersonas] = useState<{ id: number; nombre: string }[]>([]);
+  
+  // Obtener usuario autenticado
+  const { data: usuarioActual } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      const res = await fetch('/api/user');
+      if (!res.ok) return null;
+      return res.json();
+    }
+  });
   const [relacionVehiculos, setRelacionVehiculos] = useState<{ id: number; nombre: string }[]>([]);
   const [relacionInmuebles, setRelacionInmuebles] = useState<{ id: number; nombre: string }[]>([]);
   const [observaciones, setObservaciones] = useState<{detalle: string; fecha?: Date}[]>([]);
@@ -132,7 +142,7 @@ export default function InmuebleForm() {
         for (const obs of observaciones) {
           await apiRequest("POST", `/api/inmuebles/${inmueble.id}/observaciones`, {
             detalle: obs.detalle,
-            usuario: "Usuario del sistema"
+            usuario: usuarioActual?.nombre || "Usuario Anónimo"
           });
         }
       }
