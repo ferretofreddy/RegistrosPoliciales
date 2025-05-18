@@ -428,7 +428,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // === RELACIONES CRUD ===
-  async crearRelacionPersonaVehiculo(personaId: number, vehiculoId: number, relacion?: string): Promise<any> {
+  async crearRelacionPersonaVehiculo(personaId: number, vehiculoId: number): Promise<any> {
     try {
       // Verificar si ya existe
       const checkQuery = `
@@ -444,16 +444,14 @@ export class DatabaseStorage implements IStorage {
       
       // Crear nueva relación
       const insertQuery = `
-        INSERT INTO personas_vehiculos (persona_id, vehiculo_id, relacion, observaciones)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO personas_vehiculos (persona_id, vehiculo_id)
+        VALUES ($1, $2)
         RETURNING *
       `;
       
       const result = await pool.query(insertQuery, [
         personaId,
-        vehiculoId,
-        relacion || null,
-        null
+        vehiculoId
       ]);
         
       return result.rows[0];
@@ -463,7 +461,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async crearRelacionPersonaInmueble(personaId: number, inmuebleId: number, relacion?: string): Promise<any> {
+  async crearRelacionPersonaInmueble(personaId: number, inmuebleId: number): Promise<any> {
     try {
       // Verificar si ya existe
       const checkQuery = `
@@ -479,16 +477,14 @@ export class DatabaseStorage implements IStorage {
       
       // Crear nueva relación
       const insertQuery = `
-        INSERT INTO personas_inmuebles (persona_id, inmueble_id, relacion, observaciones)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO personas_inmuebles (persona_id, inmueble_id)
+        VALUES ($1, $2)
         RETURNING *
       `;
       
       const result = await pool.query(insertQuery, [
         personaId,
-        inmuebleId,
-        relacion || null,
-        null
+        inmuebleId
       ]);
         
       return result.rows[0];

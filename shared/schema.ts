@@ -143,8 +143,6 @@ export const personasVehiculos = pgTable("personas_vehiculos", {
   id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
-  relacion: text("relacion"), // propietario, conductor, etc
-  observaciones: text("observaciones"),
 });
 
 // Relación Personas-Inmuebles
@@ -152,8 +150,6 @@ export const personasInmuebles = pgTable("personas_inmuebles", {
   id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
-  relacion: text("relacion"), // propietario, inquilino, etc
-  observaciones: text("observaciones"),
 });
 
 // Tipos
