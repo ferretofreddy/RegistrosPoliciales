@@ -43,7 +43,7 @@ export default function UbicacionesPage() {
   });
 
   // Función para obtener ubicaciones relacionadas con personas
-  const obtenerUbicacionesDePersonas = async (persona: PersonaEntity) => {
+  const obtenerUbicacionesDePersonas = async (persona: PersonaEntity, tipoRelacion: "direct" | "related" = "direct") => {
     try {
       const respuesta = await fetch(`/api/relaciones/persona/${persona.id}`);
       const data = await respuesta.json();
@@ -51,24 +51,24 @@ export default function UbicacionesPage() {
       
       // Añadir ubicaciones directamente relacionadas con esta persona
       if (data.ubicaciones && data.ubicaciones.length > 0) {
-        data.ubicaciones.forEach((ubicacion: any) => {
-          const lat = parseFloat(String(ubicacion.latitud));
-          const lng = parseFloat(String(ubicacion.longitud));
-          
-          if (!isNaN(lat) && !isNaN(lng)) {
-            console.log(`Añadiendo ubicación de ${persona.nombre}:`, ubicacion);
-            ubicaciones.push({
-              id: ubicacion.id,
-              lat: lat,
-              lng: lng,
-              title: ubicacion.tipo || "Domicilio",
-              description: ubicacion.observaciones || `Domicilio de ${persona.nombre}`,
-              type: "ubicacion",
-              relation: "direct",
-              entityId: persona.id
-            });
-          }
-        });
+        // Solo agregar la primera ubicación (domicilio principal)
+        const ubicacion = data.ubicaciones[0];
+        const lat = parseFloat(String(ubicacion.latitud));
+        const lng = parseFloat(String(ubicacion.longitud));
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          console.log(`Añadiendo ubicación de ${persona.nombre}`);
+          ubicaciones.push({
+            id: ubicacion.id,
+            lat: lat,
+            lng: lng,
+            title: "Domicilio",
+            description: `Domicilio de ${persona.nombre}`,
+            type: "ubicacion",
+            relation: tipoRelacion,
+            entityId: persona.id
+          });
+        }
       }
       return ubicaciones;
     } catch (error) {
@@ -78,7 +78,7 @@ export default function UbicacionesPage() {
   };
   
   // Función para obtener ubicaciones relacionadas con inmuebles
-  const obtenerUbicacionesDeInmuebles = async (inmueble: InmuebleEntity) => {
+  const obtenerUbicacionesDeInmuebles = async (inmueble: InmuebleEntity, tipoRelacion: "direct" | "related" = "direct") => {
     try {
       const respuesta = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
       const data = await respuesta.json();
@@ -86,24 +86,24 @@ export default function UbicacionesPage() {
       
       // Añadir ubicaciones directamente relacionadas con este inmueble
       if (data.ubicaciones && data.ubicaciones.length > 0) {
-        data.ubicaciones.forEach((ubicacion: any) => {
-          const lat = parseFloat(String(ubicacion.latitud));
-          const lng = parseFloat(String(ubicacion.longitud));
-          
-          if (!isNaN(lat) && !isNaN(lng)) {
-            console.log(`Añadiendo ubicación de inmueble ${inmueble.id}:`, ubicacion);
-            ubicaciones.push({
-              id: ubicacion.id,
-              lat: lat,
-              lng: lng,
-              title: inmueble.tipo || "Inmueble",
-              description: inmueble.direccion || "Sin dirección",
-              type: "inmueble",
-              relation: "direct",
-              entityId: inmueble.id
-            });
-          }
-        });
+        // Solo agregar la primera ubicación
+        const ubicacion = data.ubicaciones[0];
+        const lat = parseFloat(String(ubicacion.latitud));
+        const lng = parseFloat(String(ubicacion.longitud));
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          console.log(`Añadiendo ubicación de inmueble ${inmueble.id}`);
+          ubicaciones.push({
+            id: ubicacion.id,
+            lat: lat,
+            lng: lng,
+            title: inmueble.tipo || "Inmueble",
+            description: inmueble.direccion || "Sin dirección",
+            type: "inmueble",
+            relation: tipoRelacion,
+            entityId: inmueble.id
+          });
+        }
       }
       return ubicaciones;
     } catch (error) {
@@ -113,7 +113,7 @@ export default function UbicacionesPage() {
   };
   
   // Función para obtener ubicaciones relacionadas con vehículos
-  const obtenerUbicacionesDeVehiculos = async (vehiculo: VehiculoEntity) => {
+  const obtenerUbicacionesDeVehiculos = async (vehiculo: VehiculoEntity, tipoRelacion: "direct" | "related" = "direct") => {
     try {
       const respuesta = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
       const data = await respuesta.json();
@@ -121,30 +121,44 @@ export default function UbicacionesPage() {
       
       // Añadir ubicaciones directamente relacionadas con este vehículo
       if (data.ubicaciones && data.ubicaciones.length > 0) {
-        data.ubicaciones.forEach((ubicacion: any) => {
-          const lat = parseFloat(String(ubicacion.latitud));
-          const lng = parseFloat(String(ubicacion.longitud));
-          
-          if (!isNaN(lat) && !isNaN(lng)) {
-            console.log(`Añadiendo ubicación de vehículo ${vehiculo.id}:`, ubicacion);
-            ubicaciones.push({
-              id: ubicacion.id,
-              lat: lat,
-              lng: lng,
-              title: `${vehiculo.marca} ${vehiculo.modelo}`,
-              description: vehiculo.placa || "Sin placa",
-              type: "vehiculo",
-              relation: "direct",
-              entityId: vehiculo.id
-            });
-          }
-        });
+        // Solo agregar la primera ubicación
+        const ubicacion = data.ubicaciones[0];
+        const lat = parseFloat(String(ubicacion.latitud));
+        const lng = parseFloat(String(ubicacion.longitud));
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          console.log(`Añadiendo ubicación de vehículo ${vehiculo.id}`);
+          ubicaciones.push({
+            id: ubicacion.id,
+            lat: lat,
+            lng: lng,
+            title: `${vehiculo.marca} ${vehiculo.modelo}`,
+            description: vehiculo.placa || "Sin placa",
+            type: "vehiculo",
+            relation: tipoRelacion,
+            entityId: vehiculo.id
+          });
+        }
       }
       return ubicaciones;
     } catch (error) {
       console.error(`Error al obtener ubicaciones de vehículo ${vehiculo.id}:`, error);
       return [];
     }
+  };
+  
+  // Función para quitar duplicados de las ubicaciones
+  const eliminarUbicacionesDuplicadas = (ubicaciones: LocationData[]): LocationData[] => {
+    const ubicacionesUnicas = new Map<string, LocationData>();
+    
+    ubicaciones.forEach(ub => {
+      const key = `${ub.lat}-${ub.lng}`;
+      if (!ubicacionesUnicas.has(key)) {
+        ubicacionesUnicas.set(key, ub);
+      }
+    });
+    
+    return Array.from(ubicacionesUnicas.values());
   };
   
   // Procesamiento principal de datos para el mapa
@@ -159,7 +173,8 @@ export default function UbicacionesPage() {
       console.log("Entity Data:", entityData);
       console.log("Relation Data:", relationData);
 
-      const todasLasUbicaciones: LocationData[] = [];
+      const ubicacionesEncontradas: LocationData[] = [];
+      const ubicacionesYaProcesadas = new Set<number>();
       let hasCenteredMap = false;
       
       // Paso 1: Procesar la entidad principal seleccionada
@@ -168,7 +183,7 @@ export default function UbicacionesPage() {
           // Si es una ubicación directa
           const ubicacion = entityData as UbicacionEntity;
           if (ubicacion.latitud && ubicacion.longitud) {
-            todasLasUbicaciones.push({
+            ubicacionesEncontradas.push({
               id: ubicacion.id,
               lat: ubicacion.latitud,
               lng: ubicacion.longitud,
@@ -179,153 +194,68 @@ export default function UbicacionesPage() {
               entityId: ubicacion.id
             });
             
+            ubicacionesYaProcesadas.add(ubicacion.id);
             setMapCenter([ubicacion.latitud, ubicacion.longitud]);
             hasCenteredMap = true;
           }
         } else if (selectedResult.tipo === "persona") {
           // Si es una persona, obtener sus ubicaciones directas (domicilios)
           const persona = entityData as PersonaEntity;
-          const ubicacionesPersona = await obtenerUbicacionesDePersonas(persona);
+          const ubicacionesDirectas = await obtenerUbicacionesDePersonas(persona, "direct");
           
-          if (ubicacionesPersona.length > 0) {
-            todasLasUbicaciones.push(...ubicacionesPersona);
-            
-            if (!hasCenteredMap) {
-              setMapCenter([ubicacionesPersona[0].lat, ubicacionesPersona[0].lng]);
-              hasCenteredMap = true;
-            }
+          ubicacionesDirectas.forEach(ub => {
+            ubicacionesEncontradas.push(ub);
+            ubicacionesYaProcesadas.add(ub.id);
+          });
+          
+          if (ubicacionesDirectas.length > 0 && !hasCenteredMap) {
+            setMapCenter([ubicacionesDirectas[0].lat, ubicacionesDirectas[0].lng]);
+            hasCenteredMap = true;
           }
         } else if (selectedResult.tipo === "inmueble") {
           // Si es un inmueble, obtener sus ubicaciones directas
           const inmueble = entityData as InmuebleEntity;
-          const ubicacionesInmueble = await obtenerUbicacionesDeInmuebles(inmueble);
+          const ubicacionesDirectas = await obtenerUbicacionesDeInmuebles(inmueble, "direct");
           
-          if (ubicacionesInmueble.length > 0) {
-            todasLasUbicaciones.push(...ubicacionesInmueble);
-            
-            if (!hasCenteredMap) {
-              setMapCenter([ubicacionesInmueble[0].lat, ubicacionesInmueble[0].lng]);
-              hasCenteredMap = true;
-            }
+          ubicacionesDirectas.forEach(ub => {
+            ubicacionesEncontradas.push(ub);
+            ubicacionesYaProcesadas.add(ub.id);
+          });
+          
+          if (ubicacionesDirectas.length > 0 && !hasCenteredMap) {
+            setMapCenter([ubicacionesDirectas[0].lat, ubicacionesDirectas[0].lng]);
+            hasCenteredMap = true;
           }
         } else if (selectedResult.tipo === "vehiculo") {
-          // Si es un vehículo, obtener sus ubicaciones directas
+          // Si es un vehículo, obtener sus ubicaciones directas y las de sus propietarios
           const vehiculo = entityData as VehiculoEntity;
-          const ubicacionesVehiculo = await obtenerUbicacionesDeVehiculos(vehiculo);
+          const ubicacionesDirectas = await obtenerUbicacionesDeVehiculos(vehiculo, "direct");
           
-          if (ubicacionesVehiculo.length > 0) {
-            todasLasUbicaciones.push(...ubicacionesVehiculo);
-            
-            if (!hasCenteredMap) {
-              setMapCenter([ubicacionesVehiculo[0].lat, ubicacionesVehiculo[0].lng]);
-              hasCenteredMap = true;
-            }
+          ubicacionesDirectas.forEach(ub => {
+            ubicacionesEncontradas.push(ub);
+            ubicacionesYaProcesadas.add(ub.id);
+          });
+          
+          if (ubicacionesDirectas.length > 0 && !hasCenteredMap) {
+            setMapCenter([ubicacionesDirectas[0].lat, ubicacionesDirectas[0].lng]);
+            hasCenteredMap = true;
           }
         }
       }
       
       // Paso 2: Procesar relaciones para obtener ubicaciones relacionadas
       if (relationData) {
-        // Procesar personas relacionadas y sus ubicaciones
-        if (relationData.personas && relationData.personas.length > 0) {
-          console.log("Procesando ubicaciones de personas relacionadas");
-          
-          for (const persona of relationData.personas) {
-            const ubicacionesPersonaRelacionada = await obtenerUbicacionesDePersonas(persona);
-            
-            // Marcar estas ubicaciones como relacionadas
-            const ubicacionesRelacionadas = ubicacionesPersonaRelacionada.map(ub => ({
-              ...ub,
-              relation: "related" as "related"
-            }));
-            
-            todasLasUbicaciones.push(...ubicacionesRelacionadas);
-            
-            if (!hasCenteredMap && ubicacionesRelacionadas.length > 0) {
-              setMapCenter([ubicacionesRelacionadas[0].lat, ubicacionesRelacionadas[0].lng]);
-              hasCenteredMap = true;
-            }
-          }
-        }
-        
-        // Procesar inmuebles relacionados y sus ubicaciones
-        if (relationData.inmuebles && relationData.inmuebles.length > 0) {
-          console.log("Procesando ubicaciones de inmuebles relacionados");
-          
-          for (const inmueble of relationData.inmuebles) {
-            const ubicacionesInmuebleRelacionado = await obtenerUbicacionesDeInmuebles(inmueble);
-            
-            // Marcar estas ubicaciones como relacionadas
-            const ubicacionesRelacionadas = ubicacionesInmuebleRelacionado.map(ub => ({
-              ...ub,
-              relation: "related" as "related"
-            }));
-            
-            todasLasUbicaciones.push(...ubicacionesRelacionadas);
-            
-            if (!hasCenteredMap && ubicacionesRelacionadas.length > 0) {
-              setMapCenter([ubicacionesRelacionadas[0].lat, ubicacionesRelacionadas[0].lng]);
-              hasCenteredMap = true;
-            }
-          }
-        }
-        
-        // Procesar vehículos relacionados y sus ubicaciones
-        if (relationData.vehiculos && relationData.vehiculos.length > 0) {
-          console.log("Procesando ubicaciones de vehículos relacionados");
-          
-          for (const vehiculo of relationData.vehiculos) {
-            const ubicacionesVehiculoRelacionado = await obtenerUbicacionesDeVehiculos(vehiculo);
-            
-            // Marcar estas ubicaciones como relacionadas
-            const ubicacionesRelacionadas = ubicacionesVehiculoRelacionado.map(ub => ({
-              ...ub,
-              relation: "related" as "related"
-            }));
-            
-            todasLasUbicaciones.push(...ubicacionesRelacionadas);
-            
-            if (!hasCenteredMap && ubicacionesRelacionadas.length > 0) {
-              setMapCenter([ubicacionesRelacionadas[0].lat, ubicacionesRelacionadas[0].lng]);
-              hasCenteredMap = true;
-            }
-            
-            // Buscar las personas relacionadas con este vehículo y sus ubicaciones
-            const respuestaVehiculo = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
-            const dataVehiculo = await respuestaVehiculo.json();
-            
-            if (dataVehiculo.personas && dataVehiculo.personas.length > 0) {
-              for (const personaVehiculo of dataVehiculo.personas) {
-                const ubicacionesPersonaVehiculo = await obtenerUbicacionesDePersonas(personaVehiculo);
-                
-                // Marcar estas ubicaciones como relacionadas
-                const ubicacionesRelPersonaVehiculo = ubicacionesPersonaVehiculo.map(ub => ({
-                  ...ub,
-                  relation: "related" as "related",
-                  description: `Domicilio de ${personaVehiculo.nombre} (relacionado con vehículo ${vehiculo.marca} ${vehiculo.modelo})`
-                }));
-                
-                todasLasUbicaciones.push(...ubicacionesRelPersonaVehiculo);
-                
-                if (!hasCenteredMap && ubicacionesRelPersonaVehiculo.length > 0) {
-                  setMapCenter([ubicacionesRelPersonaVehiculo[0].lat, ubicacionesRelPersonaVehiculo[0].lng]);
-                  hasCenteredMap = true;
-                }
-              }
-            }
-          }
-        }
-        
         // Procesar ubicaciones directamente relacionadas
         if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-          console.log("Procesando ubicaciones directamente relacionadas");
-          
-          relationData.ubicaciones.forEach((ubicacion) => {
+          for (const ubicacion of relationData.ubicaciones) {
+            // Evitar duplicados
+            if (ubicacionesYaProcesadas.has(ubicacion.id)) continue;
+            
             const lat = parseFloat(String(ubicacion.latitud));
             const lng = parseFloat(String(ubicacion.longitud));
             
             if (!isNaN(lat) && !isNaN(lng)) {
-              todasLasUbicaciones.push({
+              ubicacionesEncontradas.push({
                 id: ubicacion.id,
                 lat: lat,
                 lng: lng,
@@ -336,20 +266,108 @@ export default function UbicacionesPage() {
                 entityId: ubicacion.id
               });
               
+              ubicacionesYaProcesadas.add(ubicacion.id);
+              
               if (!hasCenteredMap) {
                 setMapCenter([lat, lng]);
                 hasCenteredMap = true;
               }
             }
-          });
+          }
+        }
+        
+        // Procesar personas relacionadas
+        if (relationData.personas && relationData.personas.length > 0) {
+          for (const persona of relationData.personas) {
+            const ubicacionesRelacionadas = await obtenerUbicacionesDePersonas(persona, "related");
+            
+            for (const ub of ubicacionesRelacionadas) {
+              if (!ubicacionesYaProcesadas.has(ub.id)) {
+                ubicacionesEncontradas.push(ub);
+                ubicacionesYaProcesadas.add(ub.id);
+                
+                if (!hasCenteredMap) {
+                  setMapCenter([ub.lat, ub.lng]);
+                  hasCenteredMap = true;
+                }
+              }
+            }
+          }
+        }
+        
+        // Procesar inmuebles relacionados
+        if (relationData.inmuebles && relationData.inmuebles.length > 0) {
+          for (const inmueble of relationData.inmuebles) {
+            const ubicacionesRelacionadas = await obtenerUbicacionesDeInmuebles(inmueble, "related");
+            
+            for (const ub of ubicacionesRelacionadas) {
+              if (!ubicacionesYaProcesadas.has(ub.id)) {
+                ubicacionesEncontradas.push(ub);
+                ubicacionesYaProcesadas.add(ub.id);
+                
+                if (!hasCenteredMap) {
+                  setMapCenter([ub.lat, ub.lng]);
+                  hasCenteredMap = true;
+                }
+              }
+            }
+          }
+        }
+        
+        // Procesar vehículos relacionados
+        if (relationData.vehiculos && relationData.vehiculos.length > 0) {
+          for (const vehiculo of relationData.vehiculos) {
+            // Ubicaciones directas del vehículo
+            const ubicacionesRelacionadas = await obtenerUbicacionesDeVehiculos(vehiculo, "related");
+            
+            for (const ub of ubicacionesRelacionadas) {
+              if (!ubicacionesYaProcesadas.has(ub.id)) {
+                ubicacionesEncontradas.push(ub);
+                ubicacionesYaProcesadas.add(ub.id);
+                
+                if (!hasCenteredMap) {
+                  setMapCenter([ub.lat, ub.lng]);
+                  hasCenteredMap = true;
+                }
+              }
+            }
+            
+            // Buscar personas relacionadas con el vehículo
+            const respuestaVehiculo = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
+            const dataVehiculo = await respuestaVehiculo.json();
+            
+            if (dataVehiculo.personas && dataVehiculo.personas.length > 0) {
+              for (const personaVehiculo of dataVehiculo.personas) {
+                const ubicacionesPersonaVehiculo = await obtenerUbicacionesDePersonas(personaVehiculo, "related");
+                
+                for (const ub of ubicacionesPersonaVehiculo) {
+                  if (!ubicacionesYaProcesadas.has(ub.id)) {
+                    // Modificar la descripción para que sea más informativa
+                    const ubicacionModificada = {
+                      ...ub,
+                      description: `Domicilio de ${personaVehiculo.nombre} (dueño de ${vehiculo.marca} ${vehiculo.modelo})`
+                    };
+                    
+                    ubicacionesEncontradas.push(ubicacionModificada);
+                    ubicacionesYaProcesadas.add(ub.id);
+                    
+                    if (!hasCenteredMap) {
+                      setMapCenter([ub.lat, ub.lng]);
+                      hasCenteredMap = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
       
-      console.log("Todas las ubicaciones encontradas:", todasLasUbicaciones);
-      setLocations(todasLasUbicaciones);
+      console.log("Ubicaciones encontradas:", ubicacionesEncontradas);
+      setLocations(ubicacionesEncontradas);
       
       // Si no hay ubicaciones, mostrar mensaje
-      if (todasLasUbicaciones.length === 0) {
+      if (ubicacionesEncontradas.length === 0) {
         console.log("No se encontraron ubicaciones para la entidad seleccionada o sus relaciones.");
       }
     };
