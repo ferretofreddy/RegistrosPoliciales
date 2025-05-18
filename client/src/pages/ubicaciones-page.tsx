@@ -160,6 +160,20 @@ export default function UbicacionesPage() {
           if (!isNaN(latitud) && !isNaN(longitud)) {
             console.log(`Añadiendo ubicación: ${latitud}, ${longitud}`);
             
+            // Generamos un mensaje más informativo sobre la relación
+            let infoRelacion = "";
+            
+            if (selectedResult.tipo === "persona") {
+              const persona = entityData as PersonaEntity;
+              infoRelacion = `Ubicación relacionada con ${persona.nombre}`;
+            } else if (selectedResult.tipo === "vehiculo") {
+              const vehiculo = entityData as VehiculoEntity;
+              infoRelacion = `Ubicación relacionada con vehículo ${vehiculo.marca} ${vehiculo.modelo}`;
+            } else if (selectedResult.tipo === "inmueble") {
+              const inmueble = entityData as InmuebleEntity;
+              infoRelacion = `Ubicación relacionada con inmueble ${inmueble.tipo} en ${inmueble.direccion}`;
+            }
+            
             newLocations.push({
               id: ubicacion.id,
               lat: latitud,
@@ -169,7 +183,7 @@ export default function UbicacionesPage() {
               type: "ubicacion",
               relation: "related",
               entityId: ubicacion.id,
-              relationInfo: "Ubicación relacionada"
+              relationInfo: infoRelacion
             });
             
             // Si no hay ubicación directa, centrar en la primera ubicación relacionada
@@ -195,6 +209,20 @@ export default function UbicacionesPage() {
           if (!isNaN(latitud) && !isNaN(longitud)) {
             console.log(`Añadiendo inmueble: ${latitud}, ${longitud}`);
             
+            // Generamos un mensaje más informativo sobre la relación con el inmueble
+            let infoRelacion = "";
+            
+            if (selectedResult.tipo === "persona") {
+              const persona = entityData as PersonaEntity;
+              infoRelacion = `Inmueble relacionado con ${persona.nombre}`;
+            } else if (selectedResult.tipo === "vehiculo") {
+              const vehiculo = entityData as VehiculoEntity;
+              infoRelacion = `Inmueble relacionado con vehículo ${vehiculo.marca} ${vehiculo.modelo}`;
+            } else if (selectedResult.tipo === "ubicacion") {
+              const ubicacion = entityData as UbicacionEntity;
+              infoRelacion = `Inmueble cercano a ubicación ${ubicacion.tipo || ""}`;
+            }
+            
             newLocations.push({
               id: inmueble.id,
               lat: latitud,
@@ -204,7 +232,7 @@ export default function UbicacionesPage() {
               type: "inmueble",
               relation: "related",
               entityId: inmueble.id,
-              relationInfo: "Inmueble relacionado"
+              relationInfo: infoRelacion
             });
             
             // Si no hay ubicación directa, centrar en el primer inmueble
@@ -230,6 +258,23 @@ export default function UbicacionesPage() {
           if (!isNaN(latitud) && !isNaN(longitud)) {
             console.log(`Añadiendo persona: ${latitud}, ${longitud}`);
             
+            // Generamos un mensaje más informativo sobre la relación con la persona
+            let infoRelacion = "";
+            
+            if (selectedResult.tipo === "vehiculo") {
+              const vehiculo = entityData as VehiculoEntity;
+              infoRelacion = `Persona relacionada con vehículo ${vehiculo.marca} ${vehiculo.modelo}`;
+            } else if (selectedResult.tipo === "inmueble") {
+              const inmueble = entityData as InmuebleEntity;
+              infoRelacion = `Persona relacionada con inmueble en ${inmueble.direccion}`;
+            } else if (selectedResult.tipo === "ubicacion") {
+              const ubicacion = entityData as UbicacionEntity;
+              infoRelacion = `Persona relacionada con ubicación ${ubicacion.tipo || ""}`;
+            } else if (selectedResult.tipo === "persona") {
+              const otraPersona = entityData as PersonaEntity;
+              infoRelacion = `Persona relacionada con ${otraPersona.nombre}`;
+            }
+            
             newLocations.push({
               id: persona.id,
               lat: latitud,
@@ -239,7 +284,7 @@ export default function UbicacionesPage() {
               type: "persona",
               relation: "related",
               entityId: persona.id,
-              relationInfo: "Persona relacionada"
+              relationInfo: infoRelacion
             });
             
             // Si no hay ubicación directa, centrar en la persona
@@ -348,7 +393,9 @@ export default function UbicacionesPage() {
                         title: loc.title,
                         description: loc.description,
                         type: loc.type,
-                        relation: loc.relation
+                        relation: loc.relation,
+                        entityId: loc.entityId,
+                        relationInfo: loc.relationInfo
                       }))} 
                       center={mapCenter}
                       zoom={15}

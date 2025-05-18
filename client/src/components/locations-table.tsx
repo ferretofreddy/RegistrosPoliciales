@@ -20,18 +20,28 @@ interface LocationsTableProps {
 }
 
 export default function LocationsTable({ locations, onLocationClick }: LocationsTableProps) {
-  // Función para obtener el ícono según el tipo de entidad
-  const getEntityIcon = (type: string) => {
+  // Función para obtener el ícono según el tipo de entidad y relación
+  const getEntityIcon = (type: string, relation: string = 'direct') => {
+    const color = relation === 'direct' 
+      ? type === 'persona' ? 'text-blue-600' 
+        : type === 'vehiculo' ? 'text-green-600' 
+        : type === 'inmueble' ? 'text-purple-600' 
+        : 'text-red-600'
+      : type === 'persona' ? 'text-blue-400' 
+        : type === 'vehiculo' ? 'text-green-400' 
+        : type === 'inmueble' ? 'text-purple-400' 
+        : 'text-red-400';
+        
     switch (type) {
       case 'persona':
-        return <User className="h-4 w-4 text-blue-500" />;
+        return <User className={`h-4 w-4 ${color}`} />;
       case 'vehiculo':
-        return <Car className="h-4 w-4 text-green-500" />;
+        return <Car className={`h-4 w-4 ${color}`} />;
       case 'inmueble':
-        return <Building className="h-4 w-4 text-purple-500" />;
+        return <Building className={`h-4 w-4 ${color}`} />;
       case 'ubicacion':
       default:
-        return <MapPin className="h-4 w-4 text-red-500" />;
+        return <MapPin className={`h-4 w-4 ${color}`} />;
     }
   };
 
@@ -76,7 +86,16 @@ export default function LocationsTable({ locations, onLocationClick }: Locations
                 </div>
               </TableCell>
               <TableCell className="font-medium">{location.title}</TableCell>
-              <TableCell>{location.description}</TableCell>
+              <TableCell>
+                <div>
+                  <p>{location.description}</p>
+                  {location.relationInfo && (
+                    <p className="text-xs text-gray-600 mt-1 italic">
+                      {location.relationInfo}
+                    </p>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>
                 <span className="text-xs font-mono">
                   {location.lat.toFixed(6)}, {location.lng.toFixed(6)}

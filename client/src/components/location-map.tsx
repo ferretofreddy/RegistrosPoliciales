@@ -13,6 +13,8 @@ interface MapMarker {
   description: string;
   type: 'persona' | 'vehiculo' | 'inmueble' | 'ubicacion';
   relation: 'direct' | 'related';
+  entityId: number;
+  relationInfo?: string;
 }
 
 // Tipos para las propiedades
@@ -107,11 +109,11 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
                 <div className="max-w-xs">
                   <h3 className="font-bold">{marker.title}</h3>
                   <p className="break-words">{marker.description}</p>
-                  {marker.relationInfo && (
+                  {marker.relationInfo ? (
                     <p className="text-sm text-gray-600 mt-1 font-medium">
                       {marker.relationInfo}
                     </p>
-                  )}
+                  ) : null}
                   <p className="text-xs text-gray-500 mt-1">
                     {marker.relation === 'direct' ? 'Ubicación directa' : 'Ubicación relacionada'}
                   </p>
