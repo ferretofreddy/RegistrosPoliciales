@@ -72,6 +72,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al obtener personas" });
     }
   });
+  
+  // Obtener vehículos relacionados con una persona
+  app.get("/api/personas/:id/vehiculos", async (req, res) => {
+    try {
+      const personaId = parseInt(req.params.id);
+      
+      const relacionesVehiculos = await db
+        .select({
+          vehiculo: vehiculos
+        })
+        .from(personasVehiculos)
+        .innerJoin(vehiculos, eq(personasVehiculos.vehiculoId, vehiculos.id))
+        .where(eq(personasVehiculos.personaId, personaId));
+      
+      const vehiculosRelacionados = relacionesVehiculos.map(r => r.vehiculo);
+      res.json(vehiculosRelacionados);
+    } catch (error) {
+      console.error("Error al obtener vehículos relacionados:", error);
+      res.status(500).json({ message: "Error al obtener vehículos relacionados" });
+    }
+  });
+  
+  // Obtener inmuebles relacionados con una persona
+  app.get("/api/personas/:id/inmuebles", async (req, res) => {
+    try {
+      const personaId = parseInt(req.params.id);
+      
+      const relacionesInmuebles = await db
+        .select({
+          inmueble: inmuebles
+        })
+        .from(personasInmuebles)
+        .innerJoin(inmuebles, eq(personasInmuebles.inmuebleId, inmuebles.id))
+        .where(eq(personasInmuebles.personaId, personaId));
+      
+      const inmueblesRelacionados = relacionesInmuebles.map(r => r.inmueble);
+      res.json(inmueblesRelacionados);
+    } catch (error) {
+      console.error("Error al obtener inmuebles relacionados:", error);
+      res.status(500).json({ message: "Error al obtener inmuebles relacionados" });
+    }
+  });
 
   app.get("/api/personas/:id", async (req, res) => {
     try {
@@ -577,7 +619,203 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === RELACIONES ===
+  // === CONSULTA DE RELACIONES ===
+  // Endpoint para consultar todas las relaciones de una entidad 
+  app.get("/api/relaciones/:tipo/:id", async (req, res) => {
+    try {
+      const tipo = req.params.tipo;
+      const id = parseInt(req.params.id);
+      
+      if (!tipo || isNaN(id)) {
+        return res.status(400).json({ message: "Faltan datos para consultar relaciones" });
+      }
+      
+      const relaciones = {
+        personas: [],
+        vehiculos: [],
+        inmuebles: [],
+        ubicaciones: []
+      };
+      
+      // Obtener personas relacionadas
+      if (tipo === "persona") {
+        // Las personas relacionadas con esta persona
+        const relacionesPersonas = await db
+          .select({
+            persona: personas
+          })
+          .from(personasPersonas)
+          .innerJoin(personas, eq(personasPersonas.personaId2, personas.id))
+          .where(eq(personasPersonas.personaId1, id));
+          
+        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        
+        // Vehículos relacionados con esta persona
+        const relacionesVehiculos = await db
+          .select({
+            vehiculo: vehiculos
+          })
+          .from(personasVehiculos)
+          .innerJoin(vehiculos, eq(personasVehiculos.vehiculoId, vehiculos.id))
+          .where(eq(personasVehiculos.personaId, id));
+          
+        relaciones.vehiculos = relacionesVehiculos.map(r => r.vehiculo);
+        
+        // Inmuebles relacionados con esta persona
+        const relacionesInmuebles = await db
+          .select({
+            inmueble: inmuebles
+          })
+          .from(personasInmuebles)
+          .innerJoin(inmuebles, eq(personasInmuebles.inmuebleId, inmuebles.id))
+          .where(eq(personasInmuebles.personaId, id));
+          
+        relaciones.inmuebles = relacionesInmuebles.map(r => r.inmueble);
+        
+        // Ubicaciones relacionadas con esta persona
+        const relacionesUbicaciones = await db
+          .select({
+            ubicacion: ubicaciones
+          })
+          .from(personasUbicaciones)
+          .innerJoin(ubicaciones, eq(personasUbicaciones.ubicacionId, ubicaciones.id))
+          .where(eq(personasUbicaciones.personaId, id));
+          
+        relaciones.ubicaciones = relacionesUbicaciones.map(r => r.ubicacion);
+      }
+      else if (tipo === "vehiculo") {
+        // Personas relacionadas con este vehículo
+        const relacionesPersonas = await db
+          .select({
+            persona: personas
+          })
+          .from(personasVehiculos)
+          .innerJoin(personas, eq(personasVehiculos.personaId, personas.id))
+          .where(eq(personasVehiculos.vehiculoId, id));
+          
+        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        
+        // Otros vehículos relacionados con este vehículo
+        const relacionesVehiculos = await db.execute(
+          sql`SELECT v.* FROM vehiculos v 
+              INNER JOIN vehiculos_vehiculos vv ON v.id = vv.vehiculo_id_2 
+              WHERE vv.vehiculo_id_1 = ${id}
+              UNION
+              SELECT v.* FROM vehiculos v 
+              INNER JOIN vehiculos_vehiculos vv ON v.id = vv.vehiculo_id_1 
+              WHERE vv.vehiculo_id_2 = ${id}`
+        );
+          
+        relaciones.vehiculos = relacionesVehiculos.rows;
+        
+        // Inmuebles relacionados con este vehículo
+        const relacionesInmuebles = await db.execute(
+          sql`SELECT i.* FROM inmuebles i 
+              INNER JOIN vehiculos_inmuebles vi ON i.id = vi.inmueble_id 
+              WHERE vi.vehiculo_id = ${id}`
+        );
+          
+        relaciones.inmuebles = relacionesInmuebles.rows;
+        
+        // Ubicaciones relacionadas con este vehículo
+        const relacionesUbicaciones = await db
+          .select({
+            ubicacion: ubicaciones
+          })
+          .from(vehiculosUbicaciones)
+          .innerJoin(ubicaciones, eq(vehiculosUbicaciones.ubicacionId, ubicaciones.id))
+          .where(eq(vehiculosUbicaciones.vehiculoId, id));
+          
+        relaciones.ubicaciones = relacionesUbicaciones.map(r => r.ubicacion);
+      }
+      else if (tipo === "inmueble") {
+        // Personas relacionadas con este inmueble
+        const relacionesPersonas = await db
+          .select({
+            persona: personas
+          })
+          .from(personasInmuebles)
+          .innerJoin(personas, eq(personasInmuebles.personaId, personas.id))
+          .where(eq(personasInmuebles.inmuebleId, id));
+          
+        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        
+        // Vehículos relacionados con este inmueble
+        const relacionesVehiculos = await db.execute(
+          sql`SELECT v.* FROM vehiculos v 
+              INNER JOIN vehiculos_inmuebles vi ON v.id = vi.vehiculo_id 
+              WHERE vi.inmueble_id = ${id}`
+        );
+          
+        relaciones.vehiculos = relacionesVehiculos.rows;
+        
+        // Otros inmuebles relacionados con este inmueble
+        const relacionesInmuebles = await db.execute(
+          sql`SELECT i.* FROM inmuebles i 
+              INNER JOIN inmuebles_inmuebles ii ON i.id = ii.inmueble_id_2 
+              WHERE ii.inmueble_id_1 = ${id}
+              UNION
+              SELECT i.* FROM inmuebles i 
+              INNER JOIN inmuebles_inmuebles ii ON i.id = ii.inmueble_id_1 
+              WHERE ii.inmueble_id_2 = ${id}`
+        );
+          
+        relaciones.inmuebles = relacionesInmuebles.rows;
+        
+        // Ubicaciones relacionadas con este inmueble
+        const relacionesUbicaciones = await db
+          .select({
+            ubicacion: ubicaciones
+          })
+          .from(inmueblesUbicaciones)
+          .innerJoin(ubicaciones, eq(inmueblesUbicaciones.ubicacionId, ubicaciones.id))
+          .where(eq(inmueblesUbicaciones.inmuebleId, id));
+          
+        relaciones.ubicaciones = relacionesUbicaciones.map(r => r.ubicacion);
+      }
+      else if (tipo === "ubicacion") {
+        // Personas relacionadas con esta ubicación
+        const relacionesPersonas = await db
+          .select({
+            persona: personas
+          })
+          .from(personasUbicaciones)
+          .innerJoin(personas, eq(personasUbicaciones.personaId, personas.id))
+          .where(eq(personasUbicaciones.ubicacionId, id));
+          
+        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        
+        // Vehículos relacionados con esta ubicación
+        const relacionesVehiculos = await db
+          .select({
+            vehiculo: vehiculos
+          })
+          .from(vehiculosUbicaciones)
+          .innerJoin(vehiculos, eq(vehiculosUbicaciones.vehiculoId, vehiculos.id))
+          .where(eq(vehiculosUbicaciones.ubicacionId, id));
+          
+        relaciones.vehiculos = relacionesVehiculos.map(r => r.vehiculo);
+        
+        // Inmuebles relacionados con esta ubicación
+        const relacionesInmuebles = await db
+          .select({
+            inmueble: inmuebles
+          })
+          .from(inmueblesUbicaciones)
+          .innerJoin(inmuebles, eq(inmueblesUbicaciones.inmuebleId, inmuebles.id))
+          .where(eq(inmueblesUbicaciones.ubicacionId, id));
+          
+        relaciones.inmuebles = relacionesInmuebles.map(r => r.inmueble);
+      }
+      
+      res.json(relaciones);
+    } catch (error) {
+      console.error("Error al consultar relaciones:", error);
+      res.status(500).json({ message: "Error al consultar relaciones" });
+    }
+  });
+
+  // === CREACIÓN DE RELACIONES ===
   app.post("/api/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
     try {
       const { tipo1, id1, tipo2, id2 } = req.body;
