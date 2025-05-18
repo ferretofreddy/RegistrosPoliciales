@@ -1651,10 +1651,47 @@ export class DatabaseStorage {
             - Dirección 1->2: ${personasRelacionadas1.length}
             - Dirección 2->1: ${personasRelacionadas2.length}`);
           
-          resultado.personas = [
+          // Obtener las personas relacionadas
+          const personasRelacionadasArray = [
             ...personasRelacionadas1.map(r => r.persona),
             ...personasRelacionadas2.map(r => r.persona)
           ];
+          
+          resultado.personas = personasRelacionadasArray;
+          
+          // Para cada persona relacionada, buscar sus domicilios (ubicaciones)
+          console.log(`[DEBUG] Buscando domicilios de las personas relacionadas (${personasRelacionadasArray.length})`);
+          
+          for (const personaRelacionada of personasRelacionadasArray) {
+            console.log(`[DEBUG] Buscando domicilios para persona relacionada ID: ${personaRelacionada.id}`);
+            
+            // Buscar ubicaciones relacionadas con esta persona mediante SQL directo
+            const domiciliosResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                  WHERE pu.persona_id = ${personaRelacionada.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+                  AND LOWER(u.tipo) LIKE '%domicilio%'`
+            );
+            
+            const domicilios = domiciliosResult.rows || [];
+            console.log(`[DEBUG] Domicilios encontrados para persona relacionada ID ${personaRelacionada.id}: ${domicilios.length}`);
+            
+            // Agregar cada domicilio a las ubicaciones del resultado
+            for (const domicilio of domicilios) {
+              // Verificar si ya existe en el resultado
+              const yaExiste = resultado.ubicaciones.some((u: any) => u.id === domicilio.id);
+              
+              if (!yaExiste) {
+                // Marcar esta ubicación como un domicilio de una persona relacionada
+                domicilio.esDomicilioPersonaRelacionada = true;
+                domicilio.personaRelacionadaId = personaRelacionada.id;
+                domicilio.personaRelacionadaNombre = personaRelacionada.nombre;
+                
+                resultado.ubicaciones.push(domicilio);
+              }
+            }
+          }
           
           // Buscar vehículos relacionados
           // Consulta SQL directa para debug
