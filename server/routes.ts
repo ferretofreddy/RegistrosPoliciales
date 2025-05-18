@@ -12,9 +12,9 @@ import {
   insertPersonaObservacionSchema, insertVehiculoObservacionSchema, insertInmuebleObservacionSchema,
   ubicaciones, insertUbicacionSchema,
   ubicacionesObservaciones, insertUbicacionObservacionSchema,
-  tiposInmuebles, tiposUbicaciones,
   personasVehiculos, personasInmuebles, personasPersonas, personasUbicaciones,
   vehiculosUbicaciones, inmueblesUbicaciones,
+  tiposInmuebles, tiposUbicaciones,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
 
