@@ -90,14 +90,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Aseguramos que los arrays se pasen correctamente
-      const personaData = {
-        ...result.data,
-        alias: Array.isArray(result.data.alias) ? result.data.alias : [],
-        telefonos: Array.isArray(result.data.telefonos) ? result.data.telefonos : [],
-        domicilios: Array.isArray(result.data.domicilios) ? result.data.domicilios : []
-      };
-      const [persona] = await db.insert(personas).values(personaData).returning();
+      // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente
+      // El manejo de arrays se hace ahora dentro de storage.createPersona
+      const persona = await storage.createPersona(result.data);
       
       res.status(201).json(persona);
     } catch (error) {

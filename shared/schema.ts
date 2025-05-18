@@ -29,9 +29,9 @@ export const personas = pgTable("personas", {
   id: serial("id").primaryKey(),
   nombre: text("nombre").notNull(),
   identificacion: text("identificacion").notNull(),
-  alias: json("alias").$type<string[]>(),
-  telefonos: json("telefonos").$type<string[]>(),
-  domicilios: json("domicilios").$type<string[]>(),
+  alias: json("alias").$type<string[]>().default([]),
+  telefonos: json("telefonos").$type<string[]>().default([]),
+  domicilios: json("domicilios").$type<string[]>().default([]),
   foto: text("foto"), // URL to photo
 });
 

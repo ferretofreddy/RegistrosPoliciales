@@ -126,7 +126,33 @@ export class DatabaseStorage implements IStorage {
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
     try {
-      const [persona] = await db.insert(personas).values(insertPersona).returning();
+      // Preparamos los datos para asegurarnos que los arrays se manejen correctamente
+      // Creamos explícitamente un objeto nuevo para evitar problemas con los tipos
+      const personaData = {
+        nombre: insertPersona.nombre,
+        identificacion: insertPersona.identificacion,
+        alias: insertPersona.alias ?? [],
+        telefonos: insertPersona.telefonos ?? [],
+        domicilios: insertPersona.domicilios ?? [],
+        foto: insertPersona.foto
+      };
+      
+      // Convertimos los campos que deben ser arrays a arrays si no lo son
+      if (!Array.isArray(personaData.alias)) personaData.alias = [];
+      if (!Array.isArray(personaData.telefonos)) personaData.telefonos = [];
+      if (!Array.isArray(personaData.domicilios)) personaData.domicilios = [];
+      
+      // Introducimos un tipo explícito para la inserción
+      const insertValues = {
+        nombre: personaData.nombre,
+        identificacion: personaData.identificacion,
+        alias: personaData.alias,
+        telefonos: personaData.telefonos,
+        domicilios: personaData.domicilios,
+        foto: personaData.foto
+      };
+      
+      const [persona] = await db.insert(personas).values(insertValues).returning();
       return persona;
     } catch (error) {
       console.error("Error en createPersona:", error);
