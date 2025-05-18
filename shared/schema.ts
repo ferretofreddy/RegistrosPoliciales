@@ -49,15 +49,15 @@ export const personasObservaciones = pgTable("personas_observaciones", {
   id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   fecha: timestamp("fecha").notNull().defaultNow(),
-  texto: text("texto").notNull(),
-  creador: text("creador"),
+  usuario: text("usuario"),
+  detalle: text("detalle").notNull(),
 });
 
 export const insertPersonaObservacionSchema = createInsertSchema(personasObservaciones).pick({
   personaId: true,
   fecha: true,
-  texto: true,
-  creador: true,
+  usuario: true,
+  detalle: true,
 });
 
 // Vehículos
