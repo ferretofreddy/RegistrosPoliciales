@@ -54,6 +54,7 @@ export default function UbicacionesPage() {
       
       // Construir la URL base
       let url = '/api/ubicaciones?';
+      let resultadoFinal;
       
       // Si hay un resultado seleccionado específico, usar esa información
       if (selectedResult) {
@@ -78,9 +79,135 @@ export default function UbicacionesPage() {
         throw new Error(`Error al buscar ubicaciones: ${response.status}`);
       }
       
-      const data = await response.json();
-      console.log("[DEBUG] Datos recibidos:", data);
-      return data;
+      resultadoFinal = await response.json();
+      console.log("[DEBUG] Datos iniciales recibidos:", resultadoFinal);
+      
+      // Si encontramos una persona, buscamos también sus inmuebles relacionados
+      const personasEncontradas = [];
+      
+      // Buscamos personas en ubicacionesDirectas
+      if (resultadoFinal.ubicacionesDirectas) {
+        resultadoFinal.ubicacionesDirectas.forEach(ubicacion => {
+          if (ubicacion.entidad?.tipo === 'persona') {
+            personasEncontradas.push({
+              id: ubicacion.entidad.id,
+              nombre: ubicacion.entidad.nombre,
+              ubicacion: ubicacion
+            });
+          }
+        });
+      }
+      
+      // Buscamos personas en ubicacionesRelacionadas
+      if (resultadoFinal.ubicacionesRelacionadas) {
+        resultadoFinal.ubicacionesRelacionadas.forEach(relacion => {
+          if (relacion.entidadRelacionada?.tipo === 'persona') {
+            personasEncontradas.push({
+              id: relacion.entidadRelacionada.entidad.id,
+              nombre: relacion.entidadRelacionada.entidad.nombre,
+              ubicacion: relacion.ubicacion
+            });
+          }
+        });
+      }
+      
+      // Para cada persona encontrada, buscar sus inmuebles relacionados
+      if (personasEncontradas.length > 0) {
+        console.log(`[DEBUG] Encontradas ${personasEncontradas.length} personas, buscando sus inmuebles relacionados`);
+        
+        for (const persona of personasEncontradas) {
+          try {
+            const inmueblesResponse = await fetch(`/api/personas/${persona.id}/inmuebles`);
+            if (inmueblesResponse.ok) {
+              const inmuebles = await inmueblesResponse.json();
+              console.log(`[DEBUG] Inmuebles relacionados con ${persona.nombre} (ID: ${persona.id}):`, inmuebles);
+              
+              // Para cada inmueble relacionado, comprobamos si tiene ubicaciones propias
+              if (inmuebles.length > 0) {
+                for (const relacion of inmuebles) {
+                  const inmueble = relacion.inmueble;
+                  const personaRelacionada = relacion.persona;
+                  
+                  if (relacion.ubicaciones && relacion.ubicaciones.length > 0) {
+                    // El inmueble tiene ubicaciones propias, las agregamos a los resultados
+                    for (const ubicacion of relacion.ubicaciones) {
+                      if (!resultadoFinal.ubicacionesRelacionadas) {
+                        resultadoFinal.ubicacionesRelacionadas = [];
+                      }
+                      
+                      // Verificamos si ya existe esta ubicación en los resultados
+                      const yaExiste = resultadoFinal.ubicacionesRelacionadas.some(
+                        (rel) => rel.ubicacion.id === ubicacion.id
+                      );
+                      
+                      if (!yaExiste) {
+                        resultadoFinal.ubicacionesRelacionadas.push({
+                          ubicacion: ubicacion,
+                          entidadRelacionada: {
+                            tipo: 'inmueble',
+                            entidad: inmueble,
+                            relacionadoCon: {
+                              tipo: 'persona',
+                              entidad: personaRelacionada
+                            }
+                          }
+                        });
+                      }
+                    }
+                  } else {
+                    // El inmueble no tiene ubicaciones propias, creamos una ubicación virtual
+                    // basada en las coordenadas de la persona
+                    if (persona.ubicacion && persona.ubicacion.latitud && persona.ubicacion.longitud) {
+                      if (!resultadoFinal.ubicacionesRelacionadas) {
+                        resultadoFinal.ubicacionesRelacionadas = [];
+                      }
+                      
+                      // Generamos coordenadas cercanas pero no exactamente iguales
+                      const offsetLat = 0.0005 + (Math.random() * 0.001);
+                      const offsetLng = 0.0005 + (Math.random() * 0.001);
+                      
+                      const ubicacionVirtual = {
+                        id: `virtual-inmueble-${inmueble.id}-persona-${persona.id}`,
+                        latitud: persona.ubicacion.latitud + offsetLat,
+                        longitud: persona.ubicacion.longitud + offsetLng,
+                        tipo: 'Inmueble relacionado',
+                        fecha: new Date().toISOString().slice(0, 19).replace('T', ' '),
+                        observaciones: `Inmueble de ${personaRelacionada.nombre}`
+                      };
+                      
+                      // Verificamos si ya existe esta ubicación en los resultados
+                      const yaExiste = resultadoFinal.ubicacionesRelacionadas.some(
+                        (rel) => rel.entidadRelacionada?.tipo === 'inmueble' && 
+                                rel.entidadRelacionada?.entidad?.id === inmueble.id
+                      );
+                      
+                      if (!yaExiste) {
+                        console.log(`[DEBUG] Agregando ubicación virtual para inmueble ID ${inmueble.id} relacionado con persona ID ${persona.id}`);
+                        resultadoFinal.ubicacionesRelacionadas.push({
+                          ubicacion: ubicacionVirtual,
+                          entidadRelacionada: {
+                            tipo: 'inmueble',
+                            entidad: inmueble,
+                            relacionadoCon: {
+                              tipo: 'persona',
+                              entidad: personaRelacionada
+                            }
+                          }
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`[DEBUG] Error al buscar inmuebles para persona ID ${persona.id}:`, error);
+          }
+        }
+      }
+      
+      console.log("[DEBUG] Datos finales con relaciones expandidas:", resultadoFinal);
+      return resultadoFinal;
     },
     enabled: false,
   });
