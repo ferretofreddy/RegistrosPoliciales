@@ -244,6 +244,12 @@ export const inmueblesInmuebles = pgTable("inmuebles_inmuebles", {
   inmuebleId2: integer("inmueble_id_2").notNull().references(() => inmuebles.id),
 });
 
+export const ubicacionesUbicaciones = pgTable("ubicaciones_ubicaciones", {
+  id: serial("id").primaryKey(),
+  ubicacionId1: integer("ubicacion_id_1").notNull().references(() => ubicaciones.id),
+  ubicacionId2: integer("ubicacion_id_2").notNull().references(() => ubicaciones.id),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

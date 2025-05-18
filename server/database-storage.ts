@@ -1008,6 +1008,63 @@ export class DatabaseStorage {
             }
           }
           
+          // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Vehículos relacionados a este vehículo
+          console.log(`Buscando vehículos relacionados al vehículo ID: ${vehiculo.id}`);
+          
+          // Buscar vehículos donde el vehículo actual es vehiculo_id_1
+          const vehiculosRelacionados1Result = await db.execute(
+            sql`SELECT v.* FROM vehiculos v
+                JOIN vehiculos_vehiculos vv ON v.id = vv.vehiculo_id_2
+                WHERE vv.vehiculo_id_1 = ${vehiculo.id}`
+          );
+          
+          // Buscar vehículos donde el vehículo actual es vehiculo_id_2
+          const vehiculosRelacionados2Result = await db.execute(
+            sql`SELECT v.* FROM vehiculos v
+                JOIN vehiculos_vehiculos vv ON v.id = vv.vehiculo_id_1
+                WHERE vv.vehiculo_id_2 = ${vehiculo.id}`
+          );
+          
+          const vehiculosRelacionados = [
+            ...(vehiculosRelacionados1Result.rows || []),
+            ...(vehiculosRelacionados2Result.rows || [])
+          ];
+          
+          console.log(`Vehículos relacionados al vehículo ID ${vehiculo.id}: ${vehiculosRelacionados.length}`);
+          
+          // Para cada vehículo relacionado, buscar ubicaciones
+          for (const vehiculoRelacionado of vehiculosRelacionados) {
+            console.log(`Buscando ubicaciones para vehículo relacionado ID: ${vehiculoRelacionado.id}`);
+            
+            const ubicacionesVehiculoRelaResult = await db.execute(
+              sql`SELECT u.* FROM ubicaciones u
+                  JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
+                  WHERE vu.vehiculo_id = ${vehiculoRelacionado.id}
+                  AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+            );
+            
+            const ubicacionesVehiculoRela = ubicacionesVehiculoRelaResult.rows || [];
+            console.log(`Ubicaciones encontradas para vehículo relacionado ID ${vehiculoRelacionado.id}: ${ubicacionesVehiculoRela.length}`);
+            
+            // Agregar cada ubicación al resultado
+            for (const ubicacion of ubicacionesVehiculoRela) {
+              if (!ubicacionesEncontradas.has(ubicacion.id)) {
+                ubicacionesEncontradas.add(ubicacion.id);
+                resultado.ubicacionesRelacionadas.push({
+                  ubicacion: ubicacion,
+                  entidadRelacionada: {
+                    tipo: 'vehiculo',
+                    entidad: vehiculoRelacionado,
+                    relacionadoCon: {
+                      tipo: 'vehiculo',
+                      entidad: vehiculo
+                    }
+                  }
+                });
+              }
+            }
+          }
+          
           // BÚSQUEDA DE RELACIONES DE SEGUNDO GRADO - Personas relacionadas a este vehículo
           console.log(`Buscando personas relacionadas al vehículo ID: ${vehiculo.id}`);
           const personasRelacionadasResult = await db.execute(
