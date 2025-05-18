@@ -831,20 +831,87 @@ export default function UbicacionesPage() {
                 {/* Búsqueda */}
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-gray-700">Buscar ubicaciones</h3>
-                  <div className="flex items-center space-x-2">
-                    <Input 
-                      placeholder="Nombre, identidad o descripción" 
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      onKeyDown={handleKeyDown}
-                      className="flex-1"
-                    />
-                    <Button size="sm" onClick={handleSearch}>
-                      <Search className="h-4 w-4" />
-                    </Button>
+                  <div className="relative">
+                    <div className="flex items-center space-x-2">
+                      <Input 
+                        placeholder="Nombre, identidad o descripción" 
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1"
+                      />
+                      <Button size="sm" onClick={handleSearch}>
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    {/* Lista desplegable de coincidencias */}
+                    {showSearchResults && searchResults.length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        <div className="p-1 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                          {searchResults.length} coincidencias encontradas
+                        </div>
+                        <div className="py-1">
+                          {searchResults.map((result, index) => {
+                            // Determinar el icono basado en el tipo
+                            let icon;
+                            let bgColor;
+                            
+                            if (result.tipo === 'persona') {
+                              icon = <User className="h-3 w-3 text-white" />;
+                              bgColor = 'bg-red-500';
+                            } else if (result.tipo === 'vehiculo') {
+                              icon = <Car className="h-3 w-3 text-white" />;
+                              bgColor = 'bg-blue-500';
+                            } else if (result.tipo === 'inmueble') {
+                              icon = <Home className="h-3 w-3 text-white" />;
+                              bgColor = 'bg-green-500';
+                            } else {
+                              icon = <MapPin className="h-3 w-3 text-white" />;
+                              bgColor = 'bg-purple-500';
+                            }
+                            
+                            return (
+                              <div
+                                key={`${result.tipo}-${result.id}`}
+                                className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-sm flex items-center"
+                                onClick={() => handleSelectResult(result)}
+                              >
+                                <div className={`${bgColor} rounded-full p-1 mr-2 flex-shrink-0`}>
+                                  {icon}
+                                </div>
+                                <div className="flex-grow truncate">
+                                  <div className="truncate">{result.texto}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {result.tipo.charAt(0).toUpperCase() + result.tipo.slice(1)} ID: {result.id}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Ingrese texto para buscar ubicaciones
+                  
+                  <div className="text-xs text-gray-500 flex items-center">
+                    {selectedResult ? (
+                      <div className="flex items-center text-blue-600">
+                        <span>Búsqueda específica: </span>
+                        <span className="font-medium ml-1">{selectedResult.texto}</span>
+                        <button 
+                          onClick={() => {
+                            setSelectedResult(null);
+                            setSearchTerm('');
+                          }}
+                          className="ml-2 text-xs text-gray-500 hover:text-red-500"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <span>Ingrese texto para buscar ubicaciones</span>
+                    )}
                   </div>
                 </div>
                 
