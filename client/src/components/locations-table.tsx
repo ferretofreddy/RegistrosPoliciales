@@ -67,10 +67,9 @@ export default function LocationsTable({ locations, onLocationClick }: Locations
         <TableHeader>
           <TableRow>
             <TableHead className="w-[60px]">Tipo</TableHead>
-            <TableHead>Nombre/Descripción</TableHead>
-            <TableHead>Detalles</TableHead>
-            <TableHead className="w-[180px]">Coordenadas</TableHead>
-            <TableHead className="w-[100px]">Relación</TableHead>
+            <TableHead>Título</TableHead>
+            <TableHead className="hidden md:table-cell">Descripción</TableHead>
+            <TableHead className="w-[150px] hidden sm:table-cell">Coordenadas</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -82,11 +81,23 @@ export default function LocationsTable({ locations, onLocationClick }: Locations
             >
               <TableCell>
                 <div className="flex justify-center">
-                  {getEntityIcon(location.type)}
+                  {getEntityIcon(location.type, location.relation)}
                 </div>
               </TableCell>
-              <TableCell className="font-medium">{location.title}</TableCell>
-              <TableCell>
+              <TableCell className="font-medium">
+                <div>
+                  <p>{location.title}</p>
+                  <p className="text-xs text-gray-500 md:hidden">
+                    {location.description.length > 40 
+                      ? location.description.substring(0, 40) + '...' 
+                      : location.description}
+                  </p>
+                  <p className="text-xs font-mono text-gray-500 sm:hidden mt-1">
+                    {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+                  </p>
+                </div>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
                 <div>
                   <p>{location.description}</p>
                   {location.relationInfo && (
@@ -96,18 +107,9 @@ export default function LocationsTable({ locations, onLocationClick }: Locations
                   )}
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden sm:table-cell">
                 <span className="text-xs font-mono">
                   {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-                </span>
-              </TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 rounded text-xs ${
-                  location.relation === 'direct' 
-                    ? 'bg-blue-100 text-blue-800' 
-                    : 'bg-green-100 text-green-800'
-                }`}>
-                  {location.relation === 'direct' ? 'Directa' : 'Relacionada'}
                 </span>
               </TableCell>
             </TableRow>

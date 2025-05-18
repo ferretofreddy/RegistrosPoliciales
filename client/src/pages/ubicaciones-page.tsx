@@ -297,44 +297,43 @@ export default function UbicacionesPage() {
                 </h2>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <div className="lg:col-span-3">
-                  <Card className="w-full">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <MapPin className="h-5 w-5" />
-                        <span>Mapa de Ubicaciones</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoading ? (
-                        <div className="border rounded-md p-8 min-h-[300px] flex items-center justify-center text-gray-500">
-                          <p>Cargando ubicaciones...</p>
-                        </div>
-                      ) : locations.length > 0 ? (
-                        <div className="h-[400px]">
-                          <LocationMap 
-                            markers={locations} 
-                            center={mapCenter}
-                            zoom={15}
-                          />
-                        </div>
-                      ) : (
-                        <div className="border rounded-md p-8 min-h-[300px] flex flex-col items-center justify-center text-gray-500">
-                          <MapPin className="h-12 w-12 mb-4 text-gray-400" />
-                          <p className="mb-2 text-lg">No se encontraron ubicaciones</p>
-                          <p className="text-sm text-center max-w-md">
-                            {selectedResult.tipo === 'vehiculo' 
-                              ? 'Los vehículos no tienen ubicaciones directas. Se mostrarán los domicilios de personas relacionadas.'
-                              : 'Esta entidad no tiene coordenadas registradas'}
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
+              {/* Cambiando el layout para ser más responsive */}
+              <div className="flex flex-col space-y-4">
+                <Card className="w-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <MapPin className="h-5 w-5" />
+                      <span>Mapa de Ubicaciones</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="border rounded-md p-4 min-h-[250px] md:min-h-[300px] flex items-center justify-center text-gray-500">
+                        <p>Cargando ubicaciones...</p>
+                      </div>
+                    ) : locations.length > 0 ? (
+                      <div className="h-[300px] md:h-[400px]">
+                        <LocationMap 
+                          markers={locations} 
+                          center={mapCenter}
+                          zoom={15}
+                        />
+                      </div>
+                    ) : (
+                      <div className="border rounded-md p-4 min-h-[250px] md:min-h-[300px] flex flex-col items-center justify-center text-gray-500">
+                        <MapPin className="h-8 w-8 md:h-12 md:w-12 mb-3 md:mb-4 text-gray-400" />
+                        <p className="mb-1 md:mb-2 text-base md:text-lg">No se encontraron ubicaciones</p>
+                        <p className="text-xs md:text-sm text-center max-w-xs md:max-w-md">
+                          {selectedResult.tipo === 'vehiculo' 
+                            ? 'Los vehículos no tienen ubicaciones directas. Se mostrarán los domicilios de personas relacionadas.'
+                            : 'Esta entidad no tiene coordenadas registradas'}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
                 
-                <div className="lg:col-span-2 space-y-4">
+                <div className="space-y-4">
                   {/* Tabla de ubicaciones directas */}
                   <Card className="w-full">
                     <CardHeader className="pb-2">
