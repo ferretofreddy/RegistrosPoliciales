@@ -169,9 +169,37 @@ export default function UbicacionesPage() {
                     type: "inmueble",
                     relation: "direct",
                     entityId: selectedResult.id,
-                    relationInfo: relationData && relationData.personas && relationData.personas.length > 0 
-                      ? `Relacionado con ${relationData.personas.map(p => p.nombre).join(', ')}`
-                      : "Sin relaciones"
+                    relationInfo: (() => {
+                      let info = "Sin relaciones";
+                      if (relationData) {
+                        const relaciones = [];
+                        
+                        // Relaciones con personas
+                        if (relationData.personas && relationData.personas.length > 0) {
+                          relaciones.push(`Personas: ${relationData.personas.map(p => p.nombre).join(', ')}`);
+                        }
+                        
+                        // Relaciones con vehículos
+                        if (relationData.vehiculos && relationData.vehiculos.length > 0) {
+                          relaciones.push(`Vehículos: ${relationData.vehiculos.map(v => `${v.marca} ${v.modelo} (${v.placa})`).join(', ')}`);
+                        }
+                        
+                        // Relaciones con inmuebles
+                        if (relationData.inmuebles && relationData.inmuebles.length > 0) {
+                          relaciones.push(`Inmuebles: ${relationData.inmuebles.map(i => `${i.tipo} en ${i.direccion}`).join(', ')}`);
+                        }
+                        
+                        // Relaciones con ubicaciones
+                        if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
+                          relaciones.push(`Ubicaciones: ${relationData.ubicaciones.map(u => u.tipo || "Sin tipo").join(', ')}`);
+                        }
+                        
+                        if (relaciones.length > 0) {
+                          info = `Relacionado con: ${relaciones.join(' | ')}`;
+                        }
+                      }
+                      return info;
+                    })()
                   });
                   
                   if (!hasCenteredMap) {
@@ -204,9 +232,37 @@ export default function UbicacionesPage() {
                   type: "ubicacion",
                   relation: "direct",
                   entityId: ubicacion.id,
-                  relationInfo: relationData && relationData.personas && relationData.personas.length > 0 
-                    ? `Personas relacionadas: ${relationData.personas.map(p => p.nombre).join(', ')}`
-                    : "Sin relaciones"
+                  relationInfo: (() => {
+                    let info = "Sin relaciones";
+                    if (relationData) {
+                      const relaciones = [];
+                      
+                      // Relaciones con personas
+                      if (relationData.personas && relationData.personas.length > 0) {
+                        relaciones.push(`Personas: ${relationData.personas.map(p => p.nombre).join(', ')}`);
+                      }
+                      
+                      // Relaciones con vehículos
+                      if (relationData.vehiculos && relationData.vehiculos.length > 0) {
+                        relaciones.push(`Vehículos: ${relationData.vehiculos.map(v => `${v.marca} ${v.modelo} (${v.placa})`).join(', ')}`);
+                      }
+                      
+                      // Relaciones con inmuebles
+                      if (relationData.inmuebles && relationData.inmuebles.length > 0) {
+                        relaciones.push(`Inmuebles: ${relationData.inmuebles.map(i => `${i.tipo} en ${i.direccion}`).join(', ')}`);
+                      }
+                      
+                      // Relaciones con ubicaciones
+                      if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
+                        relaciones.push(`Ubicaciones: ${relationData.ubicaciones.map(u => u.tipo || "Sin tipo").join(', ')}`);
+                      }
+                      
+                      if (relaciones.length > 0) {
+                        info = `Relacionado con: ${relaciones.join(' | ')}`;
+                      }
+                    }
+                    return info;
+                  })()
                 });
                 
                 setMapCenter([lat, lng]);
