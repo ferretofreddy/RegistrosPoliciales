@@ -1,354 +1,33 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import MainLayout from "@/components/main-layout";
 import SearchComponent from "@/components/search-component";
 import LocationMap from "@/components/location-map";
 import LocationsTable, { LocationData } from "@/components/locations-table";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Search } from "lucide-react";
-import { SearchResult, EntityType } from "@/components/search-component";
-import { 
-  PersonaEntity, 
-  VehiculoEntity, 
-  InmuebleEntity, 
-  UbicacionEntity, 
-  RelacionesResponse 
-} from "@/types/api-types";
+import { SearchResult } from "@/components/search-component";
+
+// Coordenadas por defecto (centro de Costa Rica)
+const DEFAULT_CENTER: [number, number] = [9.9281, -84.0907];
+const DEFAULT_ZOOM = 7;
 
 export default function UbicacionesPage() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [locations, setLocations] = useState<LocationData[]>([]);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([9.9281, -84.0907]); // Costa Rica centro
-  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
 
-  // Manejar la selección de un resultado
+  // Manejar la selección de un resultado de búsqueda
   const handleResultSelect = (result: SearchResult) => {
     setSelectedResult(result);
     console.log("Resultado seleccionado:", result);
-  };
-
-  // Obtener datos de la entidad seleccionada
-  const { data: entityData, isLoading: isLoadingEntity } = useQuery<
-    PersonaEntity | VehiculoEntity | InmuebleEntity | UbicacionEntity
-  >({
-    queryKey: [selectedResult ? `api/${selectedResult.tipo === "ubicacion" ? "ubicaciones" : selectedResult.tipo + "s"}/${selectedResult.id}` : null],
-    enabled: !!selectedResult
-  });
-
-  // Obtener relaciones para buscar ubicaciones
-  const { data: relationData, isLoading: isLoadingRelations } = useQuery<RelacionesResponse>({
-    queryKey: [selectedResult ? `api/relaciones/${selectedResult.tipo}/${selectedResult.id}` : null],
-    enabled: !!selectedResult
-  });
-
-  // Función para obtener ubicaciones relacionadas con personas (domicilios)
-  const obtenerUbicacionesDePersonas = async (persona: PersonaEntity, tipoRelacion: "direct" | "related" = "direct") => {
-    try {
-      // Obtenemos las ubicaciones relacionadas con la persona (su domicilio)
-      const respuesta = await fetch(`/api/relaciones/persona/${persona.id}`);
-      const data = await respuesta.json();
-      const ubicaciones: LocationData[] = [];
-      
-      // Añadir ubicaciones directamente relacionadas con esta persona
-      if (data.ubicaciones && data.ubicaciones.length > 0) {
-        // Solo agregar la primera ubicación (domicilio principal)
-        const ubicacion = data.ubicaciones[0];
-        const lat = parseFloat(String(ubicacion.latitud));
-        const lng = parseFloat(String(ubicacion.longitud));
-        
-        if (!isNaN(lat) && !isNaN(lng)) {
-          console.log(`Añadiendo domicilio de ${persona.nombre}:`, ubicacion);
-          ubicaciones.push({
-            id: ubicacion.id,
-            lat: lat,
-            lng: lng,
-            title: ubicacion.tipo || "Domicilio",
-            description: `Domicilio de ${persona.nombre}`,
-            type: "ubicacion",
-            relation: tipoRelacion,
-            entityId: persona.id
-          });
-        }
-      }
-      return ubicaciones;
-    } catch (error) {
-      console.error(`Error al obtener ubicaciones de persona ${persona.id}:`, error);
-      return [];
-    }
-  };
-  
-  // Función para obtener ubicaciones relacionadas con inmuebles
-  const obtenerUbicacionesDeInmuebles = async (inmueble: InmuebleEntity, tipoRelacion: "direct" | "related" = "direct") => {
-    try {
-      // Obtenemos las ubicaciones relacionadas con el inmueble
-      const respuesta = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
-      const data = await respuesta.json();
-      const ubicaciones: LocationData[] = [];
-      
-      // Solo procesar ubicaciones que tienen coordenadas válidas
-      if (data.ubicaciones && data.ubicaciones.length > 0) {
-        // Solo agregar la primera ubicación
-        const ubicacion = data.ubicaciones[0];
-        const lat = parseFloat(String(ubicacion.latitud));
-        const lng = parseFloat(String(ubicacion.longitud));
-        
-        if (!isNaN(lat) && !isNaN(lng)) {
-          console.log(`Añadiendo ubicación de inmueble ${inmueble.id}:`, ubicacion);
-          ubicaciones.push({
-            id: ubicacion.id,
-            lat: lat,
-            lng: lng,
-            title: inmueble.tipo || "Inmueble",
-            description: inmueble.direccion || "Sin dirección",
-            type: "inmueble",
-            relation: tipoRelacion,
-            entityId: inmueble.id
-          });
-        }
-      }
-      return ubicaciones;
-    } catch (error) {
-      console.error(`Error al obtener ubicaciones de inmueble ${inmueble.id}:`, error);
-      return [];
-    }
-  };
-  
-  // Función para obtener personas relacionadas con vehículos (NO ubicaciones directas)
-  const obtenerPersonasDeVehiculo = async (vehiculo: VehiculoEntity) => {
-    try {
-      // Obtenemos las personas relacionadas con el vehículo
-      const respuesta = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
-      const data = await respuesta.json();
-      const ubicaciones: LocationData[] = [];
-      
-      // Procesar personas relacionadas con este vehículo y sus domicilios
-      if (data.personas && data.personas.length > 0) {
-        for (const persona of data.personas) {
-          // Obtener ubicaciones (domicilios) de esta persona
-          const ubicacionesPersona = await obtenerUbicacionesDePersonas(persona, "related");
-          
-          // Añadir contexto sobre el vehículo en la descripción
-          const ubicacionesConContexto = ubicacionesPersona.map(ub => ({
-            ...ub,
-            description: `Domicilio de ${persona.nombre} (propietario de ${vehiculo.marca} ${vehiculo.modelo})`
-          }));
-          
-          ubicaciones.push(...ubicacionesConContexto);
-        }
-      }
-      
-      return ubicaciones;
-    } catch (error) {
-      console.error(`Error al obtener personas relacionadas con vehículo ${vehiculo.id}:`, error);
-      return [];
-    }
-  };
-  
-  // Función para quitar duplicados de las ubicaciones
-  const eliminarUbicacionesDuplicadas = (ubicaciones: LocationData[]): LocationData[] => {
-    const ubicacionesUnicas = new Map<string, LocationData>();
     
-    ubicaciones.forEach(ub => {
-      const key = `${ub.lat}-${ub.lng}`;
-      if (!ubicacionesUnicas.has(key)) {
-        ubicacionesUnicas.set(key, ub);
-      }
-    });
-    
-    return Array.from(ubicacionesUnicas.values());
+    // Por ahora, simplemente limpiamos las ubicaciones
+    // La lógica real será implementada posteriormente
+    setLocations([]);
   };
-  
-  // Procesamiento principal de datos para el mapa
-  useEffect(() => {
-    const cargarUbicaciones = async () => {
-      if (!selectedResult) {
-        setLocations([]);
-        return;
-      }
-
-      console.log("Procesando datos para:", selectedResult);
-      console.log("Entity Data:", entityData);
-      console.log("Relation Data:", relationData);
-
-      const ubicacionesEncontradas: LocationData[] = [];
-      const ubicacionesYaProcesadas = new Set<number>();
-      let hasCenteredMap = false;
-      
-      // Paso 1: Procesar la entidad principal seleccionada
-      if (entityData) {
-        if (selectedResult.tipo === "ubicacion") {
-          // Si es una ubicación directa
-          const ubicacion = entityData as UbicacionEntity;
-          if (ubicacion.latitud && ubicacion.longitud) {
-            ubicacionesEncontradas.push({
-              id: ubicacion.id,
-              lat: ubicacion.latitud,
-              lng: ubicacion.longitud,
-              title: ubicacion.tipo || "Ubicación",
-              description: ubicacion.observaciones || "Sin descripción",
-              type: "ubicacion",
-              relation: "direct",
-              entityId: ubicacion.id
-            });
-            
-            ubicacionesYaProcesadas.add(ubicacion.id);
-            setMapCenter([ubicacion.latitud, ubicacion.longitud]);
-            hasCenteredMap = true;
-          }
-        } else if (selectedResult.tipo === "persona") {
-          // Si es una persona, obtener su domicilio directamente
-          const persona = entityData as PersonaEntity;
-          const ubicacionesDirectas = await obtenerUbicacionesDePersonas(persona, "direct");
-          
-          ubicacionesDirectas.forEach(ub => {
-            ubicacionesEncontradas.push(ub);
-            ubicacionesYaProcesadas.add(ub.id);
-          });
-          
-          if (ubicacionesDirectas.length > 0 && !hasCenteredMap) {
-            setMapCenter([ubicacionesDirectas[0].lat, ubicacionesDirectas[0].lng]);
-            hasCenteredMap = true;
-          }
-        } else if (selectedResult.tipo === "inmueble") {
-          // Si es un inmueble, obtener su ubicación directa
-          const inmueble = entityData as InmuebleEntity;
-          const ubicacionesDirectas = await obtenerUbicacionesDeInmuebles(inmueble, "direct");
-          
-          ubicacionesDirectas.forEach(ub => {
-            ubicacionesEncontradas.push(ub);
-            ubicacionesYaProcesadas.add(ub.id);
-          });
-          
-          if (ubicacionesDirectas.length > 0 && !hasCenteredMap) {
-            setMapCenter([ubicacionesDirectas[0].lat, ubicacionesDirectas[0].lng]);
-            hasCenteredMap = true;
-          }
-        } else if (selectedResult.tipo === "vehiculo") {
-          // Si es un vehículo, obtener los domicilios de sus propietarios
-          const vehiculo = entityData as VehiculoEntity;
-          const ubicacionesPropietarios = await obtenerPersonasDeVehiculo(vehiculo);
-          
-          ubicacionesPropietarios.forEach((ub: LocationData) => {
-            ubicacionesEncontradas.push(ub);
-            ubicacionesYaProcesadas.add(ub.id);
-          });
-          
-          if (ubicacionesPropietarios.length > 0 && !hasCenteredMap) {
-            setMapCenter([ubicacionesPropietarios[0].lat, ubicacionesPropietarios[0].lng]);
-            hasCenteredMap = true;
-          }
-        }
-      }
-      
-      // Paso 2: Procesar relaciones para obtener ubicaciones relacionadas
-      if (relationData) {
-        // Procesar ubicaciones directamente relacionadas
-        if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-          // Mostrar primero la ubicación principal (solo la primera)
-          const ubicacion = relationData.ubicaciones[0];
-          
-          // Evitar duplicados
-          if (!ubicacionesYaProcesadas.has(ubicacion.id)) {
-            const lat = parseFloat(String(ubicacion.latitud));
-            const lng = parseFloat(String(ubicacion.longitud));
-            
-            if (!isNaN(lat) && !isNaN(lng)) {
-              ubicacionesEncontradas.push({
-                id: ubicacion.id,
-                lat: lat,
-                lng: lng,
-                title: ubicacion.tipo || "Ubicación",
-                description: ubicacion.observaciones || "Sin descripción",
-                type: "ubicacion",
-                relation: "direct",
-                entityId: ubicacion.id
-              });
-              
-              ubicacionesYaProcesadas.add(ubicacion.id);
-              
-              if (!hasCenteredMap) {
-                setMapCenter([lat, lng]);
-                hasCenteredMap = true;
-              }
-            }
-          }
-        }
-        
-        // Procesar personas relacionadas y sus domicilios
-        if (relationData.personas && relationData.personas.length > 0) {
-          for (const persona of relationData.personas) {
-            const ubicacionesRelacionadas = await obtenerUbicacionesDePersonas(persona, "related");
-            
-            for (const ub of ubicacionesRelacionadas) {
-              if (!ubicacionesYaProcesadas.has(ub.id)) {
-                ubicacionesEncontradas.push(ub);
-                ubicacionesYaProcesadas.add(ub.id);
-                
-                if (!hasCenteredMap) {
-                  setMapCenter([ub.lat, ub.lng]);
-                  hasCenteredMap = true;
-                }
-              }
-            }
-          }
-        }
-        
-        // Procesar inmuebles relacionados y sus ubicaciones
-        if (relationData.inmuebles && relationData.inmuebles.length > 0) {
-          for (const inmueble of relationData.inmuebles) {
-            const ubicacionesRelacionadas = await obtenerUbicacionesDeInmuebles(inmueble, "related");
-            
-            for (const ub of ubicacionesRelacionadas) {
-              if (!ubicacionesYaProcesadas.has(ub.id)) {
-                ubicacionesEncontradas.push(ub);
-                ubicacionesYaProcesadas.add(ub.id);
-                
-                if (!hasCenteredMap) {
-                  setMapCenter([ub.lat, ub.lng]);
-                  hasCenteredMap = true;
-                }
-              }
-            }
-          }
-        }
-        
-        // Procesar vehículos relacionados y los domicilios de sus propietarios
-        if (relationData.vehiculos && relationData.vehiculos.length > 0) {
-          for (const vehiculo of relationData.vehiculos) {
-            // Obtener los domicilios de las personas relacionadas con este vehículo
-            const ubicacionesPropietarios = await obtenerPersonasDeVehiculo(vehiculo);
-            
-            for (const ub of ubicacionesPropietarios) {
-              if (!ubicacionesYaProcesadas.has(ub.id)) {
-                ubicacionesEncontradas.push(ub);
-                ubicacionesYaProcesadas.add(ub.id);
-                
-                if (!hasCenteredMap) {
-                  setMapCenter([ub.lat, ub.lng]);
-                  hasCenteredMap = true;
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      console.log("Ubicaciones encontradas:", ubicacionesEncontradas);
-      setLocations(ubicacionesEncontradas);
-      
-      // Si no hay ubicaciones, mostrar mensaje
-      if (ubicacionesEncontradas.length === 0) {
-        console.log("No se encontraron ubicaciones para la entidad seleccionada o sus relaciones.");
-      }
-    };
-    
-    cargarUbicaciones();
-  }, [selectedResult, entityData, relationData]);
 
   // Manejar clic en una ubicación de la tabla
   const handleLocationClick = (location: LocationData) => {
-    setSelectedLocation(location);
     setMapCenter([location.lat, location.lng]);
   };
 
@@ -365,16 +44,7 @@ export default function UbicacionesPage() {
           {selectedResult ? (
             <div className="space-y-6">
               <div className="flex items-center mb-4">
-                <h2 className="text-xl font-bold">Ubicaciones de {selectedResult.nombre}</h2>
-                <Separator className="flex-1 mx-4" />
-                <div className="flex items-center gap-2">
-                  <div className="px-3 py-1 rounded bg-primary-100 text-primary-800 text-sm font-medium">
-                    {selectedResult.tipo === 'persona' && 'Persona'}
-                    {selectedResult.tipo === 'vehiculo' && 'Vehículo'}
-                    {selectedResult.tipo === 'inmueble' && 'Inmueble'}
-                    {selectedResult.tipo === 'ubicacion' && 'Ubicación'}
-                  </div>
-                </div>
+                <h2 className="text-xl font-bold">Ubicaciones de {selectedResult.titulo}</h2>
               </div>
               
               {/* Sección del Mapa */}
@@ -388,17 +58,7 @@ export default function UbicacionesPage() {
                 <CardContent>
                   {locations.length > 0 ? (
                     <LocationMap 
-                      markers={locations.map(loc => ({
-                        id: loc.id,
-                        lat: loc.lat,
-                        lng: loc.lng,
-                        title: loc.title,
-                        description: loc.description,
-                        type: loc.type,
-                        relation: loc.relation,
-                        entityId: loc.entityId,
-                        relationInfo: loc.relationInfo
-                      }))} 
+                      markers={locations} 
                       center={mapCenter}
                       zoom={15}
                     />
