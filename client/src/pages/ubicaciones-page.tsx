@@ -890,6 +890,20 @@ export default function UbicacionesPage() {
                                     relacion.entidadRelacionada.tipo === 'inmueble' ? 
                                     `${relacion.entidadRelacionada.entidad.tipo} - ${relacion.entidadRelacionada.entidad.direccion || 'Sin dirección'}` : 
                                     'Entidad desconocida'}</span><br/>
+                                  
+                                  {/* Mostrar información sobre la relación si es un inmueble relacionado con otro inmueble */}
+                                  {relacion.entidadRelacionada.relacionadoCon && (
+                                    <div className="mt-1 text-xs text-indigo-600">
+                                      Relacionado con: {relacion.entidadRelacionada.relacionadoCon.tipo === 'inmueble' ? 
+                                        `${relacion.entidadRelacionada.relacionadoCon.entidad.tipo} - ${relacion.entidadRelacionada.relacionadoCon.entidad.direccion || 'Sin dirección'}` :
+                                        relacion.entidadRelacionada.relacionadoCon.tipo === 'persona' ?
+                                        `${relacion.entidadRelacionada.relacionadoCon.entidad.nombre}` :
+                                        relacion.entidadRelacionada.relacionadoCon.tipo === 'vehiculo' ?
+                                        `${relacion.entidadRelacionada.relacionadoCon.entidad.marca} (${relacion.entidadRelacionada.relacionadoCon.entidad.placa})` :
+                                        'Entidad desconocida'}
+                                    </div>
+                                  )}
+                                  
                                   {relacion.ubicacion.latitud && relacion.ubicacion.longitud 
                                     ? `Lat: ${relacion.ubicacion.latitud.toFixed(6)}, Lng: ${relacion.ubicacion.longitud.toFixed(6)}`
                                     : 'Sin coordenadas'
