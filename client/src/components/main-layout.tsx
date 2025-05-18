@@ -51,18 +51,53 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </div>
               <div className="hidden md:block">
                 <div className="ml-10 flex items-baseline space-x-4">
+                  {/* La página de consultas es accesible para todos los usuarios */}
+                  <Link
+                    href="/consultas"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      location === "/consultas" || location === "/"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                  >
+                    Consultas
+                  </Link>
+                  
                   {(user?.rol === "admin" || user?.rol === "investigador") && (
-                    <Link
-                      href="/registros"
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        location === "/registros" || location === "/"
-                          ? "bg-primary-900 text-white"
-                          : "text-gray-300 hover:bg-primary-600 hover:text-white"
-                      }`}
-                    >
-                      Registros
-                    </Link>
+                    <>
+                      <Link
+                        href="/registros"
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          location === "/registros"
+                            ? "bg-primary-900 text-white"
+                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                        }`}
+                      >
+                        Registros
+                      </Link>
+                      <Link
+                        href="/ubicaciones"
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          location === "/ubicaciones"
+                            ? "bg-primary-900 text-white"
+                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                        }`}
+                      >
+                        Ubicaciones
+                      </Link>
+                      <Link
+                        href="/estructuras"
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          location === "/estructuras"
+                            ? "bg-primary-900 text-white"
+                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                        }`}
+                      >
+                        Estructuras
+                      </Link>
+                    </>
                   )}
+                  
                   {user?.rol === "admin" && (
                     <>
                       <Link
