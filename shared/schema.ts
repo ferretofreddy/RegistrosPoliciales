@@ -177,8 +177,8 @@ export const inmueblesUbicaciones = pgTable("inmuebles_ubicaciones", {
 // Ubicaciones
 export const ubicaciones = pgTable("ubicaciones", {
   id: serial("id").primaryKey(),
-  latitud: integer("latitud"),
-  longitud: integer("longitud"),
+  latitud: doublePrecision("latitud"),
+  longitud: doublePrecision("longitud"),
   fecha: timestamp("fecha").defaultNow(),
   tipo: text("tipo"),
   observaciones: text("observaciones"),

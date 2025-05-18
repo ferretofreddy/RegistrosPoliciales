@@ -412,6 +412,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === UBICACIONES ===
+  app.get("/api/ubicaciones", async (req, res) => {
+    try {
+      const allUbicaciones = await db.select().from(ubicaciones);
+      res.json(allUbicaciones);
+    } catch (error) {
+      console.error("Error al obtener ubicaciones:", error);
+      res.status(500).json({ message: "Error al obtener ubicaciones" });
+    }
+  });
+
+  app.get("/api/ubicaciones/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const [ubicacion] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, id));
+      
+      if (!ubicacion) {
+        return res.status(404).json({ message: "Ubicación no encontrada" });
+      }
+      
+      res.json(ubicacion);
+    } catch (error) {
+      console.error("Error al obtener ubicación:", error);
+      res.status(500).json({ message: "Error al obtener ubicación" });
+    }
+  });
+
+  app.post("/api/ubicaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      console.log("Creando ubicación con datos:", req.body);
+      
+      const result = insertUbicacionSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        console.error("Error de validación:", result.error.format());
+        return res.status(400).json({ 
+          message: "Datos de ubicación inválidos", 
+          errors: result.error.format() 
+        });
+      }
+      
+      const [ubicacion] = await db.insert(ubicaciones).values({
+        ...result.data,
+        // Aseguramos que latitud y longitud sean números, no strings
+        latitud: typeof result.data.latitud === 'string' ? parseFloat(result.data.latitud) : result.data.latitud,
+        longitud: typeof result.data.longitud === 'string' ? parseFloat(result.data.longitud) : result.data.longitud
+      }).returning();
+      
+      console.log("Ubicación creada exitosamente:", ubicacion);
+      res.status(201).json(ubicacion);
+    } catch (error) {
+      console.error("Error al crear ubicación:", error);
+      res.status(500).json({ message: "Error al crear ubicación" });
+    }
+  });
+
+  app.post("/api/ubicaciones/:id/observaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const ubicacionId = parseInt(req.params.id);
+      if (isNaN(ubicacionId)) {
+        return res.status(400).json({ message: "ID de ubicación inválido" });
+      }
+      
+      // Verificar que existe la ubicación
+      const [ubicacion] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, ubicacionId));
+      if (!ubicacion) {
+        return res.status(404).json({ message: "Ubicación no encontrada" });
+      }
+      
+      // Agregar el usuario autenticado a la observación
+      const user = req.user as User;
+      
+      const result = insertUbicacionObservacionSchema.safeParse({
+        ...req.body,
+        ubicacionId,
+        usuario: user.nombre || `Usuario ${user.id}`
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Datos de observación inválidos", 
+          errors: result.error.format() 
+        });
+      }
+      
+      const [observacion] = await db.insert(ubicacionesObservaciones).values(result.data).returning();
+      
+      res.status(201).json(observacion);
+    } catch (error) {
+      console.error("Error al crear observación de ubicación:", error);
+      res.status(500).json({ message: "Error al crear observación" });
+    }
+  });
+
+  app.get("/api/ubicaciones/:id/observaciones", async (req, res) => {
+    try {
+      const ubicacionId = parseInt(req.params.id);
+      if (isNaN(ubicacionId)) {
+        return res.status(400).json({ message: "ID de ubicación inválido" });
+      }
+      
+      const observaciones = await db.select()
+        .from(ubicacionesObservaciones)
+        .where(eq(ubicacionesObservaciones.ubicacionId, ubicacionId));
+      
+      res.json(observaciones);
+    } catch (error) {
+      console.error("Error al obtener observaciones de ubicación:", error);
+      res.status(500).json({ message: "Error al obtener observaciones" });
+    }
+  });
+
+  // === RELACIONES ===
+  app.post("/api/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const { tipo1, id1, tipo2, id2 } = req.body;
+      
+      if (!tipo1 || !id1 || !tipo2 || !id2) {
+        return res.status(400).json({ message: "Faltan datos para crear la relación" });
+      }
+      
+      let resultado;
+      
+      // Relaciones entre persona y vehículo
+      if (tipo1 === "persona" && tipo2 === "vehiculo") {
+        const [relacion] = await db.insert(personasVehiculos).values({
+          personaId: id1,
+          vehiculoId: id2
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre persona e inmueble
+      else if (tipo1 === "persona" && tipo2 === "inmueble") {
+        const [relacion] = await db.insert(personasInmuebles).values({
+          personaId: id1,
+          inmuebleId: id2
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre personas
+      else if (tipo1 === "persona" && tipo2 === "persona") {
+        const [relacion] = await db.insert(personasPersonas).values({
+          personaId1: id1,
+          personaId2: id2
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre persona y ubicación
+      else if (tipo1 === "persona" && tipo2 === "ubicacion") {
+        const [relacion] = await db.insert(personasUbicaciones).values({
+          personaId: id1,
+          ubicacionId: id2
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre vehículo y ubicación
+      else if (tipo1 === "vehiculo" && tipo2 === "ubicacion") {
+        const [relacion] = await db.insert(vehiculosUbicaciones).values({
+          vehiculoId: id1,
+          ubicacionId: id2
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre inmueble y ubicación
+      else if (tipo1 === "inmueble" && tipo2 === "ubicacion") {
+        const [relacion] = await db.insert(inmueblesUbicaciones).values({
+          inmuebleId: id1,
+          ubicacionId: id2
+        }).returning();
+        resultado = relacion;
+      }
+      else {
+        return res.status(400).json({ message: "Tipo de relación no soportada" });
+      }
+      
+      res.status(201).json(resultado);
+    } catch (error) {
+      console.error("Error al crear relación:", error);
+      res.status(500).json({ message: "Error al crear relación" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
