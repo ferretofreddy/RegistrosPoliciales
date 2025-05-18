@@ -988,71 +988,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const results = [];
+      // Usar ILIKE para búsqueda insensible a mayúsculas/minúsculas
       const searchTerm = `%${query}%`;
       
       // Buscar en personas si el tipo es 'todas' o 'persona'
       if (tipo === 'todas' || tipo === 'persona') {
-        const personasResults = await db
-          .select()
-          .from(personas)
-          .where(
-            or(
-              like(personas.nombre, searchTerm),
-              like(personas.identificacion, searchTerm)
-            )
-          )
-          .limit(5);
-          
-        results.push(...personasResults.map(p => ({ ...p, tipo: 'persona' })));
+        // Usamos SQL directo para acceder a operadores de PostgreSQL no disponibles en Drizzle
+        const personasResults = await db.execute(sql`
+          SELECT * FROM personas 
+          WHERE 
+            unaccent(lower(nombre)) ILIKE unaccent(lower(${searchTerm})) OR 
+            unaccent(lower(identificacion)) ILIKE unaccent(lower(${searchTerm}))
+          LIMIT 5
+        `);
+        
+        results.push(...personasResults.rows.map(p => ({ ...p, tipo: 'persona' })));
       }
       
       // Buscar en vehículos si el tipo es 'todas' o 'vehiculo'
       if (tipo === 'todas' || tipo === 'vehiculo') {
-        const vehiculosResults = await db
-          .select()
-          .from(vehiculos)
-          .where(
-            or(
-              like(vehiculos.placa, searchTerm),
-              like(vehiculos.marca, searchTerm),
-              like(vehiculos.modelo, searchTerm)
-            )
-          )
-          .limit(5);
-          
-        results.push(...vehiculosResults.map(v => ({ ...v, tipo: 'vehiculo' })));
+        const vehiculosResults = await db.execute(sql`
+          SELECT * FROM vehiculos 
+          WHERE 
+            unaccent(lower(placa)) ILIKE unaccent(lower(${searchTerm})) OR
+            unaccent(lower(marca)) ILIKE unaccent(lower(${searchTerm})) OR
+            unaccent(lower(modelo)) ILIKE unaccent(lower(${searchTerm}))
+          LIMIT 5
+        `);
+        
+        results.push(...vehiculosResults.rows.map(v => ({ ...v, tipo: 'vehiculo' })));
       }
       
       // Buscar en inmuebles si el tipo es 'todas' o 'inmueble'
       if (tipo === 'todas' || tipo === 'inmueble') {
-        const inmueblesResults = await db
-          .select()
-          .from(inmuebles)
-          .where(
-            or(
-              like(inmuebles.direccion, searchTerm),
-              like(inmuebles.tipo, searchTerm)
-            )
-          )
-          .limit(5);
-          
-        results.push(...inmueblesResults.map(i => ({ ...i, tipo: 'inmueble' })));
+        const inmueblesResults = await db.execute(sql`
+          SELECT * FROM inmuebles 
+          WHERE 
+            unaccent(lower(direccion)) ILIKE unaccent(lower(${searchTerm})) OR
+            unaccent(lower(tipo)) ILIKE unaccent(lower(${searchTerm}))
+          LIMIT 5
+        `);
+        
+        results.push(...inmueblesResults.rows.map(i => ({ ...i, tipo: 'inmueble' })));
       }
       
       // Buscar en ubicaciones si el tipo es 'todas' o 'ubicacion'
       if (tipo === 'todas' || tipo === 'ubicacion') {
-        const ubicacionesResults = await db
-          .select()
-          .from(ubicaciones)
-          .where(
-            or(
-              like(ubicaciones.tipo, searchTerm),
-              like(ubicaciones.observaciones, searchTerm)
-            )
-          )
-          .limit(5);
-          
-        results.push(...ubicacionesResults.map(u => ({ ...u, tipo: 'ubicacion' })));
+        const ubicacionesResults = await db.execute(sql`
+          SELECT * FROM ubicaciones 
+          WHERE 
+            (tipo IS NOT NULL AND unaccent(lower(tipo)) ILIKE unaccent(lower(${searchTerm}))) OR
+            (observaciones IS NOT NULL AND unaccent(lower(observaciones)) ILIKE unaccent(lower(${searchTerm})))
+          LIMIT 5
+        `);
+        
+        results.push(...ubicacionesResults.rows.map(u => ({ ...u, tipo: 'ubicacion' })));
       }
       
       res.json(results);
