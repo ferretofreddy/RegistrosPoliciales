@@ -246,8 +246,7 @@ export const tiposInmuebles = pgTable("tipos_inmuebles", {
 
 export const insertTipoInmuebleSchema = createInsertSchema(tiposInmuebles).pick({
   nombre: true,
-  descripcion: true,
-  activo: true
+  descripcion: true
 });
 
 // Tipos de ubicaciones (usar tabla existente)
@@ -260,8 +259,7 @@ export const tiposUbicaciones = pgTable("tipos_ubicaciones", {
 
 export const insertTipoUbicacionSchema = createInsertSchema(tiposUbicaciones).pick({
   nombre: true,
-  descripcion: true,
-  activo: true
+  descripcion: true
 });
 
 // Exportar tipos para las tablas de tipos

@@ -445,24 +445,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ubicaciones", requireRole(["admin", "investigador"]), async (req, res) => {
     try {
-      console.log("Creando ubicación con datos:", req.body);
+      console.log("Creando ubicación con datos:", JSON.stringify(req.body));
       
-      const result = insertUbicacionSchema.safeParse(req.body);
-      
-      if (!result.success) {
-        console.error("Error de validación:", result.error.format());
-        return res.status(400).json({ 
-          message: "Datos de ubicación inválidos", 
-          errors: result.error.format() 
-        });
+      // Verificar si los datos tienen el formato esperado
+      if (!req.body.latitud || !req.body.longitud) {
+        console.error("Faltan coordenadas en los datos enviados");
+        return res.status(400).json({ message: "Faltan coordenadas (latitud o longitud)" });
       }
       
-      const [ubicacion] = await db.insert(ubicaciones).values({
-        ...result.data,
-        // Aseguramos que latitud y longitud sean números, no strings
-        latitud: typeof result.data.latitud === 'string' ? parseFloat(result.data.latitud) : result.data.latitud,
-        longitud: typeof result.data.longitud === 'string' ? parseFloat(result.data.longitud) : result.data.longitud
-      }).returning();
+      let latitudValue = req.body.latitud;
+      let longitudValue = req.body.longitud;
+      
+      // Asegurarse de que latitud y longitud sean números
+      if (typeof latitudValue === 'string') {
+        latitudValue = parseFloat(latitudValue);
+      }
+      
+      if (typeof longitudValue === 'string') {
+        longitudValue = parseFloat(longitudValue);
+      }
+      
+      console.log(`Coordenadas convertidas: Lat=${latitudValue}, Lng=${longitudValue}`);
+      
+      if (isNaN(latitudValue) || isNaN(longitudValue)) {
+        console.error(`Error: Coordenadas inválidas: Lat=${latitudValue}, Lng=${longitudValue}`);
+        return res.status(400).json({ message: "Coordenadas inválidas" });
+      }
+      
+      // Crear la ubicación directamente sin pasar por el schema
+      const query = `
+        INSERT INTO ubicaciones (latitud, longitud, tipo, observaciones)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+      `;
+      
+      const valores = [
+        latitudValue,
+        longitudValue,
+        req.body.tipo || "Sin especificar",
+        req.body.observaciones || null
+      ];
+      
+      console.log("Ejecutando query con valores:", valores);
+      
+      const result = await pool.query(query, valores);
+      const ubicacion = result.rows[0];
       
       console.log("Ubicación creada exitosamente:", ubicacion);
       res.status(201).json(ubicacion);
@@ -525,6 +552,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener observaciones de ubicación:", error);
       res.status(500).json({ message: "Error al obtener observaciones" });
+    }
+  });
+
+  // === TIPOS DE INMUEBLES ===
+  app.get("/api/tipos-inmuebles", async (req, res) => {
+    try {
+      const allTipos = await db.select().from(tiposInmuebles).orderBy(tiposInmuebles.nombre);
+      res.json(allTipos);
+    } catch (error) {
+      console.error("Error al obtener tipos de inmuebles:", error);
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+    }
+  });
+
+  // === TIPOS DE UBICACIONES ===
+  app.get("/api/tipos-ubicaciones", async (req, res) => {
+    try {
+      const allTipos = await db.select().from(tiposUbicaciones).orderBy(tiposUbicaciones.nombre);
+      res.json(allTipos);
+    } catch (error) {
+      console.error("Error al obtener tipos de ubicaciones:", error);
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
     }
   });
 
