@@ -131,7 +131,8 @@ export default function InmuebleForm() {
       if (observaciones.length > 0) {
         for (const obs of observaciones) {
           await apiRequest("POST", `/api/inmuebles/${inmueble.id}/observaciones`, {
-            detalle: obs.detalle
+            detalle: obs.detalle,
+            usuario: "Usuario del sistema"
           });
         }
       }

@@ -112,7 +112,8 @@ export default function VehiculoForm() {
       if (observaciones.length > 0) {
         for (const obs of observaciones) {
           await apiRequest("POST", `/api/vehiculos/${vehiculo.id}/observaciones`, {
-            detalle: obs.detalle
+            detalle: obs.detalle,
+            usuario: "Usuario del sistema"
           });
         }
       }
