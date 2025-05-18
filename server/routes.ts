@@ -4,7 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
 import { eq, or, sql } from "drizzle-orm";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { 
   personas, vehiculos, inmuebles,
   personasObservaciones, vehiculosObservaciones, inmueblesObservaciones,
@@ -156,8 +156,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === VEHÍCULOS ===
   app.get("/api/vehiculos", async (req, res) => {
     try {
-      const allVehiculos = await db.select().from(vehiculos).orderBy(vehiculos.placa);
-      res.json(allVehiculos);
+      // Usamos SQL para especificar exactamente las columnas que queremos
+      const query = `
+        SELECT id, placa, marca, modelo, color, tipo, observaciones, foto
+        FROM vehiculos
+        ORDER BY placa
+      `;
+      const result = await pool.query(query);
+      res.json(result.rows);
     } catch (error) {
       console.error("Error al obtener vehículos:", error);
       res.status(500).json({ message: "Error al obtener vehículos" });
@@ -171,13 +177,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID inválido" });
       }
       
-      const [vehiculo] = await db.select().from(vehiculos).where(eq(vehiculos.id, id));
+      // Usamos SQL para especificar exactamente las columnas que queremos
+      const query = `
+        SELECT id, placa, marca, modelo, color, tipo, observaciones, foto
+        FROM vehiculos
+        WHERE id = $1
+      `;
       
-      if (!vehiculo) {
+      const result = await pool.query(query, [id]);
+      
+      if (result.rows.length === 0) {
         return res.status(404).json({ message: "Vehículo no encontrado" });
       }
       
-      res.json(vehiculo);
+      res.json(result.rows[0]);
     } catch (error) {
       console.error("Error al obtener vehículo:", error);
       res.status(500).json({ message: "Error al obtener vehículo" });
@@ -259,8 +272,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === INMUEBLES ===
   app.get("/api/inmuebles", async (req, res) => {
     try {
-      const allInmuebles = await db.select().from(inmuebles).orderBy(inmuebles.direccion);
-      res.json(allInmuebles);
+      // Usamos SQL para especificar exactamente las columnas que queremos
+      const query = `
+        SELECT id, tipo, direccion, propietario, observaciones, foto
+        FROM inmuebles
+        ORDER BY direccion
+      `;
+      const result = await pool.query(query);
+      res.json(result.rows);
     } catch (error) {
       console.error("Error al obtener inmuebles:", error);
       res.status(500).json({ message: "Error al obtener inmuebles" });
@@ -274,13 +293,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID inválido" });
       }
       
-      const [inmueble] = await db.select().from(inmuebles).where(eq(inmuebles.id, id));
+      // Usamos SQL para especificar exactamente las columnas que queremos
+      const query = `
+        SELECT id, tipo, direccion, propietario, observaciones, foto
+        FROM inmuebles
+        WHERE id = $1
+      `;
       
-      if (!inmueble) {
+      const result = await pool.query(query, [id]);
+      
+      if (result.rows.length === 0) {
         return res.status(404).json({ message: "Inmueble no encontrado" });
       }
       
-      res.json(inmueble);
+      res.json(result.rows[0]);
     } catch (error) {
       console.error("Error al obtener inmueble:", error);
       res.status(500).json({ message: "Error al obtener inmueble" });
