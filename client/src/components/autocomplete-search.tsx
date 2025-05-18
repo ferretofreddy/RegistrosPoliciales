@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Search, User, Car, Home, MapPin } from "lucide-react";
+import { Search, User, Car, Home, MapPin, X } from "lucide-react";
 
-// Definición de tipos
 export interface SearchResult {
   id: number;
   tipo: string;
@@ -28,23 +26,17 @@ const AutocompleteSearch = ({
   className = "",
   initialValue = ""
 }: AutocompleteSearchProps) => {
-  const [inputValue, setInputValue] = useState(initialValue);
+  const [searchTerm, setSearchTerm] = useState(initialValue);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<SearchResult | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  // Efecto para manejar clics fuera del componente
+  // Efecto para cerrar la lista de resultados cuando se hace clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current && 
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current && 
-        !inputRef.current.contains(event.target as Node)
-      ) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowResults(false);
       }
     };
@@ -55,224 +47,223 @@ const AutocompleteSearch = ({
     };
   }, []);
 
-  // Buscar resultados cuando cambia el valor del input
+  // Función para buscar coincidencias cuando el usuario escribe
   useEffect(() => {
-    const searchResults = async () => {
-      if (!inputValue || inputValue.trim().length < 2) {
+    const searchTimeout = setTimeout(() => {
+      if (searchTerm.trim().length >= 2) {
+        fetchResults(searchTerm);
+      } else {
         setResults([]);
-        return;
       }
+    }, 300);
 
-      setIsLoading(true);
-      try {
-        // Buscar en cada tipo de entidad
-        const searchTerm = encodeURIComponent(inputValue.trim());
-        
-        const [personasRes, vehiculosRes, inmueblesRes] = await Promise.all([
-          fetch(`/api/personas?buscar=${searchTerm}`).then(res => res.json()).catch(() => []),
-          fetch(`/api/vehiculos?buscar=${searchTerm}`).then(res => res.json()).catch(() => []),
-          fetch(`/api/inmuebles?buscar=${searchTerm}`).then(res => res.json()).catch(() => [])
-        ]);
+    return () => clearTimeout(searchTimeout);
+  }, [searchTerm]);
 
-        const formattedResults: SearchResult[] = [];
-
-        // Procesar resultados de personas
-        personasRes.forEach((persona: any) => {
-          formattedResults.push({
+  // Buscar coincidencias en la API
+  const fetchResults = async (term: string) => {
+    if (term.trim().length < 2) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/buscar?query=${encodeURIComponent(term)}`);
+      const data = await response.json();
+      
+      // Transformar los resultados en un formato unificado
+      const transformedResults: SearchResult[] = [];
+      
+      // Procesar personas
+      if (data.personas && Array.isArray(data.personas)) {
+        data.personas.forEach((persona: any) => {
+          transformedResults.push({
             id: persona.id,
             tipo: 'persona',
-            texto: `${persona.nombre} ${persona.identificacion ? `(${persona.identificacion})` : ''}`,
-            detalle: persona.alias && Array.isArray(persona.alias) && persona.alias.length > 0 
-              ? `Alias: ${persona.alias.join(', ')}` 
-              : undefined,
+            texto: persona.nombre,
+            detalle: persona.identificacion || '',
             entidad: persona
           });
         });
-
-        // Procesar resultados de vehículos
-        vehiculosRes.forEach((vehiculo: any) => {
-          formattedResults.push({
+      }
+      
+      // Procesar vehículos
+      if (data.vehiculos && Array.isArray(data.vehiculos)) {
+        data.vehiculos.forEach((vehiculo: any) => {
+          transformedResults.push({
             id: vehiculo.id,
             tipo: 'vehiculo',
-            texto: `${vehiculo.marca} ${vehiculo.modelo || ''} (${vehiculo.placa})`,
-            detalle: vehiculo.tipo ? `Tipo: ${vehiculo.tipo}` : undefined,
+            texto: vehiculo.placa,
+            detalle: `${vehiculo.marca} ${vehiculo.modelo}`,
             entidad: vehiculo
           });
         });
-
-        // Procesar resultados de inmuebles
-        inmueblesRes.forEach((inmueble: any) => {
-          formattedResults.push({
+      }
+      
+      // Procesar inmuebles
+      if (data.inmuebles && Array.isArray(data.inmuebles)) {
+        data.inmuebles.forEach((inmueble: any) => {
+          transformedResults.push({
             id: inmueble.id,
             tipo: 'inmueble',
-            texto: `${inmueble.tipo}: ${inmueble.direccion || 'Sin dirección'}`,
-            detalle: inmueble.propietario ? `Propietario: ${inmueble.propietario}` : undefined,
+            texto: inmueble.direccion,
+            detalle: inmueble.tipo || '',
             entidad: inmueble
           });
         });
-
-        setResults(formattedResults);
-        if (formattedResults.length > 0) {
-          setShowResults(true);
-        }
-      } catch (error) {
-        console.error("Error buscando resultados:", error);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    // Debounce para evitar muchas peticiones mientras se escribe
-    const timeoutId = setTimeout(searchResults, 300);
-    return () => clearTimeout(timeoutId);
-  }, [inputValue]);
-
-  // Manejar cambio en el input
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInputValue(value);
-    
-    // Si el valor ya no coincide con el item seleccionado, limpiar la selección
-    if (selectedItem && selectedItem.texto !== value) {
-      setSelectedItem(null);
+      
+      // Procesar ubicaciones
+      if (data.ubicaciones && Array.isArray(data.ubicaciones)) {
+        data.ubicaciones.forEach((ubicacion: any) => {
+          transformedResults.push({
+            id: ubicacion.id,
+            tipo: 'ubicacion',
+            texto: ubicacion.tipo || 'Ubicación sin tipo',
+            detalle: ubicacion.observaciones || '',
+            entidad: ubicacion
+          });
+        });
+      }
+      
+      setResults(transformedResults);
+      setShowResults(true);
+    } catch (error) {
+      console.error('Error al buscar coincidencias:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Manejar selección de un resultado
+  // Manejar la selección de un resultado
   const handleSelectResult = (result: SearchResult) => {
-    setSelectedItem(result);
-    setInputValue(result.texto);
+    setSelectedResult(result);
+    setSearchTerm(result.texto);
     setShowResults(false);
+    onSearch(result.texto, result);
   };
 
-  // Manejar tecla Enter y Escape
+  // Manejar cambio en el campo de búsqueda
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Si el usuario está borrando o cambiando el término, resetear la selección
+    if (selectedResult && !value.includes(selectedResult.texto)) {
+      setSelectedResult(null);
+    }
+  };
+
+  // Manejar la pulsación de teclas (Enter para buscar)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSearch();
+      if (results.length > 0 && showResults) {
+        handleSelectResult(results[0]);
+      } else {
+        onSearch(searchTerm, null);
+        setShowResults(false);
+      }
     } else if (e.key === 'Escape') {
       setShowResults(false);
     }
   };
 
-  // Manejar clic en botón de búsqueda
-  const handleSearch = () => {
-    onSearch(inputValue, selectedItem);
+  // Manejar el botón de búsqueda
+  const handleSearchButton = () => {
+    onSearch(searchTerm, selectedResult);
     setShowResults(false);
   };
 
-  // Renderizar icono según el tipo
-  const renderIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'persona':
-        return <User className="h-4 w-4 text-blue-500" />;
-      case 'vehiculo':
-        return <Car className="h-4 w-4 text-green-500" />;
-      case 'inmueble':
-        return <Home className="h-4 w-4 text-orange-500" />;
-      default:
-        return <MapPin className="h-4 w-4 text-red-500" />;
-    }
+  // Limpiar la búsqueda
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setSelectedResult(null);
+    onSearch('', null);
   };
 
-  // Renderizar etiqueta de tipo
-  const renderTipoLabel = (tipo: string) => {
+  // Función para obtener el icono según el tipo de entidad
+  const getIconForType = (tipo: string) => {
     switch (tipo) {
       case 'persona':
-        return <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">Persona</span>;
+        return <User className="h-4 w-4 mr-2 text-blue-500" />;
       case 'vehiculo':
-        return <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-800 rounded">Vehículo</span>;
+        return <Car className="h-4 w-4 mr-2 text-green-500" />;
       case 'inmueble':
-        return <span className="px-1.5 py-0.5 text-xs bg-orange-100 text-orange-800 rounded">Inmueble</span>;
+        return <Home className="h-4 w-4 mr-2 text-orange-500" />;
+      case 'ubicacion':
+        return <MapPin className="h-4 w-4 mr-2 text-red-500" />;
       default:
-        return <span className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-800 rounded">Otro</span>;
+        return <Search className="h-4 w-4 mr-2 text-gray-500" />;
     }
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div ref={searchRef} className={`relative ${className}`}>
       <div className="flex items-center space-x-2">
-        <Input
-          ref={inputRef}
-          placeholder={placeholder}
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => inputValue.trim().length >= 2 && setShowResults(true)}
-          className="flex-1"
-        />
+        <div className="relative flex-1">
+          <Input
+            placeholder={placeholder}
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
+            className="pr-8"
+          />
+          {searchTerm && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
         <Button 
-          onClick={handleSearch}
+          size="sm" 
+          onClick={handleSearchButton}
           className={searchButtonClass}
-          size="sm"
         >
           <Search className="h-4 w-4" />
         </Button>
       </div>
-
+      
       {/* Lista desplegable de resultados */}
-      {showResults && (
-        <div 
-          ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-80 overflow-auto"
-        >
-          <Card className="p-0">
-            <div className="p-2 border-b flex justify-between items-center">
-              <p className="text-sm text-gray-500">
-                {isLoading 
-                  ? "Buscando..." 
-                  : results.length 
-                    ? `${results.length} resultados encontrados` 
-                    : "No se encontraron coincidencias"}
-              </p>
-              <button 
-                onClick={() => setShowResults(false)}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
+      {showResults && searchTerm.length >= 2 && (
+        <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-60 overflow-auto border border-gray-200">
+          {loading ? (
+            <div className="p-2 text-center text-sm text-gray-500">
+              Buscando...
             </div>
-            <ul className="p-0 m-0 list-none">
+          ) : results.length > 0 ? (
+            <div className="py-1">
               {results.map((result) => (
-                <li 
+                <div
                   key={`${result.tipo}-${result.id}`}
-                  className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex items-center"
+                  className="flex items-center px-3 py-2 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSelectResult(result)}
                 >
-                  <div className="mr-2">
-                    {renderIcon(result.tipo)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">{result.texto}</p>
-                      {renderTipoLabel(result.tipo)}
+                  <div className="flex items-center">
+                    {getIconForType(result.tipo)}
+                    <div>
+                      <div className="font-medium">{result.texto}</div>
+                      {result.detalle && (
+                        <div className="text-xs text-gray-500">
+                          {result.detalle}
+                        </div>
+                      )}
                     </div>
-                    {result.detalle && (
-                      <p className="text-xs text-gray-500 mt-0.5">{result.detalle}</p>
-                    )}
                   </div>
-                </li>
+                  <div className="ml-auto text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-700">
+                    {result.tipo === 'persona' ? 'Persona' : 
+                     result.tipo === 'vehiculo' ? 'Vehículo' : 
+                     result.tipo === 'inmueble' ? 'Inmueble' : 'Ubicación'}
+                  </div>
+                </div>
               ))}
-            </ul>
-          </Card>
-        </div>
-      )}
-
-      {/* Indicador de selección activa */}
-      {selectedItem && (
-        <div className="mt-1 flex items-center text-xs text-blue-600">
-          <span>Seleccionado: </span>
-          <span className="font-medium ml-1">{selectedItem.texto}</span>
-          <button 
-            onClick={() => {
-              setSelectedItem(null);
-              setInputValue('');
-            }}
-            className="ml-2 text-xs text-gray-500 hover:text-red-500"
-          >
-            ✕
-          </button>
+            </div>
+          ) : (
+            <div className="p-2 text-center text-sm text-gray-500">
+              No se encontraron resultados
+            </div>
+          )}
         </div>
       )}
     </div>
