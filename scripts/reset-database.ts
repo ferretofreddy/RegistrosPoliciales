@@ -37,14 +37,15 @@ async function resetDatabase() {
     await db.delete(inmueblesInmuebles);
     await db.delete(ubicacionesUbicaciones);
     
-    // 2. Luego borrar las entidades principales
-    console.log('\n2. Eliminando entidades principales...');
+    // 2. Luego borrar las entidades principales (preservando tablas de tipos)
+    console.log('\n2. Eliminando entidades principales (preservando tablas de tipos)...');
     await db.delete(personas);
     await db.delete(vehiculos);
     await db.delete(inmuebles);
     await db.delete(ubicaciones);
-    await db.delete(tiposInmuebles);
-    await db.delete(tiposUbicaciones);
+    
+    // Las tablas de tipos no se eliminan para preservar la configuración básica
+    console.log('  ℹ️ Preservando tablas de tipos de inmuebles y ubicaciones');
     
     // No eliminamos users para mantener las cuentas de acceso
     // await db.delete(users);
