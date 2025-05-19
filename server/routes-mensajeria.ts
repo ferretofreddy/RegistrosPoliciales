@@ -1,14 +1,15 @@
-import { Express, Request, Response } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import * as mensajeriaService from "./mensajeria";
 import { insertMensajeSchema } from "@shared/schema";
 import { z } from "zod";
+import passport from "passport";
 
 // Middleware para verificar autenticación
-const ensureAuthenticated = (req: Request, res: Response, next: any) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "No autenticado" });
+const ensureAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
   }
-  next();
+  return res.status(401).json({ message: "No autenticado" });
 };
 
 export function registerMensajeriaRoutes(app: Express) {
