@@ -573,8 +573,15 @@ export default function EstructurasPage() {
     if (!selectedResult || !entity) return;
 
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
+      // Crear documento en formato carta (letter)
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'letter' // Formato carta (215.9 x 279.4 mm)
+      });
+      
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 15;
       const textWidth = pageWidth - 2 * margin;
       
@@ -584,22 +591,31 @@ export default function EstructurasPage() {
       doc.text("INFORME DE ESTRUCTURA", pageWidth / 2, 20, { align: "center" });
       doc.text("SISTEMA DE INTELIGENCIA", pageWidth / 2, 30, { align: "center" });
       
-      // Fecha de generación
-      doc.setFontSize(10);
-      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, margin, 40);
+      // Información de la entidad seleccionada
+      doc.setFontSize(14);
+      doc.text(`TIPO DE ENTIDAD: ${selectedResult.tipo.toUpperCase()}`, pageWidth / 2, 40, { align: "center" });
       
       // Línea divisoria
       doc.setDrawColor(0);
       doc.setLineWidth(0.5);
       doc.line(margin, 45, pageWidth - margin, 45);
       
+      // Fecha de generación y responsable
+      doc.setFontSize(10);
+      doc.text(`Fecha de generación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, margin, 53);
+      doc.text(`Usuario responsable: ${entity?.usuario || "Sistema"}`, pageWidth - margin, 53, { align: "right" });
+      
+      // Línea divisoria
+      doc.line(margin, 58, pageWidth - margin, 58);
+      
       // Información del registro
       doc.setFontSize(14);
-      doc.text("INFORMACIÓN GENERAL", margin, 55);
+      doc.setFont("helvetica", "bold");
+      doc.text("INFORMACIÓN GENERAL", margin, 68);
       
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
-      let y = 65;
+      let y = 78;
       
       const entityData = entity as any;
       
@@ -620,7 +636,18 @@ export default function EstructurasPage() {
           if (entityData.domicilios && entityData.domicilios.length > 0) {
             doc.text(`Domicilios:`, margin, y); y += 7;
             entityData.domicilios.forEach((dom: string) => {
-              doc.text(`- ${dom}`, margin + 5, y); y += 6;
+              const wrappedText = doc.splitTextToSize(dom, textWidth - 10);
+              doc.text(`- ${wrappedText[0]}`, margin + 5, y);
+              
+              // Si hay más líneas, las añadimos
+              if (wrappedText.length > 1) {
+                for (let i = 1; i < wrappedText.length; i++) {
+                  y += 5;
+                  doc.text(`  ${wrappedText[i]}`, margin + 5, y);
+                }
+              }
+              
+              y += 7;
             });
           }
           break;
@@ -636,20 +663,29 @@ export default function EstructurasPage() {
           }
           
           if (entityData.observaciones) {
-            doc.text(`Observaciones generales: ${entityData.observaciones}`, margin, y); y += 7;
+            doc.text(`Observaciones generales:`, margin, y); y += 7;
+            const wrappedText = doc.splitTextToSize(entityData.observaciones, textWidth - 5);
+            doc.text(wrappedText, margin + 5, y);
+            y += 7 * wrappedText.length;
           }
           break;
           
         case "inmueble":
           doc.text(`Tipo: ${entityData.tipo}`, margin, y); y += 7;
-          doc.text(`Dirección: ${entityData.direccion}`, margin, y); y += 7;
+          doc.text(`Dirección:`, margin, y); y += 7;
+          const wrappedDireccion = doc.splitTextToSize(entityData.direccion, textWidth - 5);
+          doc.text(wrappedDireccion, margin + 5, y);
+          y += 7 * Math.max(1, wrappedDireccion.length);
           
           if (entityData.propietario) {
             doc.text(`Propietario: ${entityData.propietario}`, margin, y); y += 7;
           }
           
           if (entityData.observaciones) {
-            doc.text(`Observaciones generales: ${entityData.observaciones}`, margin, y); y += 7;
+            doc.text(`Observaciones generales:`, margin, y); y += 7;
+            const wrappedObservaciones = doc.splitTextToSize(entityData.observaciones, textWidth - 5);
+            doc.text(wrappedObservaciones, margin + 5, y);
+            y += 7 * wrappedObservaciones.length;
           }
           break;
           
@@ -667,12 +703,21 @@ export default function EstructurasPage() {
           }
           
           if (entityData.observaciones) {
-            doc.text(`Observaciones generales: ${entityData.observaciones}`, margin, y); y += 7;
+            doc.text(`Observaciones generales:`, margin, y); y += 7;
+            const wrappedText = doc.splitTextToSize(entityData.observaciones, textWidth - 5);
+            doc.text(wrappedText, margin + 5, y);
+            y += 7 * wrappedText.length;
           }
           break;
       }
       
       y += 10;
+      
+      // Nueva página si es necesario
+      if (y > pageHeight - 30) {
+        doc.addPage();
+        y = 20;
+      }
       
       // Observaciones
       if (observaciones && observaciones.length > 0) {
@@ -696,14 +741,20 @@ export default function EstructurasPage() {
           body: obsData,
           startY: y,
           margin: { left: margin, right: margin },
-          headStyles: { fillColor: [50, 50, 120] }
+          headStyles: { fillColor: [50, 50, 120] },
+          styles: { overflow: 'linebreak' },
+          columnStyles: {
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 30 },
+            2: { cellWidth: 40 }
+          }
         });
         
         y = (doc as any).lastAutoTable.finalY + 15;
       }
       
       // Nueva página si es necesario
-      if (y > 250) {
+      if (y > pageHeight - 60) {
         doc.addPage();
         y = 20;
       }
@@ -737,14 +788,15 @@ export default function EstructurasPage() {
             body: persData,
             startY: y,
             margin: { left: margin, right: margin },
-            headStyles: { fillColor: [70, 130, 180] }
+            headStyles: { fillColor: [70, 130, 180] },
+            styles: { overflow: 'linebreak' }
           });
           
           y = (doc as any).lastAutoTable.finalY + 10;
         }
         
         // Nueva página si es necesario
-        if (y > 250 && (relaciones.vehiculos?.length > 0 || relaciones.inmuebles?.length > 0)) {
+        if (y > pageHeight - 60 && (relaciones.vehiculos?.length > 0 || relaciones.inmuebles?.length > 0)) {
           doc.addPage();
           y = 20;
         }
@@ -765,14 +817,15 @@ export default function EstructurasPage() {
             body: vehData,
             startY: y,
             margin: { left: margin, right: margin },
-            headStyles: { fillColor: [46, 139, 87] }
+            headStyles: { fillColor: [46, 139, 87] },
+            styles: { overflow: 'linebreak' }
           });
           
           y = (doc as any).lastAutoTable.finalY + 10;
         }
         
         // Nueva página si es necesario
-        if (y > 250 && relaciones.inmuebles?.length > 0) {
+        if (y > pageHeight - 60 && relaciones.inmuebles?.length > 0) {
           doc.addPage();
           y = 20;
         }
@@ -793,7 +846,8 @@ export default function EstructurasPage() {
             body: inmData,
             startY: y,
             margin: { left: margin, right: margin },
-            headStyles: { fillColor: [147, 112, 219] }
+            headStyles: { fillColor: [147, 112, 219] },
+            styles: { overflow: 'linebreak' }
           });
           
           y = (doc as any).lastAutoTable.finalY + 10;
@@ -804,37 +858,56 @@ export default function EstructurasPage() {
       if (locations.length > 0) {
         // Nueva página para las ubicaciones
         doc.addPage();
+        y = 20;
         
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
-        doc.text("UBICACIONES", margin, 20);
+        doc.text("UBICACIONES", margin, y); y += 10;
         doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
+        
+        // Capturas de mapa
+        // Nota: No se puede capturar directamente el mapa en el PDF,
+        // pero se incluye una tabla de ubicaciones
         
         // Tabla de ubicaciones
         const locHeaders = [["Tipo", "Coordenadas", "Descripción"]];
         const locData = locations.map(loc => [
           loc.title,
           `Lat: ${loc.lat.toFixed(6)}, Lng: ${loc.lng.toFixed(6)}`,
-          loc.description
+          loc.description || "Sin descripción"
         ]);
         
         // @ts-ignore
         doc.autoTable({
           head: locHeaders,
           body: locData,
-          startY: 30,
+          startY: y,
           margin: { left: margin, right: margin },
-          headStyles: { fillColor: [220, 20, 60] }
+          headStyles: { fillColor: [220, 20, 60] },
+          styles: { overflow: 'linebreak' },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 60 },
+            2: { cellWidth: 'auto' }
+          }
         });
+        
+        y = (doc as any).lastAutoTable.finalY + 15;
+        
+        // Añadir pie de nota para ubicaciones
+        doc.setFontSize(9);
+        doc.text("Nota: Para visualizar las ubicaciones en detalle, consulte la aplicación web.", margin, y);
       }
       
-      // Agregar nota de pie de página
-      const totalPages = doc.internal.getNumberOfPages();
+      // Agregar nota de pie de página en todas las páginas
+      const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.text(`Informe generado el ${new Date().toLocaleString()} - Página ${i} de ${totalPages}`, pageWidth / 2, 287, { align: "center" });
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Informe generado el ${new Date().toLocaleString()} - Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+        doc.text("SISTEMA DE GESTIÓN DE INTELIGENCIA", pageWidth / 2, pageHeight - 5, { align: "center" });
       }
       
       // Guardar el PDF
