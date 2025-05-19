@@ -66,19 +66,30 @@ export function registerMensajeriaRoutes(app: Express) {
   // Enviar un nuevo mensaje
   app.post("/api/mensajes", ensureAuthenticated, async (req, res) => {
     try {
-      const validationResult = insertMensajeSchema.safeParse(req.body);
+      console.log("Datos recibidos para crear mensaje:", req.body);
       
-      if (!validationResult.success) {
+      // Extraer los datos necesarios del cuerpo de la solicitud
+      const { destinatarioId, asunto, contenido } = req.body;
+      
+      if (!destinatarioId || !asunto || !contenido) {
         return res.status(400).json({ 
           message: "Datos de mensaje inválidos", 
-          errors: validationResult.error.format() 
+          errors: "Los campos destinatarioId, asunto y contenido son obligatorios" 
         });
       }
       
-      const mensajeData = validationResult.data;
-      mensajeData.remiteId = req.user!.id; // Asignar el ID del usuario como remitente
+      // Crear el objeto de mensaje con los campos obligatorios
+      const mensajeData = {
+        remiteId: req.user!.id, // Asignar el ID del usuario como remitente
+        destinatarioId: typeof destinatarioId === 'string' ? parseInt(destinatarioId) : destinatarioId,
+        asunto,
+        contenido
+      };
+      
+      console.log("Datos formateados para crear mensaje:", mensajeData);
       
       const nuevoMensaje = await mensajeriaService.createMensaje(mensajeData);
+      console.log("Mensaje creado correctamente:", nuevoMensaje);
       res.status(201).json(nuevoMensaje);
     } catch (error) {
       console.error("Error al crear mensaje:", error);

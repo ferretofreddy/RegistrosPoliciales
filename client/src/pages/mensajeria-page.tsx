@@ -82,19 +82,25 @@ export default function MensajeriaPage() {
     mutationFn: async (data: NuevoMensajeFormValues) => {
       console.log("Enviando mensaje con datos:", data);
       
-      // El problema parece ser que necesitamos incluir el campo remiteId en la solicitud
-      // pero lo añadiremos como null para que el servidor lo reemplace con el ID del usuario autenticado
+      // Simplificar la estructura, el servidor ahora maneja la extracción de datos
       const mensajeData = {
-        remiteId: null, // Será reemplazado por el servidor con el ID del usuario autenticado
-        destinatarioId: parseInt(data.destinatarioId),
+        destinatarioId: data.destinatarioId,
         asunto: data.asunto,
         contenido: data.contenido
       };
       
       console.log("Datos formateados para envío:", mensajeData);
-      const response = await apiRequest("POST", "/api/mensajes", mensajeData);
-      console.log("Respuesta al enviar mensaje:", response);
-      return response.json();
+      
+      try {
+        const response = await apiRequest("POST", "/api/mensajes", mensajeData);
+        console.log("Respuesta al enviar mensaje:", response);
+        const responseData = await response.json();
+        console.log("Datos de respuesta:", responseData);
+        return responseData;
+      } catch (error) {
+        console.error("Error detallado al enviar mensaje:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mensajes/enviados"] });
