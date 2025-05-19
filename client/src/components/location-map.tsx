@@ -74,42 +74,53 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
 
   // Crear iconos personalizados para cada tipo de entidad
   const createCustomIcon = (type: string, relation: string = 'direct') => {
-    const iconHtml = document.createElement('div');
-    iconHtml.className = 'custom-icon-container';
+    // Definir colores basados en el tipo de entidad y la relación
+    let iconColor: string;
+    let iconSvg: string;
+    let iconSize = 36; // Tamaño consistente para todos los iconos
     
-    // Definir colores basados en el tipo de relación
-    // Direct = color normal, Related = versión más clara del color
-    let color = relation === 'direct' ? 'text-blue-600' : 'text-blue-400';
-    let icon = '';
-    
+    // Configura colores para cada tipo de entidad
     switch (type) {
       case 'persona':
-        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>';
-        color = relation === 'direct' ? 'text-blue-600' : 'text-blue-400';
+        iconColor = relation === 'direct' ? '#2563eb' : '#60a5fa'; // azul
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="${relation === 'direct' ? iconColor : 'white'}" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="5" fill="${relation === 'direct' ? 'white' : iconColor}" stroke="${iconColor}"/>
+          <path d="M20 21a8 8 0 0 0-16 0" fill="${relation === 'direct' ? 'white' : iconColor}" stroke="${iconColor}"/>
+        </svg>`;
         break;
       case 'vehiculo':
-        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-car"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10h-1.6a1 1 0 0 1-.5-.1l-2.7-1.6a1 1 0 0 0-.5-.1H8a2 2 0 0 0-2 1.5L5 12v5c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>';
-        color = relation === 'direct' ? 'text-green-600' : 'text-green-400';
+        iconColor = relation === 'direct' ? '#16a34a' : '#4ade80'; // verde
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="${relation === 'direct' ? iconColor : 'white'}" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10h-1.6a1 1 0 0 1-.5-.1l-2.7-1.6a1 1 0 0 0-.5-.1H8a2 2 0 0 0-2 1.5L5 12v5c0 .6.4 1 1 1h2" fill="${relation === 'direct' ? 'white' : iconColor}" stroke="${iconColor}"/>
+          <circle cx="7" cy="17" r="2" fill="white" stroke="${iconColor}"/>
+          <path d="M9 17h6" fill="none" stroke="${iconColor}"/>
+          <circle cx="17" cy="17" r="2" fill="white" stroke="${iconColor}"/>
+        </svg>`;
         break;
       case 'inmueble':
-        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-building"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>';
-        color = relation === 'direct' ? 'text-purple-600' : 'text-purple-400';
+        iconColor = relation === 'direct' ? '#9333ea' : '#c084fc'; // púrpura
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="${relation === 'direct' ? iconColor : 'white'}" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="16" height="20" x="4" y="2" rx="2" ry="2" fill="${relation === 'direct' ? 'white' : iconColor}" stroke="${iconColor}"/>
+          <path d="M9 22v-4h6v4" fill="${relation === 'direct' ? 'white' : iconColor}" stroke="${iconColor}"/>
+          <path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01" fill="none" stroke="${iconColor}"/>
+        </svg>`;
         break;
       case 'ubicacion':
       default:
-        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
-        color = relation === 'direct' ? 'text-red-600' : 'text-red-400';
+        iconColor = relation === 'direct' ? '#dc2626' : '#f87171'; // rojo
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="${relation === 'direct' ? iconColor : 'white'}" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" fill="${relation === 'direct' ? 'white' : iconColor}" stroke="${iconColor}"/>
+          <circle cx="12" cy="10" r="3" fill="${relation === 'direct' ? iconColor : 'white'}" stroke="${iconColor}"/>
+        </svg>`;
     }
     
-    iconHtml.innerHTML = icon;
-    iconHtml.classList.add(color);
-    
+    // Crear el icono con tamaño consistente
     return new Icon({
-      iconUrl: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(icon),
-      iconSize: [24, 24],
-      iconAnchor: [12, 24],
-      popupAnchor: [0, -24],
-      className: `${color}`
+      iconUrl: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(iconSvg),
+      iconSize: [iconSize, iconSize],
+      iconAnchor: [iconSize/2, iconSize],  // Centrar horizontalmente, anclar en la parte inferior
+      popupAnchor: [0, -iconSize],         // Posicionar el popup encima del icono
+      className: `icon-${type}-${relation}` // Clase para identificar los tipos de iconos
     });
   };
 
@@ -151,24 +162,69 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
         </MapContainer>
       </div>
 
-      {/* Leyenda del mapa */}
-      <div className="flex flex-wrap gap-4 p-2 bg-gray-50 rounded border">
-        <div className="font-semibold">Leyenda:</div>
-        <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-blue-500" />
-          <span>Persona</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Car className="h-4 w-4 text-green-500" />
-          <span>Vehículo</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Building className="h-4 w-4 text-purple-500" />
-          <span>Inmueble</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-red-500" />
-          <span>Ubicación</span>
+      {/* Leyenda del mapa mejorada */}
+      <div className="p-3 bg-white rounded-lg border shadow-sm">
+        <div className="font-semibold mb-2 text-gray-800">Tipos de entidades:</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100">
+              <User className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <span className="font-medium">Persona</span>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                <span>Directa</span>
+                <div className="w-3 h-3 rounded-full bg-blue-400 ml-1"></div>
+                <span>Relacionada</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
+              <Car className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <span className="font-medium">Vehículo</span>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="w-3 h-3 rounded-full bg-green-600"></div>
+                <span>Directa</span>
+                <div className="w-3 h-3 rounded-full bg-green-400 ml-1"></div>
+                <span>Relacionada</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100">
+              <Building className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <span className="font-medium">Inmueble</span>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                <span>Directa</span>
+                <div className="w-3 h-3 rounded-full bg-purple-400 ml-1"></div>
+                <span>Relacionada</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100">
+              <MapPin className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <span className="font-medium">Ubicación</span>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                <span>Directa</span>
+                <div className="w-3 h-3 rounded-full bg-red-400 ml-1"></div>
+                <span>Relacionada</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
