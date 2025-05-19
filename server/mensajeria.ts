@@ -23,7 +23,9 @@ export async function getMensajeById(id: number): Promise<Mensaje | undefined> {
 
 export async function getMensajesRecibidos(usuarioId: number): Promise<Mensaje[]> {
   try {
-    return await db
+    console.log(`Obteniendo mensajes recibidos para el usuario ${usuarioId}`);
+    
+    const resultados = await db
       .select()
       .from(mensajes)
       .where(
@@ -33,6 +35,9 @@ export async function getMensajesRecibidos(usuarioId: number): Promise<Mensaje[]
         )
       )
       .orderBy(desc(mensajes.fechaEnvio));
+      
+    console.log(`Mensajes recibidos encontrados: ${resultados.length}`);
+    return resultados;
   } catch (error) {
     console.error("Error en getMensajesRecibidos:", error);
     return [];
@@ -41,7 +46,9 @@ export async function getMensajesRecibidos(usuarioId: number): Promise<Mensaje[]
 
 export async function getMensajesEnviados(usuarioId: number): Promise<Mensaje[]> {
   try {
-    return await db
+    console.log(`Obteniendo mensajes enviados para el usuario ${usuarioId}`);
+    
+    const resultados = await db
       .select()
       .from(mensajes)
       .where(
@@ -51,6 +58,9 @@ export async function getMensajesEnviados(usuarioId: number): Promise<Mensaje[]>
         )
       )
       .orderBy(desc(mensajes.fechaEnvio));
+      
+    console.log(`Mensajes enviados encontrados: ${resultados.length}`);
+    return resultados;
   } catch (error) {
     console.error("Error en getMensajesEnviados:", error);
     return [];
