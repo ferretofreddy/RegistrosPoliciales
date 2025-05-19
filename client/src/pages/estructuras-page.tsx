@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
 import SearchComponent, { SearchResult, EntityType } from "@/components/search-component";
@@ -24,12 +24,14 @@ import LocationMap from "@/components/location-map";
 import LocationsTable, { LocationData } from "@/components/locations-table";
 import { jsPDF } from "jspdf";
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 export default function EstructurasPage() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [activeTab, setActiveTab] = useState("informacion");
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number]>([9.9281, -84.0907]);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Obtener los datos de la entidad
   const { data: entity, isLoading: isLoadingEntity } = useQuery({
@@ -569,10 +571,33 @@ export default function EstructurasPage() {
   };
 
   // Función para generar el PDF
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!selectedResult || !entity) return;
 
     try {
+      // Primero verificamos si podemos capturar el mapa
+      let mapImageUrl: string | null = null;
+      if (mapContainerRef.current && locations.length > 0) {
+        try {
+          // Intentamos capturar el mapa como imagen
+          const canvas = await html2canvas(mapContainerRef.current, {
+            useCORS: true,
+            allowTaint: true,
+            scrollX: 0,
+            scrollY: 0,
+            scale: 1,
+            backgroundColor: null,
+            logging: false
+          });
+          
+          mapImageUrl = canvas.toDataURL('image/png');
+          console.log("Mapa capturado como imagen");
+        } catch (e) {
+          console.error("Error al capturar el mapa:", e);
+          // Continuamos sin la imagen del mapa
+        }
+      }
+
       // Utilizamos una estrategia simple y robusta para el PDF
       const doc = new jsPDF();
       
@@ -848,7 +873,7 @@ export default function EstructurasPage() {
         }
       }
       
-      // Nueva página para ubicaciones
+      // Nueva página para mapa y ubicaciones
       if (locations && locations.length > 0) {
         doc.addPage();
         y = 20;
@@ -856,10 +881,39 @@ export default function EstructurasPage() {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text("UBICACIONES", margin, y);
+        y += 10;
+        
+        // Si tenemos imagen del mapa, la incluimos
+        if (mapImageUrl) {
+          try {
+            // Calcular dimensiones para mantener la proporción
+            const imgWidth = pageWidth - (2 * margin);
+            const imgHeight = (imgWidth * 3) / 4; // Proporción aproximada 4:3
+            
+            // Añadir la imagen del mapa
+            doc.addImage(mapImageUrl, 'PNG', margin, y, imgWidth, imgHeight);
+            
+            // Actualizar posición Y para contenido adicional
+            y += imgHeight + 10;
+            
+            // Añadir leyenda debajo del mapa
+            doc.setFontSize(8);
+            doc.text("Vista del mapa con las ubicaciones relacionadas", pageWidth / 2, y, { align: "center" });
+            y += 8;
+          } catch (e) {
+            console.error("Error al añadir imagen del mapa al PDF:", e);
+            // Continuamos sin la imagen
+          }
+        }
+        
+        // Si no pudimos incluir la imagen o después de incluirla
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("Listado de ubicaciones:", margin, y);
         y += 8;
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
         
+        // Tabla de detalle de ubicaciones
         locations.forEach((loc: LocationData, index: number) => {
           if (y > pageHeight - 40) {
             doc.addPage();
@@ -880,10 +934,6 @@ export default function EstructurasPage() {
           doc.text(`• Coordenadas: ${coordenadas}`, margin + 5, y); y += 5;
           doc.text(`• Descripción: ${textoDesc}`, margin + 5, y); y += 8;
         });
-        
-        y += 5;
-        doc.setFontSize(8);
-        doc.text("Nota: Para visualizar estas ubicaciones en un mapa, acceda a la aplicación web.", margin, y);
       }
       
       // Pie de página en todas las páginas
@@ -1039,7 +1089,7 @@ export default function EstructurasPage() {
                     {locations.length > 0 ? (
                       <div className="space-y-6">
                         <div className="border rounded-lg overflow-hidden">
-                          <div className="h-[350px] md:h-[450px] w-full">
+                          <div className="h-[350px] md:h-[450px] w-full" ref={mapContainerRef}>
                             <LocationMap 
                               markers={locations} 
                               center={mapCenter}
