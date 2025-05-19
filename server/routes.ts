@@ -1,6 +1,6 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
 import { eq, or, sql, like } from "drizzle-orm";
@@ -1425,5 +1425,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // Rutas de administración de usuarios
+  app.get('/api/admin/users', ensureAdmin, async (req, res) => {
+    try {
+      // Obtener el listado de todos los usuarios, excepto la contraseña
+      const rawUsers = await db.query.users.findMany();
+      const users = rawUsers.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json(users);
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+      res.status(500).json({ message: 'Error al obtener usuarios' });
+    }
+  });
+  
+  app.post('/api/admin/users', ensureAdmin, async (req, res) => {
+    try {
+      const { nombre, email, password, cedula, telefono, unidad, rol } = req.body;
+      
+      // Verificar campos obligatorios
+      if (!nombre || !email || !password || !rol) {
+        return res.status(400).json({ message: 'Nombre, email, contraseña y rol son obligatorios' });
+      }
+      
+      // Verificar que el email no exista
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.email, email)
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({ message: 'El email ya está en uso' });
+      }
+      
+      // Hashear la contraseña
+      const hashedPassword = await hashPassword(password);
+      
+      // Crear el usuario
+      const [newUser] = await db.insert(users).values({
+        nombre,
+        email,
+        password: hashedPassword,
+        cedula: cedula || '',
+        telefono: telefono || '',
+        unidad: unidad || '',
+        rol
+      }).returning({
+        id: users.id,
+        nombre: users.nombre,
+        email: users.email,
+        cedula: users.cedula,
+        telefono: users.telefono,
+        unidad: users.unidad,
+        rol: users.rol
+      });
+      
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error('Error al crear usuario:', error);
+      res.status(500).json({ message: 'Error al crear usuario' });
+    }
+  });
+  
+  app.put('/api/admin/users/:id', ensureAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { nombre, email, cedula, telefono, unidad, rol } = req.body;
+      
+      // Verificar campos obligatorios
+      if (!nombre || !email || !rol) {
+        return res.status(400).json({ message: 'Nombre, email y rol son obligatorios' });
+      }
+      
+      // Verificar que el usuario exista
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.id, userId)
+      });
+      
+      if (!existingUser) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      // Verificar que el email no esté en uso por otro usuario
+      if (email !== existingUser.email) {
+        const userWithEmail = await db.query.users.findFirst({
+          where: eq(users.email, email)
+        });
+        
+        if (userWithEmail) {
+          return res.status(400).json({ message: 'El email ya está en uso por otro usuario' });
+        }
+      }
+      
+      // Actualizar el usuario
+      const [updatedUser] = await db.update(users)
+        .set({
+          nombre,
+          email,
+          cedula: cedula || '',
+          telefono: telefono || '',
+          unidad: unidad || '',
+          rol
+        })
+        .where(eq(users.id, userId))
+        .returning({
+          id: users.id,
+          nombre: users.nombre,
+          email: users.email,
+          cedula: users.cedula,
+          telefono: users.telefono,
+          unidad: users.unidad,
+          rol: users.rol
+        });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+      res.status(500).json({ message: 'Error al actualizar usuario' });
+    }
+  });
+  
+  app.put('/api/admin/users/:id/password', ensureAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { password } = req.body;
+      
+      // Verificar que se proporcionó una contraseña
+      if (!password || password.length < 6) {
+        return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+      }
+      
+      // Verificar que el usuario exista
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.id, userId)
+      });
+      
+      if (!existingUser) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      // Hashear la nueva contraseña
+      const hashedPassword = await hashPassword(password);
+      
+      // Actualizar la contraseña
+      await db.update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId));
+      
+      res.json({ message: 'Contraseña actualizada correctamente' });
+    } catch (error) {
+      console.error('Error al cambiar contraseña:', error);
+      res.status(500).json({ message: 'Error al cambiar contraseña' });
+    }
+  });
+  
+  app.delete('/api/admin/users/:id', ensureAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Verificar que el usuario no sea el que está realizando la solicitud
+      if (req.user && req.user.id === userId) {
+        return res.status(400).json({ message: 'No puede eliminar su propio usuario' });
+      }
+      
+      // Verificar que el usuario exista
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.id, userId)
+      });
+      
+      if (!existingUser) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      // Eliminar el usuario
+      await db.delete(users).where(eq(users.id, userId));
+      
+      res.json({ message: 'Usuario eliminado correctamente' });
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      res.status(500).json({ message: 'Error al eliminar usuario' });
+    }
+  });
+  
   return httpServer;
 }
