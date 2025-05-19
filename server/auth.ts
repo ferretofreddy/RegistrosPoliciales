@@ -155,4 +155,42 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
+  
+  // Actualizar perfil del usuario (sólo teléfono y unidad)
+  app.patch("/api/user/update", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const { telefono, unidad } = req.body;
+      
+      // Realizar actualización parcial (solo los campos permitidos)
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          telefono: telefono || "",
+          unidad: unidad || ""
+        })
+        .where(eq(users.id, req.user.id))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Error al actualizar el perfil" });
+      }
+      
+      // Actualizar la sesión del usuario con los nuevos datos
+      req.login(updatedUser, (err) => {
+        if (err) {
+          console.error("Error al actualizar la sesión:", err);
+          return res.status(500).json({ message: "Error al actualizar la sesión" });
+        }
+        
+        res.json(updatedUser);
+      });
+    } catch (error) {
+      console.error("Error al actualizar perfil:", error);
+      res.status(500).json({ message: "Error al actualizar el perfil" });
+    }
+  });
 }
