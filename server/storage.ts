@@ -505,6 +505,123 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+  // === MENSAJERÍA INTERNA ===
+  async getMensajeById(id: number): Promise<Mensaje | undefined> {
+    try {
+      const [mensaje] = await db
+        .select()
+        .from(mensajes)
+        .where(eq(mensajes.id, id));
+      return mensaje;
+    } catch (error) {
+      console.error("Error en getMensajeById:", error);
+      return undefined;
+    }
+  }
+
+  async getMensajesRecibidos(usuarioId: number): Promise<Mensaje[]> {
+    try {
+      return await db
+        .select()
+        .from(mensajes)
+        .where(
+          eq(mensajes.destinatarioId, usuarioId),
+          eq(mensajes.eliminadoDestinatario, false)
+        )
+        .orderBy(desc(mensajes.fechaEnvio));
+    } catch (error) {
+      console.error("Error en getMensajesRecibidos:", error);
+      return [];
+    }
+  }
+
+  async getMensajesEnviados(usuarioId: number): Promise<Mensaje[]> {
+    try {
+      return await db
+        .select()
+        .from(mensajes)
+        .where(
+          eq(mensajes.remiteId, usuarioId),
+          eq(mensajes.eliminadoRemite, false)
+        )
+        .orderBy(desc(mensajes.fechaEnvio));
+    } catch (error) {
+      console.error("Error en getMensajesEnviados:", error);
+      return [];
+    }
+  }
+
+  async createMensaje(mensaje: InsertMensaje): Promise<Mensaje> {
+    try {
+      const [nuevoMensaje] = await db
+        .insert(mensajes)
+        .values(mensaje)
+        .returning();
+      return nuevoMensaje;
+    } catch (error) {
+      console.error("Error en createMensaje:", error);
+      throw error;
+    }
+  }
+
+  async marcarMensajeComoLeido(id: number): Promise<boolean> {
+    try {
+      const [mensaje] = await db
+        .update(mensajes)
+        .set({ leido: true })
+        .where(eq(mensajes.id, id))
+        .returning();
+      return !!mensaje;
+    } catch (error) {
+      console.error("Error en marcarMensajeComoLeido:", error);
+      return false;
+    }
+  }
+
+  async eliminarMensaje(id: number, esRemitente: boolean): Promise<boolean> {
+    try {
+      const [mensaje] = await db
+        .update(mensajes)
+        .set(
+          esRemitente
+            ? { eliminadoRemite: true }
+            : { eliminadoDestinatario: true }
+        )
+        .where(eq(mensajes.id, id))
+        .returning();
+      
+      return !!mensaje;
+    } catch (error) {
+      console.error("Error en eliminarMensaje:", error);
+      return false;
+    }
+  }
+
+  // === ARCHIVOS ADJUNTOS ===
+  async getArchivosByMensajeId(mensajeId: number): Promise<ArchivoAdjunto[]> {
+    try {
+      return await db
+        .select()
+        .from(archivosAdjuntos)
+        .where(eq(archivosAdjuntos.mensajeId, mensajeId));
+    } catch (error) {
+      console.error("Error en getArchivosByMensajeId:", error);
+      return [];
+    }
+  }
+
+  async createArchivoAdjunto(archivo: InsertArchivoAdjunto): Promise<ArchivoAdjunto> {
+    try {
+      const [nuevoArchivo] = await db
+        .insert(archivosAdjuntos)
+        .values(archivo)
+        .returning();
+      return nuevoArchivo;
+    } catch (error) {
+      console.error("Error en createArchivoAdjunto:", error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
