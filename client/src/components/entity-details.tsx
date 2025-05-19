@@ -347,8 +347,14 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           </div>
         )}
 
-        {/* Ubicaciones relacionadas */}
-        {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
+        {/* Ubicaciones relacionadas - Filtradas para excluir domicilios e inmuebles */}
+        {relaciones.ubicaciones && relaciones.ubicaciones.filter(ubicacion => {
+            const tipo = (ubicacion.tipo || "").toLowerCase();
+            return tipo !== "domicilio" && 
+                   !tipo.includes("domicilio") && 
+                   tipo !== "inmueble" && 
+                   !tipo.includes("inmueble");
+          }).length > 0 && (
           <div>
             <h3 className="text-md font-semibold mb-2">Ubicaciones relacionadas</h3>
             <Table>
@@ -360,21 +366,30 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {relaciones.ubicaciones.map((ubicacion: any) => (
-                  <TableRow key={ubicacion.id}>
-                    <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
-                    <TableCell>
-                      {ubicacion.latitud && ubicacion.longitud
-                        ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
-                        : "Sin coordenadas"}
-                    </TableCell>
-                    <TableCell>
-                      {ubicacion.fecha
-                        ? new Date(ubicacion.fecha).toLocaleDateString()
-                        : "Sin fecha"}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {relaciones.ubicaciones
+                  .filter(ubicacion => {
+                    // Filtrar para excluir ubicaciones de tipo domicilio e inmueble
+                    const tipo = (ubicacion.tipo || "").toLowerCase();
+                    return tipo !== "domicilio" && 
+                           !tipo.includes("domicilio") && 
+                           tipo !== "inmueble" && 
+                           !tipo.includes("inmueble");
+                  })
+                  .map((ubicacion: any) => (
+                    <TableRow key={ubicacion.id}>
+                      <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
+                      <TableCell>
+                        {ubicacion.latitud && ubicacion.longitud
+                          ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
+                          : "Sin coordenadas"}
+                      </TableCell>
+                      <TableCell>
+                        {ubicacion.fecha
+                          ? new Date(ubicacion.fecha).toLocaleDateString()
+                          : "Sin fecha"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </div>
