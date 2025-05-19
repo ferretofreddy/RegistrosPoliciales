@@ -278,10 +278,37 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
       return <p className="text-gray-500">No hay relaciones registradas para esta entidad.</p>;
     }
 
+    // Preparar las ubicaciones relacionadas filtrando correctamente
+    const ubicacionesRelacionadas = [
+      ...(relaciones.ubicaciones || []).filter(ubicacion => {
+        // Filtrar ubicaciones para excluir domicilios e inmuebles
+        const tipo = (ubicacion.tipo || "").toLowerCase();
+        return tipo !== "domicilio" && 
+               !tipo.includes("domicilio") && 
+               tipo !== "inmueble" && 
+               !tipo.includes("inmueble");
+      }),
+      ...(relaciones.otrasUbicaciones || []).filter(ubicacion => {
+        // Filtrar otrasUbicaciones para excluir domicilios e inmuebles (por si acaso)
+        const tipo = (ubicacion.tipo || "").toLowerCase();
+        return tipo !== "domicilio" && 
+               !tipo.includes("domicilio") && 
+               tipo !== "inmueble" && 
+               !tipo.includes("inmueble");
+      })
+    ];
+    
+    // Verificar si hay datos para cada sección
+    const hasPersonas = relaciones.personas && relaciones.personas.length > 0;
+    const hasVehiculos = relaciones.vehiculos && relaciones.vehiculos.length > 0;
+    const hasInmuebles = relaciones.inmuebles && relaciones.inmuebles.length > 0;
+    const hasUbicaciones = ubicacionesRelacionadas.length > 0;
+    
+    // Solo mostrar las secciones que tienen datos
     return (
       <div className="space-y-6">
-        {/* Personas relacionadas */}
-        {relaciones.personas && relaciones.personas.length > 0 && (
+        {/* Personas relacionadas - solo se muestra si hay registros */}
+        {hasPersonas && (
           <div>
             <h3 className="text-md font-semibold mb-2">Personas relacionadas</h3>
             <Table>
@@ -303,8 +330,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           </div>
         )}
 
-        {/* Vehículos relacionados */}
-        {relaciones.vehiculos && relaciones.vehiculos.length > 0 && (
+        {/* Vehículos relacionados - solo se muestra si hay registros */}
+        {hasVehiculos && (
           <div>
             <h3 className="text-md font-semibold mb-2">Vehículos relacionados</h3>
             <Table>
@@ -328,8 +355,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           </div>
         )}
 
-        {/* Inmuebles relacionados */}
-        {relaciones.inmuebles && relaciones.inmuebles.length > 0 && (
+        {/* Inmuebles relacionados - solo se muestra si hay registros */}
+        {hasInmuebles && (
           <div>
             <h3 className="text-md font-semibold mb-2">Inmuebles relacionados</h3>
             <Table>
@@ -351,9 +378,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           </div>
         )}
 
-        {/* Ubicaciones relacionadas - Filtradas para excluir domicilios e inmuebles */}
-        {((relaciones.ubicaciones && relaciones.ubicaciones.length > 0) || 
-          (relaciones.otrasUbicaciones && relaciones.otrasUbicaciones.length > 0)) && (
+        {/* Ubicaciones relacionadas - solo se muestra si hay registros filtrados */}
+        {hasUbicaciones && (
           <div>
             <h3 className="text-md font-semibold mb-2">Ubicaciones relacionadas</h3>
             <Table>
@@ -365,25 +391,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Combinar y filtrar ubicaciones y otrasUbicaciones */}
-                {[
-                  ...(relaciones.ubicaciones || []).filter(ubicacion => {
-                    // Filtrar ubicaciones para excluir domicilios e inmuebles
-                    const tipo = (ubicacion.tipo || "").toLowerCase();
-                    return tipo !== "domicilio" && 
-                           !tipo.includes("domicilio") && 
-                           tipo !== "inmueble" && 
-                           !tipo.includes("inmueble");
-                  }),
-                  ...(relaciones.otrasUbicaciones || []).filter(ubicacion => {
-                    // Filtrar otrasUbicaciones para excluir domicilios e inmuebles (por si acaso)
-                    const tipo = (ubicacion.tipo || "").toLowerCase();
-                    return tipo !== "domicilio" && 
-                           !tipo.includes("domicilio") && 
-                           tipo !== "inmueble" && 
-                           !tipo.includes("inmueble");
-                  })
-                ].map((ubicacion: any) => (
+                {ubicacionesRelacionadas.map((ubicacion: any) => (
                   <TableRow key={ubicacion.id}>
                     <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
                     <TableCell>
