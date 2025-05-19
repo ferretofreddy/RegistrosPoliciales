@@ -69,30 +69,99 @@ function filtrarUbicacionesDuplicadas(ubicaciones: LocationData[]): LocationData
   const directas = ubicaciones.filter(u => u.relation === "direct");
   const relacionadas = ubicaciones.filter(u => u.relation === "related");
   
-  // Grupo 1: Ubicaciones directas (siempre se muestran)
-  const resultado = [...directas];
+  // Paso 1: Filtrar los resultados de búsqueda para excluir entidades de tipo "ubicacion" 
+  // que son de tipo "Domicilio" o "Inmueble"
+  const resultadosBusqueda = ubicaciones.filter(ubi => {
+    // Si es un resultado de búsqueda (tipo "ubicacion")
+    if (ubi.type === "ubicacion") {
+      // Excluir si tiene "domicilio" o "inmueble" en el título
+      if (ubi.title.toLowerCase().includes("domicilio") || 
+          ubi.title.toLowerCase().includes("inmueble")) {
+        // Verificar si existe una persona o inmueble relacionado que ya tenga esta ubicación
+        const personaOInmuebleConMismaUbicacion = ubicaciones.some(otra => 
+          (otra.type === "persona" || otra.type === "inmueble") && 
+          otra.id !== ubi.id &&
+          otra.lat === ubi.lat && 
+          otra.lng === ubi.lng
+        );
+        
+        if (personaOInmuebleConMismaUbicacion) {
+          console.log(`Excluyendo ubicación duplicada: ${ubi.title}, id=${ubi.id}`);
+          return false;
+        }
+      }
+      
+      // También excluir si la descripción contiene "domicilio de" seguido de un nombre
+      if (ubi.description && ubi.description.toLowerCase().includes("domicilio de")) {
+        // Verificar si ya existe un resultado de persona con el mismo nombre
+        const nombreEnDescripcion = ubi.description.match(/domicilio de ([^(]+)/i);
+        if (nombreEnDescripcion && nombreEnDescripcion[1]) {
+          const nombre = nombreEnDescripcion[1].trim();
+          
+          const personaExistente = ubicaciones.some(otra => 
+            otra.type === "persona" && 
+            otra.title.toLowerCase().includes(nombre.toLowerCase())
+          );
+          
+          if (personaExistente) {
+            console.log(`Excluyendo ubicación de domicilio duplicada por nombre: ${nombre}, id=${ubi.id}`);
+            return false;
+          }
+        }
+      }
+    }
+    
+    return true;
+  });
   
-  // Grupo 2: Ubicaciones relacionadas (filtrar duplicados)
-  const idsDirectas = new Set(directas.map(u => u.id));
+  // Paso 2: Priorizar las ubicaciones directas (siempre se muestran)
+  const directasFiltradas = directas.filter(dir => {
+    return resultadosBusqueda.some(res => res.id === dir.id);
+  });
   
-  // Excluir ubicaciones de tipo "domicilio" e "inmueble" de la entidad "ubicacion"
+  // Paso 3: Filtrar las ubicaciones relacionadas
+  const idsDirectas = new Set(directasFiltradas.map(u => u.id));
+  
   const relacionadasFiltradas = relacionadas.filter(ubicacion => {
     // Excluir si ya existe como directa
     if (idsDirectas.has(ubicacion.id)) {
       return false;
     }
     
+    // Si esta ubicación relacionada ya aparece en los resultados de búsqueda, excluirla
+    if (resultadosBusqueda.some(res => res.id === ubicacion.id)) {
+      return false;
+    }
+    
     // Si es una ubicación (no persona, inmueble o vehículo) y su título es "Domicilio" o "Inmueble", excluirla
-    if (ubicacion.type === "ubicacion" && 
+    if ((ubicacion.type === "ubicacion" || ubicacion.type === "persona") && 
         (ubicacion.title.toLowerCase().includes("domicilio") || 
          ubicacion.title.toLowerCase().includes("inmueble"))) {
-      return false;
+      
+      // Verificar si ya tenemos una ubicación con las mismas coordenadas
+      const coordenadasDuplicadas = resultadosBusqueda.some(otra => 
+        otra.id !== ubicacion.id && 
+        Math.abs(otra.lat - ubicacion.lat) < 0.000001 && 
+        Math.abs(otra.lng - ubicacion.lng) < 0.000001
+      );
+      
+      if (coordenadasDuplicadas) {
+        console.log(`Excluyendo ubicación relacionada duplicada: ${ubicacion.title}, id=${ubicacion.id}`);
+        return false;
+      }
     }
     
     return true;
   });
   
-  return [...resultado, ...relacionadasFiltradas];
+  const resultado = [...directasFiltradas, ...relacionadasFiltradas];
+  
+  // Eliminamos duplicados por ID
+  const ubicacionesSinDuplicados = resultado.filter((ubicacion, index, self) => 
+    index === self.findIndex(u => u.id === ubicacion.id)
+  );
+  
+  return ubicacionesSinDuplicados;
 }
 
 export default function UbicacionesPage() {
