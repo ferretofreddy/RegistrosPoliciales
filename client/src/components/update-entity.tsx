@@ -380,22 +380,22 @@ export default function UpdateEntity({ entityId, entityType }: UpdateEntityProps
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {relacionTipo === "persona" && personas.map((persona: any) => (
+                      {relacionTipo === "persona" && (personas as Persona[]).map((persona) => (
                         <SelectItem key={persona.id} value={persona.id.toString()}>
                           {persona.nombre} ({persona.identificacion})
                         </SelectItem>
                       ))}
-                      {relacionTipo === "vehiculo" && vehiculos.map((vehiculo: any) => (
+                      {relacionTipo === "vehiculo" && (vehiculos as Vehiculo[]).map((vehiculo) => (
                         <SelectItem key={vehiculo.id} value={vehiculo.id.toString()}>
                           {vehiculo.placa} - {vehiculo.marca} {vehiculo.modelo}
                         </SelectItem>
                       ))}
-                      {relacionTipo === "inmueble" && inmuebles.map((inmueble: any) => (
+                      {relacionTipo === "inmueble" && (inmuebles as Inmueble[]).map((inmueble) => (
                         <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
                           {inmueble.tipo}: {inmueble.direccion}
                         </SelectItem>
                       ))}
-                      {relacionTipo === "ubicacion" && ubicaciones.map((ubicacion: any) => (
+                      {relacionTipo === "ubicacion" && (ubicaciones as Ubicacion[]).map((ubicacion) => (
                         <SelectItem key={ubicacion.id} value={ubicacion.id.toString()}>
                           {ubicacion.tipo} - {ubicacion.observaciones || 'Sin observaciones'}
                         </SelectItem>
@@ -469,7 +469,7 @@ export default function UpdateEntity({ entityId, entityType }: UpdateEntityProps
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {relaciones.personas.map((persona: any) => (
+                    {(relaciones.personas as Persona[]).map((persona) => (
                       <TableRow key={persona.id}>
                         <TableCell>{persona.nombre}</TableCell>
                         <TableCell>{persona.identificacion}</TableCell>
@@ -497,7 +497,7 @@ export default function UpdateEntity({ entityId, entityType }: UpdateEntityProps
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {relaciones.vehiculos.map((vehiculo: any) => (
+                    {(relaciones.vehiculos as Vehiculo[]).map((vehiculo) => (
                       <TableRow key={vehiculo.id}>
                         <TableCell>{vehiculo.placa}</TableCell>
                         <TableCell>{vehiculo.marca}</TableCell>
@@ -525,7 +525,7 @@ export default function UpdateEntity({ entityId, entityType }: UpdateEntityProps
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {relaciones.inmuebles.map((inmueble: any) => (
+                    {(relaciones.inmuebles as Inmueble[]).map((inmueble) => (
                       <TableRow key={inmueble.id}>
                         <TableCell>{inmueble.tipo}</TableCell>
                         <TableCell>{inmueble.direccion}</TableCell>
@@ -553,7 +553,7 @@ export default function UpdateEntity({ entityId, entityType }: UpdateEntityProps
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {relaciones.ubicaciones.map((ubicacion: any) => (
+                    {(relaciones.ubicaciones as Ubicacion[]).map((ubicacion) => (
                       <TableRow key={ubicacion.id}>
                         <TableCell>{ubicacion.tipo}</TableCell>
                         <TableCell>{ubicacion.observaciones || 'Sin observaciones'}</TableCell>
