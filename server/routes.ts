@@ -1003,7 +1003,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Verificar el tipo de esta ubicación
         const [ubicacionActual] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, id));
         if (ubicacionActual) {
-          console.log(`[DEBUG] Verificando tipo de ubicación ID ${id}: ${ubicacionActual.tipo || "sin tipo"}`);
+          const tipoUbicacion = (ubicacionActual.tipo || "").toLowerCase();
+          console.log(`[DEBUG] Verificando tipo de ubicación ID ${id}: ${tipoUbicacion}`);
+          
+          // Buscar ubicaciones relacionadas, excluyendo domicilios e inmuebles
+          const otrasUbicacionesResult = await db.execute(
+            sql`SELECT DISTINCT u.* FROM ubicaciones u
+                JOIN ubicaciones_ubicaciones uu ON (u.id = uu.ubicacion_id_1 OR u.id = uu.ubicacion_id_2)
+                WHERE (uu.ubicacion_id_1 = ${id} OR uu.ubicacion_id_2 = ${id})
+                AND u.id != ${id}
+                AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+                AND LOWER(u.tipo) != 'domicilio'
+                AND LOWER(u.tipo) NOT LIKE '%domicilio%'
+                AND LOWER(u.tipo) != 'inmueble'
+                AND LOWER(u.tipo) NOT LIKE '%inmueble%'`
+          );
+          
+          const otrasUbicaciones = otrasUbicacionesResult.rows || [];
+          console.log(`[DEBUG] Otras ubicaciones relacionadas encontradas: ${otrasUbicaciones.length}`);
+          
+          // Todas las ubicaciones relacionadas van en otrasUbicaciones
+          relaciones.otrasUbicaciones = otrasUbicaciones;
+          
+          // Para una ubicación, no hay ubicaciones directas (son ella misma)
+          relaciones.ubicaciones = [];
         }
       }
       
