@@ -128,106 +128,37 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
   const markerTypes = Array.from(new Set(markers.map(marker => marker.type)));
 
   return (
-    <div>
-      {/* Contenedor del mapa con altura fija */}
-      <div className="border rounded-md overflow-hidden mb-6" style={{ height: '400px' }}>
-        <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {markers.length > 1 && <MapBoundsAdjuster markers={markers} />}
-          
-          {markers.map((marker) => (
-            <Marker 
-              key={`${marker.type}-${marker.id}-${marker.relation}`}
-              position={[marker.lat, marker.lng]}
-              icon={createCustomIcon(marker.type, marker.relation)}
-            >
-              <Popup>
-                <div className="max-w-xs">
-                  <h3 className="font-bold">{marker.title}</h3>
-                  <p className="break-words">{marker.description}</p>
-                  {marker.relationInfo ? (
-                    <p className="text-sm text-gray-600 mt-1 font-medium">
-                      {marker.relationInfo}
-                    </p>
-                  ) : null}
-                  <p className="text-xs text-gray-500 mt-1">
-                    {marker.relation === 'direct' ? 'Ubicación directa' : 'Ubicación relacionada'}
+    <div className="border rounded-md overflow-hidden" style={{ height: '400px' }}>
+      <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {markers.length > 1 && <MapBoundsAdjuster markers={markers} />}
+        
+        {markers.map((marker) => (
+          <Marker 
+            key={`${marker.type}-${marker.id}-${marker.relation}`}
+            position={[marker.lat, marker.lng]}
+            icon={createCustomIcon(marker.type, marker.relation)}
+          >
+            <Popup>
+              <div className="max-w-xs">
+                <h3 className="font-bold">{marker.title}</h3>
+                <p className="break-words">{marker.description}</p>
+                {marker.relationInfo ? (
+                  <p className="text-sm text-gray-600 mt-1 font-medium">
+                    {marker.relationInfo}
                   </p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
-
-      {/* Leyenda del mapa mejorada - ahora con margen inferior y mejor estructura */}
-      <div className="p-3 bg-white rounded-lg border shadow-sm mb-8">
-        <h3 className="font-semibold mb-2 text-gray-800 text-sm">Leyenda del mapa:</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100">
-              <User className="h-4 w-4 text-blue-600" />
-            </div>
-            <div>
-              <span className="font-medium text-sm">Persona</span>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                <span>Directa</span>
-                <div className="w-2 h-2 rounded-full bg-blue-400 ml-1"></div>
-                <span>Relacionada</span>
+                ) : null}
+                <p className="text-xs text-gray-500 mt-1">
+                  {marker.relation === 'direct' ? 'Ubicación directa' : 'Ubicación relacionada'}
+                </p>
               </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-green-100">
-              <Car className="h-4 w-4 text-green-600" />
-            </div>
-            <div>
-              <span className="font-medium text-sm">Vehículo</span>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-2 h-2 rounded-full bg-green-600"></div>
-                <span>Directa</span>
-                <div className="w-2 h-2 rounded-full bg-green-400 ml-1"></div>
-                <span>Relacionada</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-purple-100">
-              <Building className="h-4 w-4 text-purple-600" />
-            </div>
-            <div>
-              <span className="font-medium text-sm">Inmueble</span>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-2 h-2 rounded-full bg-purple-600"></div>
-                <span>Directa</span>
-                <div className="w-2 h-2 rounded-full bg-purple-400 ml-1"></div>
-                <span>Relacionada</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-red-100">
-              <MapPin className="h-4 w-4 text-red-600" />
-            </div>
-            <div>
-              <span className="font-medium text-sm">Ubicación</span>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-2 h-2 rounded-full bg-red-600"></div>
-                <span>Directa</span>
-                <div className="w-2 h-2 rounded-full bg-red-400 ml-1"></div>
-                <span>Relacionada</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
     </div>
   );
 }
