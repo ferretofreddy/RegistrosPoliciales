@@ -68,7 +68,13 @@ export default function MensajeriaPage() {
   // Consulta para obtener usuarios
   const usuarios = useQuery({
     queryKey: ["/api/usuarios-mensajeria"],
-    queryFn: () => apiRequest("GET", "/api/usuarios-mensajeria"),
+    queryFn: async () => {
+      console.log("Iniciando consulta de usuarios para mensajería");
+      const response = await apiRequest("GET", "/api/usuarios-mensajeria");
+      const data = await response.json();
+      console.log("Datos de usuarios recibidos:", data);
+      return data;
+    },
   });
 
   // Mutación para enviar un nuevo mensaje
