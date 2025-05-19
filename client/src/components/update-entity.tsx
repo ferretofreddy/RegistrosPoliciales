@@ -77,8 +77,11 @@ export default function UpdateEntity({ entityId, entityType }: UpdateEntityProps
     relacionForm.setValue("tipo", relacionTipo);
   }, [relacionTipo, relacionForm]);
 
+  // Tipo genérico para entity
+  type Entity = Record<string, any>;
+  
   // Obtener los datos de la entidad
-  const { data: entity } = useQuery({
+  const { data: entity } = useQuery<Entity>({
     queryKey: [`/api/${entityType === 'ubicacion' ? 'ubicaciones' : entityType + 's'}/${entityId}`],
     enabled: !!entityId
   });
@@ -592,15 +595,15 @@ export default function UpdateEntity({ entityId, entityType }: UpdateEntityProps
     <div>
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-lg">
-            Actualizar {entityType === "persona" ? "Persona" : 
-                       entityType === "vehiculo" ? "Vehículo" :
-                       entityType === "inmueble" ? "Inmueble" : "Ubicación"}
-            {entity && (
-              <span className="text-sm font-normal ml-2 text-gray-500">
-                - ID: {entityId}
-              </span>
-            )}
+          <CardTitle className="text-lg flex items-center">
+            <span>
+              Actualizar {entityType === "persona" ? "Persona" : 
+                          entityType === "vehiculo" ? "Vehículo" :
+                          entityType === "inmueble" ? "Inmueble" : "Ubicación"}
+            </span>
+            <span className="text-sm font-normal ml-2 text-gray-500">
+              - ID: {entityId}
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
