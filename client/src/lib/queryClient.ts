@@ -54,10 +54,28 @@ export async function apiRequest(
       credentials: "include",
     });
     
+    // Si es la ruta de login y el estado es 401, maneja el error específicamente
+    if (url.includes('/api/login') && res.status === 401) {
+      const errorData = await res.json();
+      if (errorData.message) {
+        throw new Error(errorData.message);
+      }
+    }
+    
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
     console.error(`Error de red en solicitud ${method} a ${fullUrl}:`, error);
+    
+    // Si el error ya contiene un mensaje específico (como ACCESO RESTRINGIDO), lánzalo directamente
+    if (error instanceof Error && 
+        (error.message.includes("ACCESO RESTRINGIDO") || 
+         error.message.includes("autorizado") || 
+         error.message.includes("contraseña"))) {
+      throw error;
+    }
+    
+    // De lo contrario, lanzar el error genérico de conexión
     throw new Error(`Error de conexión: La solicitud al servidor falló. Por favor, verifica tu conexión a internet y vuelve a intentarlo.`);
   }
 }
