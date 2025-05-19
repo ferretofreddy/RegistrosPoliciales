@@ -21,13 +21,11 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
     vehiculos: any[];
     inmuebles: any[];
     ubicaciones: any[];
-    otrasUbicaciones: any[];
   }>({
     personas: [],
     vehiculos: [],
     inmuebles: [],
-    ubicaciones: [],
-    otrasUbicaciones: []
+    ubicaciones: []
   });
 
   // Obtener los datos de la entidad
@@ -62,7 +60,6 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
         vehiculos: any[];
         inmuebles: any[];
         ubicaciones: any[];
-        otrasUbicaciones: any[];
       });
     }
   }, [relacionesData]);
@@ -271,44 +268,16 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
       relaciones.personas?.length > 0 || 
       relaciones.vehiculos?.length > 0 || 
       relaciones.inmuebles?.length > 0 || 
-      relaciones.ubicaciones?.length > 0 ||
-      relaciones.otrasUbicaciones?.length > 0;
+      relaciones.ubicaciones?.length > 0;
 
     if (!hasRelaciones) {
       return <p className="text-gray-500">No hay relaciones registradas para esta entidad.</p>;
     }
 
-    // Preparar las ubicaciones relacionadas filtrando correctamente
-    const ubicacionesRelacionadas = [
-      ...(relaciones.ubicaciones || []).filter(ubicacion => {
-        // Filtrar ubicaciones para excluir domicilios e inmuebles
-        const tipo = (ubicacion.tipo || "").toLowerCase();
-        return tipo !== "domicilio" && 
-               !tipo.includes("domicilio") && 
-               tipo !== "inmueble" && 
-               !tipo.includes("inmueble");
-      }),
-      ...(relaciones.otrasUbicaciones || []).filter(ubicacion => {
-        // Filtrar otrasUbicaciones para excluir domicilios e inmuebles (por si acaso)
-        const tipo = (ubicacion.tipo || "").toLowerCase();
-        return tipo !== "domicilio" && 
-               !tipo.includes("domicilio") && 
-               tipo !== "inmueble" && 
-               !tipo.includes("inmueble");
-      })
-    ];
-    
-    // Verificar si hay datos para cada sección
-    const hasPersonas = relaciones.personas && relaciones.personas.length > 0;
-    const hasVehiculos = relaciones.vehiculos && relaciones.vehiculos.length > 0;
-    const hasInmuebles = relaciones.inmuebles && relaciones.inmuebles.length > 0;
-    const hasUbicaciones = ubicacionesRelacionadas.length > 0;
-    
-    // Solo mostrar las secciones que tienen datos
     return (
       <div className="space-y-6">
-        {/* Personas relacionadas - solo se muestra si hay registros */}
-        {hasPersonas && (
+        {/* Personas relacionadas */}
+        {relaciones.personas && relaciones.personas.length > 0 && (
           <div>
             <h3 className="text-md font-semibold mb-2">Personas relacionadas</h3>
             <Table>
@@ -330,8 +299,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           </div>
         )}
 
-        {/* Vehículos relacionados - solo se muestra si hay registros */}
-        {hasVehiculos && (
+        {/* Vehículos relacionados */}
+        {relaciones.vehiculos && relaciones.vehiculos.length > 0 && (
           <div>
             <h3 className="text-md font-semibold mb-2">Vehículos relacionados</h3>
             <Table>
@@ -355,8 +324,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           </div>
         )}
 
-        {/* Inmuebles relacionados - solo se muestra si hay registros */}
-        {hasInmuebles && (
+        {/* Inmuebles relacionados */}
+        {relaciones.inmuebles && relaciones.inmuebles.length > 0 && (
           <div>
             <h3 className="text-md font-semibold mb-2">Inmuebles relacionados</h3>
             <Table>
@@ -378,8 +347,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
           </div>
         )}
 
-        {/* Ubicaciones relacionadas - solo se muestra si hay registros filtrados */}
-        {hasUbicaciones && (
+        {/* Ubicaciones relacionadas */}
+        {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
           <div>
             <h3 className="text-md font-semibold mb-2">Ubicaciones relacionadas</h3>
             <Table>
@@ -391,7 +360,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ubicacionesRelacionadas.map((ubicacion: any) => (
+                {relaciones.ubicaciones.map((ubicacion: any) => (
                   <TableRow key={ubicacion.id}>
                     <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
                     <TableCell>
