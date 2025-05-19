@@ -57,18 +57,18 @@ export default function MensajeriaPage() {
   // Consultas para obtener mensajes
   const mensajesRecibidos = useQuery({
     queryKey: ["/api/mensajes/recibidos"],
-    queryFn: () => apiRequest<Mensaje[]>("/api/mensajes/recibidos"),
+    queryFn: () => apiRequest("/api/mensajes/recibidos"),
   });
 
   const mensajesEnviados = useQuery({
     queryKey: ["/api/mensajes/enviados"],
-    queryFn: () => apiRequest<Mensaje[]>("/api/mensajes/enviados"),
+    queryFn: () => apiRequest("/api/mensajes/enviados"),
   });
 
   // Consulta para obtener usuarios
   const usuarios = useQuery({
     queryKey: ["/api/usuarios-mensajeria"],
-    queryFn: () => apiRequest<Usuario[]>("/api/usuarios-mensajeria"),
+    queryFn: () => apiRequest("/api/usuarios-mensajeria"),
   });
 
   // Mutación para enviar un nuevo mensaje
@@ -168,7 +168,7 @@ export default function MensajeriaPage() {
   // Función para encontrar el nombre de un usuario por su ID
   const getNombreUsuario = (usuarioId: number) => {
     if (!usuarios.data) return "Usuario";
-    const usuario = usuarios.data.find(u => u.id === usuarioId);
+    const usuario = usuarios.data.find((u: Usuario) => u.id === usuarioId);
     return usuario ? usuario.nombre : "Usuario";
   };
 
@@ -193,9 +193,10 @@ export default function MensajeriaPage() {
             <TabsTrigger value="recibidos" className="flex items-center">
               <Inbox className="mr-2 h-4 w-4" />
               <span>Recibidos</span>
-              {mensajesRecibidos.data && mensajesRecibidos.data.filter(m => !m.leido).length > 0 && (
+              {mensajesRecibidos.data && Array.isArray(mensajesRecibidos.data) && 
+                mensajesRecibidos.data.filter((m: Mensaje) => !m.leido).length > 0 && (
                 <Badge variant="destructive" className="ml-2">
-                  {mensajesRecibidos.data.filter(m => !m.leido).length}
+                  {mensajesRecibidos.data.filter((m: Mensaje) => !m.leido).length}
                 </Badge>
               )}
             </TabsTrigger>

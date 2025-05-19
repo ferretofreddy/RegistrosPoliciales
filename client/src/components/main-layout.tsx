@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Shield, Menu, X, User, Settings, LogOut } from "lucide-react";
+import { Shield, Menu, X, User, Settings, LogOut, Mail } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu,
@@ -140,6 +140,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       <Link href="/mi-perfil">
                         <User className="mr-2 h-4 w-4" />
                         <span>Mi Perfil</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/mensajeria">
+                        <Mail className="mr-2 h-4 w-4" />
+                        <span>Mensajería</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
