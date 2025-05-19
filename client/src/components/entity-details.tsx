@@ -350,7 +350,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
         {/* Ubicaciones relacionadas */}
         {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
           <div>
-            <h3 className="text-md font-semibold mb-2">Ubicaciones relacionadas</h3>
+            <h3 className="text-md font-semibold mb-2">Ubicaciones directas</h3>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -375,6 +375,49 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                     </TableCell>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Otras ubicaciones (no domicilios ni inmuebles) */}
+        {relaciones.otrasUbicaciones && relaciones.otrasUbicaciones.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-md font-semibold mb-2">Ubicaciones relacionadas</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Coordenadas</TableHead>
+                  <TableHead>Fecha</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {relaciones.otrasUbicaciones.map((ubicacion: any) => {
+                  // Excluir ubicaciones de tipo domicilio o inmueble para la página de consultas
+                  const tipoLowerCase = (ubicacion.tipo || "").toLowerCase();
+                  const esDomicilio = tipoLowerCase === 'domicilio' || tipoLowerCase.includes('domicilio');
+                  const esInmueble = tipoLowerCase === 'inmueble' || tipoLowerCase.includes('inmueble');
+                  
+                  // Si es domicilio o inmueble, no mostrar en esta sección
+                  if (esDomicilio || esInmueble) return null;
+                  
+                  return (
+                    <TableRow key={ubicacion.id}>
+                      <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
+                      <TableCell>
+                        {ubicacion.latitud && ubicacion.longitud
+                          ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
+                          : "Sin coordenadas"}
+                      </TableCell>
+                      <TableCell>
+                        {ubicacion.fecha
+                          ? new Date(ubicacion.fecha).toLocaleDateString()
+                          : "Sin fecha"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
