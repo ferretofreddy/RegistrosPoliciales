@@ -801,7 +801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cedula: req.body.cedula || "",
         telefono: req.body.telefono || "",
         unidad: req.body.unidad || "",
-        rol: req.body.rol || "agente"
+        rol: req.body.rol || "agente",
+        activo: req.body.activo || "false"
       }).returning();
       
       res.status(201).json(newUser);
@@ -828,7 +829,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cedula: req.body.cedula,
           telefono: req.body.telefono,
           unidad: req.body.unidad,
-          rol: req.body.rol
+          rol: req.body.rol,
+          activo: req.body.activo
         })
         .where(eq(users.id, userId))
         .returning();

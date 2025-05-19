@@ -68,6 +68,12 @@ export function setupAuth(app: Express) {
             return done(null, false, { message: "Email o contraseña incorrectos" });
           }
           
+          // Verificar si el usuario está activo
+          if (user.activo === "false") {
+            console.log(`Usuario inactivo: ${email}`);
+            return done(null, false, { message: "Usuario inactivo. Contacte al administrador." });
+          }
+          
           console.log(`Inicio de sesión exitoso para: ${email} (ID: ${user.id}, Rol: ${user.rol})`);
           return done(null, user);
         } catch (err) {
