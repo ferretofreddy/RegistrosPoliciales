@@ -22,27 +22,37 @@ interface LocationsTableProps {
 export default function LocationsTable({ locations, onLocationClick }: LocationsTableProps) {
   // Función para obtener el ícono según el tipo de entidad y relación
   const getEntityIcon = (type: string, relation: string = 'direct') => {
-    const color = relation === 'direct' 
-      ? type === 'persona' ? 'text-blue-600' 
-        : type === 'vehiculo' ? 'text-green-600' 
-        : type === 'inmueble' ? 'text-purple-600' 
-        : 'text-red-600'
-      : type === 'persona' ? 'text-blue-400' 
-        : type === 'vehiculo' ? 'text-green-400' 
-        : type === 'inmueble' ? 'text-purple-400' 
-        : 'text-red-400';
-        
+    // Usar exactamente los mismos colores que en el mapa
+    let bgColor, iconColor;
+    
     switch (type) {
       case 'persona':
-        return <User className={`h-4 w-4 ${color}`} />;
+        iconColor = relation === 'direct' ? 'text-blue-600' : 'text-blue-400';
+        bgColor = 'bg-blue-50';
+        break;
       case 'vehiculo':
-        return <Car className={`h-4 w-4 ${color}`} />;
+        iconColor = relation === 'direct' ? 'text-green-600' : 'text-green-400';
+        bgColor = 'bg-green-50';
+        break;
       case 'inmueble':
-        return <Building className={`h-4 w-4 ${color}`} />;
+        iconColor = relation === 'direct' ? 'text-purple-600' : 'text-purple-400';
+        bgColor = 'bg-purple-50';
+        break;
       case 'ubicacion':
       default:
-        return <MapPin className={`h-4 w-4 ${color}`} />;
+        iconColor = relation === 'direct' ? 'text-red-600' : 'text-red-400';
+        bgColor = 'bg-red-50';
     }
+    
+    // Crear un icono con fondo circular para que se vea consistente con los marcadores del mapa
+    return (
+      <div className={`flex items-center justify-center w-6 h-6 rounded-full ${bgColor}`}>
+        {type === 'persona' && <User className={`h-4 w-4 ${iconColor}`} />}
+        {type === 'vehiculo' && <Car className={`h-4 w-4 ${iconColor}`} />}
+        {type === 'inmueble' && <Building className={`h-4 w-4 ${iconColor}`} />}
+        {(type === 'ubicacion' || !type) && <MapPin className={`h-4 w-4 ${iconColor}`} />}
+      </div>
+    );
   };
 
   // Organizar las ubicaciones: primero las directas, luego las relacionadas
