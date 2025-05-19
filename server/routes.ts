@@ -918,16 +918,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         relaciones.inmuebles = relacionesInmuebles.rows;
         
-        // Ubicaciones relacionadas con este inmueble
-        const relacionesUbicaciones = await db
-          .select({
-            ubicacion: ubicaciones
-          })
-          .from(inmueblesUbicaciones)
-          .innerJoin(ubicaciones, eq(inmueblesUbicaciones.ubicacionId, ubicaciones.id))
-          .where(eq(inmueblesUbicaciones.inmuebleId, id));
-          
-        relaciones.ubicaciones = relacionesUbicaciones.map(r => r.ubicacion);
+        // Ubicaciones relacionadas con este inmueble - SEPARADAS POR TIPO
+        // 1. Ubicaciones directas (tipo "inmueble")
+        const ubicacionesDirectasResult = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u
+              JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+              WHERE iu.inmueble_id = ${id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+              AND (LOWER(u.tipo) = 'inmueble' OR LOWER(u.tipo) LIKE '%inmueble%')`
+        );
+        
+        const ubicacionesDirectas = ubicacionesDirectasResult.rows || [];
+        console.log(`[DEBUG] Ubicaciones directas tipo inmueble encontradas (routes): ${ubicacionesDirectas.length}`);
+        
+        // 2. Otras ubicaciones relacionadas (no de tipo inmueble)
+        const otrasUbicacionesResult = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u
+              JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+              WHERE iu.inmueble_id = ${id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+              AND LOWER(u.tipo) != 'inmueble'
+              AND LOWER(u.tipo) NOT LIKE '%inmueble%'`
+        );
+        
+        const otrasUbicaciones = otrasUbicacionesResult.rows || [];
+        console.log(`[DEBUG] Otras ubicaciones relacionadas encontradas (routes): ${otrasUbicaciones.length}`);
+        
+        // Asignar solo las ubicaciones de tipo "inmueble" como directas
+        relaciones.ubicaciones = ubicacionesDirectas;
+        
+        // Asignar las otras ubicaciones a una propiedad separada
+        relaciones.otrasUbicaciones = otrasUbicaciones;
       }
       else if (tipo === "ubicacion") {
         // Personas relacionadas con esta ubicación
