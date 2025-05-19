@@ -28,8 +28,6 @@ interface User {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Registrar rutas de mensajería
-  registerMensajeriaRoutes(app);
   // Middleware para verificar rol de administrador y estado activo
   const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
@@ -52,6 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
   // setup auth routes
   setupAuth(app);
+  
+  // Registrar rutas de mensajería (después de autenticación)
+  registerMensajeriaRoutes(app);
   
   // Ruta de estado para verificar el servidor
   app.get("/api/status", (req, res) => {
