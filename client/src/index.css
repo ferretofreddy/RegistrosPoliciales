@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Estilos para el formato carta (letter) */
+.paper-format {
+  /* Tamaño carta = 215.9mm × 279.4mm (8.5in × 11in) */
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Estilos para el modo impresión */
+@media print {
+  .paper-format {
+    width: 215.9mm;
+    height: 279.4mm;
+    margin: 0;
+    padding: 0;
+    page-break-inside: avoid;
+  }
+  
+  /* Ocultar elementos que no queremos en la impresión */
+  header, 
+  button:not(.print-include),
+  .print-exclude {
+    display: none !important;
+  }
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 20 14.3% 4.1%;
