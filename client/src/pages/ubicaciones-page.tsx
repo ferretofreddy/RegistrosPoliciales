@@ -69,45 +69,15 @@ function filtrarUbicacionesDuplicadas(ubicaciones: LocationData[]): LocationData
   const directas = ubicaciones.filter(u => u.relation === "direct");
   const relacionadas = ubicaciones.filter(u => u.relation === "related");
   
-  // Paso 1: Filtrar los resultados de búsqueda para excluir entidades de tipo "ubicacion" 
-  // que son de tipo "Domicilio" o "Inmueble"
+  // Paso 1: Filtrar los resultados para excluir ubicaciones con tipo "domicilio" o "inmueble"
   const resultadosBusqueda = ubicaciones.filter(ubi => {
-    // Si es un resultado de búsqueda (tipo "ubicacion")
+    // Si es un resultado de búsqueda directo y es de tipo "ubicacion"
     if (ubi.type === "ubicacion") {
-      // Excluir si tiene "domicilio" o "inmueble" en el título
+      // Excluir directamente si su título contiene "domicilio" o "inmueble"
       if (ubi.title.toLowerCase().includes("domicilio") || 
           ubi.title.toLowerCase().includes("inmueble")) {
-        // Verificar si existe una persona o inmueble relacionado que ya tenga esta ubicación
-        const personaOInmuebleConMismaUbicacion = ubicaciones.some(otra => 
-          (otra.type === "persona" || otra.type === "inmueble") && 
-          otra.id !== ubi.id &&
-          otra.lat === ubi.lat && 
-          otra.lng === ubi.lng
-        );
-        
-        if (personaOInmuebleConMismaUbicacion) {
-          console.log(`Excluyendo ubicación duplicada: ${ubi.title}, id=${ubi.id}`);
-          return false;
-        }
-      }
-      
-      // También excluir si la descripción contiene "domicilio de" seguido de un nombre
-      if (ubi.description && ubi.description.toLowerCase().includes("domicilio de")) {
-        // Verificar si ya existe un resultado de persona con el mismo nombre
-        const nombreEnDescripcion = ubi.description.match(/domicilio de ([^(]+)/i);
-        if (nombreEnDescripcion && nombreEnDescripcion[1]) {
-          const nombre = nombreEnDescripcion[1].trim();
-          
-          const personaExistente = ubicaciones.some(otra => 
-            otra.type === "persona" && 
-            otra.title.toLowerCase().includes(nombre.toLowerCase())
-          );
-          
-          if (personaExistente) {
-            console.log(`Excluyendo ubicación de domicilio duplicada por nombre: ${nombre}, id=${ubi.id}`);
-            return false;
-          }
-        }
+        console.log(`Excluyendo ubicación por tipo: ${ubi.title}, id=${ubi.id}`);
+        return false;
       }
     }
     
@@ -133,22 +103,12 @@ function filtrarUbicacionesDuplicadas(ubicaciones: LocationData[]): LocationData
       return false;
     }
     
-    // Si es una ubicación (no persona, inmueble o vehículo) y su título es "Domicilio" o "Inmueble", excluirla
-    if ((ubicacion.type === "ubicacion" || ubicacion.type === "persona") && 
+    // Si es una ubicación y su título es "Domicilio" o "Inmueble", excluirla directamente
+    if (ubicacion.type === "ubicacion" && 
         (ubicacion.title.toLowerCase().includes("domicilio") || 
          ubicacion.title.toLowerCase().includes("inmueble"))) {
-      
-      // Verificar si ya tenemos una ubicación con las mismas coordenadas
-      const coordenadasDuplicadas = resultadosBusqueda.some(otra => 
-        otra.id !== ubicacion.id && 
-        Math.abs(otra.lat - ubicacion.lat) < 0.000001 && 
-        Math.abs(otra.lng - ubicacion.lng) < 0.000001
-      );
-      
-      if (coordenadasDuplicadas) {
-        console.log(`Excluyendo ubicación relacionada duplicada: ${ubicacion.title}, id=${ubicacion.id}`);
-        return false;
-      }
+      console.log(`Excluyendo ubicación relacionada por tipo: ${ubicacion.title}, id=${ubicacion.id}`);
+      return false;
     }
     
     return true;
