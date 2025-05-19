@@ -1814,18 +1814,38 @@ export class DatabaseStorage {
           
           resultado.inmuebles = inmueblesRelacionados.map(r => r.inmueble);
           
-          // Buscar ubicaciones relacionadas
-          const ubicacionesRelacionadas = await db
-            .select({
-              ubicacion: ubicaciones
-            })
-            .from(personasUbicaciones)
-            .innerJoin(ubicaciones, eq(personasUbicaciones.ubicacionId, ubicaciones.id))
-            .where(eq(personasUbicaciones.personaId, id));
+          // Buscar ubicaciones relacionadas - IMPORTANTE: Separar domicilios de otro tipo de ubicaciones
+          // 1. Obtener solo los domicilios (ubicaciones directas)
+          const domiciliosResult = await db.execute(
+            sql`SELECT u.* FROM ubicaciones u
+                JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                WHERE pu.persona_id = ${id}
+                AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+                AND LOWER(u.tipo) LIKE '%domicilio%'`
+          );
           
-          console.log(`[DEBUG] Ubicaciones relacionadas: ${ubicacionesRelacionadas.length}`);
+          const domicilios = domiciliosResult.rows || [];
+          console.log(`[DEBUG] Domicilios directos encontrados: ${domicilios.length}`);
           
-          resultado.ubicaciones = ubicacionesRelacionadas.map(r => r.ubicacion);
+          // 2. Obtener otras ubicaciones (que no son domicilios, como avistamientos)
+          const otrasUbicacionesResult = await db.execute(
+            sql`SELECT u.* FROM ubicaciones u
+                JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+                WHERE pu.persona_id = ${id}
+                AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+                AND LOWER(u.tipo) NOT LIKE '%domicilio%'`
+          );
+          
+          const otrasUbicaciones = otrasUbicacionesResult.rows || [];
+          console.log(`[DEBUG] Otras ubicaciones encontradas (avistamientos, etc.): ${otrasUbicaciones.length}`);
+          
+          // Solo los domicilios son ubicaciones directas de personas
+          resultado.ubicaciones = domicilios;
+          
+          // Si hay otras ubicaciones (como avistamientos), agregarlas como una propiedad separada
+          if (otrasUbicaciones.length > 0) {
+            resultado.otrasUbicaciones = otrasUbicaciones;
+          }
           
         } catch (err) {
           console.error(`[ERROR] Error al buscar relaciones para persona ${id}:`, err);
