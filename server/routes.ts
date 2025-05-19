@@ -760,6 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === TIPOS DE INMUEBLES ===
+  // Obtener todos los tipos de inmuebles (público)
   app.get("/api/tipos-inmuebles", async (req, res) => {
     try {
       const allTipos = await db.select().from(tiposInmuebles).orderBy(tiposInmuebles.nombre);
@@ -770,7 +771,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener todos los tipos de inmuebles (admin)
+  app.get("/api/tipos-inmuebles-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const allTipos = await db.select().from(tiposInmuebles).orderBy(tiposInmuebles.nombre);
+      res.json(allTipos);
+    } catch (error) {
+      console.error("Error al obtener tipos de inmuebles para admin:", error);
+      res.status(500).json({ message: "Error al obtener tipos de inmuebles" });
+    }
+  });
+
+  // Crear nuevo tipo de inmueble (admin)
+  app.post("/api/tipos-inmuebles-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const { nombre, descripcion, activo } = req.body;
+      
+      if (!nombre) {
+        return res.status(400).json({ message: "El nombre es obligatorio" });
+      }
+      
+      // Verificar si ya existe un tipo con ese nombre
+      const existingTipo = await db
+        .select()
+        .from(tiposInmuebles)
+        .where(eq(tiposInmuebles.nombre, nombre))
+        .limit(1);
+      
+      if (existingTipo.length > 0) {
+        return res.status(400).json({ message: "Ya existe un tipo de inmueble con ese nombre" });
+      }
+      
+      const [nuevoTipo] = await db.insert(tiposInmuebles)
+        .values({ 
+          nombre, 
+          descripcion: descripcion || "", 
+          activo: activo ? "true" : "false" 
+        })
+        .returning();
+      
+      res.status(201).json(nuevoTipo);
+    } catch (error) {
+      console.error("Error al crear tipo de inmueble:", error);
+      res.status(500).json({ message: "Error al crear tipo de inmueble" });
+    }
+  });
+
+  // Actualizar tipo de inmueble existente (admin)
+  app.put("/api/tipos-inmuebles-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { nombre, descripcion, activo } = req.body;
+      
+      if (!nombre) {
+        return res.status(400).json({ message: "El nombre es obligatorio" });
+      }
+      
+      // Verificar si el tipo existe
+      const tipoExistente = await db
+        .select()
+        .from(tiposInmuebles)
+        .where(eq(tiposInmuebles.id, id))
+        .limit(1);
+      
+      if (tipoExistente.length === 0) {
+        return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+      }
+      
+      // Verificar si el nuevo nombre ya está en uso por otro registro
+      if (nombre !== tipoExistente[0].nombre) {
+        const nombreExistente = await db
+          .select()
+          .from(tiposInmuebles)
+          .where(eq(tiposInmuebles.nombre, nombre))
+          .limit(1);
+        
+        if (nombreExistente.length > 0 && nombreExistente[0].id !== id) {
+          return res.status(400).json({ message: "Ya existe otro tipo de inmueble con ese nombre" });
+        }
+      }
+      
+      const [tipoActualizado] = await db.update(tiposInmuebles)
+        .set({ 
+          nombre, 
+          descripcion: descripcion || "",
+          activo: activo ? "true" : "false"
+        })
+        .where(eq(tiposInmuebles.id, id))
+        .returning();
+      
+      res.json(tipoActualizado);
+    } catch (error) {
+      console.error("Error al actualizar tipo de inmueble:", error);
+      res.status(500).json({ message: "Error al actualizar tipo de inmueble" });
+    }
+  });
+
+  // Eliminar tipo de inmueble (admin)
+  app.delete("/api/tipos-inmuebles-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verificar si el tipo existe
+      const tipoExistente = await db
+        .select()
+        .from(tiposInmuebles)
+        .where(eq(tiposInmuebles.id, id))
+        .limit(1);
+      
+      if (tipoExistente.length === 0) {
+        return res.status(404).json({ message: "Tipo de inmueble no encontrado" });
+      }
+      
+      // Eliminar el tipo
+      await db.delete(tiposInmuebles)
+        .where(eq(tiposInmuebles.id, id));
+      
+      res.json({ message: "Tipo de inmueble eliminado correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar tipo de inmueble:", error);
+      res.status(500).json({ message: "Error al eliminar tipo de inmueble" });
+    }
+  });
+
   // === TIPOS DE UBICACIONES ===
+  // Obtener todos los tipos de ubicaciones (público)
   app.get("/api/tipos-ubicaciones", async (req, res) => {
     try {
       const allTipos = await db.select().from(tiposUbicaciones).orderBy(tiposUbicaciones.nombre);
@@ -778,6 +903,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener tipos de ubicaciones:", error);
       res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+    }
+  });
+  
+  // Obtener todos los tipos de ubicaciones (admin)
+  app.get("/api/tipos-ubicaciones-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const allTipos = await db.select().from(tiposUbicaciones).orderBy(tiposUbicaciones.nombre);
+      res.json(allTipos);
+    } catch (error) {
+      console.error("Error al obtener tipos de ubicaciones para admin:", error);
+      res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
+    }
+  });
+  
+  // Crear nuevo tipo de ubicación (admin)
+  app.post("/api/tipos-ubicaciones-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const { nombre, descripcion, activo } = req.body;
+      
+      if (!nombre) {
+        return res.status(400).json({ message: "El nombre es obligatorio" });
+      }
+      
+      // Verificar si ya existe un tipo con ese nombre
+      const existingTipo = await db
+        .select()
+        .from(tiposUbicaciones)
+        .where(eq(tiposUbicaciones.nombre, nombre))
+        .limit(1);
+      
+      if (existingTipo.length > 0) {
+        return res.status(400).json({ message: "Ya existe un tipo de ubicación con ese nombre" });
+      }
+      
+      const [nuevoTipo] = await db.insert(tiposUbicaciones)
+        .values({ 
+          nombre, 
+          descripcion: descripcion || "", 
+          activo: activo ? "true" : "false" 
+        })
+        .returning();
+      
+      res.status(201).json(nuevoTipo);
+    } catch (error) {
+      console.error("Error al crear tipo de ubicación:", error);
+      res.status(500).json({ message: "Error al crear tipo de ubicación" });
+    }
+  });
+  
+  // Actualizar tipo de ubicación existente (admin)
+  app.put("/api/tipos-ubicaciones-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { nombre, descripcion, activo } = req.body;
+      
+      if (!nombre) {
+        return res.status(400).json({ message: "El nombre es obligatorio" });
+      }
+      
+      // Verificar si el tipo existe
+      const tipoExistente = await db
+        .select()
+        .from(tiposUbicaciones)
+        .where(eq(tiposUbicaciones.id, id))
+        .limit(1);
+      
+      if (tipoExistente.length === 0) {
+        return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+      }
+      
+      // Verificar si el nuevo nombre ya está en uso por otro registro
+      if (nombre !== tipoExistente[0].nombre) {
+        const nombreExistente = await db
+          .select()
+          .from(tiposUbicaciones)
+          .where(eq(tiposUbicaciones.nombre, nombre))
+          .limit(1);
+        
+        if (nombreExistente.length > 0 && nombreExistente[0].id !== id) {
+          return res.status(400).json({ message: "Ya existe otro tipo de ubicación con ese nombre" });
+        }
+      }
+      
+      const [tipoActualizado] = await db.update(tiposUbicaciones)
+        .set({ 
+          nombre, 
+          descripcion: descripcion || "",
+          activo: activo ? "true" : "false"
+        })
+        .where(eq(tiposUbicaciones.id, id))
+        .returning();
+      
+      res.json(tipoActualizado);
+    } catch (error) {
+      console.error("Error al actualizar tipo de ubicación:", error);
+      res.status(500).json({ message: "Error al actualizar tipo de ubicación" });
+    }
+  });
+  
+  // Eliminar tipo de ubicación (admin)
+  app.delete("/api/tipos-ubicaciones-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verificar si el tipo existe
+      const tipoExistente = await db
+        .select()
+        .from(tiposUbicaciones)
+        .where(eq(tiposUbicaciones.id, id))
+        .limit(1);
+      
+      if (tipoExistente.length === 0) {
+        return res.status(404).json({ message: "Tipo de ubicación no encontrado" });
+      }
+      
+      // Eliminar el tipo
+      await db.delete(tiposUbicaciones)
+        .where(eq(tiposUbicaciones.id, id));
+      
+      res.json({ message: "Tipo de ubicación eliminado correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar tipo de ubicación:", error);
+      res.status(500).json({ message: "Error al eliminar tipo de ubicación" });
     }
   });
   
