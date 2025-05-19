@@ -1821,7 +1821,7 @@ export class DatabaseStorage {
                 JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
                 WHERE pu.persona_id = ${id}
                 AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
-                AND LOWER(u.tipo) LIKE '%domicilio%'`
+                AND (LOWER(u.tipo) = 'domicilio' OR LOWER(u.tipo) LIKE '%domicilio%')`
           );
           
           const domicilios = domiciliosResult.rows || [];
@@ -1833,6 +1833,7 @@ export class DatabaseStorage {
                 JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
                 WHERE pu.persona_id = ${id}
                 AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+                AND LOWER(u.tipo) != 'domicilio' 
                 AND LOWER(u.tipo) NOT LIKE '%domicilio%'`
           );
           
@@ -1843,9 +1844,7 @@ export class DatabaseStorage {
           resultado.ubicaciones = domicilios;
           
           // Si hay otras ubicaciones (como avistamientos), agregarlas como una propiedad separada
-          if (otrasUbicaciones.length > 0) {
-            resultado.otrasUbicaciones = otrasUbicaciones;
-          }
+          resultado.otrasUbicaciones = otrasUbicaciones;
           
         } catch (err) {
           console.error(`[ERROR] Error al buscar relaciones para persona ${id}:`, err);
