@@ -44,19 +44,53 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
   });
 
   const onSubmit = (data: LoginFormValues) => {
+    setApiError(null); // Limpiar cualquier error previo
+    
     loginMutation.mutate({
       email: data.email,
       password: data.password,
     }, {
       onSuccess: () => {
         // La redirección ocurrirá en el useEffect cuando el usuario se actualice
+      },
+      onError: (error: Error) => {
+        // Capturar el mensaje de error
+        const errorMessage = error.message;
+        
+        // Verificar si es el mensaje de ACCESO RESTRINGIDO
+        if (errorMessage && errorMessage.includes("ACCESO RESTRINGIDO")) {
+          setApiError(errorMessage);
+        } else if (errorMessage && errorMessage.includes(": ")) {
+          // Eliminar el código de status si está presente (ej. "401: Mensaje")
+          const cleanMessage = errorMessage.split(": ").slice(1).join(": ");
+          setApiError(cleanMessage);
+        } else {
+          setApiError(errorMessage || "Error de conexión. Intente más tarde.");
+        }
       }
     });
   };
 
+  // Estado para almacenar errores de la API
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Limpiar el error cuando cambian los campos del formulario
+  useEffect(() => {
+    if (apiError) {
+      setApiError(null);
+    }
+  }, [form.watch('email'), form.watch('password')]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Mensaje de error de API (para usuario inactivo) */}
+        {apiError && (
+          <div className="p-3 border border-red-500 bg-red-50 rounded-md text-red-800 mb-4">
+            {apiError}
+          </div>
+        )}
+        
         <FormField
           control={form.control}
           name="email"

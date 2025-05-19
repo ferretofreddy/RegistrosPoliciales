@@ -27,10 +27,18 @@ interface User {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Middleware para verificar rol de administrador
+  // Middleware para verificar rol de administrador y estado activo
   const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    // Verificar si el usuario está activo
+    if (req.user?.activo === "false") {
+      console.log(`ERROR: Usuario inactivo (ID=${req.user.id}) intenta acceder a ruta de administrador`);
+      return res.status(403).json({ 
+        message: "ACCESO RESTRINGIDO: Este usuario no tiene acceso al sistema, por favor comuníquese con el administrador de la aplicación." 
+      });
     }
     
     if (req.user?.rol !== 'admin') {
@@ -56,15 +64,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Middleware to check user role
+  // Middleware to check user role and active status
   const requireRole = (roles: string[]) => (req: any, res: any, next: any) => {
     if (!req.isAuthenticated()) {
       console.log("ERROR: Usuario no autenticado al intentar acceder a ruta protegida");
       return res.status(401).json({ message: "No autorizado. Inicie sesión para continuar." });
     }
     
-    console.log(`Usuario autenticado: ID=${req.user.id}, Nombre=${req.user.nombre}, Rol=${req.user.rol}`);
+    console.log(`Usuario autenticado: ID=${req.user.id}, Nombre=${req.user.nombre}, Rol=${req.user.rol}, Activo=${req.user.activo}`);
     
+    // Verificar si el usuario está activo
+    if (req.user.activo === "false") {
+      console.log(`ERROR: Usuario inactivo (ID=${req.user.id}) intenta acceder a ruta protegida`);
+      return res.status(403).json({ 
+        message: "ACCESO RESTRINGIDO: Este usuario no tiene acceso al sistema, por favor comuníquese con el administrador de la aplicación." 
+      });
+    }
+    
+    // Verificar el rol del usuario
     if (!roles.includes(req.user.rol)) {
       console.log(`ERROR: Usuario con rol '${req.user.rol}' intenta acceder a ruta que requiere: ${roles.join(', ')}`);
       return res.status(403).json({ message: `Acceso denegado. Se requiere rol: ${roles.join(' o ')}` });

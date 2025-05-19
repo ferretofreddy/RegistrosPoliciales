@@ -2,8 +2,32 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    // Intentar parsear la respuesta como JSON primero
+    let errorMessage: string;
+    
+    try {
+      const contentType = res.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await res.json();
+        errorMessage = errorData.message || res.statusText;
+        
+        // Si es un mensaje de usuario inactivo, devolver el mensaje completo sin el código de estado
+        if (errorMessage.includes("ACCESO RESTRINGIDO")) {
+          throw new Error(errorMessage);
+        }
+      } else {
+        errorMessage = await res.text() || res.statusText;
+      }
+    } catch (parseError) {
+      // Si no se puede parsear como JSON o hay error, usar el texto completo
+      if (parseError instanceof Error && parseError.message.includes("ACCESO RESTRINGIDO")) {
+        throw parseError;
+      }
+      errorMessage = await res.text() || res.statusText;
+    }
+    
+    throw new Error(`${res.status}: ${errorMessage}`);
   }
 }
 
