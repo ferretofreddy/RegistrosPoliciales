@@ -1,12 +1,26 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Calendar, Link2 } from "lucide-react";
+import { User, Calendar, Link2, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntityType } from "@/components/search-component";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+type ObservacionType = {
+  id?: number;
+  detalle: string;
+  fecha: string | Date;
+  usuario?: string;
+};
+
+type RelacionesType = {
+  personas: any[];
+  vehiculos: any[];
+  inmuebles: any[];
+  ubicaciones: any[];
+};
 
 interface EntityDetailsProps {
   entityId: number;
@@ -15,13 +29,8 @@ interface EntityDetailsProps {
 
 export default function EntityDetails({ entityId, entityType }: EntityDetailsProps) {
   // Estado para guardar las observaciones y relaciones
-  const [observaciones, setObservaciones] = useState<any[]>([]);
-  const [relaciones, setRelaciones] = useState<{
-    personas: any[];
-    vehiculos: any[];
-    inmuebles: any[];
-    ubicaciones: any[];
-  }>({
+  const [observaciones, setObservaciones] = useState<ObservacionType[]>([]);
+  const [relaciones, setRelaciones] = useState<RelacionesType>({
     personas: [],
     vehiculos: [],
     inmuebles: [],
@@ -35,130 +44,17 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
   });
 
   // Obtener las observaciones de la entidad
-  const { data: observacionesData, isLoading: isLoadingObservaciones, refetch: refetchObservaciones } = useQuery<Observacion[]>({
+  const { data: observacionesData, isLoading: isLoadingObservaciones } = useQuery<ObservacionType[]>({
     queryKey: [`/api/${entityType === 'ubicacion' ? 'ubicaciones' : entityType + 's'}/${entityId}/observaciones`],
     enabled: !!entityId,
   });
 
   // Obtener las relaciones de la entidad
-  const { data: relacionesData, isLoading: isLoadingRelaciones, refetch: refetchRelaciones } = useQuery<Relaciones>({
+  const { data: relacionesData, isLoading: isLoadingRelaciones } = useQuery<RelacionesType>({
     queryKey: [`/api/relaciones/${entityType}/${entityId}`],
     enabled: !!entityId
   });
   
-  // Obtener listas de entidades para las relaciones
-  const { data: personas = [] } = useQuery<Persona[]>({
-    queryKey: ['/api/personas'],
-    enabled: showRelacionForm && relacionTipo === "persona"
-  });
-
-  const { data: vehiculos = [] } = useQuery<Vehiculo[]>({
-    queryKey: ['/api/vehiculos'],
-    enabled: showRelacionForm && relacionTipo === "vehiculo"
-  });
-
-  const { data: inmuebles = [] } = useQuery<Inmueble[]>({
-    queryKey: ['/api/inmuebles'],
-    enabled: showRelacionForm && relacionTipo === "inmueble"
-  });
-
-  const { data: ubicaciones = [] } = useQuery<Ubicacion[]>({
-    queryKey: ['/api/ubicaciones'],
-    enabled: showRelacionForm && relacionTipo === "ubicacion"
-  });
-  
-  // Mutación para agregar una observación
-  const addObservacionMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof observacionSchema>) => {
-      const endpoint = entityType === 'ubicacion' ? 'ubicaciones' : `${entityType}s`;
-      const response = await fetch(`/api/${endpoint}/${entityId}/observaciones`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al agregar la observación');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Observación agregada",
-        description: "La observación se ha agregado correctamente.",
-      });
-      observacionForm.reset();
-      setShowObservacionForm(false);
-      refetchObservaciones();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `No se pudo agregar la observación: ${error.message}`,
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Mutación para agregar una relación
-  const addRelacionMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof relacionSchema>) => {
-      // Construir la URL según los tipos de entidades
-      let url = `/api/relaciones/${entityType}/${entityId}/${data.tipo}/${data.entidadId}`;
-      
-      // Si hay un tipo de relación específico, agregarlo como query param
-      if (data.tipoRelacion) {
-        url += `?relacion=${data.tipoRelacion}`;
-      }
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al crear la relación');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Relación creada",
-        description: "La relación se ha creado correctamente.",
-      });
-      relacionForm.reset({ 
-        entidadId: "", 
-        tipoRelacion: "", 
-        tipo: relacionTipo 
-      });
-      setShowRelacionForm(false);
-      refetchRelaciones();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `No se pudo crear la relación: ${error.message}`,
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Manejar envío de nueva observación
-  const onSubmitObservacion = (data: z.infer<typeof observacionSchema>) => {
-    addObservacionMutation.mutate(data);
-  };
-  
-  // Manejar envío de nueva relación
-  const onSubmitRelacion = (data: z.infer<typeof relacionSchema>) => {
-    addRelacionMutation.mutate(data);
-  };
-
   // Actualizar los estados cuando llegan los datos
   useEffect(() => {
     if (observacionesData) {
@@ -325,54 +221,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-md font-semibold">Observaciones existentes</h3>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={() => setShowObservacionForm(!showObservacionForm)}
-          >
-            <Plus className="h-4 w-4" />
-            {showObservacionForm ? "Cancelar" : "Agregar Observación"}
-          </Button>
+          <h3 className="text-md font-semibold">Observaciones</h3>
         </div>
-        
-        {/* Formulario para agregar observaciones */}
-        {showObservacionForm && (
-          <div className="border border-gray-200 rounded-md p-4 mb-4 bg-muted/30">
-            <Form {...observacionForm}>
-              <form onSubmit={observacionForm.handleSubmit(onSubmitObservacion)} className="space-y-4">
-                <FormField
-                  control={observacionForm.control}
-                  name="detalle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nueva Observación</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Ingrese una observación relevante" 
-                          className="min-h-[80px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    size="sm"
-                    disabled={addObservacionMutation.isPending}
-                  >
-                    {addObservacionMutation.isPending ? "Guardando..." : "Guardar Observación"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        )}
         
         {/* Tabla de observaciones */}
         {isLoadingObservaciones ? (
@@ -418,151 +268,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-md font-semibold">Entidades relacionadas</h3>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={() => setShowRelacionForm(!showRelacionForm)}
-          >
-            <Plus className="h-4 w-4" />
-            {showRelacionForm ? "Cancelar" : "Crear Relación"}
-          </Button>
         </div>
-        
-        {/* Formulario para agregar relaciones */}
-        {showRelacionForm && (
-          <div className="border border-gray-200 rounded-md p-4 mb-4 bg-muted/30">
-            <Form {...relacionForm}>
-              <form onSubmit={relacionForm.handleSubmit(onSubmitRelacion)} className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setRelacionTipo("persona")}
-                    className={`flex items-center justify-center gap-2 ${
-                      relacionTipo === "persona" 
-                        ? "bg-blue-500 text-white hover:bg-blue-600" 
-                        : "border-blue-200 hover:border-blue-300"
-                    }`}
-                  >
-                    <User className={`h-4 w-4 ${relacionTipo === "persona" ? "text-white" : "text-blue-500"}`} />
-                    <span className="hidden sm:inline">Persona</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setRelacionTipo("vehiculo")}
-                    className={`flex items-center justify-center gap-2 ${
-                      relacionTipo === "vehiculo" 
-                        ? "bg-green-500 text-white hover:bg-green-600" 
-                        : "border-green-200 hover:border-green-300"
-                    }`}
-                  >
-                    <Car className={`h-4 w-4 ${relacionTipo === "vehiculo" ? "text-white" : "text-green-500"}`} />
-                    <span className="hidden sm:inline">Vehículo</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setRelacionTipo("inmueble")}
-                    className={`flex items-center justify-center gap-2 ${
-                      relacionTipo === "inmueble" 
-                        ? "bg-purple-500 text-white hover:bg-purple-600" 
-                        : "border-purple-200 hover:border-purple-300"
-                    }`}
-                  >
-                    <Building className={`h-4 w-4 ${relacionTipo === "inmueble" ? "text-white" : "text-purple-500"}`} />
-                    <span className="hidden sm:inline">Inmueble</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setRelacionTipo("ubicacion")}
-                    className={`flex items-center justify-center gap-2 ${
-                      relacionTipo === "ubicacion" 
-                        ? "bg-red-500 text-white hover:bg-red-600" 
-                        : "border-red-200 hover:border-red-300"
-                    }`}
-                  >
-                    <MapPin className={`h-4 w-4 ${relacionTipo === "ubicacion" ? "text-white" : "text-red-500"}`} />
-                    <span className="hidden sm:inline">Ubicación</span>
-                  </Button>
-                </div>
-                
-                <FormField
-                  control={relacionForm.control}
-                  name="entidadId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Seleccionar {relacionTipo}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={`Seleccionar ${relacionTipo}`} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {relacionTipo === "persona" && (personas as Persona[]).map((persona) => (
-                            <SelectItem key={persona.id} value={persona.id.toString()}>
-                              {persona.nombre} ({persona.identificacion})
-                            </SelectItem>
-                          ))}
-                          {relacionTipo === "vehiculo" && (vehiculos as Vehiculo[]).map((vehiculo) => (
-                            <SelectItem key={vehiculo.id} value={vehiculo.id.toString()}>
-                              {vehiculo.placa} - {vehiculo.marca} {vehiculo.modelo}
-                            </SelectItem>
-                          ))}
-                          {relacionTipo === "inmueble" && (inmuebles as Inmueble[]).map((inmueble) => (
-                            <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
-                              {inmueble.tipo}: {inmueble.direccion}
-                            </SelectItem>
-                          ))}
-                          {relacionTipo === "ubicacion" && (ubicaciones as Ubicacion[]).map((ubicacion) => (
-                            <SelectItem key={ubicacion.id} value={ubicacion.id.toString()}>
-                              {ubicacion.tipo} - {ubicacion.observaciones || 'Sin observaciones'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={relacionForm.control}
-                  name="tipoRelacion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de relación (opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: Propietario, Familiar, Asociado, etc."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    size="sm"
-                    disabled={addRelacionMutation.isPending}
-                  >
-                    {addRelacionMutation.isPending ? "Creando relación..." : "Crear Relación"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        )}
         
         {/* Lista de relaciones existentes */}
         {isLoadingRelaciones ? (
@@ -588,7 +294,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(relaciones.personas as Persona[]).map((persona) => (
+                    {relaciones.personas.map((persona) => (
                       <TableRow key={persona.id}>
                         <TableCell>{persona.nombre}</TableCell>
                         <TableCell>{persona.identificacion}</TableCell>
@@ -603,7 +309,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
             {relaciones.vehiculos && relaciones.vehiculos.length > 0 && (
               <div>
                 <h3 className="text-md font-semibold mb-2 flex items-center">
-                  <Car className="h-4 w-4 mr-2 text-green-500" />
+                  <span className="h-4 w-4 mr-2 text-green-500">🚗</span>
                   Vehículos relacionados
                 </h3>
                 <Table>
@@ -615,7 +321,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(relaciones.vehiculos as Vehiculo[]).map((vehiculo) => (
+                    {relaciones.vehiculos.map((vehiculo) => (
                       <TableRow key={vehiculo.id}>
                         <TableCell>{vehiculo.placa}</TableCell>
                         <TableCell>{vehiculo.marca}</TableCell>
@@ -631,7 +337,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
             {relaciones.inmuebles && relaciones.inmuebles.length > 0 && (
               <div>
                 <h3 className="text-md font-semibold mb-2 flex items-center">
-                  <Building className="h-4 w-4 mr-2 text-purple-500" />
+                  <span className="h-4 w-4 mr-2 text-purple-500">🏢</span>
                   Inmuebles relacionados
                 </h3>
                 <Table>
@@ -642,7 +348,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(relaciones.inmuebles as Inmueble[]).map((inmueble) => (
+                    {relaciones.inmuebles.map((inmueble) => (
                       <TableRow key={inmueble.id}>
                         <TableCell>{inmueble.tipo}</TableCell>
                         <TableCell>{inmueble.direccion}</TableCell>
@@ -657,7 +363,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
             {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
               <div>
                 <h3 className="text-md font-semibold mb-2 flex items-center">
-                  <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                  <span className="h-4 w-4 mr-2 text-red-500">📍</span>
                   Ubicaciones relacionadas
                 </h3>
                 <Table>
@@ -669,7 +375,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(relaciones.ubicaciones as Ubicacion[]).map((ubicacion) => (
+                    {relaciones.ubicaciones.map((ubicacion) => (
                       <TableRow key={ubicacion.id}>
                         <TableCell>{ubicacion.tipo}</TableCell>
                         <TableCell>{ubicacion.observaciones || 'Sin observaciones'}</TableCell>

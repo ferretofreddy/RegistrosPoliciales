@@ -8,6 +8,7 @@ import InmuebleForm from "@/components/inmueble-form";
 import UbicacionForm from "@/components/ubicacion-form";
 import SearchComponent, { SearchResult } from "@/components/search-component";
 import UpdateEntityDetails from "@/components/update-entity-details";
+import EntityDetails from "@/components/entity-details";
 import { User, Car, Building, MapPin, FileEdit, Search } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
