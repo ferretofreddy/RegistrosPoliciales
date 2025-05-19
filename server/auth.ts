@@ -195,4 +195,60 @@ export function setupAuth(app: Express) {
       res.status(500).json({ message: "Error al actualizar el perfil" });
     }
   });
+  
+  // Cambiar contraseña del usuario
+  app.post("/api/user/change-password", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Se requiere la contraseña actual y la nueva contraseña" });
+      }
+      
+      // Obtener el usuario actual de la base de datos para verificar la contraseña
+      const [user] = await db.select().from(users).where(eq(users.id, req.user.id));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Verificar que la contraseña actual sea correcta
+      const isCorrectPassword = await comparePasswords(currentPassword, user.password);
+      
+      if (!isCorrectPassword) {
+        return res.status(400).json({ message: "La contraseña actual es incorrecta" });
+      }
+      
+      // Hashear la nueva contraseña
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Actualizar la contraseña en la base de datos
+      const [updatedUser] = await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, req.user.id))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Error al actualizar la contraseña" });
+      }
+      
+      // Actualizar la sesión del usuario
+      req.login(updatedUser, (err) => {
+        if (err) {
+          console.error("Error al actualizar la sesión:", err);
+          return res.status(500).json({ message: "Error al actualizar la sesión" });
+        }
+        
+        res.json({ message: "Contraseña actualizada correctamente" });
+      });
+    } catch (error) {
+      console.error("Error al cambiar la contraseña:", error);
+      res.status(500).json({ message: "Error al cambiar la contraseña" });
+    }
+  });
 }
