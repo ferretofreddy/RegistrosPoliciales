@@ -587,9 +587,43 @@ export default function EstructurasPage() {
                       <CardContent>
                         {isLoading ? (
                           <p className="text-center py-4 text-gray-500">Cargando...</p>
-                        ) : locations.filter(loc => loc.relation === 'direct').length > 0 ? (
+                        ) : locations.filter(loc => {
+                            // Filtramos las ubicaciones directas
+                            if (loc.relation !== 'direct') return false;
+                            
+                            // Para personas, solo mostramos domicilios como ubicaciones directas
+                            if (selectedResult.tipo === 'persona') {
+                              const tipo = (loc.title || "").toLowerCase();
+                              return tipo === "domicilio" || tipo.includes("domicilio");
+                            }
+                            
+                            // Para inmuebles, solo mostramos ubicaciones de tipo inmueble como directas
+                            if (selectedResult.tipo === 'inmueble') {
+                              const tipo = (loc.title || "").toLowerCase();
+                              return tipo === "inmueble" || tipo.includes("inmueble");
+                            }
+                            
+                            return true;
+                          }).length > 0 ? (
                           <LocationsTable 
-                            locations={locations.filter(loc => loc.relation === 'direct')}
+                            locations={locations.filter(loc => {
+                              // Filtramos las ubicaciones directas
+                              if (loc.relation !== 'direct') return false;
+                              
+                              // Para personas, solo mostramos domicilios como ubicaciones directas
+                              if (selectedResult.tipo === 'persona') {
+                                const tipo = (loc.title || "").toLowerCase();
+                                return tipo === "domicilio" || tipo.includes("domicilio");
+                              }
+                              
+                              // Para inmuebles, solo mostramos ubicaciones de tipo inmueble como directas
+                              if (selectedResult.tipo === 'inmueble') {
+                                const tipo = (loc.title || "").toLowerCase();
+                                return tipo === "inmueble" || tipo.includes("inmueble");
+                              }
+                              
+                              return true;
+                            })}
                             onLocationClick={handleLocationClick}
                           />
                         ) : (
@@ -613,9 +647,29 @@ export default function EstructurasPage() {
                       <CardContent>
                         {isLoading ? (
                           <p className="text-center py-4 text-gray-500">Cargando...</p>
-                        ) : locations.filter(loc => loc.relation === 'related').length > 0 ? (
+                        ) : locations.filter(loc => {
+                            // Filtrar primero por relación
+                            if (loc.relation !== 'related') return false;
+                            
+                            // Para cualquier entidad, excluimos tipos domicilio e inmueble en ubicaciones relacionadas
+                            const tipo = (loc.title || "").toLowerCase();
+                            return tipo !== "domicilio" && 
+                                   !tipo.includes("domicilio") && 
+                                   tipo !== "inmueble" && 
+                                   !tipo.includes("inmueble");
+                          }).length > 0 ? (
                           <LocationsTable 
-                            locations={locations.filter(loc => loc.relation === 'related')}
+                            locations={locations.filter(loc => {
+                              // Filtrar primero por relación
+                              if (loc.relation !== 'related') return false;
+                              
+                              // Para cualquier entidad, excluimos tipos domicilio e inmueble en ubicaciones relacionadas
+                              const tipo = (loc.title || "").toLowerCase();
+                              return tipo !== "domicilio" && 
+                                     !tipo.includes("domicilio") && 
+                                     tipo !== "inmueble" && 
+                                     !tipo.includes("inmueble");
+                            })}
                             onLocationClick={handleLocationClick}
                           />
                         ) : (
