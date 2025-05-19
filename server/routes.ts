@@ -751,6 +751,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al obtener tipos de ubicaciones" });
     }
   });
+  
+  // === ADMINISTRACION DE USUARIOS ===
+  // Obtener todos los usuarios (solo admin)
+  app.get("/api/admin/users", requireRole(["admin"]), async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users).orderBy(users.nombre);
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error al obtener usuarios:", error);
+      res.status(500).json({ message: "Error al obtener usuarios" });
+    }
+  });
+  
+  // Crear nuevo usuario (solo admin)
+  app.post("/api/admin/users", requireRole(["admin"]), async (req, res) => {
+    try {
+      // Verificar si el email ya existe
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, req.body.email))
+        .limit(1);
+      
+      if (existingUser.length > 0) {
+        return res.status(400).json({ message: "El correo electrónico ya está registrado" });
+      }
+      
+      // Hashear la contraseña
+      const hashedPassword = await hashPassword(req.body.password);
+      
+      // Crear el usuario
+      const [newUser] = await db.insert(users).values({
+        email: req.body.email,
+        password: hashedPassword,
+        nombre: req.body.nombre,
+        cedula: req.body.cedula || "",
+        telefono: req.body.telefono || "",
+        unidad: req.body.unidad || "",
+        rol: req.body.rol || "agente"
+      }).returning();
+      
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error("Error al crear usuario:", error);
+      res.status(500).json({ message: "Error al crear usuario" });
+    }
+  });
+  
+  // Actualizar usuario (solo admin)
+  app.put("/api/admin/users/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+      
+      // Actualizar el usuario
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          nombre: req.body.nombre,
+          email: req.body.email,
+          cedula: req.body.cedula,
+          telefono: req.body.telefono,
+          unidad: req.body.unidad,
+          rol: req.body.rol
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error al actualizar usuario:", error);
+      res.status(500).json({ message: "Error al actualizar usuario" });
+    }
+  });
+  
+  // Cambiar contraseña de usuario (solo admin)
+  app.put("/api/admin/users/:id/password", requireRole(["admin"]), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+      
+      // Hashear la nueva contraseña
+      const hashedPassword = await hashPassword(req.body.password);
+      
+      // Actualizar la contraseña
+      const [updatedUser] = await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      res.json({ message: "Contraseña actualizada correctamente" });
+    } catch (error) {
+      console.error("Error al cambiar contraseña:", error);
+      res.status(500).json({ message: "Error al cambiar contraseña" });
+    }
+  });
+  
+  // Eliminar usuario (solo admin)
+  app.delete("/api/admin/users/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+      
+      // No permitir eliminar al propio usuario administrador
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: "No puede eliminar su propia cuenta" });
+      }
+      
+      const deleteResult = await db
+        .delete(users)
+        .where(eq(users.id, userId))
+        .returning({ id: users.id });
+      
+      if (!deleteResult.length) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      res.json({ message: "Usuario eliminado correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      res.status(500).json({ message: "Error al eliminar usuario" });
+    }
+  });
 
   // === CONSULTA DE RELACIONES ===
   // Endpoint para consultar todas las relaciones de una entidad 
