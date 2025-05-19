@@ -167,7 +167,7 @@ export default function MensajeriaPage() {
 
   // Función para encontrar el nombre de un usuario por su ID
   const getNombreUsuario = (usuarioId: number) => {
-    if (!usuarios.data) return "Usuario";
+    if (!usuarios.data || !Array.isArray(usuarios.data)) return "Usuario";
     const usuario = usuarios.data.find((u: Usuario) => u.id === usuarioId);
     return usuario ? usuario.nombre : "Usuario";
   };
@@ -219,7 +219,8 @@ export default function MensajeriaPage() {
                   </div>
                 ) : (
                   <ul className="divide-y">
-                    {mensajesRecibidos.data?.map((mensaje) => (
+                    {mensajesRecibidos.data && Array.isArray(mensajesRecibidos.data) && 
+                      mensajesRecibidos.data.map((mensaje: Mensaje) => (
                       <li 
                         key={mensaje.id}
                         onClick={() => handleSelectMensaje(mensaje)}
@@ -253,7 +254,8 @@ export default function MensajeriaPage() {
                   </div>
                 ) : (
                   <ul className="divide-y">
-                    {mensajesEnviados.data?.map((mensaje) => (
+                    {mensajesEnviados.data && Array.isArray(mensajesEnviados.data) && 
+                      mensajesEnviados.data.map((mensaje: Mensaje) => (
                       <li 
                         key={mensaje.id}
                         onClick={() => handleSelectMensaje(mensaje)}
@@ -345,11 +347,12 @@ export default function MensajeriaPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {usuarios.data?.map((usuario) => (
-                            <SelectItem key={usuario.id} value={usuario.id.toString()}>
-                              {usuario.nombre}
-                            </SelectItem>
-                          ))}
+                          {usuarios.data && Array.isArray(usuarios.data) && 
+                            usuarios.data.map((usuario: Usuario) => (
+                              <SelectItem key={usuario.id} value={usuario.id.toString()}>
+                                {usuario.nombre}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
