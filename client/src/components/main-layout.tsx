@@ -136,13 +136,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Mi Perfil</span>
+                    <DropdownMenuItem asChild>
+                      <Link href="/mi-perfil">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Mi Perfil</span>
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Configuración</span>
+                    <DropdownMenuItem asChild>
+                      <Link href="/configuracion">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Configuración</span>
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -270,22 +274,28 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </div>
               </div>
               <div className="mt-3 px-2 space-y-1">
-                <a
-                  href="#"
+                <Link
+                  href="/mi-perfil"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-primary-600"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Mi Perfil
-                </a>
-                <a
-                  href="#"
+                </Link>
+                <Link
+                  href="/configuracion"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-primary-600"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Configuración
-                </a>
+                </Link>
                 <a
                   href="#"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-primary-600"
-                  onClick={handleLogout}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
                 >
                   Cerrar Sesión
                 </a>
