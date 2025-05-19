@@ -5,7 +5,7 @@ import SearchComponent from "@/components/search-component";
 import LocationMap from "@/components/location-map";
 import LocationsTable, { LocationData } from "@/components/locations-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Search } from "lucide-react";
+import { MapPin, Search, User, Building, Car } from "lucide-react";
 import { SearchResult } from "@/components/search-component";
 
 // Coordenadas por defecto (centro de Costa Rica)
