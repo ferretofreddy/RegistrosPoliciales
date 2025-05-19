@@ -807,16 +807,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         relaciones.inmuebles = relacionesInmuebles.map(r => r.inmueble);
         
-        // Ubicaciones relacionadas con esta persona
-        const relacionesUbicaciones = await db
-          .select({
-            ubicacion: ubicaciones
-          })
-          .from(personasUbicaciones)
-          .innerJoin(ubicaciones, eq(personasUbicaciones.ubicacionId, ubicaciones.id))
-          .where(eq(personasUbicaciones.personaId, id));
-          
-        relaciones.ubicaciones = relacionesUbicaciones.map(r => r.ubicacion);
+        // Ubicaciones relacionadas con esta persona - SEPARADAS POR TIPO
+        // 1. Domicilios (ubicaciones directas)
+        const domiciliosResult = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u
+              JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+              WHERE pu.persona_id = ${id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+              AND (LOWER(u.tipo) = 'domicilio' OR LOWER(u.tipo) LIKE '%domicilio%')`
+        );
+        
+        const domicilios = domiciliosResult.rows || [];
+        console.log(`[DEBUG] Domicilios directos encontrados (routes): ${domicilios.length}`);
+        
+        // 2. Otras ubicaciones (avistamientos, etc.)
+        const otrasUbicacionesResult = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u
+              JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+              WHERE pu.persona_id = ${id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
+              AND LOWER(u.tipo) != 'domicilio'
+              AND LOWER(u.tipo) NOT LIKE '%domicilio%'`
+        );
+        
+        const otrasUbicaciones = otrasUbicacionesResult.rows || [];
+        console.log(`[DEBUG] Otras ubicaciones encontradas (routes): ${otrasUbicaciones.length}`);
+        
+        // Asignar solo los domicilios a ubicaciones directas
+        relaciones.ubicaciones = domicilios;
+        
+        // Asignar las otras ubicaciones a una propiedad separada
+        relaciones.otrasUbicaciones = otrasUbicaciones;
       }
       else if (tipo === "vehiculo") {
         // Personas relacionadas con este vehículo
