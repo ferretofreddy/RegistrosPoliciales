@@ -616,6 +616,142 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
       )}
+      {/* Dialog for editing user */}
+      {editingUser && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Editar Usuario</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-name" className="text-right">
+                  Nombre
+                </Label>
+                <Input 
+                  id="edit-name" 
+                  className="col-span-3" 
+                  value={editingUser.nombre}
+                  onChange={(e) => setEditingUser({...editingUser, nombre: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-email" className="text-right">
+                  Email
+                </Label>
+                <Input 
+                  id="edit-email" 
+                  type="email"
+                  className="col-span-3" 
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-cedula" className="text-right">
+                  Cédula
+                </Label>
+                <Input 
+                  id="edit-cedula" 
+                  className="col-span-3" 
+                  value={editingUser.cedula || ""}
+                  onChange={(e) => setEditingUser({...editingUser, cedula: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-telefono" className="text-right">
+                  Teléfono
+                </Label>
+                <Input 
+                  id="edit-telefono" 
+                  className="col-span-3" 
+                  value={editingUser.telefono || ""}
+                  onChange={(e) => setEditingUser({...editingUser, telefono: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-unidad" className="text-right">
+                  Unidad
+                </Label>
+                <Input 
+                  id="edit-unidad" 
+                  className="col-span-3" 
+                  value={editingUser.unidad || ""}
+                  onChange={(e) => setEditingUser({...editingUser, unidad: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-rol" className="text-right">
+                  Rol
+                </Label>
+                <Select 
+                  value={editingUser.rol} 
+                  onValueChange={(value) => setEditingUser({...editingUser, rol: value})}
+                >
+                  <SelectTrigger id="edit-rol" className="col-span-3">
+                    <SelectValue placeholder="Seleccionar rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="investigador">Investigador</SelectItem>
+                    <SelectItem value="agente">Agente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="submit" 
+                onClick={handleUpdateUser}
+                disabled={updateUserMutation.isPending}
+              >
+                {updateUserMutation.isPending ? "Actualizando..." : "Guardar Cambios"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Dialog for changing password */}
+      {editingUser && (
+        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Cambiar Contraseña</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="space-y-2 mb-4">
+                <h3 className="font-medium text-sm">Usuario: {editingUser.nombre}</h3>
+                <p className="text-sm text-gray-500">Email: {editingUser.email}</p>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="new-password" className="text-right">
+                    Nueva Contraseña
+                  </Label>
+                  <Input 
+                    id="new-password" 
+                    type="password"
+                    className="col-span-3" 
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="submit" 
+                onClick={handleChangePassword}
+                disabled={changePasswordMutation.isPending || !newPassword || newPassword.length < 6}
+              >
+                {changePasswordMutation.isPending ? "Actualizando..." : "Cambiar Contraseña"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </MainLayout>
   );
 }

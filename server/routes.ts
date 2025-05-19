@@ -27,6 +27,18 @@ interface User {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Middleware para verificar rol de administrador
+  const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    if (req.user?.rol !== 'admin') {
+      return res.status(403).json({ message: "Acceso denegado. Se requiere rol de administrador." });
+    }
+    
+    next();
+  };
   // setup auth routes
   setupAuth(app);
   
