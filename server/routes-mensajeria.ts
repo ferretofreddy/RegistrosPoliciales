@@ -67,27 +67,42 @@ export function registerMensajeriaRoutes(app: Express) {
   app.post("/api/mensajes", ensureAuthenticated, async (req, res) => {
     try {
       console.log("Datos recibidos para crear mensaje:", req.body);
+      console.log("Usuario autenticado:", req.user);
       
-      // Extraer los datos necesarios del cuerpo de la solicitud
-      const { destinatarioId, asunto, contenido } = req.body;
+      // Creamos directamente el objeto para el mensaje sin pasar por validación de Zod
+      const mensajeData = {
+        remiteId: req.user?.id, 
+        destinatarioId: typeof req.body.destinatarioId === 'string' 
+          ? parseInt(req.body.destinatarioId) 
+          : req.body.destinatarioId,
+        asunto: req.body.asunto || "",
+        contenido: req.body.contenido || "",
+        fechaEnvio: new Date(),
+        leido: false,
+        eliminadoRemite: false,
+        eliminadoDestinatario: false
+      };
       
-      if (!destinatarioId || !asunto || !contenido) {
-        return res.status(400).json({ 
-          message: "Datos de mensaje inválidos", 
-          errors: "Los campos destinatarioId, asunto y contenido son obligatorios" 
-        });
+      // Verificación manual de campos requeridos
+      if (!mensajeData.remiteId) {
+        return res.status(400).json({ message: "Error: ID de remitente no disponible" });
       }
       
-      // Crear el objeto de mensaje con los campos obligatorios
-      const mensajeData = {
-        remiteId: req.user!.id, // Asignar el ID del usuario como remitente
-        destinatarioId: typeof destinatarioId === 'string' ? parseInt(destinatarioId) : destinatarioId,
-        asunto,
-        contenido
-      };
+      if (!mensajeData.destinatarioId) {
+        return res.status(400).json({ message: "Error: Se requiere un destinatario" });
+      }
+      
+      if (!mensajeData.asunto) {
+        return res.status(400).json({ message: "Error: Se requiere un asunto" });
+      }
+      
+      if (!mensajeData.contenido) {
+        return res.status(400).json({ message: "Error: Se requiere contenido para el mensaje" });
+      }
       
       console.log("Datos formateados para crear mensaje:", mensajeData);
       
+      // Usar el servicio para insertar en la base de datos
       const nuevoMensaje = await mensajeriaService.createMensaje(mensajeData);
       console.log("Mensaje creado correctamente:", nuevoMensaje);
       res.status(201).json(nuevoMensaje);

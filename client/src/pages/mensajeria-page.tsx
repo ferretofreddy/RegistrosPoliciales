@@ -92,10 +92,26 @@ export default function MensajeriaPage() {
       console.log("Datos formateados para envío:", mensajeData);
       
       try {
-        const response = await apiRequest("POST", "/api/mensajes", mensajeData);
-        console.log("Respuesta al enviar mensaje:", response);
+        // Usar fetch directamente para asegurarnos de que las cookies de sesión se envían
+        const response = await fetch('/api/mensajes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Importante para incluir cookies de sesión
+          body: JSON.stringify(mensajeData)
+        });
+        
+        console.log("Código de estado de la respuesta:", response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Error en la respuesta:", errorData);
+          throw new Error(errorData.message || "Error al enviar mensaje");
+        }
+        
         const responseData = await response.json();
-        console.log("Datos de respuesta:", responseData);
+        console.log("Mensaje enviado correctamente:", responseData);
         return responseData;
       } catch (error) {
         console.error("Error detallado al enviar mensaje:", error);
