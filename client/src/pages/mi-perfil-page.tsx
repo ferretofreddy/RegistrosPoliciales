@@ -1,15 +1,99 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Briefcase, UserCheck, CreditCard } from "lucide-react";
+import { 
+  User, Mail, Briefcase, UserCheck, CreditCard, 
+  Users, Map, Buildings, Car, Search, Shield, Settings 
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Link, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function MiPerfilPage() {
   const { user } = useAuth();
+  const [location] = useLocation();
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Mi Perfil</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Mi Perfil</h1>
+        
+        <div className="flex gap-2 overflow-x-auto pb-2 max-w-full">
+          <Link href="/consultas">
+            <Button 
+              variant={location === "/consultas" ? "default" : "outline"} 
+              size="sm"
+              className="whitespace-nowrap"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Consultas
+            </Button>
+          </Link>
+          
+          {(user?.rol === "admin" || user?.rol === "investigador") && (
+            <>
+              <Link href="/registros">
+                <Button 
+                  variant={location === "/registros" ? "default" : "outline"} 
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Registros
+                </Button>
+              </Link>
+              
+              <Link href="/ubicaciones">
+                <Button 
+                  variant={location === "/ubicaciones" ? "default" : "outline"} 
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  <Map className="h-4 w-4 mr-2" />
+                  Ubicaciones
+                </Button>
+              </Link>
+              
+              <Link href="/estructuras">
+                <Button 
+                  variant={location === "/estructuras" ? "default" : "outline"} 
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  <Buildings className="h-4 w-4 mr-2" />
+                  Estructuras
+                </Button>
+              </Link>
+            </>
+          )}
+          
+          {user?.rol === "admin" && (
+            <>
+              <Link href="/admin">
+                <Button 
+                  variant={location === "/admin" ? "default" : "outline"} 
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Administración
+                </Button>
+              </Link>
+              
+              <Link href="/configuracion">
+                <Button 
+                  variant={location === "/configuracion" ? "default" : "outline"} 
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configuración
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
       
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-1/3">
