@@ -81,10 +81,18 @@ export default function MensajeriaPage() {
   const enviarMensajeMutation = useMutation({
     mutationFn: async (data: NuevoMensajeFormValues) => {
       console.log("Enviando mensaje con datos:", data);
-      const response = await apiRequest("POST", "/api/mensajes", {
-        ...data,
-        destinatarioId: parseInt(data.destinatarioId)
-      });
+      
+      // El problema parece ser que necesitamos incluir el campo remiteId en la solicitud
+      // pero lo añadiremos como null para que el servidor lo reemplace con el ID del usuario autenticado
+      const mensajeData = {
+        remiteId: null, // Será reemplazado por el servidor con el ID del usuario autenticado
+        destinatarioId: parseInt(data.destinatarioId),
+        asunto: data.asunto,
+        contenido: data.contenido
+      };
+      
+      console.log("Datos formateados para envío:", mensajeData);
+      const response = await apiRequest("POST", "/api/mensajes", mensajeData);
       console.log("Respuesta al enviar mensaje:", response);
       return response.json();
     },
