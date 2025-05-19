@@ -1,32 +1,131 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Calendar, Link2 } from "lucide-react";
+import { User, Calendar, Link2, Plus, Car, Building, MapPin, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntityType } from "@/components/search-component";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface EntityDetailsProps {
+// Esquema para las observaciones
+const observacionSchema = z.object({
+  detalle: z.string().min(3, { message: "La observación debe tener al menos 3 caracteres" }),
+});
+
+// Esquema para las relaciones
+const relacionSchema = z.object({
+  entidadId: z.string().min(1, { message: "Seleccione una entidad" }),
+  tipoRelacion: z.string().optional(),
+  tipo: z.enum(["persona", "vehiculo", "inmueble", "ubicacion"]),
+});
+
+// Tipos para las entidades y relaciones
+type Observacion = {
+  id?: number;
+  detalle: string;
+  fecha: string | Date;
+  usuario?: string;
+};
+
+type Persona = {
+  id: number;
+  nombre: string;
+  identificacion: string;
+};
+
+type Vehiculo = {
+  id: number;
+  placa: string;
+  marca: string;
+  modelo: string;
+};
+
+type Inmueble = {
+  id: number;
+  tipo: string;
+  direccion: string;
+};
+
+type Ubicacion = {
+  id: number;
+  tipo: string;
+  observaciones?: string;
+  latitud?: number;
+  longitud?: number;
+};
+
+type Relaciones = {
+  personas: Persona[];
+  vehiculos: Vehiculo[];
+  inmuebles: Inmueble[];
+  ubicaciones: Ubicacion[];
+};
+
+interface UpdateEntityDetailsProps {
   entityId: number;
   entityType: Exclude<EntityType, "todas">;
 }
 
-export default function EntityDetails({ entityId, entityType }: EntityDetailsProps) {
+export default function UpdateEntityDetails({ entityId, entityType }: UpdateEntityDetailsProps) {
+  const { toast } = useToast();
+  const [showObservacionForm, setShowObservacionForm] = useState(false);
+  const [relacionTipo, setRelacionTipo] = useState<"persona" | "vehiculo" | "inmueble" | "ubicacion">("persona");
+  const [showRelacionForm, setShowRelacionForm] = useState(false);
+  
   // Estado para guardar las observaciones y relaciones
-  const [observaciones, setObservaciones] = useState<any[]>([]);
-  const [relaciones, setRelaciones] = useState<{
-    personas: any[];
-    vehiculos: any[];
-    inmuebles: any[];
-    ubicaciones: any[];
-  }>({
+  const [observaciones, setObservaciones] = useState<Observacion[]>([]);
+  const [relaciones, setRelaciones] = useState<Relaciones>({
     personas: [],
     vehiculos: [],
     inmuebles: [],
     ubicaciones: []
   });
+  
+  // Formulario para nuevas observaciones
+  const observacionForm = useForm<z.infer<typeof observacionSchema>>({
+    resolver: zodResolver(observacionSchema),
+    defaultValues: {
+      detalle: "",
+    },
+  });
+  
+  // Formulario para nuevas relaciones
+  const relacionForm = useForm<z.infer<typeof relacionSchema>>({
+    resolver: zodResolver(relacionSchema),
+    defaultValues: {
+      entidadId: "",
+      tipoRelacion: "",
+      tipo: "persona",
+    },
+  });
+  
+  // Establecer el tipo de relación cuando cambia
+  useEffect(() => {
+    relacionForm.setValue("tipo", relacionTipo);
+  }, [relacionTipo, relacionForm]);
 
   // Obtener los datos de la entidad
   const { data: entity, isLoading: isLoadingEntity } = useQuery({

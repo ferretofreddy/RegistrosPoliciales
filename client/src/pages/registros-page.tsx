@@ -7,8 +7,7 @@ import VehiculoForm from "@/components/vehiculo-form";
 import InmuebleForm from "@/components/inmueble-form";
 import UbicacionForm from "@/components/ubicacion-form";
 import SearchComponent, { SearchResult } from "@/components/search-component";
-import EntityDetails from "@/components/entity-details";
-import UpdateEntity from "@/components/update-entity";
+import UpdateEntityDetails from "@/components/update-entity-details";
 import { User, Car, Building, MapPin, FileEdit, Search } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -117,7 +116,7 @@ export default function RegistrosPage() {
                       </div>
                     </div>
                     
-                    <EntityDetails 
+                    <UpdateEntityDetails 
                       entityId={selectedResult.id} 
                       entityType={selectedResult.tipo} 
                     />
