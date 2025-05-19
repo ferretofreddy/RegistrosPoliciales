@@ -17,6 +17,7 @@ import {
   tiposInmuebles, tiposUbicaciones,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
+import { registerMensajeriaRoutes } from "./routes-mensajeria";
 
 // Definir un tipo para el usuario autenticado basado en el objeto req.user
 interface User {
@@ -27,6 +28,8 @@ interface User {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Registrar rutas de mensajería
+  registerMensajeriaRoutes(app);
   // Middleware para verificar rol de administrador y estado activo
   const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
