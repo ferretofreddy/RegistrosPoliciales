@@ -39,6 +39,18 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("usuarios");
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    nombre: "",
+    email: "",
+    password: "",
+    cedula: "",
+    telefono: "",
+    unidad: "",
+    rol: "agente"
+  });
+  const [newPassword, setNewPassword] = useState("");
   const { toast } = useToast();
 
   const { data: users, isLoading } = useQuery<User[]>({
@@ -49,9 +61,42 @@ export default function AdminPage() {
     },
   });
 
+  // Mutation para crear un nuevo usuario
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: typeof newUser) => {
+      const res = await apiRequest("POST", "/api/admin/users", userData);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setIsNewUserDialogOpen(false);
+      setNewUser({
+        nombre: "",
+        email: "",
+        password: "",
+        cedula: "",
+        telefono: "",
+        unidad: "",
+        rol: "agente"
+      });
+      toast({
+        title: "Usuario creado",
+        description: "El usuario ha sido creado correctamente.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Ha ocurrido un error al crear el usuario",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para actualizar un usuario existente
   const updateUserMutation = useMutation({
-    mutationFn: async (userData: { id: number; rol: string }) => {
-      const res = await apiRequest("PUT", `/api/admin/users/${userData.id}`, { rol: userData.rol });
+    mutationFn: async (userData: Partial<User> & { id: number }) => {
+      const res = await apiRequest("PUT", `/api/admin/users/${userData.id}`, userData);
       return res.json();
     },
     onSuccess: () => {
@@ -59,13 +104,37 @@ export default function AdminPage() {
       setIsDialogOpen(false);
       toast({
         title: "Usuario actualizado",
-        description: "El rol del usuario ha sido actualizado correctamente.",
+        description: "El usuario ha sido actualizado correctamente.",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Ha ocurrido un error al actualizar el usuario",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation para cambiar la contraseña de un usuario
+  const changePasswordMutation = useMutation({
+    mutationFn: async ({ id, password }: { id: number; password: string }) => {
+      const res = await apiRequest("PUT", `/api/admin/users/${id}/password`, { password });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setIsPasswordDialogOpen(false);
+      setNewPassword("");
+      toast({
+        title: "Contraseña actualizada",
+        description: "La contraseña ha sido actualizada correctamente.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Ha ocurrido un error al cambiar la contraseña",
         variant: "destructive",
       });
     },
@@ -103,11 +172,48 @@ export default function AdminPage() {
     setIsDialogOpen(true);
   };
 
+  const handleCreateUser = () => {
+    // Validar datos básicos
+    if (!newUser.nombre || !newUser.email || !newUser.password) {
+      toast({
+        title: "Error",
+        description: "Nombre, email y contraseña son obligatorios",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    createUserMutation.mutate(newUser);
+  };
+
   const handleUpdateUser = () => {
     if (editingUser) {
       updateUserMutation.mutate({ 
         id: editingUser.id, 
+        nombre: editingUser.nombre,
+        email: editingUser.email,
+        cedula: editingUser.cedula,
+        telefono: editingUser.telefono,
+        unidad: editingUser.unidad,
         rol: editingUser.rol 
+      });
+    }
+  };
+  
+  const handleChangePassword = () => {
+    if (editingUser && newPassword) {
+      if (newPassword.length < 6) {
+        toast({
+          title: "Error",
+          description: "La contraseña debe tener al menos 6 caracteres",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      changePasswordMutation.mutate({ 
+        id: editingUser.id, 
+        password: newPassword 
       });
     }
   };
@@ -152,7 +258,8 @@ export default function AdminPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h2 className="text-lg font-medium text-gray-900">Usuarios del Sistema</h2>
-                      <Dialog>
+                      {/* Diálogo para crear usuarios */}
+                      <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
                         <DialogTrigger asChild>
                           <Button>
                             <UserPlus className="mr-2 h-4 w-4" />
@@ -165,22 +272,85 @@ export default function AdminPage() {
                           </DialogHeader>
                           <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="name" className="text-right">
+                              <Label htmlFor="new-name" className="text-right">
                                 Nombre
                               </Label>
-                              <Input id="name" className="col-span-3" />
+                              <Input 
+                                id="new-name" 
+                                className="col-span-3"
+                                value={newUser.nombre}
+                                onChange={(e) => setNewUser({...newUser, nombre: e.target.value})}
+                                required
+                              />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="email" className="text-right">
+                              <Label htmlFor="new-email" className="text-right">
                                 Email
                               </Label>
-                              <Input id="email" type="email" className="col-span-3" />
+                              <Input 
+                                id="new-email" 
+                                type="email" 
+                                className="col-span-3"
+                                value={newUser.email}
+                                onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                                required
+                              />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="rol" className="text-right">
+                              <Label htmlFor="new-password" className="text-right">
+                                Contraseña
+                              </Label>
+                              <Input 
+                                id="new-password" 
+                                type="password" 
+                                className="col-span-3"
+                                value={newUser.password}
+                                onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                                placeholder="Mínimo 6 caracteres"
+                                required
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-cedula" className="text-right">
+                                Cédula
+                              </Label>
+                              <Input 
+                                id="new-cedula" 
+                                className="col-span-3"
+                                value={newUser.cedula}
+                                onChange={(e) => setNewUser({...newUser, cedula: e.target.value})}
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-telefono" className="text-right">
+                                Teléfono
+                              </Label>
+                              <Input 
+                                id="new-telefono" 
+                                className="col-span-3"
+                                value={newUser.telefono}
+                                onChange={(e) => setNewUser({...newUser, telefono: e.target.value})}
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-unidad" className="text-right">
+                                Unidad
+                              </Label>
+                              <Input 
+                                id="new-unidad" 
+                                className="col-span-3"
+                                value={newUser.unidad}
+                                onChange={(e) => setNewUser({...newUser, unidad: e.target.value})}
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="new-rol" className="text-right">
                                 Rol
                               </Label>
-                              <Select defaultValue="agente">
+                              <Select 
+                                value={newUser.rol}
+                                onValueChange={(value) => setNewUser({...newUser, rol: value})}
+                              >
                                 <SelectTrigger className="col-span-3">
                                   <SelectValue placeholder="Seleccionar rol" />
                                 </SelectTrigger>
@@ -193,7 +363,13 @@ export default function AdminPage() {
                             </div>
                           </div>
                           <DialogFooter>
-                            <Button type="submit">Guardar Usuario</Button>
+                            <Button 
+                              type="submit" 
+                              onClick={handleCreateUser}
+                              disabled={createUserMutation.isPending}
+                            >
+                              {createUserMutation.isPending ? "Creando..." : "Guardar Usuario"}
+                            </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
@@ -229,11 +405,26 @@ export default function AdminPage() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell>{user.unidad}</TableCell>
-                                <TableCell className="space-x-2">
-                                  <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)}>
+                                <TableCell className="space-x-1">
+                                  <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)} title="Editar usuario">
                                     <Edit className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user)}>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => {
+                                      setEditingUser(user);
+                                      setNewPassword("");
+                                      setIsPasswordDialogOpen(true);
+                                    }}
+                                    title="Cambiar contraseña"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user)} title="Eliminar usuario">
                                     <Trash2 className="h-4 w-4 text-red-500" />
                                   </Button>
                                 </TableCell>
