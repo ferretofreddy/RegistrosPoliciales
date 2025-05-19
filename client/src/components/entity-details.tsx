@@ -538,38 +538,54 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                   <Button
                     type="button"
-                    variant={relacionTipo === "persona" ? "default" : "outline"}
+                    variant="outline"
                     onClick={() => setRelacionTipo("persona")}
-                    className="flex items-center justify-center gap-2"
+                    className={`flex items-center justify-center gap-2 ${
+                      relacionTipo === "persona" 
+                        ? "bg-blue-500 text-white hover:bg-blue-600" 
+                        : "border-blue-200 hover:border-blue-300"
+                    }`}
                   >
-                    <User className="h-4 w-4 text-blue-500" />
+                    <User className={`h-4 w-4 ${relacionTipo === "persona" ? "text-white" : "text-blue-500"}`} />
                     <span className="hidden sm:inline">Persona</span>
                   </Button>
                   <Button
                     type="button"
-                    variant={relacionTipo === "vehiculo" ? "default" : "outline"}
+                    variant="outline"
                     onClick={() => setRelacionTipo("vehiculo")}
-                    className="flex items-center justify-center gap-2"
+                    className={`flex items-center justify-center gap-2 ${
+                      relacionTipo === "vehiculo" 
+                        ? "bg-green-500 text-white hover:bg-green-600" 
+                        : "border-green-200 hover:border-green-300"
+                    }`}
                   >
-                    <Car className="h-4 w-4 text-green-500" />
+                    <Car className={`h-4 w-4 ${relacionTipo === "vehiculo" ? "text-white" : "text-green-500"}`} />
                     <span className="hidden sm:inline">Vehículo</span>
                   </Button>
                   <Button
                     type="button"
-                    variant={relacionTipo === "inmueble" ? "default" : "outline"}
+                    variant="outline"
                     onClick={() => setRelacionTipo("inmueble")}
-                    className="flex items-center justify-center gap-2"
+                    className={`flex items-center justify-center gap-2 ${
+                      relacionTipo === "inmueble" 
+                        ? "bg-purple-500 text-white hover:bg-purple-600" 
+                        : "border-purple-200 hover:border-purple-300"
+                    }`}
                   >
-                    <Building className="h-4 w-4 text-purple-500" />
+                    <Building className={`h-4 w-4 ${relacionTipo === "inmueble" ? "text-white" : "text-purple-500"}`} />
                     <span className="hidden sm:inline">Inmueble</span>
                   </Button>
                   <Button
                     type="button"
-                    variant={relacionTipo === "ubicacion" ? "default" : "outline"}
+                    variant="outline"
                     onClick={() => setRelacionTipo("ubicacion")}
-                    className="flex items-center justify-center gap-2"
+                    className={`flex items-center justify-center gap-2 ${
+                      relacionTipo === "ubicacion" 
+                        ? "bg-red-500 text-white hover:bg-red-600" 
+                        : "border-red-200 hover:border-red-300"
+                    }`}
                   >
-                    <MapPin className="h-4 w-4 text-red-500" />
+                    <MapPin className={`h-4 w-4 ${relacionTipo === "ubicacion" ? "text-white" : "text-red-500"}`} />
                     <span className="hidden sm:inline">Ubicación</span>
                   </Button>
                 </div>
