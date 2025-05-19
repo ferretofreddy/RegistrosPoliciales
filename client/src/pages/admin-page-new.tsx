@@ -236,16 +236,16 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-8">
-              {/* Sección de Gestión de Usuarios */}
               <div className="bg-white p-6 rounded-lg shadow-sm border">
                 <h2 className="text-xl font-bold mb-6 text-gray-900 flex items-center">
                   <UserIcon className="mr-2 h-5 w-5" />
                   Gestión de Usuarios
                 </h2>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-gray-900">Usuarios del Sistema</h3>
-                    {/* Diálogo para crear usuarios */}
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">Listado de Usuarios</h3>
+                    
+                    {/* Diálogo para crear nuevos usuarios */}
                     <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
                       <DialogTrigger asChild>
                         <Button>
