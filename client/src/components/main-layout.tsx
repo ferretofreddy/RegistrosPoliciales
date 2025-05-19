@@ -281,6 +281,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 >
                   Mi Perfil
                 </Link>
+                <Link
+                  href="/mensajeria"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-primary-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Mensajería
+                </Link>
                 <a
                   href="#"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-primary-600"
