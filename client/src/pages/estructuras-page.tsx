@@ -900,112 +900,89 @@ export default function EstructurasPage() {
                 </h2>
               </div>
               
-              <Tabs 
-                defaultValue="informacion" 
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="mt-6"
-              >
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="informacion" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span>Información</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="relaciones" className="flex items-center gap-2">
-                    <Link2 className="h-4 w-4" />
-                    <span>Relaciones</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="ubicaciones" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>Ubicaciones</span>
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="informacion" className="mt-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="w-full">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <User className="h-5 w-5" />
-                          <span>Información Detallada</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="p-2">
-                          {renderEntityDetails()}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="w-full">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <Calendar className="h-5 w-5" />
-                          <span>Observaciones</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="p-1">
-                          {renderObservaciones()}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="relaciones" className="mt-4">
+              <div className="space-y-8 print:space-y-4">
+                {/* Bloque de Información Detallada */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:gap-3">
+                  <Card className="w-full">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <User className="h-5 w-5" />
+                        <span>Información Detallada</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="p-2">
+                        {renderEntityDetails()}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
                   <Card className="w-full">
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-center gap-2 text-lg">
-                        <Link2 className="h-5 w-5" />
-                        <span>Relaciones</span>
+                        <Calendar className="h-5 w-5" />
+                        <span>Observaciones</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="p-1">
-                        {renderRelaciones()}
+                        {renderObservaciones()}
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
                 
-                <TabsContent value="ubicaciones" className="mt-4">
-                  <Card className="w-full">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <MapPin className="h-5 w-5" />
-                        <span>Ubicaciones</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {locations.length > 0 ? (
-                        <div className="space-y-6">
-                          <div className="border rounded-lg overflow-hidden">
-                            <div className="h-[350px] w-full">
-                              <LocationMap 
-                                markers={locations} 
-                                center={mapCenter}
-                                zoom={15}
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="mt-6">
-                            <h3 className="text-md font-semibold mb-3">Detalles de ubicaciones</h3>
-                            <LocationsTable locations={locations} />
+                {/* Bloque de Relaciones */}
+                <Card className="w-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Link2 className="h-5 w-5" />
+                      <span>Relaciones</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="p-1">
+                      {renderRelaciones()}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Bloque de Ubicaciones */}
+                <Card className="w-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <MapPin className="h-5 w-5" />
+                      <span>Ubicaciones</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {locations.length > 0 ? (
+                      <div className="space-y-6">
+                        <div className="border rounded-lg overflow-hidden">
+                          <div className="h-[350px] md:h-[450px] w-full">
+                            <LocationMap 
+                              markers={locations} 
+                              center={mapCenter}
+                              zoom={15}
+                            />
                           </div>
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-gray-500 py-12">
-                          <MapPin className="h-12 w-12 mb-4 text-gray-400" />
-                          <p className="mb-1 text-lg">No hay ubicaciones registradas</p>
-                          <p className="text-sm text-center">No se encontraron coordenadas para esta entidad</p>
+                        
+                        <div className="mt-6">
+                          <h3 className="text-md font-semibold mb-3">Detalles de ubicaciones</h3>
+                          <LocationsTable locations={locations} />
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-500 py-12">
+                        <MapPin className="h-12 w-12 mb-4 text-gray-400" />
+                        <p className="mb-1 text-lg">No hay ubicaciones registradas</p>
+                        <p className="text-sm text-center">No se encontraron coordenadas para esta entidad</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
         </div>
