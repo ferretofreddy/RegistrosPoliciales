@@ -602,8 +602,7 @@ export default function EstructurasPage() {
       
       // Fecha de generación y responsable
       doc.setFontSize(10);
-      doc.text(`Fecha de generación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, margin, 53);
-      doc.text(`Usuario responsable: ${entity?.usuario || "Sistema"}`, pageWidth - margin, 53, { align: "right" });
+      doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, margin, 53);
       
       // Línea divisoria
       doc.line(margin, 58, pageWidth - margin, 58);
@@ -622,8 +621,8 @@ export default function EstructurasPage() {
       // Información específica según el tipo de entidad
       switch (selectedResult.tipo) {
         case "persona":
-          doc.text(`Nombre: ${entityData.nombre}`, margin, y); y += 7;
-          doc.text(`Identificación: ${entityData.identificacion}`, margin, y); y += 7;
+          doc.text(`Nombre: ${entityData.nombre || ""}`, margin, y); y += 7;
+          doc.text(`Identificación: ${entityData.identificacion || ""}`, margin, y); y += 7;
           
           if (entityData.alias && entityData.alias.length > 0) {
             doc.text(`Alias: ${entityData.alias.join(", ")}`, margin, y); y += 7;
@@ -636,14 +635,16 @@ export default function EstructurasPage() {
           if (entityData.domicilios && entityData.domicilios.length > 0) {
             doc.text(`Domicilios:`, margin, y); y += 7;
             entityData.domicilios.forEach((dom: string) => {
-              const wrappedText = doc.splitTextToSize(dom, textWidth - 10);
-              doc.text(`- ${wrappedText[0]}`, margin + 5, y);
-              
-              // Si hay más líneas, las añadimos
-              if (wrappedText.length > 1) {
-                for (let i = 1; i < wrappedText.length; i++) {
-                  y += 5;
-                  doc.text(`  ${wrappedText[i]}`, margin + 5, y);
+              if (dom) {
+                const wrappedText = doc.splitTextToSize(dom, textWidth - 10);
+                doc.text(`- ${wrappedText[0]}`, margin + 5, y);
+                
+                // Si hay más líneas, las añadimos
+                if (wrappedText.length > 1) {
+                  for (let i = 1; i < wrappedText.length; i++) {
+                    y += 5;
+                    doc.text(`  ${wrappedText[i]}`, margin + 5, y);
+                  }
                 }
               }
               
@@ -653,10 +654,10 @@ export default function EstructurasPage() {
           break;
           
         case "vehiculo":
-          doc.text(`Placa: ${entityData.placa}`, margin, y); y += 7;
-          doc.text(`Marca: ${entityData.marca}`, margin, y); y += 7;
-          doc.text(`Modelo: ${entityData.modelo}`, margin, y); y += 7;
-          doc.text(`Color: ${entityData.color}`, margin, y); y += 7;
+          doc.text(`Placa: ${entityData.placa || ""}`, margin, y); y += 7;
+          doc.text(`Marca: ${entityData.marca || ""}`, margin, y); y += 7;
+          doc.text(`Modelo: ${entityData.modelo || ""}`, margin, y); y += 7;
+          doc.text(`Color: ${entityData.color || ""}`, margin, y); y += 7;
           
           if (entityData.tipo) {
             doc.text(`Tipo: ${entityData.tipo}`, margin, y); y += 7;
@@ -671,11 +672,15 @@ export default function EstructurasPage() {
           break;
           
         case "inmueble":
-          doc.text(`Tipo: ${entityData.tipo}`, margin, y); y += 7;
+          doc.text(`Tipo: ${entityData.tipo || ""}`, margin, y); y += 7;
           doc.text(`Dirección:`, margin, y); y += 7;
-          const wrappedDireccion = doc.splitTextToSize(entityData.direccion, textWidth - 5);
-          doc.text(wrappedDireccion, margin + 5, y);
-          y += 7 * Math.max(1, wrappedDireccion.length);
+          if (entityData.direccion) {
+            const wrappedDireccion = doc.splitTextToSize(entityData.direccion, textWidth - 5);
+            doc.text(wrappedDireccion, margin + 5, y);
+            y += 7 * Math.max(1, wrappedDireccion.length);
+          } else {
+            doc.text("No disponible", margin + 5, y); y += 7;
+          }
           
           if (entityData.propietario) {
             doc.text(`Propietario: ${entityData.propietario}`, margin, y); y += 7;
@@ -694,8 +699,15 @@ export default function EstructurasPage() {
             doc.text(`Tipo: ${entityData.tipo}`, margin, y); y += 7;
           }
           
-          if (entityData.latitud && entityData.longitud) {
-            doc.text(`Coordenadas: Lat: ${entityData.latitud.toFixed(6)}, Lng: ${entityData.longitud.toFixed(6)}`, margin, y); y += 7;
+          if (entityData.latitud !== undefined && entityData.longitud !== undefined) {
+            const lat = parseFloat(String(entityData.latitud));
+            const lng = parseFloat(String(entityData.longitud));
+            if (!isNaN(lat) && !isNaN(lng)) {
+              doc.text(`Coordenadas: Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`, margin, y); 
+            } else {
+              doc.text("Coordenadas: No disponibles", margin, y);
+            }
+            y += 7;
           }
           
           if (entityData.fecha) {
@@ -730,7 +742,7 @@ export default function EstructurasPage() {
         // Tabla de observaciones
         const obsHeaders = [["Detalle", "Fecha", "Usuario"]];
         const obsData = observaciones.map((obs: any) => [
-          obs.detalle, 
+          obs.detalle || "Sin detalle", 
           obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A",
           obs.usuario || "Usuario del sistema"
         ]);
@@ -750,7 +762,13 @@ export default function EstructurasPage() {
           }
         });
         
-        y = (doc as any).lastAutoTable.finalY + 15;
+        // Usando propiedad lastAutoTable del jsPDF modificado por autotable
+        const lastAutoTable = (doc as any).lastAutoTable;
+        if (lastAutoTable) {
+          y = lastAutoTable.finalY + 15;
+        } else {
+          y += observaciones.length * 10 + 15; // Estimación alternativa
+        }
       }
       
       // Nueva página si es necesario
@@ -779,7 +797,8 @@ export default function EstructurasPage() {
           
           const persHeaders = [["Nombre", "Identificación"]];
           const persData = relaciones.personas.map((persona: any) => [
-            persona.nombre, persona.identificacion
+            persona.nombre || "Sin nombre", 
+            persona.identificacion || "Sin identificación"
           ]);
           
           // @ts-ignore
@@ -792,7 +811,13 @@ export default function EstructurasPage() {
             styles: { overflow: 'linebreak' }
           });
           
-          y = (doc as any).lastAutoTable.finalY + 10;
+          // Usando propiedad lastAutoTable
+          const lastAutoTable = (doc as any).lastAutoTable;
+          if (lastAutoTable) {
+            y = lastAutoTable.finalY + 10;
+          } else {
+            y += relaciones.personas.length * 8 + 10; // Estimación alternativa
+          }
         }
         
         // Nueva página si es necesario
@@ -808,7 +833,9 @@ export default function EstructurasPage() {
           
           const vehHeaders = [["Placa", "Marca", "Modelo"]];
           const vehData = relaciones.vehiculos.map((vehiculo: any) => [
-            vehiculo.placa, vehiculo.marca, vehiculo.modelo
+            vehiculo.placa || "Sin placa", 
+            vehiculo.marca || "Sin marca", 
+            vehiculo.modelo || "Sin modelo"
           ]);
           
           // @ts-ignore
@@ -821,7 +848,13 @@ export default function EstructurasPage() {
             styles: { overflow: 'linebreak' }
           });
           
-          y = (doc as any).lastAutoTable.finalY + 10;
+          // Usando propiedad lastAutoTable
+          const lastAutoTable = (doc as any).lastAutoTable;
+          if (lastAutoTable) {
+            y = lastAutoTable.finalY + 10;
+          } else {
+            y += relaciones.vehiculos.length * 8 + 10; // Estimación alternativa
+          }
         }
         
         // Nueva página si es necesario
@@ -837,7 +870,8 @@ export default function EstructurasPage() {
           
           const inmHeaders = [["Tipo", "Dirección"]];
           const inmData = relaciones.inmuebles.map((inmueble: any) => [
-            inmueble.tipo, inmueble.direccion
+            inmueble.tipo || "Sin tipo", 
+            inmueble.direccion || "Sin dirección"
           ]);
           
           // @ts-ignore
@@ -850,12 +884,18 @@ export default function EstructurasPage() {
             styles: { overflow: 'linebreak' }
           });
           
-          y = (doc as any).lastAutoTable.finalY + 10;
+          // Usando propiedad lastAutoTable
+          const lastAutoTable = (doc as any).lastAutoTable;
+          if (lastAutoTable) {
+            y = lastAutoTable.finalY + 10;
+          } else {
+            y += relaciones.inmuebles.length * 8 + 10; // Estimación alternativa
+          }
         }
       }
       
       // Ubicaciones - solo si hay datos de ubicaciones
-      if (locations.length > 0) {
+      if (locations && locations.length > 0) {
         // Nueva página para las ubicaciones
         doc.addPage();
         y = 20;
@@ -866,53 +906,70 @@ export default function EstructurasPage() {
         doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
         
-        // Capturas de mapa
-        // Nota: No se puede capturar directamente el mapa en el PDF,
-        // pero se incluye una tabla de ubicaciones
-        
         // Tabla de ubicaciones
         const locHeaders = [["Tipo", "Coordenadas", "Descripción"]];
         const locData = locations.map(loc => [
-          loc.title,
+          loc.title || "Sin tipo",
           `Lat: ${loc.lat.toFixed(6)}, Lng: ${loc.lng.toFixed(6)}`,
           loc.description || "Sin descripción"
         ]);
         
-        // @ts-ignore
-        doc.autoTable({
-          head: locHeaders,
-          body: locData,
-          startY: y,
-          margin: { left: margin, right: margin },
-          headStyles: { fillColor: [220, 20, 60] },
-          styles: { overflow: 'linebreak' },
-          columnStyles: {
-            0: { cellWidth: 40 },
-            1: { cellWidth: 60 },
-            2: { cellWidth: 'auto' }
+        try {
+          // @ts-ignore
+          doc.autoTable({
+            head: locHeaders,
+            body: locData,
+            startY: y,
+            margin: { left: margin, right: margin },
+            headStyles: { fillColor: [220, 20, 60] },
+            styles: { overflow: 'linebreak' },
+            columnStyles: {
+              0: { cellWidth: 40 },
+              1: { cellWidth: 60 },
+              2: { cellWidth: 'auto' }
+            }
+          });
+          
+          // Usando propiedad lastAutoTable
+          const lastAutoTable = (doc as any).lastAutoTable;
+          if (lastAutoTable) {
+            y = lastAutoTable.finalY + 15;
+          } else {
+            y += locations.length * 8 + 15; // Estimación alternativa
           }
-        });
-        
-        y = (doc as any).lastAutoTable.finalY + 15;
-        
-        // Añadir pie de nota para ubicaciones
-        doc.setFontSize(9);
-        doc.text("Nota: Para visualizar las ubicaciones en detalle, consulte la aplicación web.", margin, y);
+          
+          // Añadir pie de nota para ubicaciones
+          doc.setFontSize(9);
+          doc.text("Nota: Para visualizar las ubicaciones en detalle, consulte la aplicación web.", margin, y);
+        } catch (err) {
+          console.error("Error al generar tabla de ubicaciones:", err);
+          doc.text("Error al generar tabla de ubicaciones", margin, y);
+          y += 10;
+        }
       }
       
       // Agregar nota de pie de página en todas las páginas
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Informe generado el ${new Date().toLocaleString()} - Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
-        doc.text("SISTEMA DE GESTIÓN DE INTELIGENCIA", pageWidth / 2, pageHeight - 5, { align: "center" });
+      try {
+        const totalPages = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          doc.text(`Informe generado el ${new Date().toLocaleDateString()} - Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+          doc.text("SISTEMA DE GESTIÓN DE INTELIGENCIA", pageWidth / 2, pageHeight - 5, { align: "center" });
+        }
+      } catch (err) {
+        console.error("Error al añadir pies de página:", err);
       }
       
       // Guardar el PDF
-      const entityName = selectedResult.nombre.replace(/[^a-zA-Z0-9]/g, "_");
-      doc.save(`Informe_${selectedResult.tipo}_${entityName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      try {
+        const entityName = selectedResult.nombre.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30);
+        doc.save(`Informe_${selectedResult.tipo}_${entityName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      } catch (err) {
+        console.error("Error al guardar el PDF:", err);
+        alert("Ocurrió un error al guardar el PDF. Verifique la consola para más detalles.");
+      }
       
     } catch (error) {
       console.error("Error al generar PDF:", error);
