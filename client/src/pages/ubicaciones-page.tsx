@@ -549,6 +549,7 @@ export default function UbicacionesPage() {
                   const datosPersona = await respuestaPersona.json();
                   
                   // Buscar domicilios de la persona relacionada con esta ubicación
+                  // NOTA: Ahora todos son considerados como "related" incluso si son domicilios
                   if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
                     for (const ubicacionRelacionada of datosPersona.ubicaciones) {
                       // No incluir la ubicación actual
@@ -567,7 +568,7 @@ export default function UbicacionesPage() {
                           title: ubicacionRelacionada.tipo || "Domicilio",
                           description: ubicacionRelacionada.observaciones || `Domicilio de ${personaRelacionada.nombre} (persona relacionada con ${ubicacion.tipo || "Ubicación"})`,
                           type: "ubicacion",
-                          relation: "related",
+                          relation: "related", // Siempre relacionadas cuando se ve desde la entidad Ubicación
                           entityId: personaRelacionada.id
                         });
                       }
@@ -633,7 +634,7 @@ export default function UbicacionesPage() {
                           title: inmuebleRelacionado.tipo || "Inmueble",
                           description: `${inmuebleRelacionado.tipo || "Inmueble"} en ${inmuebleRelacionado.direccion || "dirección desconocida"} (relacionado con ${ubicacion.tipo || "Ubicación"})`,
                           type: "inmueble",
-                          relation: "related",
+                          relation: "related", // Siempre related cuando se ve desde entidad Ubicación, incluso si es de tipo "inmueble"
                           entityId: inmuebleRelacionado.id
                         });
                       }
