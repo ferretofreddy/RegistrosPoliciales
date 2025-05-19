@@ -196,7 +196,8 @@ export default function AdminPage() {
         cedula: editingUser.cedula,
         telefono: editingUser.telefono,
         unidad: editingUser.unidad,
-        rol: editingUser.rol 
+        rol: editingUser.rol,
+        activo: editingUser.activo 
       });
     }
   };
