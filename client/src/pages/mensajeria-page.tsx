@@ -79,14 +79,14 @@ export default function MensajeriaPage() {
 
   // Mutación para enviar un nuevo mensaje
   const enviarMensajeMutation = useMutation({
-    mutationFn: (data: NuevoMensajeFormValues) => {
-      return apiRequest<Mensaje>("/api/mensajes", {
-        method: "POST",
-        data: {
-          ...data,
-          destinatarioId: parseInt(data.destinatarioId)
-        }
+    mutationFn: async (data: NuevoMensajeFormValues) => {
+      console.log("Enviando mensaje con datos:", data);
+      const response = await apiRequest("POST", "/api/mensajes", {
+        ...data,
+        destinatarioId: parseInt(data.destinatarioId)
       });
+      console.log("Respuesta al enviar mensaje:", response);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mensajes/enviados"] });
