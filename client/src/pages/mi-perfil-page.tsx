@@ -1,12 +1,64 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Briefcase, UserCheck, CreditCard } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { User, Mail, Briefcase, UserCheck, CreditCard, Phone, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/main-layout";
 
 export default function MiPerfilPage() {
-  const { user } = useAuth();
+  const { user, refetchUser } = useAuth();
+  const { toast } = useToast();
+  
+  const [editing, setEditing] = useState(false);
+  const [telefono, setTelefono] = useState(user?.telefono || "");
+  const [unidad, setUnidad] = useState(user?.unidad || "");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Reinicia los valores del formulario cuando se cambie a modo edición
+  const handleStartEditing = () => {
+    setTelefono(user?.telefono || "");
+    setUnidad(user?.unidad || "");
+    setEditing(true);
+  };
+  
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await apiRequest("PATCH", `/api/user/update`, {
+        telefono,
+        unidad
+      });
+      
+      if (res.ok) {
+        await refetchUser();
+        setEditing(false);
+        toast({
+          title: "Perfil actualizado",
+          description: "Tu información ha sido actualizada correctamente.",
+          variant: "default",
+        });
+      } else {
+        throw new Error("No se pudo actualizar el perfil");
+      }
+    } catch (error) {
+      console.error("Error al actualizar perfil:", error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al actualizar tu información.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <MainLayout>
@@ -38,94 +90,167 @@ export default function MiPerfilPage() {
                 <h3 className="text-xl font-semibold mb-1">{user?.nombre}</h3>
                 <p className="text-gray-500 mb-2">{user?.email}</p>
                 <Badge variant="outline" className="bg-primary-100 text-primary-800 hover:bg-primary-200 border-primary-200">
-                  {user?.rol 
+                  Rol: {user?.rol 
                     ? user.rol.charAt(0).toUpperCase() + user.rol.slice(1) 
                     : "Usuario"}
                 </Badge>
-                {user?.activo && (
-                  <Badge className="mt-2 bg-green-100 text-green-800 hover:bg-green-200 border-green-200">
-                    Activo
-                  </Badge>
-                )}
               </CardContent>
             </Card>
           </div>
           
           <div className="w-full md:w-2/3">
             <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Información Personal</CardTitle>
-                <CardDescription>
-                  Detalles de su perfil en el sistema
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div>
+                  <CardTitle>Información Personal</CardTitle>
+                  <CardDescription>
+                    Detalles de su perfil en el sistema
+                  </CardDescription>
+                </div>
+                {!editing && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleStartEditing}
+                    className="text-sm"
+                  >
+                    Editar perfil
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
-                <div className="space-y-5">
-                  <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
-                    <div className="bg-primary-100 p-2 rounded-full">
-                      <User className="h-5 w-5 text-primary-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-500">Nombre completo</h4>
-                      <p className="font-medium">{user?.nombre || "No disponible"}</p>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
-                    <div className="bg-primary-100 p-2 rounded-full">
-                      <CreditCard className="h-5 w-5 text-primary-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-500">Cédula/Identificación</h4>
-                      <p className="font-medium">{user?.cedula || "No disponible"}</p>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
-                    <div className="bg-primary-100 p-2 rounded-full">
-                      <Mail className="h-5 w-5 text-primary-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-500">Correo electrónico</h4>
-                      <p className="font-medium">{user?.email || "No disponible"}</p>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
-                    <div className="bg-primary-100 p-2 rounded-full">
-                      <UserCheck className="h-5 w-5 text-primary-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-500">Rol en el sistema</h4>
-                      <p className="font-medium">
-                        {user?.rol 
-                          ? user.rol.charAt(0).toUpperCase() + user.rol.slice(1) 
-                          : "No disponible"}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {user?.unidad && (
-                    <>
-                      <Separator />
-                      <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
-                        <div className="bg-primary-100 p-2 rounded-full">
-                          <Briefcase className="h-5 w-5 text-primary-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium text-gray-500">Unidad</h4>
-                          <p className="font-medium">{user.unidad}</p>
-                        </div>
+                {editing ? (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4 p-2">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <Phone className="h-5 w-5 text-primary-600" />
                       </div>
-                    </>
-                  )}
-                </div>
+                      <div className="flex-1">
+                        <Label htmlFor="telefono" className="text-sm font-medium text-gray-500">
+                          Teléfono
+                        </Label>
+                        <Input
+                          id="telefono"
+                          value={telefono}
+                          onChange={(e) => setTelefono(e.target.value)}
+                          className="mt-1"
+                          placeholder="Ingrese su número de teléfono"
+                        />
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center gap-4 p-2">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <Briefcase className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor="unidad" className="text-sm font-medium text-gray-500">
+                          Unidad
+                        </Label>
+                        <Input
+                          id="unidad"
+                          value={unidad}
+                          onChange={(e) => setUnidad(e.target.value)}
+                          className="mt-1"
+                          placeholder="Ingrese su unidad"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setEditing(false)}
+                        disabled={isLoading}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button 
+                        onClick={handleUpdateProfile}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Guardando..." : "Guardar cambios"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <User className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-500">Nombre completo</h4>
+                        <p className="font-medium">{user?.nombre || "No disponible"}</p>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <CreditCard className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-500">Cédula/Identificación</h4>
+                        <p className="font-medium">{user?.cedula || "No disponible"}</p>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <Mail className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-500">Correo electrónico</h4>
+                        <p className="font-medium">{user?.email || "No disponible"}</p>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <UserCheck className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-500">Rol en el sistema</h4>
+                        <p className="font-medium">
+                          {user?.rol 
+                            ? "Rol: " + user.rol.charAt(0).toUpperCase() + user.rol.slice(1) 
+                            : "No disponible"}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <Phone className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-500">Teléfono</h4>
+                        <p className="font-medium">{user?.telefono || "No disponible"}</p>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center gap-4 p-2 rounded-md hover:bg-gray-50">
+                      <div className="bg-primary-100 p-2 rounded-full">
+                        <Briefcase className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-500">Unidad</h4>
+                        <p className="font-medium">{user?.unidad || "No disponible"}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
