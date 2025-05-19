@@ -596,6 +596,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al obtener observaciones" });
     }
   });
+  
+  // Endpoint para crear múltiples relaciones para una ubicación
+  app.post("/api/ubicaciones/:id/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const ubicacionId = parseInt(req.params.id);
+      if (isNaN(ubicacionId)) {
+        return res.status(400).json({ message: "ID de ubicación inválido" });
+      }
+      
+      // Verificar que existe la ubicación
+      const [ubicacion] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, ubicacionId));
+      if (!ubicacion) {
+        return res.status(404).json({ message: "Ubicación no encontrada" });
+      }
+      
+      // Registrar el usuario que realiza la acción
+      const user = req.user as User;
+      console.log(`Usuario ${user.nombre || user.id} creando relaciones para ubicación ${ubicacionId}`);
+      
+      // Extraer los IDs de las entidades a relacionar
+      const { personas = [], vehiculos = [], inmuebles = [] } = req.body;
+      console.log(`Creando relaciones para ubicación ${ubicacionId}:`, { personas, vehiculos, inmuebles });
+      
+      // Contadores para verificar resultados
+      let personasCreadas = 0;
+      let vehiculosCreados = 0;
+      let inmueblesCreados = 0;
+      
+      // Crear relaciones con personas
+      if (Array.isArray(personas) && personas.length > 0) {
+        for (const personaId of personas) {
+          try {
+            // Verificar si la persona existe usando SQL directo para evitar conflicto de nombres
+            const resultado = await pool.query(
+              `SELECT id FROM personas WHERE id = $1 LIMIT 1`, [personaId]
+            );
+            
+            if (!resultado.rows || resultado.rows.length === 0) {
+              console.warn(`Persona con ID ${personaId} no encontrada, omitiendo relación`);
+              continue;
+            }
+            
+            // Insertar la relación
+            await db.insert(personasUbicaciones).values({
+              personaId,
+              ubicacionId
+            });
+            
+            personasCreadas++;
+          } catch (error) {
+            console.error(`Error al crear relación con persona ${personaId}:`, error);
+          }
+        }
+      }
+      
+      // Crear relaciones con vehículos
+      if (Array.isArray(vehiculos) && vehiculos.length > 0) {
+        for (const vehiculoId of vehiculos) {
+          try {
+            // Verificar si el vehículo existe usando SQL directo
+            const resultado = await pool.query(
+              `SELECT id FROM vehiculos WHERE id = $1 LIMIT 1`, [vehiculoId]
+            );
+            
+            if (!resultado.rows || resultado.rows.length === 0) {
+              console.warn(`Vehículo con ID ${vehiculoId} no encontrado, omitiendo relación`);
+              continue;
+            }
+            
+            // Insertar la relación
+            await db.insert(vehiculosUbicaciones).values({
+              vehiculoId,
+              ubicacionId
+            });
+            
+            vehiculosCreados++;
+          } catch (error) {
+            console.error(`Error al crear relación con vehículo ${vehiculoId}:`, error);
+          }
+        }
+      }
+      
+      // Crear relaciones con inmuebles
+      if (Array.isArray(inmuebles) && inmuebles.length > 0) {
+        for (const inmuebleId of inmuebles) {
+          try {
+            // Verificar si el inmueble existe usando SQL directo
+            const resultado = await pool.query(
+              `SELECT id FROM inmuebles WHERE id = $1 LIMIT 1`, [inmuebleId]
+            );
+            
+            if (!resultado.rows || resultado.rows.length === 0) {
+              console.warn(`Inmueble con ID ${inmuebleId} no encontrado, omitiendo relación`);
+              continue;
+            }
+            
+            // Insertar la relación
+            await db.insert(inmueblesUbicaciones).values({
+              inmuebleId,
+              ubicacionId
+            });
+            
+            inmueblesCreados++;
+          } catch (error) {
+            console.error(`Error al crear relación con inmueble ${inmuebleId}:`, error);
+          }
+        }
+      }
+      
+      // Responder con un resumen de las relaciones creadas
+      res.status(200).json({
+        ubicacionId,
+        relacionesCreadas: {
+          personas: personasCreadas,
+          vehiculos: vehiculosCreados,
+          inmuebles: inmueblesCreados
+        }
+      });
+    } catch (error) {
+      console.error("Error al crear relaciones para ubicación:", error);
+      res.status(500).json({ message: "Error al crear relaciones" });
+    }
+  });
 
   // === TIPOS DE INMUEBLES ===
   app.get("/api/tipos-inmuebles", async (req, res) => {
