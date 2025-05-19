@@ -584,7 +584,7 @@ export default function EstructurasPage() {
       // Encabezado
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("INFORME DE ESTRUCTURA", pageWidth / 2, 15, { align: "center" });
+      doc.text("INFORME DE ESTRUCTURAS Y ASOCIACIONES", pageWidth / 2, 15, { align: "center" });
       
       // Tipo de entidad
       doc.setFontSize(12);
