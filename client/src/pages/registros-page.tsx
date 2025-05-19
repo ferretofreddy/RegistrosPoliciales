@@ -8,6 +8,7 @@ import InmuebleForm from "@/components/inmueble-form";
 import UbicacionForm from "@/components/ubicacion-form";
 import SearchComponent, { SearchResult } from "@/components/search-component";
 import EntityDetails from "@/components/entity-details";
+import UpdateEntity from "@/components/update-entity";
 import { User, Car, Building, MapPin, FileEdit, Search } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -104,7 +105,7 @@ export default function RegistrosPage() {
                 {selectedResult ? (
                   <div className="mt-6">
                     <div className="flex items-center mb-4">
-                      <h2 className="text-xl font-bold">Detalles del registro</h2>
+                      <h2 className="text-xl font-bold">Gestión del registro</h2>
                       <Separator className="flex-1 mx-4" />
                       <div className="flex items-center gap-2">
                         <div className="px-3 py-1 rounded bg-primary-100 text-primary-800 text-sm font-medium">
@@ -116,10 +117,22 @@ export default function RegistrosPage() {
                       </div>
                     </div>
                     
-                    <EntityDetails 
-                      entityId={selectedResult.id} 
-                      entityType={selectedResult.tipo} 
-                    />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Información</h3>
+                        <EntityDetails 
+                          entityId={selectedResult.id} 
+                          entityType={selectedResult.tipo} 
+                        />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Actualización</h3>
+                        <UpdateEntity 
+                          entityId={selectedResult.id} 
+                          entityType={selectedResult.tipo} 
+                        />
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="border rounded-md p-8 min-h-[300px] flex flex-col items-center justify-center text-gray-500">
