@@ -57,12 +57,22 @@ export default function MensajeriaPage() {
   // Consultas para obtener mensajes
   const mensajesRecibidos = useQuery({
     queryKey: ["/api/mensajes/recibidos"],
-    queryFn: () => apiRequest("GET", "/api/mensajes/recibidos"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/mensajes/recibidos");
+      const data = await response.json();
+      console.log("Mensajes recibidos:", data);
+      return data;
+    }
   });
 
   const mensajesEnviados = useQuery({
     queryKey: ["/api/mensajes/enviados"],
-    queryFn: () => apiRequest("GET", "/api/mensajes/enviados"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/mensajes/enviados");
+      const data = await response.json();
+      console.log("Mensajes enviados:", data);
+      return data;
+    }
   });
 
   // Consulta para obtener usuarios
