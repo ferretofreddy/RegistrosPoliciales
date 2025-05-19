@@ -993,9 +993,23 @@ export default function UbicacionesPage() {
                     <CardContent>
                       {isLoading ? (
                         <p className="text-center py-4 text-gray-500">Cargando...</p>
-                      ) : locations.filter(loc => loc.relation === 'related').length > 0 ? (
+                      ) : locations.filter(loc => 
+                        loc.relation === 'related' && 
+                        // Filtrar para excluir ubicaciones de tipo domicilio e inmueble en la sección de relacionadas
+                        (loc.title.toLowerCase() !== 'domicilio' && 
+                         !loc.title.toLowerCase().includes('domicilio') &&
+                         loc.title.toLowerCase() !== 'inmueble' &&
+                         !loc.title.toLowerCase().includes('inmueble'))
+                      ).length > 0 ? (
                         <LocationsTable 
-                          locations={locations.filter(loc => loc.relation === 'related')}
+                          locations={locations.filter(loc => 
+                            loc.relation === 'related' && 
+                            // El mismo filtro que arriba
+                            (loc.title.toLowerCase() !== 'domicilio' && 
+                             !loc.title.toLowerCase().includes('domicilio') &&
+                             loc.title.toLowerCase() !== 'inmueble' &&
+                             !loc.title.toLowerCase().includes('inmueble'))
+                          )}
                           onLocationClick={handleLocationClick}
                         />
                       ) : (
