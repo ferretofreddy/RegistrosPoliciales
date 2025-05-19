@@ -142,12 +142,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         <span>Mi Perfil</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/configuracion">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Configuración</span>
-                      </Link>
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Cerrar Sesión</span>
@@ -280,13 +274,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Mi Perfil
-                </Link>
-                <Link
-                  href="/configuracion"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-primary-600"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Configuración
                 </Link>
                 <a
                   href="#"
