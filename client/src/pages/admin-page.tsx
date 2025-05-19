@@ -46,7 +46,8 @@ export default function AdminPage() {
     cedula: "",
     telefono: "",
     unidad: "",
-    rol: "agente"
+    rol: "agente",
+    activo: "false"
   });
   const [newPassword, setNewPassword] = useState("");
   const { toast } = useToast();

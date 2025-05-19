@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, json, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, json, timestamp, doublePrecision, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   telefono: text("telefono").notNull(),
   unidad: text("unidad").notNull(),
   rol: text("rol").notNull(), // admin, investigador, agente
+  activo: text("activo").default("false"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -22,6 +23,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   telefono: true,
   unidad: true,
   rol: true,
+  activo: true,
 });
 
 // Personas
