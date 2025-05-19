@@ -38,7 +38,6 @@ const observacionSchema = z.object({
 // Esquema para las relaciones
 const relacionSchema = z.object({
   entidadId: z.string().min(1, { message: "Seleccione una entidad" }),
-  tipoRelacion: z.string().optional(),
   tipo: z.enum(["persona", "vehiculo", "inmueble", "ubicacion"]),
 });
 
@@ -117,7 +116,6 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
     resolver: zodResolver(relacionSchema),
     defaultValues: {
       entidadId: "",
-      tipoRelacion: "",
       tipo: "persona",
     },
   });
@@ -208,11 +206,6 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
       // Construir la URL según los tipos de entidades
       let url = `/api/relaciones/${entityType}/${entityId}/${data.tipo}/${data.entidadId}`;
       
-      // Si hay un tipo de relación específico, agregarlo como query param
-      if (data.tipoRelacion) {
-        url += `?relacion=${data.tipoRelacion}`;
-      }
-      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -233,7 +226,6 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
       });
       relacionForm.reset({ 
         entidadId: "", 
-        tipoRelacion: "", 
         tipo: relacionTipo 
       });
       setShowRelacionForm(false);
@@ -632,22 +624,7 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                   )}
                 />
                 
-                <FormField
-                  control={relacionForm.control}
-                  name="tipoRelacion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de relación (opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: Propietario, Familiar, Asociado, etc."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
                 
                 <div className="flex justify-end">
                   <Button 
