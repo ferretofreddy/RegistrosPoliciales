@@ -63,66 +63,7 @@ interface RelacionesResponse {
   [key: string]: any; // Para permitir otras propiedades que puedan venir en la respuesta
 }
 
-// Función auxiliar para filtrar ubicaciones duplicadas
-function filtrarUbicacionesDuplicadas(ubicaciones: LocationData[]): LocationData[] {
-  // Primero priorizamos las ubicaciones directas
-  const directas = ubicaciones.filter(u => u.relation === "direct");
-  const relacionadas = ubicaciones.filter(u => u.relation === "related");
-  
-  // Paso 1: Filtrar los resultados para excluir ubicaciones con tipo "domicilio" o "inmueble"
-  const resultadosBusqueda = ubicaciones.filter(ubi => {
-    // Si es un resultado de búsqueda directo y es de tipo "ubicacion"
-    if (ubi.type === "ubicacion") {
-      // Excluir directamente si su título contiene "domicilio" o "inmueble"
-      if (ubi.title.toLowerCase().includes("domicilio") || 
-          ubi.title.toLowerCase().includes("inmueble")) {
-        console.log(`Excluyendo ubicación por tipo: ${ubi.title}, id=${ubi.id}`);
-        return false;
-      }
-    }
-    
-    return true;
-  });
-  
-  // Paso 2: Priorizar las ubicaciones directas (siempre se muestran)
-  const directasFiltradas = directas.filter(dir => {
-    return resultadosBusqueda.some(res => res.id === dir.id);
-  });
-  
-  // Paso 3: Filtrar las ubicaciones relacionadas
-  const idsDirectas = new Set(directasFiltradas.map(u => u.id));
-  
-  const relacionadasFiltradas = relacionadas.filter(ubicacion => {
-    // Excluir si ya existe como directa
-    if (idsDirectas.has(ubicacion.id)) {
-      return false;
-    }
-    
-    // Si esta ubicación relacionada ya aparece en los resultados de búsqueda, excluirla
-    if (resultadosBusqueda.some(res => res.id === ubicacion.id)) {
-      return false;
-    }
-    
-    // Si es una ubicación y su título es "Domicilio" o "Inmueble", excluirla directamente
-    if (ubicacion.type === "ubicacion" && 
-        (ubicacion.title.toLowerCase().includes("domicilio") || 
-         ubicacion.title.toLowerCase().includes("inmueble"))) {
-      console.log(`Excluyendo ubicación relacionada por tipo: ${ubicacion.title}, id=${ubicacion.id}`);
-      return false;
-    }
-    
-    return true;
-  });
-  
-  const resultado = [...directasFiltradas, ...relacionadasFiltradas];
-  
-  // Eliminamos duplicados por ID
-  const ubicacionesSinDuplicados = resultado.filter((ubicacion, index, self) => 
-    index === self.findIndex(u => u.id === ubicacion.id)
-  );
-  
-  return ubicacionesSinDuplicados;
-}
+
 
 export default function UbicacionesPage() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
@@ -802,13 +743,8 @@ export default function UbicacionesPage() {
             break;
         }
         
-        console.log("Ubicaciones encontradas (antes de filtrar):", ubicacionesEncontradas);
-        
-        // Filtrar ubicaciones para evitar duplicados
-        const ubicacionesFiltradas = filtrarUbicacionesDuplicadas(ubicacionesEncontradas);
-        console.log("Ubicaciones filtradas:", ubicacionesFiltradas);
-        
-        setLocations(ubicacionesFiltradas);
+        console.log("Ubicaciones encontradas:", ubicacionesEncontradas);
+        setLocations(ubicacionesEncontradas);
         
       } catch (error) {
         console.error("Error al cargar ubicaciones:", error);
