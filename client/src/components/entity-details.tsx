@@ -264,20 +264,10 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
       );
     }
 
-    // Filtrar ubicaciones relacionadas para excluir domicilios e inmuebles
-    const ubicacionesRelacionadasFiltradas = relaciones.otrasUbicaciones?.filter((ubicacion: any) => {
-      const tipoLowerCase = (ubicacion.tipo || "").toLowerCase();
-      const esDomicilio = tipoLowerCase === 'domicilio' || tipoLowerCase.includes('domicilio');
-      const esInmueble = tipoLowerCase === 'inmueble' || tipoLowerCase.includes('inmueble');
-      return !esDomicilio && !esInmueble;
-    }) || [];
-
     const hasRelaciones = 
       relaciones.personas?.length > 0 || 
       relaciones.vehiculos?.length > 0 || 
-      relaciones.inmuebles?.length > 0 || 
-      relaciones.ubicaciones?.length > 0 ||
-      ubicacionesRelacionadasFiltradas.length > 0;
+      relaciones.inmuebles?.length > 0;
 
     if (!hasRelaciones) {
       return <p className="text-gray-500">No hay relaciones registradas para esta entidad.</p>;
@@ -349,72 +339,6 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                   <TableRow key={inmueble.id}>
                     <TableCell>{inmueble.tipo}</TableCell>
                     <TableCell>{inmueble.direccion}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {/* Ubicaciones directas */}
-        {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
-          <div>
-            <h3 className="text-md font-semibold mb-2">Ubicaciones directas</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Coordenadas</TableHead>
-                  <TableHead>Fecha</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {relaciones.ubicaciones.map((ubicacion: any) => (
-                  <TableRow key={ubicacion.id}>
-                    <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
-                    <TableCell>
-                      {ubicacion.latitud && ubicacion.longitud
-                        ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
-                        : "Sin coordenadas"}
-                    </TableCell>
-                    <TableCell>
-                      {ubicacion.fecha
-                        ? new Date(ubicacion.fecha).toLocaleDateString()
-                        : "Sin fecha"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {/* Otras ubicaciones (no domicilios ni inmuebles) */}
-        {ubicacionesRelacionadasFiltradas.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-md font-semibold mb-2">Ubicaciones relacionadas</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Coordenadas</TableHead>
-                  <TableHead>Fecha</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ubicacionesRelacionadasFiltradas.map((ubicacion: any) => (
-                  <TableRow key={ubicacion.id}>
-                    <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
-                    <TableCell>
-                      {ubicacion.latitud && ubicacion.longitud
-                        ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
-                        : "Sin coordenadas"}
-                    </TableCell>
-                    <TableCell>
-                      {ubicacion.fecha
-                        ? new Date(ubicacion.fecha).toLocaleDateString()
-                        : "Sin fecha"}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
