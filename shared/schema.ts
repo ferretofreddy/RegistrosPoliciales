@@ -285,6 +285,51 @@ export type InsertTipoInmueble = z.infer<typeof insertTipoInmuebleSchema>;
 export type TipoUbicacion = typeof tiposUbicaciones.$inferSelect;
 export type InsertTipoUbicacion = z.infer<typeof insertTipoUbicacionSchema>;
 
+// Tabla para mensajes internos entre usuarios
+export const mensajes = pgTable("mensajes", {
+  id: serial("id").primaryKey(),
+  remiteId: integer("remite_id").notNull().references(() => users.id),
+  destinatarioId: integer("destinatario_id").notNull().references(() => users.id),
+  asunto: text("asunto").notNull(),
+  contenido: text("contenido").notNull(),
+  fechaEnvio: timestamp("fecha_envio").notNull().defaultNow(),
+  leido: boolean("leido").default(false),
+  eliminadoRemite: boolean("eliminado_remite").default(false),
+  eliminadoDestinatario: boolean("eliminado_destinatario").default(false),
+});
+
+export const insertMensajeSchema = createInsertSchema(mensajes).pick({
+  remiteId: true,
+  destinatarioId: true,
+  asunto: true,
+  contenido: true,
+});
+
+// Tabla para archivos adjuntos a mensajes
+export const archivosAdjuntos = pgTable("archivos_adjuntos", {
+  id: serial("id").primaryKey(),
+  mensajeId: integer("mensaje_id").notNull().references(() => mensajes.id),
+  nombreArchivo: text("nombre_archivo").notNull(),
+  urlArchivo: text("url_archivo").notNull(),
+  tipoArchivo: text("tipo_archivo"),
+  tamano: integer("tamano"),
+});
+
+export const insertArchivoAdjuntoSchema = createInsertSchema(archivosAdjuntos).pick({
+  mensajeId: true,
+  nombreArchivo: true,
+  urlArchivo: true,
+  tipoArchivo: true,
+  tamano: true,
+});
+
 // Tipos para las nuevas relaciones
 export type VehiculoInmueble = typeof vehiculosInmuebles.$inferSelect;
 export type VehiculoVehiculo = typeof vehiculosVehiculos.$inferSelect;
+
+// Tipos para mensajería interna
+export type Mensaje = typeof mensajes.$inferSelect;
+export type InsertMensaje = z.infer<typeof insertMensajeSchema>;
+
+export type ArchivoAdjunto = typeof archivosAdjuntos.$inferSelect;
+export type InsertArchivoAdjunto = z.infer<typeof insertArchivoAdjuntoSchema>;

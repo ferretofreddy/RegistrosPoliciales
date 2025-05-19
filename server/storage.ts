@@ -6,11 +6,14 @@ import {
   VehiculoObservacion, InsertVehiculoObservacion,
   Inmueble, InsertInmueble,
   InmuebleObservacion, InsertInmuebleObservacion,
+  Mensaje, InsertMensaje,
+  ArchivoAdjunto, InsertArchivoAdjunto,
   
   users, personas, personasObservaciones,
   vehiculos, vehiculosObservaciones,
   inmuebles, inmueblesObservaciones,
-  personasVehiculos, personasInmuebles
+  personasVehiculos, personasInmuebles,
+  mensajes, archivosAdjuntos
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, like, sql, desc } from "drizzle-orm";
@@ -60,6 +63,18 @@ export interface IStorage {
   // Relaciones CRUD
   crearRelacionPersonaVehiculo(personaId: number, vehiculoId: number): Promise<any>;
   crearRelacionPersonaInmueble(personaId: number, inmuebleId: number): Promise<any>;
+  
+  // Mensajería interna methods
+  getMensajeById(id: number): Promise<Mensaje | undefined>;
+  getMensajesRecibidos(usuarioId: number): Promise<Mensaje[]>;
+  getMensajesEnviados(usuarioId: number): Promise<Mensaje[]>;
+  createMensaje(mensaje: InsertMensaje): Promise<Mensaje>;
+  marcarMensajeComoLeido(id: number): Promise<boolean>;
+  eliminarMensaje(id: number, esRemitente: boolean): Promise<boolean>;
+  
+  // Archivos adjuntos methods
+  getArchivosByMensajeId(mensajeId: number): Promise<ArchivoAdjunto[]>;
+  createArchivoAdjunto(archivo: InsertArchivoAdjunto): Promise<ArchivoAdjunto>;
 }
 
 export class DatabaseStorage implements IStorage {
