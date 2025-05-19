@@ -457,8 +457,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === UBICACIONES ===
   app.get("/api/ubicaciones", async (req, res) => {
     try {
-      const allUbicaciones = await db.select().from(ubicaciones);
-      res.json(allUbicaciones);
+      // Excluir ubicaciones de tipo "domicilio" e "inmueble" según los requisitos
+      const allUbicaciones = await db.execute(
+        sql`SELECT * FROM ubicaciones 
+            WHERE (LOWER(tipo) != 'domicilio' 
+            AND LOWER(tipo) NOT LIKE '%domicilio%'
+            AND LOWER(tipo) != 'inmueble'
+            AND LOWER(tipo) NOT LIKE '%inmueble%')
+            OR tipo IS NULL`
+      );
+
+      console.log(`[DEBUG] Ubicaciones filtradas (excluyendo domicilio/inmueble): ${allUbicaciones.rows.length}`);
+      res.json(allUbicaciones.rows);
     } catch (error) {
       console.error("Error al obtener ubicaciones:", error);
       res.status(500).json({ message: "Error al obtener ubicaciones" });
@@ -757,7 +767,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         personas: [],
         vehiculos: [],
         inmuebles: [],
-        ubicaciones: []
+        ubicaciones: [],
+        otrasUbicaciones: []
       };
       
       // Obtener personas relacionadas
@@ -873,16 +884,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         relaciones.inmuebles = relacionesInmuebles.rows;
         
-        // Ubicaciones relacionadas con este vehículo
-        const relacionesUbicaciones = await db
-          .select({
-            ubicacion: ubicaciones
-          })
-          .from(vehiculosUbicaciones)
-          .innerJoin(ubicaciones, eq(vehiculosUbicaciones.ubicacionId, ubicaciones.id))
-          .where(eq(vehiculosUbicaciones.vehiculoId, id));
-          
-        relaciones.ubicaciones = relacionesUbicaciones.map(r => r.ubicacion);
+        // Ubicaciones relacionadas con este vehículo 
+        // (todas son consideradas "otras" ya que los vehículos no tienen ubicaciones directas)
+        const otrasUbicacionesResult = await db.execute(
+          sql`SELECT u.* FROM ubicaciones u
+              JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
+              WHERE vu.vehiculo_id = ${id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
+        );
+        
+        const otrasUbicaciones = otrasUbicacionesResult.rows || [];
+        console.log(`[DEBUG] Ubicaciones de vehículo encontradas (routes): ${otrasUbicaciones.length}`);
+        
+        // Asignar todas como otras ubicaciones, no como directas
+        relaciones.ubicaciones = [];
+        relaciones.otrasUbicaciones = otrasUbicaciones;
       }
       else if (tipo === "inmueble") {
         // Personas relacionadas con este inmueble
@@ -983,6 +999,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(inmueblesUbicaciones.ubicacionId, id));
           
         relaciones.inmuebles = relacionesInmuebles.map(r => r.inmueble);
+        
+        // Verificar el tipo de esta ubicación
+        const [ubicacionActual] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, id));
+        if (ubicacionActual) {
+          console.log(`[DEBUG] Verificando tipo de ubicación ID ${id}: ${ubicacionActual.tipo || "sin tipo"}`);
+        }
       }
       
       res.json(relaciones);
