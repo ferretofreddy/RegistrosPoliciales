@@ -117,22 +117,10 @@ export default function RegistrosPage() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="text-lg font-medium mb-4">Información</h3>
-                        <EntityDetails 
-                          entityId={selectedResult.id} 
-                          entityType={selectedResult.tipo} 
-                        />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium mb-4">Actualización</h3>
-                        <UpdateEntity 
-                          entityId={selectedResult.id} 
-                          entityType={selectedResult.tipo} 
-                        />
-                      </div>
-                    </div>
+                    <EntityDetails 
+                      entityId={selectedResult.id} 
+                      entityType={selectedResult.tipo} 
+                    />
                   </div>
                 ) : (
                   <div className="border rounded-md p-8 min-h-[300px] flex flex-col items-center justify-center text-gray-500">
