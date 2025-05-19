@@ -29,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { User as UserIcon, Edit, Trash2, UserPlus } from "lucide-react";
@@ -76,7 +77,8 @@ export default function AdminPage() {
         cedula: "",
         telefono: "",
         unidad: "",
-        rol: "agente"
+        rol: "agente",
+        activo: "false"
       });
       toast({
         title: "Usuario creado",
@@ -349,6 +351,21 @@ export default function AdminPage() {
                               </SelectContent>
                             </Select>
                           </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <div className="col-span-1"></div>
+                            <div className="flex items-center space-x-2 col-span-3">
+                              <Checkbox 
+                                id="new-activo" 
+                                checked={newUser.activo === "true"}
+                                onCheckedChange={(checked) => 
+                                  setNewUser({...newUser, activo: checked ? "true" : "false"})
+                                }
+                              />
+                              <Label htmlFor="new-activo">
+                                Usuario activo
+                              </Label>
+                            </div>
+                          </div>
                         </div>
                         <DialogFooter>
                           <Button 
@@ -378,6 +395,7 @@ export default function AdminPage() {
                             <TableHead>Email</TableHead>
                             <TableHead>Rol</TableHead>
                             <TableHead>Unidad</TableHead>
+                            <TableHead>Estado</TableHead>
                             <TableHead>Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -393,6 +411,11 @@ export default function AdminPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell>{user.unidad}</TableCell>
+                              <TableCell>
+                                <Badge variant={user.activo === "true" ? "green" : "destructive"}>
+                                  {user.activo === "true" ? "Activo" : "Inactivo"}
+                                </Badge>
+                              </TableCell>
                               <TableCell className="space-x-1">
                                 <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)} title="Editar usuario">
                                   <Edit className="h-4 w-4" />
@@ -518,6 +541,21 @@ export default function AdminPage() {
                     <SelectItem value="agente">Agente</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <div className="col-span-1"></div>
+                <div className="flex items-center space-x-2 col-span-3">
+                  <Checkbox 
+                    id="edit-activo" 
+                    checked={editingUser.activo === "true"}
+                    onCheckedChange={(checked) => 
+                      setEditingUser({...editingUser, activo: checked ? "true" : "false"})
+                    }
+                  />
+                  <Label htmlFor="edit-activo">
+                    Usuario activo
+                  </Label>
+                </div>
               </div>
             </div>
             <DialogFooter>
