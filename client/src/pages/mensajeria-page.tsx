@@ -57,18 +57,18 @@ export default function MensajeriaPage() {
   // Consultas para obtener mensajes
   const mensajesRecibidos = useQuery({
     queryKey: ["/api/mensajes/recibidos"],
-    queryFn: () => apiRequest("/api/mensajes/recibidos"),
+    queryFn: () => apiRequest("GET", "/api/mensajes/recibidos"),
   });
 
   const mensajesEnviados = useQuery({
     queryKey: ["/api/mensajes/enviados"],
-    queryFn: () => apiRequest("/api/mensajes/enviados"),
+    queryFn: () => apiRequest("GET", "/api/mensajes/enviados"),
   });
 
   // Consulta para obtener usuarios
   const usuarios = useQuery({
     queryKey: ["/api/usuarios-mensajeria"],
-    queryFn: () => apiRequest("/api/usuarios-mensajeria"),
+    queryFn: () => apiRequest("GET", "/api/usuarios-mensajeria"),
   });
 
   // Mutación para enviar un nuevo mensaje
