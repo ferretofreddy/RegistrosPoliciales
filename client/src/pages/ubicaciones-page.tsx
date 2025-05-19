@@ -63,6 +63,38 @@ interface RelacionesResponse {
   [key: string]: any; // Para permitir otras propiedades que puedan venir en la respuesta
 }
 
+// Función auxiliar para filtrar ubicaciones duplicadas
+function filtrarUbicacionesDuplicadas(ubicaciones: LocationData[]): LocationData[] {
+  // Primero priorizamos las ubicaciones directas
+  const directas = ubicaciones.filter(u => u.relation === "direct");
+  const relacionadas = ubicaciones.filter(u => u.relation === "related");
+  
+  // Grupo 1: Ubicaciones directas (siempre se muestran)
+  const resultado = [...directas];
+  
+  // Grupo 2: Ubicaciones relacionadas (filtrar duplicados)
+  const idsDirectas = new Set(directas.map(u => u.id));
+  
+  // Excluir ubicaciones de tipo "domicilio" e "inmueble" de la entidad "ubicacion"
+  const relacionadasFiltradas = relacionadas.filter(ubicacion => {
+    // Excluir si ya existe como directa
+    if (idsDirectas.has(ubicacion.id)) {
+      return false;
+    }
+    
+    // Si es una ubicación (no persona, inmueble o vehículo) y su título es "Domicilio" o "Inmueble", excluirla
+    if (ubicacion.type === "ubicacion" && 
+        (ubicacion.title.toLowerCase().includes("domicilio") || 
+         ubicacion.title.toLowerCase().includes("inmueble"))) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  return [...resultado, ...relacionadasFiltradas];
+}
+
 export default function UbicacionesPage() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [locations, setLocations] = useState<LocationData[]>([]);
@@ -741,8 +773,13 @@ export default function UbicacionesPage() {
             break;
         }
         
-        console.log("Ubicaciones encontradas:", ubicacionesEncontradas);
-        setLocations(ubicacionesEncontradas);
+        console.log("Ubicaciones encontradas (antes de filtrar):", ubicacionesEncontradas);
+        
+        // Filtrar ubicaciones para evitar duplicados
+        const ubicacionesFiltradas = filtrarUbicacionesDuplicadas(ubicacionesEncontradas);
+        console.log("Ubicaciones filtradas:", ubicacionesFiltradas);
+        
+        setLocations(ubicacionesFiltradas);
         
       } catch (error) {
         console.error("Error al cargar ubicaciones:", error);
