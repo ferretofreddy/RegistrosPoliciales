@@ -573,205 +573,185 @@ export default function EstructurasPage() {
     if (!selectedResult || !entity) return;
 
     try {
-      // Crear documento en formato carta (letter)
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'letter' // Formato carta (215.9 x 279.4 mm)
-      });
+      // Utilizamos una estrategia simple y robusta para el PDF
+      const doc = new jsPDF();
       
+      // Configuración inicial
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15;
-      const textWidth = pageWidth - 2 * margin;
+      const margin = 10;
       
-      // Encabezado del informe
+      // Encabezado
+      doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("INFORME DE ESTRUCTURA", pageWidth / 2, 20, { align: "center" });
-      doc.text("SISTEMA DE INTELIGENCIA", pageWidth / 2, 30, { align: "center" });
+      doc.text("INFORME DE ESTRUCTURA", pageWidth / 2, 15, { align: "center" });
       
-      // Información de la entidad seleccionada
-      doc.setFontSize(14);
-      doc.text(`TIPO DE ENTIDAD: ${selectedResult.tipo.toUpperCase()}`, pageWidth / 2, 40, { align: "center" });
+      // Tipo de entidad
+      doc.setFontSize(12);
+      doc.text(`Tipo: ${selectedResult.tipo.toUpperCase()}`, pageWidth / 2, 22, { align: "center" });
       
-      // Línea divisoria
-      doc.setDrawColor(0);
+      // Línea separadora
       doc.setLineWidth(0.5);
-      doc.line(margin, 45, pageWidth - margin, 45);
+      doc.line(margin, 25, pageWidth - margin, 25);
       
-      // Fecha de generación y responsable
-      doc.setFontSize(10);
-      doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, margin, 53);
-      
-      // Línea divisoria
-      doc.line(margin, 58, pageWidth - margin, 58);
-      
-      // Información del registro
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("INFORMACIÓN GENERAL", margin, 68);
-      
-      doc.setFontSize(11);
+      // Fecha de generación
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      let y = 78;
+      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 30, { align: "right" });
+      
+      // Información general
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("INFORMACIÓN GENERAL", margin, 40);
+      
+      // Contenido específico según tipo
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      let y = 50;
       
       const entityData = entity as any;
       
-      // Información específica según el tipo de entidad
+      // Información según tipo de entidad
       switch (selectedResult.tipo) {
         case "persona":
-          doc.text(`Nombre: ${entityData.nombre || ""}`, margin, y); y += 7;
-          doc.text(`Identificación: ${entityData.identificacion || ""}`, margin, y); y += 7;
+          y = addTextRow(doc, "Nombre:", entityData.nombre || "N/A", margin, y);
+          y = addTextRow(doc, "Identificación:", entityData.identificacion || "N/A", margin, y);
           
           if (entityData.alias && entityData.alias.length > 0) {
-            doc.text(`Alias: ${entityData.alias.join(", ")}`, margin, y); y += 7;
+            y = addTextRow(doc, "Alias:", entityData.alias.join(", "), margin, y);
           }
           
           if (entityData.telefonos && entityData.telefonos.length > 0) {
-            doc.text(`Teléfonos: ${entityData.telefonos.join(", ")}`, margin, y); y += 7;
+            y = addTextRow(doc, "Teléfonos:", entityData.telefonos.join(", "), margin, y);
           }
           
           if (entityData.domicilios && entityData.domicilios.length > 0) {
-            doc.text(`Domicilios:`, margin, y); y += 7;
+            doc.text("Domicilios:", margin, y); y += 5;
+            
             entityData.domicilios.forEach((dom: string) => {
-              if (dom) {
-                const wrappedText = doc.splitTextToSize(dom, textWidth - 10);
-                doc.text(`- ${wrappedText[0]}`, margin + 5, y);
-                
-                // Si hay más líneas, las añadimos
-                if (wrappedText.length > 1) {
-                  for (let i = 1; i < wrappedText.length; i++) {
-                    y += 5;
-                    doc.text(`  ${wrappedText[i]}`, margin + 5, y);
-                  }
-                }
+              if (dom && dom.trim()) {
+                // Limitar longitud del texto
+                const text = dom.length > 50 ? dom.substring(0, 50) + "..." : dom;
+                doc.text(`• ${text}`, margin + 5, y); y += 5;
               }
-              
-              y += 7;
             });
           }
           break;
           
         case "vehiculo":
-          doc.text(`Placa: ${entityData.placa || ""}`, margin, y); y += 7;
-          doc.text(`Marca: ${entityData.marca || ""}`, margin, y); y += 7;
-          doc.text(`Modelo: ${entityData.modelo || ""}`, margin, y); y += 7;
-          doc.text(`Color: ${entityData.color || ""}`, margin, y); y += 7;
+          y = addTextRow(doc, "Placa:", entityData.placa || "N/A", margin, y);
+          y = addTextRow(doc, "Marca:", entityData.marca || "N/A", margin, y);
+          y = addTextRow(doc, "Modelo:", entityData.modelo || "N/A", margin, y);
+          y = addTextRow(doc, "Color:", entityData.color || "N/A", margin, y);
           
           if (entityData.tipo) {
-            doc.text(`Tipo: ${entityData.tipo}`, margin, y); y += 7;
+            y = addTextRow(doc, "Tipo:", entityData.tipo, margin, y);
           }
           
           if (entityData.observaciones) {
-            doc.text(`Observaciones generales:`, margin, y); y += 7;
-            const wrappedText = doc.splitTextToSize(entityData.observaciones, textWidth - 5);
-            doc.text(wrappedText, margin + 5, y);
-            y += 7 * wrappedText.length;
+            const text = entityData.observaciones.length > 80 
+              ? entityData.observaciones.substring(0, 80) + "..." 
+              : entityData.observaciones;
+            y = addTextRow(doc, "Observaciones:", text, margin, y);
           }
           break;
           
         case "inmueble":
-          doc.text(`Tipo: ${entityData.tipo || ""}`, margin, y); y += 7;
-          doc.text(`Dirección:`, margin, y); y += 7;
+          y = addTextRow(doc, "Tipo:", entityData.tipo || "N/A", margin, y);
+          
           if (entityData.direccion) {
-            const wrappedDireccion = doc.splitTextToSize(entityData.direccion, textWidth - 5);
-            doc.text(wrappedDireccion, margin + 5, y);
-            y += 7 * Math.max(1, wrappedDireccion.length);
+            const text = entityData.direccion.length > 80 
+              ? entityData.direccion.substring(0, 80) + "..." 
+              : entityData.direccion;
+            y = addTextRow(doc, "Dirección:", text, margin, y);
           } else {
-            doc.text("No disponible", margin + 5, y); y += 7;
+            y = addTextRow(doc, "Dirección:", "N/A", margin, y);
           }
           
           if (entityData.propietario) {
-            doc.text(`Propietario: ${entityData.propietario}`, margin, y); y += 7;
+            y = addTextRow(doc, "Propietario:", entityData.propietario, margin, y);
           }
           
           if (entityData.observaciones) {
-            doc.text(`Observaciones generales:`, margin, y); y += 7;
-            const wrappedObservaciones = doc.splitTextToSize(entityData.observaciones, textWidth - 5);
-            doc.text(wrappedObservaciones, margin + 5, y);
-            y += 7 * wrappedObservaciones.length;
+            const text = entityData.observaciones.length > 80 
+              ? entityData.observaciones.substring(0, 80) + "..." 
+              : entityData.observaciones;
+            y = addTextRow(doc, "Observaciones:", text, margin, y);
           }
           break;
           
         case "ubicacion":
           if (entityData.tipo) {
-            doc.text(`Tipo: ${entityData.tipo}`, margin, y); y += 7;
+            y = addTextRow(doc, "Tipo:", entityData.tipo, margin, y);
           }
           
           if (entityData.latitud !== undefined && entityData.longitud !== undefined) {
             const lat = parseFloat(String(entityData.latitud));
             const lng = parseFloat(String(entityData.longitud));
             if (!isNaN(lat) && !isNaN(lng)) {
-              doc.text(`Coordenadas: Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`, margin, y); 
+              y = addTextRow(doc, "Coordenadas:", `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`, margin, y);
             } else {
-              doc.text("Coordenadas: No disponibles", margin, y);
+              y = addTextRow(doc, "Coordenadas:", "No disponibles", margin, y);
             }
-            y += 7;
           }
           
           if (entityData.fecha) {
-            doc.text(`Fecha: ${new Date(entityData.fecha).toLocaleDateString()}`, margin, y); y += 7;
+            try {
+              const fecha = new Date(entityData.fecha).toLocaleDateString();
+              y = addTextRow(doc, "Fecha:", fecha, margin, y);
+            } catch (e) {
+              y = addTextRow(doc, "Fecha:", "No disponible", margin, y);
+            }
           }
           
           if (entityData.observaciones) {
-            doc.text(`Observaciones generales:`, margin, y); y += 7;
-            const wrappedText = doc.splitTextToSize(entityData.observaciones, textWidth - 5);
-            doc.text(wrappedText, margin + 5, y);
-            y += 7 * wrappedText.length;
+            const text = entityData.observaciones.length > 80 
+              ? entityData.observaciones.substring(0, 80) + "..." 
+              : entityData.observaciones;
+            y = addTextRow(doc, "Observaciones:", text, margin, y);
           }
           break;
       }
       
-      y += 10;
-      
-      // Nueva página si es necesario
-      if (y > pageHeight - 30) {
+      // Nueva página para observaciones si estamos cerca del final
+      if (y > pageHeight - 60) {
         doc.addPage();
         y = 20;
       }
       
       // Observaciones
       if (observaciones && observaciones.length > 0) {
+        y += 10;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(14);
-        doc.text("OBSERVACIONES", margin, y); y += 10;
-        doc.setFontSize(11);
+        doc.setFontSize(12);
+        doc.text("OBSERVACIONES", margin, y);
+        y += 8;
         doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
         
-        // Tabla de observaciones
-        const obsHeaders = [["Detalle", "Fecha", "Usuario"]];
-        const obsData = observaciones.map((obs: any) => [
-          obs.detalle || "Sin detalle", 
-          obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A",
-          obs.usuario || "Usuario del sistema"
-        ]);
-        
-        // @ts-ignore - usando la extensión autotable
-        doc.autoTable({
-          head: obsHeaders,
-          body: obsData,
-          startY: y,
-          margin: { left: margin, right: margin },
-          headStyles: { fillColor: [50, 50, 120] },
-          styles: { overflow: 'linebreak' },
-          columnStyles: {
-            0: { cellWidth: 'auto' },
-            1: { cellWidth: 30 },
-            2: { cellWidth: 40 }
+        // Imprimimos las observaciones como texto simple
+        observaciones.forEach((obs: any, index: number) => {
+          if (y > pageHeight - 30) {
+            doc.addPage();
+            y = 20;
           }
+          
+          const detalle = obs.detalle || "Sin detalle";
+          const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A";
+          const usuario = obs.usuario || "Sistema";
+          
+          // Limitamos el largo del detalle para evitar problemas
+          const textoDetalle = detalle.length > 60 ? detalle.substring(0, 60) + "..." : detalle;
+          
+          doc.setFont("helvetica", "bold");
+          doc.text(`Observación #${index+1}:`, margin, y); y += 5;
+          doc.setFont("helvetica", "normal");
+          doc.text(`• ${textoDetalle}`, margin + 5, y); y += 5;
+          doc.text(`• Fecha: ${fecha} - Usuario: ${usuario}`, margin + 5, y); y += 8;
         });
-        
-        // Usando propiedad lastAutoTable del jsPDF modificado por autotable
-        const lastAutoTable = (doc as any).lastAutoTable;
-        if (lastAutoTable) {
-          y = lastAutoTable.finalY + 15;
-        } else {
-          y += observaciones.length * 10 + 15; // Estimación alternativa
-        }
       }
       
-      // Nueva página si es necesario
+      // Nueva página para relaciones si estamos cerca del final
       if (y > pageHeight - 60) {
         doc.addPage();
         y = 20;
@@ -784,197 +764,167 @@ export default function EstructurasPage() {
         relaciones.inmuebles?.length > 0;
         
       if (hasRelaciones) {
+        y += 10;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(14);
-        doc.text("RELACIONES", margin, y); y += 10;
-        doc.setFontSize(11);
+        doc.setFontSize(12);
+        doc.text("RELACIONES", margin, y);
+        y += 8;
         doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
         
+        // Personas relacionadas
         if (relaciones.personas && relaciones.personas.length > 0) {
           doc.setFont("helvetica", "bold");
-          doc.text("Personas relacionadas", margin, y); y += 7;
+          doc.text("Personas relacionadas:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
-          const persHeaders = [["Nombre", "Identificación"]];
-          const persData = relaciones.personas.map((persona: any) => [
-            persona.nombre || "Sin nombre", 
-            persona.identificacion || "Sin identificación"
-          ]);
-          
-          // @ts-ignore
-          doc.autoTable({
-            head: persHeaders,
-            body: persData,
-            startY: y,
-            margin: { left: margin, right: margin },
-            headStyles: { fillColor: [70, 130, 180] },
-            styles: { overflow: 'linebreak' }
+          relaciones.personas.forEach((persona: any) => {
+            if (y > pageHeight - 30) {
+              doc.addPage();
+              y = 20;
+            }
+            
+            const nombre = persona.nombre || "Sin nombre";
+            const id = persona.identificacion || "Sin identificación";
+            
+            doc.text(`• ${nombre} (${id})`, margin + 5, y); y += 5;
           });
           
-          // Usando propiedad lastAutoTable
-          const lastAutoTable = (doc as any).lastAutoTable;
-          if (lastAutoTable) {
-            y = lastAutoTable.finalY + 10;
-          } else {
-            y += relaciones.personas.length * 8 + 10; // Estimación alternativa
-          }
+          y += 5;
         }
         
-        // Nueva página si es necesario
-        if (y > pageHeight - 60 && (relaciones.vehiculos?.length > 0 || relaciones.inmuebles?.length > 0)) {
-          doc.addPage();
-          y = 20;
-        }
-        
+        // Vehículos relacionados
         if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
+          if (y > pageHeight - 40) {
+            doc.addPage();
+            y = 20;
+          }
+          
           doc.setFont("helvetica", "bold");
-          doc.text("Vehículos relacionados", margin, y); y += 7;
+          doc.text("Vehículos relacionados:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
-          const vehHeaders = [["Placa", "Marca", "Modelo"]];
-          const vehData = relaciones.vehiculos.map((vehiculo: any) => [
-            vehiculo.placa || "Sin placa", 
-            vehiculo.marca || "Sin marca", 
-            vehiculo.modelo || "Sin modelo"
-          ]);
-          
-          // @ts-ignore
-          doc.autoTable({
-            head: vehHeaders,
-            body: vehData,
-            startY: y,
-            margin: { left: margin, right: margin },
-            headStyles: { fillColor: [46, 139, 87] },
-            styles: { overflow: 'linebreak' }
+          relaciones.vehiculos.forEach((vehiculo: any) => {
+            if (y > pageHeight - 30) {
+              doc.addPage();
+              y = 20;
+            }
+            
+            const placa = vehiculo.placa || "Sin placa";
+            const marca = vehiculo.marca || "Sin marca";
+            const modelo = vehiculo.modelo || "Sin modelo";
+            
+            doc.text(`• ${placa}: ${marca} ${modelo}`, margin + 5, y); y += 5;
           });
           
-          // Usando propiedad lastAutoTable
-          const lastAutoTable = (doc as any).lastAutoTable;
-          if (lastAutoTable) {
-            y = lastAutoTable.finalY + 10;
-          } else {
-            y += relaciones.vehiculos.length * 8 + 10; // Estimación alternativa
-          }
+          y += 5;
         }
         
-        // Nueva página si es necesario
-        if (y > pageHeight - 60 && relaciones.inmuebles?.length > 0) {
-          doc.addPage();
-          y = 20;
-        }
-        
+        // Inmuebles relacionados
         if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
+          if (y > pageHeight - 40) {
+            doc.addPage();
+            y = 20;
+          }
+          
           doc.setFont("helvetica", "bold");
-          doc.text("Inmuebles relacionados", margin, y); y += 7;
+          doc.text("Inmuebles relacionados:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
-          const inmHeaders = [["Tipo", "Dirección"]];
-          const inmData = relaciones.inmuebles.map((inmueble: any) => [
-            inmueble.tipo || "Sin tipo", 
-            inmueble.direccion || "Sin dirección"
-          ]);
-          
-          // @ts-ignore
-          doc.autoTable({
-            head: inmHeaders,
-            body: inmData,
-            startY: y,
-            margin: { left: margin, right: margin },
-            headStyles: { fillColor: [147, 112, 219] },
-            styles: { overflow: 'linebreak' }
+          relaciones.inmuebles.forEach((inmueble: any) => {
+            if (y > pageHeight - 30) {
+              doc.addPage();
+              y = 20;
+            }
+            
+            const tipo = inmueble.tipo || "Sin tipo";
+            const direccion = inmueble.direccion || "Sin dirección";
+            
+            // Limitar la longitud de la dirección
+            const textoDir = direccion.length > 50 ? direccion.substring(0, 50) + "..." : direccion;
+            
+            doc.text(`• ${tipo}: ${textoDir}`, margin + 5, y); y += 5;
           });
-          
-          // Usando propiedad lastAutoTable
-          const lastAutoTable = (doc as any).lastAutoTable;
-          if (lastAutoTable) {
-            y = lastAutoTable.finalY + 10;
-          } else {
-            y += relaciones.inmuebles.length * 8 + 10; // Estimación alternativa
-          }
         }
       }
       
-      // Ubicaciones - solo si hay datos de ubicaciones
+      // Nueva página para ubicaciones
       if (locations && locations.length > 0) {
-        // Nueva página para las ubicaciones
         doc.addPage();
         y = 20;
         
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(14);
-        doc.text("UBICACIONES", margin, y); y += 10;
-        doc.setFontSize(11);
+        doc.setFontSize(12);
+        doc.text("UBICACIONES", margin, y);
+        y += 8;
         doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
         
-        // Tabla de ubicaciones
-        const locHeaders = [["Tipo", "Coordenadas", "Descripción"]];
-        const locData = locations.map(loc => [
-          loc.title || "Sin tipo",
-          `Lat: ${loc.lat.toFixed(6)}, Lng: ${loc.lng.toFixed(6)}`,
-          loc.description || "Sin descripción"
-        ]);
-        
-        try {
-          // @ts-ignore
-          doc.autoTable({
-            head: locHeaders,
-            body: locData,
-            startY: y,
-            margin: { left: margin, right: margin },
-            headStyles: { fillColor: [220, 20, 60] },
-            styles: { overflow: 'linebreak' },
-            columnStyles: {
-              0: { cellWidth: 40 },
-              1: { cellWidth: 60 },
-              2: { cellWidth: 'auto' }
-            }
-          });
-          
-          // Usando propiedad lastAutoTable
-          const lastAutoTable = (doc as any).lastAutoTable;
-          if (lastAutoTable) {
-            y = lastAutoTable.finalY + 15;
-          } else {
-            y += locations.length * 8 + 15; // Estimación alternativa
+        locations.forEach((loc: LocationData, index: number) => {
+          if (y > pageHeight - 40) {
+            doc.addPage();
+            y = 20;
           }
           
-          // Añadir pie de nota para ubicaciones
-          doc.setFontSize(9);
-          doc.text("Nota: Para visualizar las ubicaciones en detalle, consulte la aplicación web.", margin, y);
-        } catch (err) {
-          console.error("Error al generar tabla de ubicaciones:", err);
-          doc.text("Error al generar tabla de ubicaciones", margin, y);
-          y += 10;
-        }
+          const tipo = loc.title || "Sin tipo";
+          const coordenadas = `Lat: ${loc.lat.toFixed(6)}, Lng: ${loc.lng.toFixed(6)}`;
+          const descripcion = loc.description || "Sin descripción";
+          
+          // Limitar longitud de la descripción
+          const textoDesc = descripcion.length > 50 ? descripcion.substring(0, 50) + "..." : descripcion;
+          
+          doc.setFont("helvetica", "bold");
+          doc.text(`Ubicación #${index+1}:`, margin, y); y += 5;
+          doc.setFont("helvetica", "normal");
+          doc.text(`• Tipo: ${tipo}`, margin + 5, y); y += 5;
+          doc.text(`• Coordenadas: ${coordenadas}`, margin + 5, y); y += 5;
+          doc.text(`• Descripción: ${textoDesc}`, margin + 5, y); y += 8;
+        });
+        
+        y += 5;
+        doc.setFontSize(8);
+        doc.text("Nota: Para visualizar estas ubicaciones en un mapa, acceda a la aplicación web.", margin, y);
       }
       
-      // Agregar nota de pie de página en todas las páginas
+      // Pie de página en todas las páginas
       try {
         const totalPages = doc.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
           doc.setPage(i);
           doc.setFontSize(8);
           doc.setTextColor(100, 100, 100);
-          doc.text(`Informe generado el ${new Date().toLocaleDateString()} - Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
-          doc.text("SISTEMA DE GESTIÓN DE INTELIGENCIA", pageWidth / 2, pageHeight - 5, { align: "center" });
+          doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 10);
+          doc.text("INFORME CONFIDENCIAL", margin, pageHeight - 10);
         }
-      } catch (err) {
-        console.error("Error al añadir pies de página:", err);
+      } catch (e) {
+        console.error("Error al añadir pies de página:", e);
       }
       
       // Guardar el PDF
       try {
-        const entityName = selectedResult.nombre.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30);
-        doc.save(`Informe_${selectedResult.tipo}_${entityName}_${new Date().toISOString().slice(0, 10)}.pdf`);
-      } catch (err) {
-        console.error("Error al guardar el PDF:", err);
-        alert("Ocurrió un error al guardar el PDF. Verifique la consola para más detalles.");
+        // Limpiar el nombre para el archivo
+        let nombre = selectedResult.nombre || "informe";
+        nombre = nombre.replace(/[^a-zA-Z0-9]/g, "_");
+        nombre = nombre.substring(0, 20); // Limitar longitud
+        
+        doc.save(`Informe_${nombre}.pdf`);
+      } catch (e) {
+        console.error("Error al guardar PDF:", e);
+        alert("Ocurrió un error al guardar el PDF");
       }
-      
     } catch (error) {
-      console.error("Error al generar PDF:", error);
+      console.error("Error general al generar PDF:", error);
       alert("Ocurrió un error al generar el PDF. Por favor, intente nuevamente.");
     }
+  };
+  
+  // Función auxiliar para añadir texto con etiqueta
+  const addTextRow = (doc: any, label: string, value: string, x: number, y: number): number => {
+    doc.setFont("helvetica", "bold");
+    doc.text(label, x, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(value, x + 30, y);
+    return y + 5;
   };
 
   // Componente principal
