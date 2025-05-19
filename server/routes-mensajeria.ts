@@ -129,9 +129,12 @@ export function registerMensajeriaRoutes(app: Express) {
   // Obtener lista de usuarios para enviar mensajes
   app.get("/api/usuarios-mensajeria", ensureAuthenticated, async (req, res) => {
     try {
+      console.log("Obteniendo lista de usuarios para mensajería");
       const usuarios = await mensajeriaService.getAllUsers();
+      console.log("Usuarios obtenidos:", usuarios);
       // Filtramos el usuario actual para que no pueda enviarse mensajes a sí mismo
       const usuariosFiltrados = usuarios.filter(u => u.id !== req.user!.id);
+      console.log("Usuarios filtrados:", usuariosFiltrados);
       res.json(usuariosFiltrados);
     } catch (error) {
       console.error("Error al obtener usuarios:", error);
