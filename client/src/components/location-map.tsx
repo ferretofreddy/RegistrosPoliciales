@@ -128,8 +128,9 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
   const markerTypes = Array.from(new Set(markers.map(marker => marker.type)));
 
   return (
-    <div className="space-y-4">
-      <div className="border rounded-md overflow-hidden" style={{ height: '400px' }}>
+    <div>
+      {/* Contenedor del mapa con altura fija */}
+      <div className="border rounded-md overflow-hidden mb-6" style={{ height: '400px' }}>
         <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -162,65 +163,65 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
         </MapContainer>
       </div>
 
-      {/* Leyenda del mapa mejorada */}
-      <div className="p-3 bg-white rounded-lg border shadow-sm">
-        <div className="font-semibold mb-2 text-gray-800">Tipos de entidades:</div>
+      {/* Leyenda del mapa mejorada - ahora con margen inferior y mejor estructura */}
+      <div className="p-3 bg-white rounded-lg border shadow-sm mb-8">
+        <h3 className="font-semibold mb-2 text-gray-800 text-sm">Leyenda del mapa:</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100">
-              <User className="h-5 w-5 text-blue-600" />
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100">
+              <User className="h-4 w-4 text-blue-600" />
             </div>
             <div>
-              <span className="font-medium">Persona</span>
+              <span className="font-medium text-sm">Persona</span>
               <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                <div className="w-2 h-2 rounded-full bg-blue-600"></div>
                 <span>Directa</span>
-                <div className="w-3 h-3 rounded-full bg-blue-400 ml-1"></div>
+                <div className="w-2 h-2 rounded-full bg-blue-400 ml-1"></div>
                 <span>Relacionada</span>
               </div>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-              <Car className="h-5 w-5 text-green-600" />
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-green-100">
+              <Car className="h-4 w-4 text-green-600" />
             </div>
             <div>
-              <span className="font-medium">Vehículo</span>
+              <span className="font-medium text-sm">Vehículo</span>
               <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-3 h-3 rounded-full bg-green-600"></div>
+                <div className="w-2 h-2 rounded-full bg-green-600"></div>
                 <span>Directa</span>
-                <div className="w-3 h-3 rounded-full bg-green-400 ml-1"></div>
+                <div className="w-2 h-2 rounded-full bg-green-400 ml-1"></div>
                 <span>Relacionada</span>
               </div>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100">
-              <Building className="h-5 w-5 text-purple-600" />
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-purple-100">
+              <Building className="h-4 w-4 text-purple-600" />
             </div>
             <div>
-              <span className="font-medium">Inmueble</span>
+              <span className="font-medium text-sm">Inmueble</span>
               <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                <div className="w-2 h-2 rounded-full bg-purple-600"></div>
                 <span>Directa</span>
-                <div className="w-3 h-3 rounded-full bg-purple-400 ml-1"></div>
+                <div className="w-2 h-2 rounded-full bg-purple-400 ml-1"></div>
                 <span>Relacionada</span>
               </div>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100">
-              <MapPin className="h-5 w-5 text-red-600" />
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-red-100">
+              <MapPin className="h-4 w-4 text-red-600" />
             </div>
             <div>
-              <span className="font-medium">Ubicación</span>
+              <span className="font-medium text-sm">Ubicación</span>
               <div className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                <div className="w-2 h-2 rounded-full bg-red-600"></div>
                 <span>Directa</span>
-                <div className="w-3 h-3 rounded-full bg-red-400 ml-1"></div>
+                <div className="w-2 h-2 rounded-full bg-red-400 ml-1"></div>
                 <span>Relacionada</span>
               </div>
             </div>
