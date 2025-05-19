@@ -53,12 +53,16 @@ export default function AdminPage() {
   const [newPassword, setNewPassword] = useState("");
   const { toast } = useToast();
 
-  const { data: users, isLoading } = useQuery<User[]>({
+  const { data: users, isLoading, refetch } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/admin/users");
       return res.json();
     },
+    // Esto asegura que los datos se actualicen inmediatamente
+    refetchOnWindowFocus: true,
+    // Reducir la duración en caché a 0 para garantizar datos actualizados
+    staleTime: 0,
   });
 
   // Mutation para crear un nuevo usuario
@@ -68,7 +72,10 @@ export default function AdminPage() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidar la consulta y forzar una actualización inmediata
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      // Actualizar los datos manualmente
+      refetch();
       setIsNewUserDialogOpen(false);
       setNewUser({
         nombre: "",
@@ -101,7 +108,10 @@ export default function AdminPage() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidar la consulta y forzar una actualización inmediata
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      // Actualizar los datos manualmente
+      refetch();
       setIsDialogOpen(false);
       toast({
         title: "Usuario actualizado",
@@ -147,7 +157,10 @@ export default function AdminPage() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidar la consulta y forzar una actualización inmediata
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      // Actualizar los datos manualmente
+      refetch();
       toast({
         title: "Usuario eliminado",
         description: "El usuario ha sido eliminado correctamente.",
