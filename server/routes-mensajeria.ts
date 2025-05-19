@@ -69,9 +69,14 @@ export function registerMensajeriaRoutes(app: Express) {
       console.log("Datos recibidos para crear mensaje:", req.body);
       console.log("Usuario autenticado:", req.user);
       
+      // Verificar que el usuario esté autenticado correctamente
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: "Usuario no autenticado correctamente" });
+      }
+      
       // Creamos directamente el objeto para el mensaje sin pasar por validación de Zod
       const mensajeData = {
-        remiteId: req.user?.id, 
+        remiteId: req.user.id, // Ahora estamos seguros de que este valor existe
         destinatarioId: typeof req.body.destinatarioId === 'string' 
           ? parseInt(req.body.destinatarioId) 
           : req.body.destinatarioId,
@@ -102,8 +107,13 @@ export function registerMensajeriaRoutes(app: Express) {
       
       console.log("Datos formateados para crear mensaje:", mensajeData);
       
-      // Usar el servicio para insertar en la base de datos
-      const nuevoMensaje = await mensajeriaService.createMensaje(mensajeData);
+      // Insertar directamente en la base de datos con los campos necesarios
+      const nuevoMensaje = await mensajeriaService.createMensaje({
+        remiteId: mensajeData.remiteId,
+        destinatarioId: Number(mensajeData.destinatarioId),
+        asunto: mensajeData.asunto,
+        contenido: mensajeData.contenido
+      });
       console.log("Mensaje creado correctamente:", nuevoMensaje);
       res.status(201).json(nuevoMensaje);
     } catch (error) {
