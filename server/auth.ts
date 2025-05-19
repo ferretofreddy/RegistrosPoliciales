@@ -105,12 +105,23 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
+        activo: "false", // Asegurarnos de que los nuevos usuarios siempre comiencen inactivos
       });
 
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(user);
-      });
+      // Verificar si el usuario está activo antes de iniciar sesión automática
+      if (user.activo === "true") {
+        req.login(user, (err) => {
+          if (err) return next(err);
+          res.status(201).json(user);
+        });
+      } else {
+        // Usuario creado pero no inicia sesión automáticamente
+        console.log(`Usuario registrado pero inactivo: ${user.email} (ID: ${user.id})`);
+        res.status(201).json({
+          ...user,
+          message: "ACCESO RESTRINGIDO: Su cuenta ha sido creada pero está pendiente de activación por un administrador."
+        });
+      }
     } catch (error) {
       res.status(500).json({ message: "Error al registrar usuario" });
     }
