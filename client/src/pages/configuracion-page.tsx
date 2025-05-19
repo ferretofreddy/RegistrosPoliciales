@@ -121,7 +121,7 @@ export default function ConfiguracionPage() {
   const createTipoInmuebleMutation = useMutation({
     mutationFn: async (values: TipoInmuebleFormValues) => {
       console.log("Creando tipo de inmueble con valores:", values);
-      const res = await apiRequest("POST", "/api/tipos-inmuebles", values);
+      const res = await apiRequest("POST", "/api/tipos-inmuebles-admin", values);
       const data = await res.json();
       console.log("Respuesta al crear tipo de inmueble:", data);
       return data;
@@ -160,7 +160,7 @@ export default function ConfiguracionPage() {
       values: TipoInmuebleFormValues;
     }) => {
       console.log("Actualizando tipo de inmueble con ID:", id, "Valores:", values);
-      const res = await apiRequest("PATCH", `/api/tipos-inmuebles/${id}`, values);
+      const res = await apiRequest("PUT", `/api/tipos-inmuebles-admin/${id}`, values);
       const data = await res.json();
       console.log("Respuesta al actualizar tipo de inmueble:", data);
       return data;
@@ -196,7 +196,7 @@ export default function ConfiguracionPage() {
       console.log("Eliminando tipo de inmueble con ID:", id);
       try {
         // Usamos fetch directamente para tener más control
-        const res = await fetch(`/api/tipos-inmuebles/${id}`, {
+        const res = await fetch(`/api/tipos-inmuebles-admin/${id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json'
@@ -248,7 +248,7 @@ export default function ConfiguracionPage() {
   // Mutación para crear un nuevo tipo de ubicación
   const createTipoUbicacionMutation = useMutation({
     mutationFn: async (values: TipoUbicacionFormValues) => {
-      const res = await apiRequest("POST", "/api/tipos-ubicaciones", values);
+      const res = await apiRequest("POST", "/api/tipos-ubicaciones-admin", values);
       return res.json();
     },
     onSuccess: () => {
@@ -279,7 +279,7 @@ export default function ConfiguracionPage() {
       values: TipoUbicacionFormValues;
     }) => {
       console.log("Actualizando tipo de ubicación con ID:", id, "Valores:", values);
-      const res = await apiRequest("PATCH", `/api/tipos-ubicaciones/${id}`, values);
+      const res = await apiRequest("PUT", `/api/tipos-ubicaciones-admin/${id}`, values);
       const data = await res.json();
       console.log("Respuesta al actualizar tipo de ubicación:", data);
       return data;
@@ -315,7 +315,7 @@ export default function ConfiguracionPage() {
       console.log("Eliminando tipo de ubicación con ID:", id);
       try {
         // Usamos fetch directamente para tener más control
-        const res = await fetch(`/api/tipos-ubicaciones/${id}`, {
+        const res = await fetch(`/api/tipos-ubicaciones-admin/${id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json'
