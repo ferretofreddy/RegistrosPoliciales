@@ -21,11 +21,13 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
     vehiculos: any[];
     inmuebles: any[];
     ubicaciones: any[];
+    otrasUbicaciones: any[];
   }>({
     personas: [],
     vehiculos: [],
     inmuebles: [],
-    ubicaciones: []
+    ubicaciones: [],
+    otrasUbicaciones: []
   });
 
   // Obtener los datos de la entidad
@@ -60,6 +62,7 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
         vehiculos: any[];
         inmuebles: any[];
         ubicaciones: any[];
+        otrasUbicaciones: any[];
       });
     }
   }, [relacionesData]);
@@ -268,7 +271,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
       relaciones.personas?.length > 0 || 
       relaciones.vehiculos?.length > 0 || 
       relaciones.inmuebles?.length > 0 || 
-      relaciones.ubicaciones?.length > 0;
+      relaciones.ubicaciones?.length > 0 ||
+      relaciones.otrasUbicaciones?.length > 0;
 
     if (!hasRelaciones) {
       return <p className="text-gray-500">No hay relaciones registradas para esta entidad.</p>;
@@ -348,13 +352,8 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
         )}
 
         {/* Ubicaciones relacionadas - Filtradas para excluir domicilios e inmuebles */}
-        {relaciones.ubicaciones && relaciones.ubicaciones.filter(ubicacion => {
-            const tipo = (ubicacion.tipo || "").toLowerCase();
-            return tipo !== "domicilio" && 
-                   !tipo.includes("domicilio") && 
-                   tipo !== "inmueble" && 
-                   !tipo.includes("inmueble");
-          }).length > 0 && (
+        {((relaciones.ubicaciones && relaciones.ubicaciones.length > 0) || 
+          (relaciones.otrasUbicaciones && relaciones.otrasUbicaciones.length > 0)) && (
           <div>
             <h3 className="text-md font-semibold mb-2">Ubicaciones relacionadas</h3>
             <Table>
@@ -366,30 +365,39 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {relaciones.ubicaciones
-                  .filter(ubicacion => {
-                    // Filtrar para excluir ubicaciones de tipo domicilio e inmueble
+                {/* Combinar y filtrar ubicaciones y otrasUbicaciones */}
+                {[
+                  ...(relaciones.ubicaciones || []).filter(ubicacion => {
+                    // Filtrar ubicaciones para excluir domicilios e inmuebles
+                    const tipo = (ubicacion.tipo || "").toLowerCase();
+                    return tipo !== "domicilio" && 
+                           !tipo.includes("domicilio") && 
+                           tipo !== "inmueble" && 
+                           !tipo.includes("inmueble");
+                  }),
+                  ...(relaciones.otrasUbicaciones || []).filter(ubicacion => {
+                    // Filtrar otrasUbicaciones para excluir domicilios e inmuebles (por si acaso)
                     const tipo = (ubicacion.tipo || "").toLowerCase();
                     return tipo !== "domicilio" && 
                            !tipo.includes("domicilio") && 
                            tipo !== "inmueble" && 
                            !tipo.includes("inmueble");
                   })
-                  .map((ubicacion: any) => (
-                    <TableRow key={ubicacion.id}>
-                      <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
-                      <TableCell>
-                        {ubicacion.latitud && ubicacion.longitud
-                          ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
-                          : "Sin coordenadas"}
-                      </TableCell>
-                      <TableCell>
-                        {ubicacion.fecha
-                          ? new Date(ubicacion.fecha).toLocaleDateString()
-                          : "Sin fecha"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                ].map((ubicacion: any) => (
+                  <TableRow key={ubicacion.id}>
+                    <TableCell>{ubicacion.tipo || "Sin tipo"}</TableCell>
+                    <TableCell>
+                      {ubicacion.latitud && ubicacion.longitud
+                        ? `Lat: ${ubicacion.latitud.toFixed(6)}, Lng: ${ubicacion.longitud.toFixed(6)}`
+                        : "Sin coordenadas"}
+                    </TableCell>
+                    <TableCell>
+                      {ubicacion.fecha
+                        ? new Date(ubicacion.fecha).toLocaleDateString()
+                        : "Sin fecha"}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
