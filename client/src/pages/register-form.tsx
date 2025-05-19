@@ -22,9 +22,10 @@ const registerSchema = z.object({
   confirmPassword: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
   nombre: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres" }),
   cedula: z.string().min(5, { message: "Cédula inválida" }),
-  telefono: z.string().min(7, { message: "Teléfono inválido" }),
-  unidad: z.string().min(1, { message: "Unidad requerida" }),
-  rol: z.string().min(1, { message: "Rol requerido" }),
+  // Los campos telefono, unidad y rol ya no son obligatorios en el registro
+  telefono: z.string().optional(),
+  unidad: z.string().optional(),
+  rol: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
@@ -50,14 +51,26 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
       confirmPassword: "",
       nombre: "",
       cedula: "",
+      // Valores por defecto para campos opcionales
       telefono: "",
       unidad: "",
-      rol: "agente",
+      rol: "agente", // Por defecto asignamos rol de agente
     },
   });
 
   const onSubmit = (data: RegisterFormValues) => {
-    const { confirmPassword, ...userData } = data;
+    // Eliminamos confirmPassword y proporcionamos valores por defecto para campos opcionales
+    const { confirmPassword, ...formData } = data;
+    
+    // Creamos objeto con valores por defecto para los campos opcionales
+    const userData = {
+      ...formData,
+      telefono: formData.telefono || "",  // Si es undefined, usar string vacío
+      unidad: formData.unidad || "",      // Si es undefined, usar string vacío
+      rol: "agente",                      // Siempre asignar rol "agente" por defecto
+      activo: "false"                     // Usuarios registrados empiezan inactivos
+    };
+    
     registerMutation.mutate(userData);
   };
 
@@ -121,50 +134,10 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
           )}
         />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="telefono"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Teléfono</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="tel" 
-                    placeholder="Número de teléfono" 
-                    value={field.value}
-                    onChange={e => field.onChange(e.target.value)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="unidad"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Unidad</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar unidad" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="investigacion">Investigación</SelectItem>
-                    <SelectItem value="transito">Tránsito</SelectItem>
-                    <SelectItem value="seguridad">Seguridad Pública</SelectItem>
-                    <SelectItem value="inteligencia">Inteligencia</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        {/* 
+          Los campos de teléfono y unidad se han eliminado del formulario de registro
+          y serán administrados por el usuario desde su perfil
+        */}
 
         <FormField
           control={form.control}
@@ -204,30 +177,16 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="rol"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Solicitar Rol</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar rol" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="agente">Agente</SelectItem>
-                  <SelectItem value="investigador">Investigador</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="mt-1 text-xs text-gray-500">
-                Nota: El rol de Administrador requiere aprobación especial
-              </p>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* 
+          El campo de rol ha sido eliminado del formulario de registro
+          y será administrado exclusivamente por los administradores 
+        */}
+        
+        <div className="mt-1 text-xs text-gray-500 p-2 bg-gray-50 rounded-md">
+          <p className="font-medium">Nota importante:</p>
+          <p>Al registrarse, su cuenta estará inactiva hasta que un administrador la active.</p>
+          <p>Por defecto, se le asignará el rol de "Agente".</p>
+        </div>
 
         <Button
           type="submit"

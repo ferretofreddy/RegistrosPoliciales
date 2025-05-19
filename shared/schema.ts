@@ -9,8 +9,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   nombre: text("nombre").notNull(),
   cedula: text("cedula").notNull(),
-  telefono: text("telefono").notNull(),
-  unidad: text("unidad").notNull(),
+  telefono: text("telefono").default(""),  // Ya no obligatorio en registro
+  unidad: text("unidad").default(""),    // Ya no obligatorio en registro
   rol: text("rol").notNull(), // admin, investigador, agente
   activo: text("activo").default("false"),
 });
