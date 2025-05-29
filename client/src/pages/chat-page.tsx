@@ -96,6 +96,18 @@ export default function ChatPage() {
     },
   });
 
+  // Marcar mensajes como leídos al cambiar de conversación
+  const marcarComoLeidoMutation = useMutation({
+    mutationFn: async (conversacionId: number) => {
+      const response = await apiRequest("PUT", `/api/chat/conversaciones/${conversacionId}/leer`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversaciones"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversaciones", conversacionSeleccionada, "mensajes"] });
+    },
+  });
+
   // Mutación para enviar mensaje
   const enviarMensajeMutation = useMutation({
     mutationFn: async (data: { conversacionId: number; contenido: string }) => {
@@ -180,6 +192,13 @@ export default function ChatPage() {
       }
     }
   }, [mensajes.data, conversacionSeleccionada, conversaciones.data]);
+
+  // Marcar mensajes como leídos al abrir una conversación
+  useEffect(() => {
+    if (conversacionSeleccionada && user) {
+      marcarComoLeidoMutation.mutate(conversacionSeleccionada);
+    }
+  }, [conversacionSeleccionada, user]);
 
   // Enviar mensaje
   const handleEnviarMensaje = () => {
@@ -443,11 +462,13 @@ export default function ChatPage() {
                             {formatearFecha(mensaje.fechaEnvio)}
                           </span>
                           {mensaje.remitenteId === user?.id && (
-                            mensaje.leido ? (
-                              <CheckCheck className="h-3 w-3 text-blue-100" />
-                            ) : (
-                              <Check className="h-3 w-3 text-blue-200" />
-                            )
+                            <div title={mensaje.leido ? "Leído" : "Enviado"}>
+                              {mensaje.leido ? (
+                                <CheckCheck className="h-3 w-3 text-blue-100" />
+                              ) : (
+                                <Check className="h-3 w-3 text-blue-200" />
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
