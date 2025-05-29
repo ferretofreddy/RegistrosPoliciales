@@ -27,7 +27,7 @@ export default function AuthPage() {
         <div className="text-center">
           <Shield className="mx-auto h-12 w-12 text-white" />
           <h2 className="mt-2 text-center text-3xl font-bold text-white">
-            Registros Policiales
+            
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
             Sistema de Gestión de Información Policial

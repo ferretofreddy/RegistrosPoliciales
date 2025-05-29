@@ -285,51 +285,72 @@ export type InsertTipoInmueble = z.infer<typeof insertTipoInmuebleSchema>;
 export type TipoUbicacion = typeof tiposUbicaciones.$inferSelect;
 export type InsertTipoUbicacion = z.infer<typeof insertTipoUbicacionSchema>;
 
-// Tabla para mensajes internos entre usuarios
+// Sistema de mensajería tipo chat (WhatsApp/Telegram)
+// Tabla para conversaciones entre usuarios
+export const conversaciones = pgTable("conversaciones", {
+  id: serial("id").primaryKey(),
+  usuario1Id: integer("usuario1_id").notNull().references(() => users.id),
+  usuario2Id: integer("usuario2_id").notNull().references(() => users.id),
+  fechaCreacion: timestamp("fecha_creacion").notNull().defaultNow(),
+  fechaUltimoMensaje: timestamp("fecha_ultimo_mensaje").notNull().defaultNow(),
+  eliminadaUsuario1: boolean("eliminada_usuario1").default(false),
+  eliminadaUsuario2: boolean("eliminada_usuario2").default(false),
+});
+
+// Tabla para mensajes dentro de conversaciones
 export const mensajes = pgTable("mensajes", {
   id: serial("id").primaryKey(),
-  remiteId: integer("remite_id").notNull().references(() => users.id),
-  destinatarioId: integer("destinatario_id").notNull().references(() => users.id),
-  asunto: text("asunto").notNull(),
+  conversacionId: integer("conversacion_id").notNull().references(() => conversaciones.id),
+  remitenteId: integer("remitente_id").notNull().references(() => users.id),
   contenido: text("contenido").notNull(),
   fechaEnvio: timestamp("fecha_envio").notNull().defaultNow(),
   leido: boolean("leido").default(false),
-  eliminadoRemite: boolean("eliminado_remite").default(false),
-  eliminadoDestinatario: boolean("eliminado_destinatario").default(false),
+  editado: boolean("editado").default(false),
+  fechaEdicion: timestamp("fecha_edicion"),
+  eliminado: boolean("eliminado").default(false),
+  tipoMensaje: text("tipo_mensaje").default("texto"), // texto, imagen, archivo
 });
 
-export const insertMensajeSchema = createInsertSchema(mensajes).pick({
-  remiteId: true,
-  destinatarioId: true,
-  asunto: true,
-  contenido: true,
-});
-
-// Tabla para archivos adjuntos a mensajes
+// Tabla para archivos adjuntos en mensajes
 export const archivosAdjuntos = pgTable("archivos_adjuntos", {
   id: serial("id").primaryKey(),
   mensajeId: integer("mensaje_id").notNull().references(() => mensajes.id),
   nombreArchivo: text("nombre_archivo").notNull(),
-  urlArchivo: text("url_archivo").notNull(),
-  tipoArchivo: text("tipo_archivo"),
-  tamano: integer("tamano"),
+  rutaArchivo: text("ruta_archivo").notNull(),
+  tipoArchivo: text("tipo_archivo").notNull(),
+  tamanoArchivo: integer("tamano_archivo").notNull(),
+  fechaSubida: timestamp("fecha_subida").notNull().defaultNow(),
+});
+
+// Esquemas de inserción
+export const insertConversacionSchema = createInsertSchema(conversaciones).pick({
+  usuario1Id: true,
+  usuario2Id: true,
+});
+
+export const insertMensajeSchema = createInsertSchema(mensajes).pick({
+  conversacionId: true,
+  remitenteId: true,
+  contenido: true,
+  tipoMensaje: true,
 });
 
 export const insertArchivoAdjuntoSchema = createInsertSchema(archivosAdjuntos).pick({
   mensajeId: true,
   nombreArchivo: true,
-  urlArchivo: true,
+  rutaArchivo: true,
   tipoArchivo: true,
-  tamano: true,
+  tamanoArchivo: true,
 });
 
 // Tipos para las nuevas relaciones
 export type VehiculoInmueble = typeof vehiculosInmuebles.$inferSelect;
 export type VehiculoVehiculo = typeof vehiculosVehiculos.$inferSelect;
 
-// Tipos para mensajería interna
+// Tipos para mensajería tipo chat
+export type Conversacion = typeof conversaciones.$inferSelect;
+export type InsertConversacion = z.infer<typeof insertConversacionSchema>;
 export type Mensaje = typeof mensajes.$inferSelect;
 export type InsertMensaje = z.infer<typeof insertMensajeSchema>;
-
 export type ArchivoAdjunto = typeof archivosAdjuntos.$inferSelect;
 export type InsertArchivoAdjunto = z.infer<typeof insertArchivoAdjuntoSchema>;

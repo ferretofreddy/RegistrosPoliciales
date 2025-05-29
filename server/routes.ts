@@ -17,7 +17,7 @@ import {
   tiposInmuebles, tiposUbicaciones,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema
 } from "@shared/schema";
-import { registerMensajeriaRoutes } from "./routes-mensajeria";
+import { registerChatRoutes } from "./routes-chat";
 
 // Definir un tipo para el usuario autenticado basado en el objeto req.user
 interface User {
@@ -31,8 +31,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticación ANTES de registrar rutas
   setupAuth(app);
   
-  // Registrar rutas de mensajería después de configurar autenticación
-  registerMensajeriaRoutes(app);
+  // Registrar rutas de chat después de configurar autenticación
+  registerChatRoutes(app);
   
   // Middleware para verificar rol de administrador y estado activo
   const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
@@ -57,8 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
   setupAuth(app);
   
-  // Registrar rutas de mensajería (después de autenticación)
-  registerMensajeriaRoutes(app);
+  // Chat routes are already registered above
   
   // Ruta de estado para verificar el servidor
   app.get("/api/status", (req, res) => {

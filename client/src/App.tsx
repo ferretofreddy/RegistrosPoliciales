@@ -10,7 +10,7 @@ import ConsultasPage from "@/pages/consultas-page";
 import UbicacionesPage from "@/pages/ubicaciones-page";
 import EstructurasPage from "@/pages/estructuras-page";
 import MiPerfilPage from "@/pages/mi-perfil-page";
-import MensajeriaPage from "@/pages/mensajeria-page";
+import ChatPage from "@/pages/chat-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
@@ -25,7 +25,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
       <ProtectedRoute path="/configuracion" component={ConfiguracionPage} roles={["admin"]} />
       <ProtectedRoute path="/mi-perfil" component={MiPerfilPage} />
-      <ProtectedRoute path="/mensajeria" component={MensajeriaPage} />
+      <ProtectedRoute path="/mensajeria" component={ChatPage} />
       <Route component={NotFound} />
     </Switch>
   );
