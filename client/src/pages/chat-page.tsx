@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
-import { MessageSquare, Send, Plus, Search, Check, CheckCheck } from "lucide-react";
+import { MessageSquare, Send, Plus, Search, Check, CheckCheck, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -431,7 +431,7 @@ export default function ChatPage() {
                       className={`flex ${mensaje.remitenteId === user?.id ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        className={`max-w-xs lg:max-w-sm xl:max-w-md px-4 py-2 rounded-lg ${
                           mensaje.remitenteId === user?.id
                             ? "bg-blue-500 text-white"
                             : "bg-gray-200 text-gray-900"
