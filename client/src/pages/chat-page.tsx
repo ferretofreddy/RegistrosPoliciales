@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ interface Conversacion {
     remitenteId: number;
     leido: boolean;
   };
+  mensajesNoLeidos: number;
 }
 
 interface Mensaje {
@@ -60,6 +62,7 @@ export default function ChatPage() {
   const [busquedaConversaciones, setBusquedaConversaciones] = useState("");
   const [busquedaUsuarios, setBusquedaUsuarios] = useState("");
   const [openUserSearch, setOpenUserSearch] = useState(false);
+  const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
   const mensajesEndRef = useRef<HTMLDivElement>(null);
 
   // Consulta para obtener conversaciones

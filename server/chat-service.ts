@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, desc, or } from "drizzle-orm";
+import { eq, and, desc, or, not } from "drizzle-orm";
 import { 
   conversaciones, mensajes, users,
   Conversacion, InsertConversacion,
@@ -46,7 +46,7 @@ export async function obtenerOCrearConversacion(usuario1Id: number, usuario2Id: 
   }
 }
 
-// Obtener todas las conversaciones de un usuario
+// Obtener todas las conversaciones de un usuario con conteo de mensajes no leídos
 export async function obtenerConversacionesUsuario(usuarioId: number): Promise<any[]> {
   try {
     const conversacionesUsuario = await db
@@ -94,7 +94,29 @@ export async function obtenerConversacionesUsuario(usuarioId: number): Promise<a
       )
       .orderBy(desc(conversaciones.fechaUltimoMensaje));
 
-    return conversacionesUsuario;
+    // Agregar conteo de mensajes no leídos para cada conversación
+    const conversacionesConConteo = await Promise.all(
+      conversacionesUsuario.map(async (conv) => {
+        const mensajesNoLeidos = await db
+          .select()
+          .from(mensajes)
+          .where(
+            and(
+              eq(mensajes.conversacionId, conv.conversacion.id),
+              not(eq(mensajes.remitenteId, usuarioId)),
+              eq(mensajes.leido, false),
+              eq(mensajes.eliminado, false)
+            )
+          );
+
+        return {
+          ...conv,
+          mensajesNoLeidos: mensajesNoLeidos.length
+        };
+      })
+    );
+
+    return conversacionesConConteo;
   } catch (error) {
     console.error("Error al obtener conversaciones del usuario:", error);
     return [];
@@ -185,16 +207,17 @@ export async function enviarMensaje(conversacionId: number, remitenteId: number,
   }
 }
 
-// Marcar mensajes como leídos
+// Marcar mensajes como leídos (corregido: marcar mensajes del OTRO usuario como leídos)
 export async function marcarMensajesComoLeidos(conversacionId: number, usuarioId: number): Promise<void> {
   try {
+    // Marcar como leídos los mensajes que NO envió el usuario actual
     await db
       .update(mensajes)
       .set({ leido: true })
       .where(
         and(
           eq(mensajes.conversacionId, conversacionId),
-          eq(mensajes.remitenteId, usuarioId),
+          not(eq(mensajes.remitenteId, usuarioId)), // Mensajes que NO envió el usuario actual
           eq(mensajes.leido, false)
         )
       );
