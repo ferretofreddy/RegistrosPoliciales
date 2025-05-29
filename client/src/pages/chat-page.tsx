@@ -3,16 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
-import { MessageSquare, Send, Plus, Clock, Check, CheckCheck, Search } from "lucide-react";
+import { MessageSquare, Send, Plus, Search, Check, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -58,8 +56,10 @@ export default function ChatPage() {
   const [conversacionSeleccionada, setConversacionSeleccionada] = useState<number | null>(null);
   const [nuevoMensaje, setNuevoMensaje] = useState("");
   const [showNuevaConversacion, setShowNuevaConversacion] = useState(false);
-  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState("");
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
   const [busquedaConversaciones, setBusquedaConversaciones] = useState("");
+  const [busquedaUsuarios, setBusquedaUsuarios] = useState("");
+  const [openUserSearch, setOpenUserSearch] = useState(false);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
 
   // Consulta para obtener conversaciones
@@ -69,7 +69,7 @@ export default function ChatPage() {
       const response = await apiRequest("GET", "/api/chat/conversaciones");
       return await response.json();
     },
-    refetchInterval: 5000, // Actualizar cada 5 segundos
+    refetchInterval: 5000,
   });
 
   // Consulta para obtener mensajes de la conversación seleccionada
@@ -81,7 +81,7 @@ export default function ChatPage() {
       return await response.json();
     },
     enabled: !!conversacionSeleccionada,
-    refetchInterval: 2000, // Actualizar cada 2 segundos cuando hay una conversación seleccionada
+    refetchInterval: 2000,
   });
 
   // Consulta para obtener usuarios disponibles
@@ -104,7 +104,7 @@ export default function ChatPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversaciones"] });
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversaciones", conversacionSeleccionada, "mensajes"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "No se pudo enviar el mensaje",
@@ -122,7 +122,8 @@ export default function ChatPage() {
     onSuccess: (data) => {
       setConversacionSeleccionada(data.id);
       setShowNuevaConversacion(false);
-      setUsuarioSeleccionado("");
+      setUsuarioSeleccionado(null);
+      setBusquedaUsuarios("");
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversaciones"] });
       toast({
         title: "Conversación iniciada",
@@ -151,7 +152,7 @@ export default function ChatPage() {
   // Iniciar nueva conversación
   const handleNuevaConversacion = () => {
     if (!usuarioSeleccionado) return;
-    nuevaConversacionMutation.mutate(Number(usuarioSeleccionado));
+    nuevaConversacionMutation.mutate(usuarioSeleccionado.id);
   };
 
   // Formatear fecha para mostrar en mensajes
@@ -177,6 +178,11 @@ export default function ChatPage() {
     conv.otroUsuario.nombre.toLowerCase().includes(busquedaConversaciones.toLowerCase())
   ) || [];
 
+  // Filtrar usuarios disponibles por búsqueda
+  const usuariosFiltrados = usuariosDisponibles.data?.filter((usuario: Usuario) =>
+    usuario.nombre.toLowerCase().includes(busquedaUsuarios.toLowerCase())
+  ) || [];
+
   return (
     <MainLayout>
       <div className="h-[calc(100vh-4rem)] flex">
@@ -198,18 +204,56 @@ export default function ChatPage() {
                     <DialogTitle>Nueva Conversación</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <Select value={usuarioSeleccionado} onValueChange={setUsuarioSeleccionado}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar usuario" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usuariosDisponibles.data?.map((usuario: Usuario) => (
-                          <SelectItem key={usuario.id} value={String(usuario.id)}>
-                            {usuario.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={openUserSearch} onOpenChange={setOpenUserSearch}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openUserSearch}
+                          className="w-full justify-between"
+                        >
+                          {usuarioSeleccionado
+                            ? usuarioSeleccionado.nombre
+                            : "Buscar usuario..."}
+                          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Buscar usuario por nombre..." 
+                            value={busquedaUsuarios}
+                            onValueChange={setBusquedaUsuarios}
+                          />
+                          <CommandEmpty>No se encontraron usuarios.</CommandEmpty>
+                          <CommandGroup>
+                            {usuariosFiltrados.map((usuario: Usuario) => (
+                              <CommandItem
+                                key={usuario.id}
+                                value={usuario.nombre}
+                                onSelect={() => {
+                                  setUsuarioSeleccionado(usuario);
+                                  setOpenUserSearch(false);
+                                  setBusquedaUsuarios("");
+                                }}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="bg-blue-500 text-white text-xs">
+                                      {getIniciales(usuario.nombre)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="text-sm font-medium">{usuario.nombre}</p>
+                                    <p className="text-xs text-gray-500">{usuario.email}</p>
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <Button 
                       onClick={handleNuevaConversacion}
                       disabled={!usuarioSeleccionado || nuevaConversacionMutation.isPending}
