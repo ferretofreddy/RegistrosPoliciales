@@ -951,7 +951,9 @@ export class DatabaseStorage {
               }
             }
             
-            // Fin del bloque de procesamiento de inmuebles relacionados
+            // Verificar si el inmueble tiene coordenadas propias
+            if (inmuebleRelacionado.latitud && inmuebleRelacionado.longitud && 
+                inmuebleRelacionado.latitud !== 0 && inmuebleRelacionado.longitud !== 0) {
               const ubicacionId = `inmueble-${inmuebleRelacionado.id}`; // ID único para evitar duplicados
               
               if (!ubicacionesEncontradas.has(ubicacionId)) {
