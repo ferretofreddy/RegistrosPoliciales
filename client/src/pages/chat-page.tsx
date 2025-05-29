@@ -142,6 +142,45 @@ export default function ChatPage() {
     }
   }, [mensajes.data]);
 
+  // Solicitar permisos de notificación al cargar la página
+  useEffect(() => {
+    if ("Notification" in window) {
+      setNotificationsPermission(Notification.permission);
+      if (Notification.permission === "default") {
+        Notification.requestPermission().then(permission => {
+          setNotificationsPermission(permission);
+        });
+      }
+    }
+  }, []);
+
+  // Función para mostrar notificación
+  const mostrarNotificacion = (titulo: string, mensaje: string) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(titulo, {
+        body: mensaje,
+        icon: "/favicon.ico",
+        badge: "/favicon.ico"
+      });
+    }
+  };
+
+  // Detectar nuevos mensajes para notificaciones (solo si no está enfocada la ventana)
+  useEffect(() => {
+    if (mensajes.data && conversacionSeleccionada && !document.hasFocus()) {
+      const ultimoMensaje = mensajes.data[mensajes.data.length - 1];
+      if (ultimoMensaje) {
+        const conv = conversaciones.data?.find((c: Conversacion) => c.conversacion.id === conversacionSeleccionada);
+        if (conv) {
+          mostrarNotificacion(
+            `Nuevo mensaje de ${conv.otroUsuario.nombre}`,
+            ultimoMensaje.contenido
+          );
+        }
+      }
+    }
+  }, [mensajes.data, conversacionSeleccionada, conversaciones.data]);
+
   // Enviar mensaje
   const handleEnviarMensaje = () => {
     if (!nuevoMensaje.trim() || !conversacionSeleccionada) return;
@@ -188,9 +227,9 @@ export default function ChatPage() {
 
   return (
     <MainLayout>
-      <div className="h-[calc(100vh-4rem)] flex">
+      <div className="h-[calc(100vh-4rem)] flex max-w-7xl mx-auto">
         {/* Lista de conversaciones */}
-        <div className="w-1/3 border-r bg-gray-50 flex flex-col">
+        <div className={`w-full md:w-1/3 lg:w-1/4 border-r bg-gray-50 flex flex-col ${conversacionSeleccionada ? 'hidden md:flex' : 'flex'}`}>
           {/* Header de conversaciones */}
           <div className="p-4 border-b bg-white">
             <div className="flex justify-between items-center mb-3">
@@ -308,9 +347,19 @@ export default function ChatPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center">
                         <h3 className="font-medium text-sm truncate">{conv.otroUsuario.nombre}</h3>
-                        <span className="text-xs text-gray-500">
-                          {conv.ultimoMensaje && formatearFecha(conv.ultimoMensaje.fechaEnvio)}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          {conv.mensajesNoLeidos > 0 && (
+                            <Badge 
+                              variant="destructive" 
+                              className="h-5 min-w-[20px] px-1.5 text-xs rounded-full"
+                            >
+                              {conv.mensajesNoLeidos > 99 ? '99+' : conv.mensajesNoLeidos}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {conv.ultimoMensaje && formatearFecha(conv.ultimoMensaje.fechaEnvio)}
+                          </span>
+                        </div>
                       </div>
                       {conv.ultimoMensaje && (
                         <div className="flex items-center justify-between mt-1">
@@ -338,7 +387,7 @@ export default function ChatPage() {
         </div>
 
         {/* Área de chat */}
-        <div className="flex-1 flex flex-col">
+        <div className={`flex-1 flex flex-col ${conversacionSeleccionada ? 'flex' : 'hidden md:flex'}`}>
           {conversacionSeleccionada ? (
             <>
               {/* Header del chat */}
@@ -348,6 +397,14 @@ export default function ChatPage() {
                     const conv = conversaciones.data.find((c: Conversacion) => c.conversacion.id === conversacionSeleccionada);
                     return conv ? (
                       <div className="flex items-center space-x-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConversacionSeleccionada(null)}
+                          className="md:hidden"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
                         <Avatar>
                           <AvatarFallback className="bg-blue-500 text-white">
                             {getIniciales(conv.otroUsuario.nombre)}
