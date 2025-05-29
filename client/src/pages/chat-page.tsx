@@ -222,10 +222,16 @@ export default function ChatPage() {
     const ahora = new Date();
     const esHoy = fecha.toDateString() === ahora.toDateString();
     
+    const ayer = new Date(ahora);
+    ayer.setDate(ayer.getDate() - 1);
+    const esAyer = fecha.toDateString() === ayer.toDateString();
+    
     if (esHoy) {
-      return format(fecha, "HH:mm", { locale: es });
+      return `Hoy ${format(fecha, "HH:mm", { locale: es })}`;
+    } else if (esAyer) {
+      return `Ayer ${format(fecha, "HH:mm", { locale: es })}`;
     } else {
-      return format(fecha, "dd/MM HH:mm", { locale: es });
+      return format(fecha, "dd/MM/yy HH:mm", { locale: es });
     }
   };
 
