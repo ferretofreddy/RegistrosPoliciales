@@ -8,6 +8,7 @@ async function inicializarPosiciones() {
   console.log("🚀 Iniciando creación de posiciones de estructura...");
 
   const posicionesIniciales = [
+    // Estructuras organizacionales normales
     {
       nombre: "Director General",
       descripcion: "Máxima autoridad ejecutiva de la organización"
@@ -21,32 +22,54 @@ async function inicializarPosiciones() {
       descripcion: "Coordinador de área o departamento"
     },
     {
-      nombre: "Jefe de Departamento",
-      descripcion: "Responsable de un departamento específico"
-    },
-    {
-      nombre: "Supervisor",
-      descripcion: "Supervisor directo de equipos de trabajo"
-    },
-    {
       nombre: "Analista",
       descripcion: "Profesional especializado en análisis"
     },
     {
-      nombre: "Técnico",
-      descripcion: "Personal técnico especializado"
-    },
-    {
-      nombre: "Agente",
-      descripcion: "Agente operativo de campo"
-    },
-    {
-      nombre: "Asistente",
-      descripcion: "Personal de apoyo administrativo"
-    },
-    {
       nombre: "Investigador",
       descripcion: "Especialista en investigación y análisis"
+    },
+    
+    // Estructuras criminales
+    {
+      nombre: "Líder",
+      descripcion: "Máximo líder de la organización criminal"
+    },
+    {
+      nombre: "Conductor",
+      descripcion: "Responsable de operaciones de transporte y logística"
+    },
+    {
+      nombre: "Sicario",
+      descripcion: "Ejecutor de actividades violentas por encargo"
+    },
+    {
+      nombre: "Extorsionista",
+      descripcion: "Especialista en actividades de extorsión y amenazas"
+    },
+    {
+      nombre: "Distribuidor",
+      descripcion: "Encargado de distribución de sustancias ilícitas"
+    },
+    {
+      nombre: "Reclutador",
+      descripcion: "Responsable de reclutar nuevos miembros"
+    },
+    {
+      nombre: "Informante",
+      descripcion: "Persona que proporciona información de inteligencia"
+    },
+    {
+      nombre: "Lavador de Dinero",
+      descripcion: "Especialista en blanqueo de capitales"
+    },
+    {
+      nombre: "Vigía",
+      descripcion: "Encargado de vigilancia y control territorial"
+    },
+    {
+      nombre: "Correo",
+      descripcion: "Transportista de mensajes, dinero o sustancias"
     }
   ];
 

@@ -8,12 +8,16 @@ import {
   InmuebleObservacion, InsertInmuebleObservacion,
   Mensaje, InsertMensaje,
   ArchivoAdjunto, InsertArchivoAdjunto,
+  PosicionEstructura, InsertPosicionEstructura,
+  TipoInmueble, InsertTipoInmueble,
+  TipoUbicacion, InsertTipoUbicacion,
   
   users, personas, personasObservaciones,
   vehiculos, vehiculosObservaciones,
   inmuebles, inmueblesObservaciones,
   personasVehiculos, personasInmuebles,
-  mensajes, archivosAdjuntos
+  mensajes, archivosAdjuntos,
+  posicionesEstructura, tiposInmuebles, tiposUbicaciones
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, like, sql, desc } from "drizzle-orm";
@@ -626,6 +630,186 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error en createArchivoAdjunto:", error);
       throw error;
+    }
+  }
+
+  // === POSICIONES DE ESTRUCTURA ===
+  async getAllPosicionesEstructura(): Promise<PosicionEstructura[]> {
+    try {
+      return await db.select().from(posicionesEstructura).orderBy(posicionesEstructura.nombre);
+    } catch (error) {
+      console.error("Error en getAllPosicionesEstructura:", error);
+      return [];
+    }
+  }
+
+  async getPosicionEstructura(id: number): Promise<PosicionEstructura | undefined> {
+    try {
+      const [posicion] = await db.select().from(posicionesEstructura).where(eq(posicionesEstructura.id, id));
+      return posicion;
+    } catch (error) {
+      console.error("Error en getPosicionEstructura:", error);
+      return undefined;
+    }
+  }
+
+  async createPosicionEstructura(posicion: InsertPosicionEstructura): Promise<PosicionEstructura> {
+    try {
+      const [nuevaPosicion] = await db
+        .insert(posicionesEstructura)
+        .values(posicion)
+        .returning();
+      return nuevaPosicion;
+    } catch (error) {
+      console.error("Error en createPosicionEstructura:", error);
+      throw error;
+    }
+  }
+
+  async updatePosicionEstructura(id: number, posicion: Partial<InsertPosicionEstructura>): Promise<PosicionEstructura | undefined> {
+    try {
+      const [posicionActualizada] = await db
+        .update(posicionesEstructura)
+        .set(posicion)
+        .where(eq(posicionesEstructura.id, id))
+        .returning();
+      return posicionActualizada;
+    } catch (error) {
+      console.error("Error en updatePosicionEstructura:", error);
+      throw error;
+    }
+  }
+
+  async deletePosicionEstructura(id: number): Promise<boolean> {
+    try {
+      const [posicionEliminada] = await db
+        .delete(posicionesEstructura)
+        .where(eq(posicionesEstructura.id, id))
+        .returning();
+      return !!posicionEliminada;
+    } catch (error) {
+      console.error("Error en deletePosicionEstructura:", error);
+      return false;
+    }
+  }
+
+  // === TIPOS DE INMUEBLES ===
+  async getAllTiposInmuebles(): Promise<TipoInmueble[]> {
+    try {
+      return await db.select().from(tiposInmuebles).orderBy(tiposInmuebles.nombre);
+    } catch (error) {
+      console.error("Error en getAllTiposInmuebles:", error);
+      return [];
+    }
+  }
+
+  async getTipoInmueble(id: number): Promise<TipoInmueble | undefined> {
+    try {
+      const [tipo] = await db.select().from(tiposInmuebles).where(eq(tiposInmuebles.id, id));
+      return tipo;
+    } catch (error) {
+      console.error("Error en getTipoInmueble:", error);
+      return undefined;
+    }
+  }
+
+  async createTipoInmueble(tipoInmueble: InsertTipoInmueble): Promise<TipoInmueble> {
+    try {
+      const [nuevoTipo] = await db
+        .insert(tiposInmuebles)
+        .values(tipoInmueble)
+        .returning();
+      return nuevoTipo;
+    } catch (error) {
+      console.error("Error en createTipoInmueble:", error);
+      throw error;
+    }
+  }
+
+  async updateTipoInmueble(id: number, tipoInmueble: Partial<InsertTipoInmueble>): Promise<TipoInmueble | undefined> {
+    try {
+      const [tipoActualizado] = await db
+        .update(tiposInmuebles)
+        .set(tipoInmueble)
+        .where(eq(tiposInmuebles.id, id))
+        .returning();
+      return tipoActualizado;
+    } catch (error) {
+      console.error("Error en updateTipoInmueble:", error);
+      throw error;
+    }
+  }
+
+  async deleteTipoInmueble(id: number): Promise<boolean> {
+    try {
+      const [tipoEliminado] = await db
+        .delete(tiposInmuebles)
+        .where(eq(tiposInmuebles.id, id))
+        .returning();
+      return !!tipoEliminado;
+    } catch (error) {
+      console.error("Error en deleteTipoInmueble:", error);
+      return false;
+    }
+  }
+
+  // === TIPOS DE UBICACIONES ===
+  async getAllTiposUbicaciones(): Promise<TipoUbicacion[]> {
+    try {
+      return await db.select().from(tiposUbicaciones).orderBy(tiposUbicaciones.nombre);
+    } catch (error) {
+      console.error("Error en getAllTiposUbicaciones:", error);
+      return [];
+    }
+  }
+
+  async getTipoUbicacion(id: number): Promise<TipoUbicacion | undefined> {
+    try {
+      const [tipo] = await db.select().from(tiposUbicaciones).where(eq(tiposUbicaciones.id, id));
+      return tipo;
+    } catch (error) {
+      console.error("Error en getTipoUbicacion:", error);
+      return undefined;
+    }
+  }
+
+  async createTipoUbicacion(tipoUbicacion: InsertTipoUbicacion): Promise<TipoUbicacion> {
+    try {
+      const [nuevoTipo] = await db
+        .insert(tiposUbicaciones)
+        .values(tipoUbicacion)
+        .returning();
+      return nuevoTipo;
+    } catch (error) {
+      console.error("Error en createTipoUbicacion:", error);
+      throw error;
+    }
+  }
+
+  async updateTipoUbicacion(id: number, tipoUbicacion: Partial<InsertTipoUbicacion>): Promise<TipoUbicacion | undefined> {
+    try {
+      const [tipoActualizado] = await db
+        .update(tiposUbicaciones)
+        .set(tipoUbicacion)
+        .where(eq(tiposUbicaciones.id, id))
+        .returning();
+      return tipoActualizado;
+    } catch (error) {
+      console.error("Error en updateTipoUbicacion:", error);
+      throw error;
+    }
+  }
+
+  async deleteTipoUbicacion(id: number): Promise<boolean> {
+    try {
+      const [tipoEliminado] = await db
+        .delete(tiposUbicaciones)
+        .where(eq(tiposUbicaciones.id, id))
+        .returning();
+      return !!tipoEliminado;
+    } catch (error) {
+      console.error("Error en deleteTipoUbicacion:", error);
+      return false;
     }
   }
 }
