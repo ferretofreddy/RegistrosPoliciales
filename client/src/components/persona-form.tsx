@@ -31,8 +31,15 @@ const observacionSchema = z.object({
   detalle: z.string().min(1, "La observación no puede estar vacía"),
 });
 
-// Extender el esquema para el formulario con validaciones adicionales
-const personaFormSchema = insertPersonaSchema.extend({
+// Esquema base para el formulario de persona
+const personaFormSchema = z.object({
+  nombre: z.string().min(1, "El nombre es requerido"),
+  identificacion: z.string().min(1, "La identificación es requerida"),
+  posicionEstructura: z.string().optional(),
+  alias: z.array(z.string()).optional(),
+  telefonos: z.array(z.string()).optional(),
+  domicilios: z.array(z.string()).optional(),
+  foto: z.string().optional(),
   nuevoAlias: z.string().optional(),
   nuevoTelefono: z.string().optional(),
   nuevoDomicilio: z.string().optional(),
