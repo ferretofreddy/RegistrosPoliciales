@@ -195,6 +195,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/personas/:id", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de persona inválido" });
+      }
+
+      // Verificar que la persona existe
+      const [existingPersona] = await db.select().from(personas).where(eq(personas.id, id));
+      if (!existingPersona) {
+        return res.status(404).json({ message: "Persona no encontrada" });
+      }
+
+      const result = insertPersonaSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Datos de persona inválidos", 
+          errors: result.error.format() 
+        });
+      }
+
+      // Actualizar la persona
+      const [updatedPersona] = await db.update(personas)
+        .set({
+          ...result.data,
+          alias: result.data.alias || [],
+          telefonos: result.data.telefonos || [],
+          domicilios: result.data.domicilios || []
+        })
+        .where(eq(personas.id, id))
+        .returning();
+
+      res.json(updatedPersona);
+    } catch (error) {
+      console.error("Error al actualizar persona:", error);
+      res.status(500).json({ message: "Error al actualizar persona" });
+    }
+  });
+
   app.post("/api/personas/:id/observaciones", requireRole(["admin", "investigador"]), async (req, res) => {
     try {
       const personaId = parseInt(req.params.id);

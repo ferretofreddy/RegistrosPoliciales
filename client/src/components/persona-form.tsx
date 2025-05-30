@@ -105,6 +105,7 @@ export default function PersonaForm() {
     defaultValues: {
       nombre: "",
       identificacion: "",
+      posicionEstructura: "",
       nuevoAlias: "",
       nuevoTelefono: "",
       nuevoDomicilio: "",
@@ -124,6 +125,7 @@ export default function PersonaForm() {
       const personaData = {
         nombre: values.nombre,
         identificacion: values.identificacion,
+        posicionEstructura: values.posicionEstructura,
         alias: aliases,
         telefonos: telefonos,
         domicilios: domicilios.map(d => d.direccion),
@@ -501,6 +503,22 @@ export default function PersonaForm() {
                 <FormLabel>Número de Identificación</FormLabel>
                 <FormControl>
                   <Input placeholder="Cédula o documento de identidad" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 gap-6">
+          <FormField
+            control={form.control}
+            name="posicionEstructura"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Posición en la estructura</FormLabel>
+                <FormControl>
+                  <Input placeholder="Cargo, rol o posición dentro de la organización" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
