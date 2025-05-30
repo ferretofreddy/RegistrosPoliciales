@@ -106,6 +106,16 @@ export default function PersonaForm() {
     }
   });
 
+  // Obtener lista de posiciones de estructura disponibles
+  const { data: posicionesEstructura } = useQuery({
+    queryKey: ['/api/posiciones-estructura-admin'],
+    queryFn: async () => {
+      const res = await fetch('/api/posiciones-estructura-admin');
+      if (!res.ok) throw new Error('Error al cargar posiciones de estructura');
+      return res.json();
+    }
+  });
+
   // Configurar el formulario con React Hook Form
   const form = useForm<PersonaFormValues>({
     resolver: zodResolver(personaFormSchema),
@@ -524,9 +534,30 @@ export default function PersonaForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Posición en la estructura</FormLabel>
-                <FormControl>
-                  <Input placeholder="Cargo, rol o posición dentro de la organización" {...field} />
-                </FormControl>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar posición en la estructura" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="">Sin posición específica</SelectItem>
+                    {posicionesEstructura && posicionesEstructura.map((posicion: any) => (
+                      <SelectItem key={posicion.id} value={posicion.nombre}>
+                        {posicion.nombre}
+                        {posicion.descripcion && (
+                          <span className="text-sm text-gray-500 ml-2">
+                            - {posicion.descripcion}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
