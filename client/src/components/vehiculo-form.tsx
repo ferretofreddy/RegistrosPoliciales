@@ -137,71 +137,83 @@ export default function VehiculoForm() {
       
       return vehiculo;
     },
-    onSuccess: (data) => {
-      toast({
-        title: "Éxito",
-        description: "Vehículo registrado correctamente",
-      });
-      // Crear relaciones con personas si existen
-      if (relacionPersonas.length > 0) {
-        relacionPersonas.forEach(async (persona) => {
-          try {
-            console.log(`Creando relación vehículo ${data.id} - persona ${persona.id}`);
-            await apiRequest("POST", "/api/relaciones", {
-              tipo1: "vehiculo",
-              id1: data.id,
-              tipo2: "persona",
-              id2: persona.id
-            });
-          } catch (error) {
-            console.error("Error al crear relación con persona:", error);
-          }
+    onSuccess: async (data) => {
+      try {
+        // Crear todas las relaciones antes de mostrar éxito
+        const promises = [];
+
+        // Crear relaciones con personas si existen
+        if (relacionPersonas.length > 0) {
+          relacionPersonas.forEach((persona) => {
+            promises.push(
+              apiRequest("POST", "/api/relaciones", {
+                tipo1: "vehiculo",
+                id1: data.id,
+                tipo2: "persona",
+                id2: persona.id
+              })
+            );
+          });
+        }
+        
+        // Crear relaciones con otros vehículos si existen
+        if (relacionVehiculos.length > 0) {
+          relacionVehiculos.forEach((vehiculo) => {
+            promises.push(
+              apiRequest("POST", "/api/relaciones", {
+                tipo1: "vehiculo",
+                id1: data.id,
+                tipo2: "vehiculo",
+                id2: vehiculo.id
+              })
+            );
+          });
+        }
+        
+        // Crear relaciones con inmuebles si existen
+        if (relacionInmuebles.length > 0) {
+          relacionInmuebles.forEach((inmueble) => {
+            promises.push(
+              apiRequest("POST", "/api/relaciones", {
+                tipo1: "vehiculo",
+                id1: data.id,
+                tipo2: "inmueble",
+                id2: inmueble.id
+              })
+            );
+          });
+        }
+
+        // Esperar a que todas las operaciones se completen
+        if (promises.length > 0) {
+          await Promise.all(promises);
+        }
+
+        // Solo después de completar todo, mostrar éxito y limpiar
+        toast({
+          title: "Éxito",
+          description: "Vehículo registrado correctamente con todas sus relaciones",
+        });
+        
+        // Reiniciar formulario
+        form.reset();
+        setRelacionPersonas([]);
+        setRelacionVehiculos([]);
+        setRelacionInmuebles([]);
+        setObservaciones([]);
+        setShowObservacionForm(false);
+        
+        // Usar la función centralizada para invalidar todas las consultas
+        invalidateAllQueries('/api/vehiculos');
+        
+      } catch (error) {
+        console.error("Error al crear relaciones:", error);
+        toast({
+          title: "Advertencia",
+          description: "Vehículo creado pero hubo problemas con algunas relaciones",
+          variant: "destructive",
         });
       }
-      
-      // Crear relaciones con otros vehículos si existen
-      if (relacionVehiculos.length > 0) {
-        relacionVehiculos.forEach(async (vehiculo) => {
-          try {
-            console.log(`Creando relación vehículo ${data.id} - vehículo ${vehiculo.id}`);
-            await apiRequest("POST", "/api/relaciones", {
-              tipo1: "vehiculo",
-              id1: data.id,
-              tipo2: "vehiculo",
-              id2: vehiculo.id
-            });
-          } catch (error) {
-            console.error("Error al crear relación con vehículo:", error);
-          }
-        });
-      }
-      
-      // Crear relaciones con inmuebles si existen
-      if (relacionInmuebles.length > 0) {
-        relacionInmuebles.forEach(async (inmueble) => {
-          try {
-            console.log(`Creando relación vehículo ${data.id} - inmueble ${inmueble.id}`);
-            await apiRequest("POST", "/api/relaciones", {
-              tipo1: "vehiculo",
-              id1: data.id,
-              tipo2: "inmueble",
-              id2: inmueble.id
-            });
-          } catch (error) {
-            console.error("Error al crear relación con inmueble:", error);
-          }
-        });
-      }
-      
-      // Reiniciar formulario
-      form.reset();
-      setRelacionPersonas([]);
-      setRelacionVehiculos([]);
-      setRelacionInmuebles([]);
-      setObservaciones([]);
-      setShowObservacionForm(false);
-      // Usar la función centralizada para invalidar todas las consultas
-      invalidateAllQueries('/api/vehiculos');
     },
     onError: (error) => {
       toast({

@@ -169,70 +169,59 @@ export default function InmuebleForm() {
       
       return inmueble;
     },
-    onSuccess: (data) => {
-      toast({
-        title: "Éxito",
-        description: "Inmueble registrado correctamente",
-      });
-      
-      // Crear relaciones con personas si existen
-      if (relacionPersonas.length > 0) {
-        relacionPersonas.forEach(async (persona) => {
-          try {
-            console.log(`Creando relación inmueble ${data.id} - persona ${persona.id}`);
-            await apiRequest("POST", "/api/relaciones", {
-              tipo1: "inmueble",
-              id1: data.id,
-              tipo2: "persona",
-              id2: persona.id
-            });
-          } catch (error) {
-            console.error("Error al crear relación con persona:", error);
-          }
-        });
-      }
-      
-      // Crear relaciones con vehículos si existen
-      if (relacionVehiculos.length > 0) {
-        relacionVehiculos.forEach(async (vehiculo) => {
-          try {
-            console.log(`Creando relación inmueble ${data.id} - vehículo ${vehiculo.id}`);
-            await apiRequest("POST", "/api/relaciones", {
-              tipo1: "inmueble",
-              id1: data.id,
-              tipo2: "vehiculo",
-              id2: vehiculo.id
-            });
-          } catch (error) {
-            console.error("Error al crear relación con vehículo:", error);
-          }
-        });
-      }
-      
-      // Crear relaciones con otros inmuebles si existen
-      if (relacionInmuebles.length > 0) {
-        relacionInmuebles.forEach(async (inmueble) => {
-          try {
-            console.log(`Creando relación inmueble ${data.id} - inmueble ${inmueble.id}`);
-            await apiRequest("POST", "/api/relaciones", {
-              tipo1: "inmueble",
-              id1: data.id,
-              tipo2: "inmueble",
-              id2: inmueble.id
-            });
-          } catch (error) {
-            console.error("Error al crear relación con inmueble:", error);
-          }
-        });
-      }
-      
-      // Si hay coordenadas, crear una ubicación para el inmueble
-      const latitud = form.getValues("latitud");
-      const longitud = form.getValues("longitud");
-      
-      if (latitud && longitud) {
-        try {
-          apiRequest("POST", "/api/ubicaciones", {
+    onSuccess: async (data) => {
+      try {
+        // Crear todas las relaciones y ubicaciones antes de mostrar éxito
+        const promises = [];
+
+        // Crear relaciones con personas si existen
+        if (relacionPersonas.length > 0) {
+          relacionPersonas.forEach((persona) => {
+            promises.push(
+              apiRequest("POST", "/api/relaciones", {
+                tipo1: "inmueble",
+                id1: data.id,
+                tipo2: "persona",
+                id2: persona.id
+              })
+            );
+          });
+        }
+        
+        // Crear relaciones con vehículos si existen
+        if (relacionVehiculos.length > 0) {
+          relacionVehiculos.forEach((vehiculo) => {
+            promises.push(
+              apiRequest("POST", "/api/relaciones", {
+                tipo1: "inmueble",
+                id1: data.id,
+                tipo2: "vehiculo",
+                id2: vehiculo.id
+              })
+            );
+          });
+        }
+        
+        // Crear relaciones con otros inmuebles si existen
+        if (relacionInmuebles.length > 0) {
+          relacionInmuebles.forEach((inmueble) => {
+            promises.push(
+              apiRequest("POST", "/api/relaciones", {
+                tipo1: "inmueble",
+                id1: data.id,
+                tipo2: "inmueble",
+                id2: inmueble.id
+              })
+            );
+          });
+        }
+        
+        // Si hay coordenadas, crear una ubicación para el inmueble
+        const latitud = form.getValues("latitud");
+        const longitud = form.getValues("longitud");
+        
+        if (latitud && longitud) {
+          const ubicacionPromise = apiRequest("POST", "/api/ubicaciones", {
             latitud: parseFloat(latitud),
             longitud: parseFloat(longitud),
             tipo: "Inmueble",
@@ -240,27 +229,46 @@ export default function InmuebleForm() {
           }).then(async (res) => {
             const ubicacion = await res.json();
             // Relacionar la ubicación con el inmueble
-            apiRequest("POST", "/api/relaciones", {
+            return apiRequest("POST", "/api/relaciones", {
               tipo1: "inmueble",
               id1: data.id,
               tipo2: "ubicacion",
               id2: ubicacion.id
             });
           });
-        } catch (error) {
-          console.error("Error al crear ubicación para el inmueble:", error);
+          promises.push(ubicacionPromise);
         }
+
+        // Esperar a que todas las operaciones se completen
+        if (promises.length > 0) {
+          await Promise.all(promises);
+        }
+
+        // Solo después de completar todo, mostrar éxito y limpiar
+        toast({
+          title: "Éxito",
+          description: "Inmueble registrado correctamente con todas sus relaciones",
+        });
+        
+        // Reiniciar formulario
+        form.reset();
+        setRelacionPersonas([]);
+        setRelacionVehiculos([]);
+        setRelacionInmuebles([]);
+        setObservaciones([]);
+        setShowObservacionForm(false);
+        
+        // Usar la función centralizada para invalidar todas las consultas
+        invalidateAllQueries('/api/inmuebles');
+        
+      } catch (error) {
+        console.error("Error al crear relaciones:", error);
+        toast({
+          title: "Advertencia",
+          description: "Inmueble creado pero hubo problemas con algunas relaciones",
+          variant: "destructive",
+        });
       }
-      
-      // Reiniciar formulario
-      form.reset();
-      setRelacionPersonas([]);
-      setRelacionVehiculos([]);
-      setRelacionInmuebles([]);
-      setObservaciones([]);
-      setShowObservacionForm(false);
-      // Usar la función centralizada para invalidar todas las consultas
-      invalidateAllQueries('/api/inmuebles');
     },
     onError: (error) => {
       toast({
