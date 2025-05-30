@@ -545,7 +545,7 @@ export default function PersonaForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Sin posición específica</SelectItem>
+                    <SelectItem value="sin_posicion">Sin posición específica</SelectItem>
                     {posicionesEstructura && posicionesEstructura.map((posicion: any) => (
                       <SelectItem key={posicion.id} value={posicion.nombre}>
                         {posicion.nombre}
