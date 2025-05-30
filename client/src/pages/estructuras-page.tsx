@@ -511,6 +511,7 @@ export default function EstructurasPage() {
                 <TableRow>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Identificación</TableHead>
+                  <TableHead>Posición en la estructura</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -518,6 +519,12 @@ export default function EstructurasPage() {
                   <TableRow key={persona.id}>
                     <TableCell>{persona.nombre}</TableCell>
                     <TableCell>{persona.identificacion}</TableCell>
+                    <TableCell>
+                      {persona.posicionEstructura && persona.posicionEstructura !== 'sin_posicion' 
+                        ? persona.posicionEstructura 
+                        : <span className="text-gray-400 italic">Sin posición específica</span>
+                      }
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -817,8 +824,11 @@ export default function EstructurasPage() {
             
             const nombre = persona.nombre || "Sin nombre";
             const id = persona.identificacion || "Sin identificación";
+            const posicion = persona.posicionEstructura && persona.posicionEstructura !== 'sin_posicion' 
+              ? ` - ${persona.posicionEstructura}` 
+              : "";
             
-            doc.text(`• ${nombre} (${id})`, margin + 5, y); y += 5;
+            doc.text(`• ${nombre} (${id})${posicion}`, margin + 5, y); y += 5;
           });
           
           y += 5;
