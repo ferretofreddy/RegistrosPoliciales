@@ -170,6 +170,8 @@ export class DatabaseStorage implements IStorage {
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
     try {
+      console.log("DEBUG - Datos recibidos en createPersona:", insertPersona);
+      
       // Aseguramos que los arrays se manejen correctamente
       const insertValues = {
         nombre: insertPersona.nombre,
@@ -180,6 +182,8 @@ export class DatabaseStorage implements IStorage {
         foto: insertPersona.foto,
         posicionEstructura: insertPersona.posicionEstructura
       };
+      
+      console.log("DEBUG - Valores a insertar:", insertValues);
       
       // Usamos SQL directamente para garantizar que los campos JSON se manejen correctamente
       const query = `

@@ -175,14 +175,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/personas", requireRole(["admin", "investigador"]), async (req, res) => {
     try {
+      console.log("Datos recibidos en req.body:", req.body);
       const result = insertPersonaSchema.safeParse(req.body);
       
       if (!result.success) {
+        console.log("Error de validación:", result.error.format());
         return res.status(400).json({ 
           message: "Datos de persona inválidos", 
           errors: result.error.format() 
         });
       }
+      
+      console.log("Datos validados:", result.data);
       
       // Utilizamos la función de almacenamiento en lugar de consultar la base de datos directamente
       // El manejo de arrays se hace ahora dentro de storage.createPersona
