@@ -619,33 +619,46 @@ export default function EstructurasPage() {
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 10;
       
-      // Encabezado
-      doc.setFontSize(16);
+      // Encabezado profesional con fondo
+      doc.setFillColor(25, 25, 112); // Azul oscuro
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Título principal en blanco
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.text("INFORME DE ESTRUCTURAS Y ASOCIACIONES", pageWidth / 2, 15, { align: "center" });
       
-      // Tipo de entidad
+      // Subtítulo con tipo y nombre de entidad
       doc.setFontSize(12);
-      doc.text(`Tipo: ${selectedResult.tipo.toUpperCase()}`, pageWidth / 2, 22, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.text(`${selectedResult.tipo.toUpperCase()}: ${selectedResult.nombre}`, pageWidth / 2, 25, { align: "center" });
       
-      // Línea separadora
-      doc.setLineWidth(0.5);
-      doc.line(margin, 25, pageWidth - margin, 25);
+      // Resetear color de texto
+      doc.setTextColor(0, 0, 0);
       
-      // Fecha de generación
+      // Información del documento
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 30, { align: "right" });
+      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 45, { align: "right" });
+      doc.text(`Sistema de Gestión de Estructuras`, margin, 45);
       
-      // Información general
-      doc.setFontSize(12);
+      // Línea separadora elegante
+      doc.setDrawColor(25, 25, 112);
+      doc.setLineWidth(1);
+      doc.line(margin, 50, pageWidth - margin, 50);
+      
+      // Sección de información general
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("INFORMACIÓN GENERAL", margin, 40);
+      doc.setTextColor(25, 25, 112);
+      doc.text("INFORMACIÓN GENERAL", margin, 65);
+      doc.setTextColor(0, 0, 0);
       
       // Contenido específico según tipo
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      let y = 50;
+      let y = 75;
       
       const entityData = entity as any;
       
@@ -816,28 +829,108 @@ export default function EstructurasPage() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         
-        // Personas relacionadas
+        // Personas relacionadas en formato tabla
         if (relaciones.personas && relaciones.personas.length > 0) {
-          doc.setFont("helvetica", "bold");
-          doc.text("Personas relacionadas:", margin, y); y += 5;
-          doc.setFont("helvetica", "normal");
+          // Verificar espacio para la tabla
+          const tableHeight = (relaciones.personas.length + 2) * 6 + 15; // encabezado + filas + espacios
+          if (y + tableHeight > pageHeight - 30) {
+            doc.addPage();
+            y = 20;
+          }
           
-          relaciones.personas.forEach((persona: any) => {
-            if (y > pageHeight - 30) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          doc.text("PERSONAS RELACIONADAS", margin, y); 
+          y += 8;
+          
+          // Línea de separación
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.5);
+          doc.line(margin, y, pageWidth - margin, y);
+          y += 5;
+          
+          // Configuración de la tabla
+          const tableX = margin;
+          const tableWidth = pageWidth - (2 * margin);
+          const col1Width = tableWidth * 0.4; // Nombre - 40%
+          const col2Width = tableWidth * 0.3; // Identificación - 30%
+          const col3Width = tableWidth * 0.3; // Posición - 30%
+          
+          // Encabezados de la tabla
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.setFillColor(240, 240, 240); // Fondo gris claro para encabezados
+          
+          // Rectángulos de fondo para encabezados
+          doc.rect(tableX, y - 2, col1Width, 6, 'F');
+          doc.rect(tableX + col1Width, y - 2, col2Width, 6, 'F');
+          doc.rect(tableX + col1Width + col2Width, y - 2, col3Width, 6, 'F');
+          
+          // Texto de encabezados
+          doc.setTextColor(0, 0, 0);
+          doc.text("Nombre", tableX + 2, y + 2);
+          doc.text("Identificación", tableX + col1Width + 2, y + 2);
+          doc.text("Posición en la estructura", tableX + col1Width + col2Width + 2, y + 2);
+          y += 6;
+          
+          // Línea bajo encabezados
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.3);
+          doc.line(tableX, y, tableX + tableWidth, y);
+          y += 2;
+          
+          // Filas de datos
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          
+          relaciones.personas.forEach((persona: any, index: number) => {
+            if (y > pageHeight - 20) {
               doc.addPage();
               y = 20;
             }
             
             const nombre = persona.nombre || "Sin nombre";
-            const id = persona.identificacion || "Sin identificación";
+            const identificacion = persona.identificacion || "Sin identificación";
             const posicion = persona.posicionEstructura && persona.posicionEstructura !== 'sin_posicion' 
-              ? ` - ${persona.posicionEstructura}` 
-              : "";
+              ? persona.posicionEstructura 
+              : "Sin posición específica";
             
-            doc.text(`• ${nombre} (${id})${posicion}`, margin + 5, y); y += 5;
+            // Fondo alternado para las filas
+            if (index % 2 === 0) {
+              doc.setFillColor(250, 250, 250);
+              doc.rect(tableX, y - 1, tableWidth, 5, 'F');
+            }
+            
+            // Texto de la fila
+            doc.setTextColor(0, 0, 0);
+            
+            // Truncar texto si es muy largo
+            const maxNombreLength = 25;
+            const maxIdLength = 15;
+            const maxPosicionLength = 20;
+            
+            const nombreDisplay = nombre.length > maxNombreLength ? nombre.substring(0, maxNombreLength) + "..." : nombre;
+            const idDisplay = identificacion.length > maxIdLength ? identificacion.substring(0, maxIdLength) + "..." : identificacion;
+            const posicionDisplay = posicion.length > maxPosicionLength ? posicion.substring(0, maxPosicionLength) + "..." : posicion;
+            
+            doc.text(nombreDisplay, tableX + 2, y + 2);
+            doc.text(idDisplay, tableX + col1Width + 2, y + 2);
+            doc.text(posicionDisplay, tableX + col1Width + col2Width + 2, y + 2);
+            
+            // Líneas verticales de separación
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.1);
+            doc.line(tableX + col1Width, y - 1, tableX + col1Width, y + 4);
+            doc.line(tableX + col1Width + col2Width, y - 1, tableX + col1Width + col2Width, y + 4);
+            
+            y += 5;
           });
           
-          y += 5;
+          // Línea final de la tabla
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.3);
+          doc.line(tableX, y, tableX + tableWidth, y);
+          y += 8;
         }
         
         // Vehículos relacionados
