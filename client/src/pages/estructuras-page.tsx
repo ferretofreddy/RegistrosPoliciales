@@ -1058,7 +1058,12 @@ export default function EstructurasPage() {
           doc.setPage(i);
           doc.setFontSize(8);
           doc.setTextColor(100, 100, 100);
-          doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 10);
+          
+          // Centrar el número de página
+          const pageText = `Página ${i} de ${totalPages}`;
+          doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
+          
+          // Texto confidencial a la izquierda
           doc.text("INFORME CONFIDENCIAL", margin, pageHeight - 10);
         }
       } catch (e) {
