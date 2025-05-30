@@ -177,13 +177,14 @@ export class DatabaseStorage implements IStorage {
         alias: Array.isArray(insertPersona.alias) ? insertPersona.alias : [],
         telefonos: Array.isArray(insertPersona.telefonos) ? insertPersona.telefonos : [],
         domicilios: Array.isArray(insertPersona.domicilios) ? insertPersona.domicilios : [],
-        foto: insertPersona.foto
+        foto: insertPersona.foto,
+        posicionEstructura: insertPersona.posicionEstructura
       };
       
       // Usamos SQL directamente para garantizar que los campos JSON se manejen correctamente
       const query = `
-        INSERT INTO personas (nombre, identificacion, alias, telefonos, domicilios, foto)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO personas (nombre, identificacion, alias, telefonos, domicilios, foto, posicion_estructura)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `;
       
@@ -193,7 +194,8 @@ export class DatabaseStorage implements IStorage {
         JSON.stringify(insertValues.alias),
         JSON.stringify(insertValues.telefonos),
         JSON.stringify(insertValues.domicilios),
-        insertValues.foto
+        insertValues.foto,
+        insertValues.posicionEstructura
       ]);
       
       return result.rows[0];
