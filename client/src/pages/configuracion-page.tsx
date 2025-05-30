@@ -549,6 +549,37 @@ export default function ConfiguracionPage() {
     }
   };
 
+  // === FUNCIONES DE MANEJO PARA POSICIONES DE ESTRUCTURA ===
+  // Función para manejar la edición de una posición de estructura
+  const handleEditPosicionEstructura = (posicion: PosicionEstructura) => {
+    setEditingPosicionEstructuraId(posicion.id);
+    posicionEstructuraForm.reset({
+      nombre: posicion.nombre,
+      descripcion: posicion.descripcion || "",
+    });
+  };
+
+  // Función para cancelar la edición de posición de estructura
+  const handleCancelEditPosicionEstructura = () => {
+    setEditingPosicionEstructuraId(null);
+    posicionEstructuraForm.reset({
+      nombre: "",
+      descripcion: "",
+    });
+  };
+
+  // Manejar envío del formulario de posición de estructura
+  const onSubmitPosicionEstructura = (values: PosicionEstructuraFormValues) => {
+    if (editingPosicionEstructuraId !== null) {
+      updatePosicionEstructuraMutation.mutate({
+        id: editingPosicionEstructuraId,
+        values,
+      });
+    } else {
+      createPosicionEstructuraMutation.mutate(values);
+    }
+  };
+
   return (
     <>
       <MainLayout>
@@ -559,6 +590,7 @@ export default function ConfiguracionPage() {
             <TabsList className="mb-4">
               <TabsTrigger value="inmuebles">Tipos de Inmuebles</TabsTrigger>
               <TabsTrigger value="ubicaciones">Tipos de Ubicaciones</TabsTrigger>
+              <TabsTrigger value="posiciones">Posiciones Estructura</TabsTrigger>
             </TabsList>
         
         {/* Contenido para Tipos de Inmuebles */}
@@ -888,6 +920,133 @@ export default function ConfiguracionPage() {
                 ) : (
                   <div className="text-center py-4">
                     No hay tipos de ubicaciones definidos
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Contenido para Posiciones de Estructura */}
+        <TabsContent value="posiciones">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Formulario para crear/editar posiciones de estructura */}
+            <Card className="md:col-span-1">
+              <CardHeader>
+                <CardTitle>
+                  {editingPosicionEstructuraId !== null ? "Editar" : "Crear"} Posición de Estructura
+                </CardTitle>
+                <CardDescription>
+                  {editingPosicionEstructuraId !== null 
+                    ? "Modifica los datos de la posición de estructura seleccionada" 
+                    : "Agrega una nueva posición de estructura al sistema"
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...posicionEstructuraForm}>
+                  <form onSubmit={posicionEstructuraForm.handleSubmit(onSubmitPosicionEstructura)} className="space-y-4">
+                    <FormField
+                      control={posicionEstructuraForm.control}
+                      name="nombre"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej: Director" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={posicionEstructuraForm.control}
+                      name="descripcion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descripción</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Descripción de la posición..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
+              </CardContent>
+              <CardFooter className="flex gap-2">
+                <Button
+                  type="submit"
+                  onClick={posicionEstructuraForm.handleSubmit(onSubmitPosicionEstructura)}
+                  disabled={createPosicionEstructuraMutation.isPending || updatePosicionEstructuraMutation.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {editingPosicionEstructuraId !== null ? "Actualizar" : "Crear"}
+                </Button>
+                {editingPosicionEstructuraId !== null && (
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEditPosicionEstructura}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+
+            {/* Lista de posiciones de estructura existentes */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Posiciones de Estructura Existentes</CardTitle>
+                <CardDescription>
+                  Lista de todas las posiciones de estructura definidas en el sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingPosicionesEstructura ? (
+                  <div className="text-center py-4">Cargando posiciones de estructura...</div>
+                ) : posicionesEstructura && posicionesEstructura.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {posicionesEstructura.map((posicion: PosicionEstructura) => (
+                        <TableRow key={posicion.id}>
+                          <TableCell>{posicion.id}</TableCell>
+                          <TableCell className="font-medium">{posicion.nombre}</TableCell>
+                          <TableCell>{posicion.descripcion || "-"}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditPosicionEstructura(posicion)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deletePosicionEstructuraMutation.mutate(posicion.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-4">
+                    No hay posiciones de estructura definidas
                   </div>
                 )}
               </CardContent>

@@ -14,8 +14,8 @@ import {
   ubicacionesObservaciones, insertUbicacionObservacionSchema,
   personasVehiculos, personasInmuebles, personasPersonas, personasUbicaciones,
   vehiculosUbicaciones, inmueblesUbicaciones, vehiculosInmuebles, vehiculosVehiculos,
-  tiposInmuebles, tiposUbicaciones,
-  insertTipoInmuebleSchema, insertTipoUbicacionSchema
+  tiposInmuebles, tiposUbicaciones, posicionesEstructura,
+  insertTipoInmuebleSchema, insertTipoUbicacionSchema, insertPosicionEstructuraSchema
 } from "@shared/schema";
 import { registerChatRoutes } from "./routes-chat";
 
@@ -33,6 +33,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas de chat después de configurar autenticación
   registerChatRoutes(app);
+  
+  // Middleware para verificar autenticación
+  const ensureAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      return next();
+    }
+    return res.status(401).json({ message: "No autenticado" });
+  };
   
   // Middleware para verificar rol de administrador y estado activo
   const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
