@@ -63,6 +63,8 @@ export class DatabaseStorage {
       domicilios: insertPersona.domicilios || []
     };
     
+    console.log("DEBUG - Datos a insertar en database-storage:", datosPersona);
+    
     const [persona] = await db.insert(personas).values(datosPersona).returning();
     return persona;
   }
