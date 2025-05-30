@@ -8,7 +8,8 @@ import {
   personasVehiculos, personasInmuebles, personasUbicaciones, vehiculosInmuebles,
   vehiculosUbicaciones, inmueblesUbicaciones, personasPersonas, vehiculosVehiculos,
   inmueblesInmuebles, users, tiposInmuebles, TipoInmueble, InsertTipoInmueble,
-  tiposUbicaciones, TipoUbicacion, InsertTipoUbicacion
+  tiposUbicaciones, TipoUbicacion, InsertTipoUbicacion, posicionesEstructura,
+  PosicionEstructura, InsertPosicionEstructura
 } from '@shared/schema';
 import { sql, eq, and, or, like } from 'drizzle-orm';
 import { db } from './db';
@@ -197,6 +198,46 @@ export class DatabaseStorage {
       return true;
     } catch (error) {
       console.error('Error al eliminar tipo de ubicacion:', error);
+      return false;
+    }
+  }
+
+  // POSICIONES ESTRUCTURA METHODS
+  async getAllPosicionesEstructura(): Promise<PosicionEstructura[]> {
+    return await db.select().from(posicionesEstructura);
+  }
+
+  async getPosicionEstructura(id: number): Promise<PosicionEstructura | undefined> {
+    const [posicion] = await db.select().from(posicionesEstructura).where(eq(posicionesEstructura.id, id));
+    return posicion;
+  }
+
+  async createPosicionEstructura(posicion: InsertPosicionEstructura): Promise<PosicionEstructura> {
+    const [nuevaPosicion] = await db.insert(posicionesEstructura).values(posicion).returning();
+    return nuevaPosicion;
+  }
+
+  async updatePosicionEstructura(id: number, posicion: Partial<InsertPosicionEstructura>): Promise<PosicionEstructura | undefined> {
+    const [updatedPosicion] = await db.update(posicionesEstructura)
+      .set(posicion)
+      .where(eq(posicionesEstructura.id, id))
+      .returning();
+    return updatedPosicion;
+  }
+
+  async deletePosicionEstructura(id: number): Promise<boolean> {
+    try {
+      // Verificar si hay personas usando esta posición
+      const personasConPosicion = await db.select().from(personas).where(eq(personas.posicionEstructura, String(id)));
+      
+      if (personasConPosicion.length > 0) {
+        return false; // No se puede eliminar si hay personas usando esta posición
+      }
+      
+      await db.delete(posicionesEstructura).where(eq(posicionesEstructura.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error al eliminar posición de estructura:', error);
       return false;
     }
   }

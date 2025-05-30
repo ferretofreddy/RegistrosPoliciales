@@ -287,6 +287,21 @@ export type InsertTipoInmueble = z.infer<typeof insertTipoInmuebleSchema>;
 export type TipoUbicacion = typeof tiposUbicaciones.$inferSelect;
 export type InsertTipoUbicacion = z.infer<typeof insertTipoUbicacionSchema>;
 
+// Tabla para posiciones en estructura
+export const posicionesEstructura = pgTable("posiciones_estructura", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion"),
+});
+
+export const insertPosicionEstructuraSchema = createInsertSchema(posicionesEstructura).pick({
+  nombre: true,
+  descripcion: true
+});
+
+export type PosicionEstructura = typeof posicionesEstructura.$inferSelect;
+export type InsertPosicionEstructura = z.infer<typeof insertPosicionEstructuraSchema>;
+
 // Sistema de mensajería tipo chat (WhatsApp/Telegram)
 // Tabla para conversaciones entre usuarios
 export const conversaciones = pgTable("conversaciones", {

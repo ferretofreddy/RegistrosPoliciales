@@ -1082,6 +1082,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // === POSICIONES ESTRUCTURA (ADMIN) ===
+  // Obtener todas las posiciones de estructura (admin)
+  app.get("/api/posiciones-estructura-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const posiciones = await storage.getAllPosicionesEstructura();
+      res.json(posiciones);
+    } catch (error) {
+      console.error("Error al obtener posiciones de estructura:", error);
+      res.status(500).json({ message: "Error al obtener posiciones de estructura" });
+    }
+  });
+
+  // Obtener todas las posiciones de estructura (para formularios)
+  app.get("/api/posiciones-estructura", ensureAuthenticated, async (req, res) => {
+    try {
+      const posiciones = await storage.getAllPosicionesEstructura();
+      res.json(posiciones);
+    } catch (error) {
+      console.error("Error al obtener posiciones de estructura:", error);
+      res.status(500).json({ message: "Error al obtener posiciones de estructura" });
+    }
+  });
+
+  // Crear nueva posición de estructura (admin)
+  app.post("/api/posiciones-estructura-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const { nombre, descripcion } = req.body;
+      
+      if (!nombre || nombre.trim() === "") {
+        return res.status(400).json({ message: "El nombre es requerido" });
+      }
+      
+      const nuevaPosicion = await storage.createPosicionEstructura({
+        nombre: nombre.trim(),
+        descripcion: descripcion?.trim() || null
+      });
+      
+      res.status(201).json(nuevaPosicion);
+    } catch (error) {
+      console.error("Error al crear posición de estructura:", error);
+      res.status(500).json({ message: "Error al crear posición de estructura" });
+    }
+  });
+
+  // Actualizar posición de estructura (admin)
+  app.put("/api/posiciones-estructura-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { nombre, descripcion } = req.body;
+      
+      if (!nombre || nombre.trim() === "") {
+        return res.status(400).json({ message: "El nombre es requerido" });
+      }
+      
+      const posicionActualizada = await storage.updatePosicionEstructura(id, {
+        nombre: nombre.trim(),
+        descripcion: descripcion?.trim() || null
+      });
+      
+      if (!posicionActualizada) {
+        return res.status(404).json({ message: "Posición de estructura no encontrada" });
+      }
+      
+      res.json(posicionActualizada);
+    } catch (error) {
+      console.error("Error al actualizar posición de estructura:", error);
+      res.status(500).json({ message: "Error al actualizar posición de estructura" });
+    }
+  });
+
+  // Eliminar posición de estructura (admin)
+  app.delete("/api/posiciones-estructura-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      const eliminado = await storage.deletePosicionEstructura(id);
+      
+      if (!eliminado) {
+        return res.status(400).json({ 
+          message: "No se puede eliminar la posición porque hay personas asociadas a ella" 
+        });
+      }
+      
+      res.json({ message: "Posición de estructura eliminada correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar posición de estructura:", error);
+      res.status(500).json({ message: "Error al eliminar posición de estructura" });
+    }
+  });
+  
   // === ADMINISTRACION DE USUARIOS ===
   // Obtener todos los usuarios (solo admin)
   app.get("/api/admin/users", requireRole(["admin"]), async (req, res) => {
