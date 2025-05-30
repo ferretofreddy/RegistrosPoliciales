@@ -33,7 +33,12 @@ import { format } from "date-fns";
 import LocationMapDialog from "@/components/location-map-dialog";
 
 // Extender el esquema para el formulario
-const inmuebleFormSchema = insertInmuebleSchema.extend({
+const inmuebleFormSchema = z.object({
+  tipo: z.string().min(1, "El tipo es requerido"),
+  direccion: z.string().min(1, "La dirección es requerida"),
+  propietario: z.string().optional(),
+  observaciones: z.string().optional(),
+  foto: z.string().optional(),
   personaSeleccionada: z.string().optional(),
   vehiculoSeleccionado: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),

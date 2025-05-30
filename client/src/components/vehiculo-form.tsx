@@ -29,8 +29,15 @@ const observacionSchema = z.object({
   detalle: z.string().min(1, "La observación no puede estar vacía"),
 });
 
-// Extender el esquema para el formulario
-const vehiculoFormSchema = insertVehiculoSchema.extend({
+// Esquema para el formulario
+const vehiculoFormSchema = z.object({
+  placa: z.string().min(1, "La placa es requerida"),
+  marca: z.string().min(1, "La marca es requerida"),
+  modelo: z.string().min(1, "El modelo es requerido"),
+  color: z.string().min(1, "El color es requerido"),
+  tipo: z.string().min(1, "El tipo es requerido"),
+  observaciones: z.string().optional(),
+  foto: z.string().optional(),
   personaSeleccionada: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),
   vehiculoSeleccionado: z.string().optional(),

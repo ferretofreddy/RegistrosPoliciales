@@ -31,8 +31,13 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
 
-// Extender el esquema para el formulario
-const ubicacionFormSchema = insertUbicacionSchema.extend({
+// Esquema para el formulario
+const ubicacionFormSchema = z.object({
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
+  tipo: z.string().min(1, "El tipo es requerido"),
+  fecha: z.date().optional(),
+  observaciones: z.string().optional(),
   personaSeleccionada: z.string().optional(),
   vehiculoSeleccionado: z.string().optional(),
   inmuebleSeleccionado: z.string().optional(),
