@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { TipoInmueble, TipoUbicacion } from "@shared/schema";
+import { TipoInmueble, TipoUbicacion, PosicionEstructura } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/main-layout";
@@ -60,14 +60,24 @@ const tipoUbicacionFormSchema = z.object({
   activo: z.boolean().default(true),
 });
 
+// Esquema para el formulario de posición de estructura
+const posicionEstructuraFormSchema = z.object({
+  nombre: z.string().min(2, {
+    message: "El nombre debe tener al menos 2 caracteres",
+  }),
+  descripcion: z.string().optional(),
+});
+
 // Tipos para los formularios
 type TipoInmuebleFormValues = z.infer<typeof tipoInmuebleFormSchema>;
 type TipoUbicacionFormValues = z.infer<typeof tipoUbicacionFormSchema>;
+type PosicionEstructuraFormValues = z.infer<typeof posicionEstructuraFormSchema>;
 
 export default function ConfiguracionPage() {
   const { toast } = useToast();
   const [editingTipoInmuebleId, setEditingTipoInmuebleId] = useState<number | null>(null);
   const [editingTipoUbicacionId, setEditingTipoUbicacionId] = useState<number | null>(null);
+  const [editingPosicionEstructuraId, setEditingPosicionEstructuraId] = useState<number | null>(null);
 
   // Formulario para tipos de inmuebles
   const inmuebleForm = useForm<TipoInmuebleFormValues>({
@@ -86,6 +96,15 @@ export default function ConfiguracionPage() {
       nombre: "",
       descripcion: "",
       activo: true,
+    },
+  });
+
+  // Formulario para posiciones de estructura
+  const posicionEstructuraForm = useForm<PosicionEstructuraFormValues>({
+    resolver: zodResolver(posicionEstructuraFormSchema),
+    defaultValues: {
+      nombre: "",
+      descripcion: "",
     },
   });
 
@@ -113,6 +132,20 @@ export default function ConfiguracionPage() {
     queryFn: async () => {
       const res = await fetch("/api/tipos-ubicaciones-admin");
       if (!res.ok) throw new Error("Error al cargar tipos de ubicaciones");
+      return res.json();
+    },
+  });
+
+  // Consulta para obtener todas las posiciones de estructura
+  const {
+    data: posicionesEstructura,
+    isLoading: loadingPosicionesEstructura,
+    refetch: refetchPosicionesEstructura,
+  } = useQuery({
+    queryKey: ["/api/posiciones-estructura-admin"],
+    queryFn: async () => {
+      const res = await fetch("/api/posiciones-estructura-admin");
+      if (!res.ok) throw new Error("Error al cargar posiciones de estructura");
       return res.json();
     },
   });
@@ -362,6 +395,95 @@ export default function ConfiguracionPage() {
       });
     },
     retry: 0 // Desactivar reintentos automáticos
+  });
+
+  // === MUTACIONES PARA POSICIONES DE ESTRUCTURA ===
+  // Mutación para crear una nueva posición de estructura
+  const createPosicionEstructuraMutation = useMutation({
+    mutationFn: async (values: PosicionEstructuraFormValues) => {
+      const res = await apiRequest("POST", "/api/posiciones-estructura-admin", values);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Éxito",
+        description: "Posición de estructura creada correctamente",
+      });
+      posicionEstructuraForm.reset();
+      refetchPosicionesEstructura();
+      queryClient.invalidateQueries({ queryKey: ["/api/posiciones-estructura"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Error al crear posición de estructura: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para actualizar una posición de estructura
+  const updatePosicionEstructuraMutation = useMutation({
+    mutationFn: async ({ id, values }: { id: number; values: PosicionEstructuraFormValues }) => {
+      const res = await apiRequest("PUT", `/api/posiciones-estructura-admin/${id}`, values);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Éxito",
+        description: "Posición de estructura actualizada correctamente",
+      });
+      setEditingPosicionEstructuraId(null);
+      posicionEstructuraForm.reset();
+      refetchPosicionesEstructura();
+      queryClient.invalidateQueries({ queryKey: ["/api/posiciones-estructura"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Error al actualizar posición de estructura: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para eliminar una posición de estructura
+  const deletePosicionEstructuraMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/posiciones-estructura-admin/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Error al eliminar posición de estructura");
+      }
+      
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Éxito",
+        description: data.message || "Posición de estructura eliminada correctamente",
+      });
+      
+      setTimeout(() => {
+        refetchPosicionesEstructura();
+        queryClient.invalidateQueries({ queryKey: ["/api/posiciones-estructura"] });
+      }, 500);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Error al eliminar posición de estructura: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+    retry: 0
   });
 
   // Función para manejar la edición de un tipo de inmueble
