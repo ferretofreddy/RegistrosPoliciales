@@ -315,6 +315,12 @@ export default function EstructurasPage() {
               <h3 className="font-semibold">Identificación:</h3>
               <p>{entityData.identificacion}</p>
             </div>
+            {entityData.posicionEstructura && (
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold">Posición en la Estructura:</h3>
+                <Badge variant="secondary" className="font-medium">{entityData.posicionEstructura}</Badge>
+              </div>
+            )}
             {entityData.alias && entityData.alias.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 <h3 className="font-semibold">Alias:</h3>
