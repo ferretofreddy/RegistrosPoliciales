@@ -655,6 +655,12 @@ export default function EstructurasPage() {
           y = addTextRow(doc, "Nombre:", entityData.nombre || "N/A", margin, y);
           y = addTextRow(doc, "Identificación:", entityData.identificacion || "N/A", margin, y);
           
+          if (entityData.posicionEstructura && entityData.posicionEstructura !== 'sin_posicion') {
+            y = addTextRow(doc, "Posición en la estructura:", entityData.posicionEstructura, margin, y);
+          } else {
+            y = addTextRow(doc, "Posición en la estructura:", "Sin posición específica", margin, y);
+          }
+          
           if (entityData.alias && entityData.alias.length > 0) {
             y = addTextRow(doc, "Alias:", entityData.alias.join(", "), margin, y);
           }
