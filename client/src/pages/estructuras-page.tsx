@@ -995,7 +995,12 @@ export default function EstructurasPage() {
     doc.setFont("helvetica", "bold");
     doc.text(label, x, y);
     doc.setFont("helvetica", "normal");
-    doc.text(value, x + 30, y);
+    
+    // Usar más espacio para etiquetas largas
+    const offset = label.includes("Posición en la estructura") ? 55 : 
+                   label.includes("Coordenadas") ? 35 : 30;
+    
+    doc.text(value, x + offset, y);
     return y + 5;
   };
 
