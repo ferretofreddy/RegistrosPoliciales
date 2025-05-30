@@ -267,7 +267,7 @@ export default function PersonaForm() {
   // Funciones para manejar aliases
   const addAlias = () => {
     const nuevoAlias = form.getValues("nuevoAlias");
-    if (nuevoAlias && nuevoAlias.trim()) {
+    if (nuevoAlias && typeof nuevoAlias === 'string' && nuevoAlias.trim()) {
       setAliases([...aliases, nuevoAlias.trim()]);
       form.setValue("nuevoAlias", "");
     }
@@ -280,7 +280,7 @@ export default function PersonaForm() {
   // Funciones para manejar teléfonos
   const addTelefono = () => {
     const nuevoTelefono = form.getValues("nuevoTelefono");
-    if (nuevoTelefono && nuevoTelefono.trim()) {
+    if (nuevoTelefono && typeof nuevoTelefono === 'string' && nuevoTelefono.trim()) {
       setTelefonos([...telefonos, nuevoTelefono.trim()]);
       form.setValue("nuevoTelefono", "");
     }
@@ -296,11 +296,11 @@ export default function PersonaForm() {
     const latitud = form.getValues("latitud");
     const longitud = form.getValues("longitud");
 
-    if (nuevoDomicilio && nuevoDomicilio.trim()) {
+    if (nuevoDomicilio && typeof nuevoDomicilio === 'string' && nuevoDomicilio.trim()) {
       setDomicilios([...domicilios, { 
         direccion: nuevoDomicilio.trim(),
-        latitud: latitud || undefined,
-        longitud: longitud || undefined
+        latitud: typeof latitud === 'string' ? latitud : undefined,
+        longitud: typeof longitud === 'string' ? longitud : undefined
       }]);
       form.setValue("nuevoDomicilio", "");
       form.setValue("latitud", "");
@@ -784,7 +784,7 @@ export default function PersonaForm() {
                   size="sm" 
                   onClick={() => {
                     const nuevaObservacion = form.getValues("nuevaObservacion");
-                    if (nuevaObservacion && nuevaObservacion.trim()) {
+                    if (nuevaObservacion && typeof nuevaObservacion === 'string' && nuevaObservacion.trim()) {
                       setObservaciones([
                         ...observaciones, 
                         { 
