@@ -35,6 +35,7 @@ export const personas = pgTable("personas", {
   telefonos: json("telefonos").$type<string[]>().default([]),
   domicilios: json("domicilios").$type<string[]>().default([]),
   foto: text("foto"), // URL to photo
+  posicionEstructura: text("posicion_estructura"), // Posición en la estructura
 });
 
 export const insertPersonaSchema = createInsertSchema(personas).pick({
@@ -44,6 +45,7 @@ export const insertPersonaSchema = createInsertSchema(personas).pick({
   telefonos: true,
   domicilios: true,
   foto: true,
+  posicionEstructura: true,
 });
 
 // Observaciones de Personas
