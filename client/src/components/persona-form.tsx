@@ -133,6 +133,7 @@ export default function PersonaForm() {
     resolver: zodResolver(personaFormSchema),
     defaultValues: {
       nombre: "",
+      tipoIdentificacionId: "",
       identificacion: "",
       posicionEstructura: "",
       nuevoAlias: "",
@@ -268,8 +269,22 @@ export default function PersonaForm() {
         title: "Éxito",
         description: "Persona registrada correctamente",
       });
-      // Reiniciar formulario
-      form.reset();
+      // Reiniciar formulario con valores por defecto explícitos
+      form.reset({
+        nombre: "",
+        tipoIdentificacionId: "",
+        identificacion: "",
+        posicionEstructura: "",
+        nuevoAlias: "",
+        nuevoTelefono: "",
+        nuevoDomicilio: "",
+        latitud: "",
+        longitud: "",
+        vehiculoSeleccionado: "",
+        inmuebleSeleccionado: "",
+        personaSeleccionada: "",
+        nuevaObservacion: "",
+      });
       setAliases([]);
       setTelefonos([]);
       setDomicilios([]);
