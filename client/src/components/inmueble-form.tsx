@@ -300,17 +300,13 @@ export default function InmuebleForm() {
   };
 
   // Funciones para manejar relaciones con vehículos
-  const addRelacionVehiculo = () => {
-    const vehiculoId = form.getValues("vehiculoSeleccionado");
-    if (vehiculoId && vehiculos) {
-      const vehiculo = vehiculos.find((v: any) => v.id.toString() === vehiculoId);
-      if (vehiculo && !relacionVehiculos.some(rv => rv.id === vehiculo.id)) {
-        setRelacionVehiculos([...relacionVehiculos, { 
-          id: vehiculo.id,
-          nombre: `${vehiculo.marca} (${vehiculo.placa})`
-        }]);
-        form.setValue("vehiculoSeleccionado", "");
-      }
+  const addRelacionVehiculo = (vehiculo: any) => {
+    if (vehiculo && !relacionVehiculos.some(rv => rv.id === vehiculo.id)) {
+      console.log('Agregando vehículo:', vehiculo);
+      setRelacionVehiculos([...relacionVehiculos, { 
+        id: vehiculo.id,
+        nombre: `${vehiculo.marca} (${vehiculo.placa})`
+      }]);
     }
   };
 
@@ -319,17 +315,13 @@ export default function InmuebleForm() {
   };
   
   // Funciones para manejar relaciones con otros inmuebles
-  const addRelacionInmueble = () => {
-    const inmuebleId = form.getValues("inmuebleSeleccionado");
-    if (inmuebleId && inmuebles) {
-      const inmueble = inmuebles.find((i: any) => i.id.toString() === inmuebleId);
-      if (inmueble && !relacionInmuebles.some(ri => ri.id === inmueble.id)) {
-        setRelacionInmuebles([...relacionInmuebles, { 
-          id: inmueble.id,
-          nombre: `${inmueble.tipo}: ${inmueble.direccion}`
-        }]);
-        form.setValue("inmuebleSeleccionado", "");
-      }
+  const addRelacionInmueble = (inmueble: any) => {
+    if (inmueble && !relacionInmuebles.some(ri => ri.id === inmueble.id)) {
+      console.log('Agregando inmueble:', inmueble);
+      setRelacionInmuebles([...relacionInmuebles, { 
+        id: inmueble.id,
+        nombre: `${inmueble.tipo}: ${inmueble.direccion}`
+      }]);
     }
   };
 
