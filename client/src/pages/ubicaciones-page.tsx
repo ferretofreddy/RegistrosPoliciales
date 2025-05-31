@@ -92,7 +92,14 @@ export default function UbicacionesPage() {
 
   // Función para generar informe PDF de ubicaciones
   const generarInformePDF = async () => {
-    if (!selectedResult || !entityData) return;
+    if (!selectedResult || locations.length === 0) {
+      toast({
+        title: "No se puede generar el informe",
+        description: "Selecciona una entidad con ubicaciones para generar el informe",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       // Primero verificamos si podemos capturar el mapa
@@ -121,143 +128,233 @@ export default function UbicacionesPage() {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
-      const margin = 20;
-      let y = 20;
+      const fecha = new Date().toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
 
-      // Encabezado
-      doc.setFillColor(139, 69, 19); // Color marrón como en estructuras
-      doc.rect(0, 0, pageWidth, 25, 'F');
+      // Configurar encabezado azul con título
+      doc.setFillColor(59, 130, 246); // bg-blue-500
+      doc.rect(0, 0, 210, 30, 'F');
       
+      // Título en blanco
       doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("INFORME DE UBICACIONES", pageWidth / 2, 16, { align: "center" });
-      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('INFORME DE UBICACIONES', 105, 20, { align: 'center' });
+
       // Información de la entidad
-      y = 35;
       doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
       
       // Título específico según el tipo de entidad
-      const tipoTexto = selectedResult.tipo === 'persona' ? 'PERSONA' :
-                        selectedResult.tipo === 'vehiculo' ? 'VEHÍCULO' :
-                        selectedResult.tipo === 'inmueble' ? 'INMUEBLE' : 'UBICACIÓN';
-      
-      doc.text(`INFORMACIÓN DE ${tipoTexto}`, margin, y);
-      y += 8;
+      switch (selectedResult.tipo) {
+        case 'persona':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE PERSONA', 20, 45);
+          break;
+        case 'vehiculo':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE VEHÍCULO', 20, 45);
+          break;
+        case 'inmueble':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE INMUEBLE', 20, 45);
+          break;
+        case 'ubicacion':
+          doc.text('INFORMACIÓN DE UBICACIÓN', 20, 45);
+          break;
+      }
 
-      // Detalles de la entidad usando la misma función auxiliar que estructuras
-      const addTextRow = (label: string, value: string, x: number, yPos: number): number => {
-        doc.setFont("helvetica", "bold");
-        doc.text(label, x, yPos);
-        doc.setFont("helvetica", "normal");
-        
-        // Usar más espacio para etiquetas largas
-        const offset = label.includes("Identificación") ? 35 : 
-                       label.includes("Coordenadas") ? 35 : 30;
-        
-        doc.text(value, x + offset, yPos);
-        return yPos + 5;
-      };
+      // Línea separadora
+      doc.setDrawColor(59, 130, 246);
+      doc.setLineWidth(0.5);
+      doc.line(20, 48, 190, 48);
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      // Detalles de la entidad
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      let yPos = 58;
 
       // Información específica según el tipo de entidad
       switch (selectedResult.tipo) {
         case 'persona':
-          y = addTextRow("Nombre:", selectedResult.nombre || 'N/A', margin, y);
+          doc.text(`Nombre: ${selectedResult.nombre || selectedResult.referencia || 'N/A'}`, 20, yPos);
+          // Obtener identificación desde entityData
           if (entityData && entityData.identificacion) {
-            y = addTextRow("Identificación:", entityData.identificacion, margin, y);
+            doc.text(`Identificación: ${entityData.identificacion}`, 20, yPos + 6);
+            yPos += 6;
           }
           break;
         case 'vehiculo':
-          y = addTextRow("Marca:", selectedResult.marca || 'N/A', margin, y);
-          y = addTextRow("Modelo:", selectedResult.modelo || 'N/A', margin, y);
-          y = addTextRow("Placa:", selectedResult.placa || 'Sin placa', margin, y);
+          doc.text(`Marca: ${selectedResult.marca || 'N/A'}`, 20, yPos);
+          doc.text(`Modelo: ${selectedResult.modelo || 'N/A'}`, 20, yPos + 6);
+          doc.text(`Placa: ${selectedResult.placa || 'Sin placa'}`, 20, yPos + 12);
+          yPos += 6;
           break;
         case 'inmueble':
-          y = addTextRow("Tipo:", (selectedResult as any).tipo_inmueble || selectedResult.referencia || 'N/A', margin, y);
-          y = addTextRow("Dirección:", selectedResult.direccion || 'N/A', margin, y);
+          doc.text(`Tipo de inmueble: ${(selectedResult as any).tipo_inmueble || selectedResult.referencia || 'N/A'}`, 20, yPos);
+          doc.text(`Dirección: ${selectedResult.direccion || 'N/A'}`, 20, yPos + 6);
+          yPos += 6;
           break;
         case 'ubicacion':
-          y = addTextRow("Tipo:", (selectedResult as any).tipo_ubicacion || selectedResult.referencia || 'N/A', margin, y);
+          doc.text(`Tipo de ubicación: ${(selectedResult as any).tipo_ubicacion || selectedResult.referencia || 'N/A'}`, 20, yPos);
           if ((selectedResult as any).observaciones) {
-            y = addTextRow("Observaciones:", (selectedResult as any).observaciones, margin, y);
+            doc.text(`Observaciones: ${(selectedResult as any).observaciones}`, 20, yPos + 6);
+            yPos += 6;
           }
           break;
       }
 
-      const fecha = new Date().toLocaleDateString('es-ES');
-      y = addTextRow("Fecha de generación:", fecha, margin, y);
-      y = addTextRow("Total de ubicaciones:", locations.length.toString(), margin, y);
+      doc.text(`Fecha de generación: ${fecha}`, 20, yPos + 12);
+      doc.text(`Total de ubicaciones: ${locations.length}`, 20, yPos + 18);
 
-      y += 10;
+      yPos += 35;
 
-      // Nueva página para mapa y ubicaciones
-      if (locations && locations.length > 0) {
-        doc.addPage();
-        y = 20;
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text("UBICACIONES", margin, y);
-        y += 10;
-        
-        // Si tenemos imagen del mapa, la incluimos
-        if (mapImageUrl) {
-          try {
-            // Calcular dimensiones manteniendo la proporción
-            const imgWidth = pageWidth - (2 * margin);
-            const imgHeight = (imgWidth * 3) / 4; // Proporción aproximada 4:3
-            
-            // Añadir la imagen del mapa
-            doc.addImage(mapImageUrl, 'PNG', margin, y, imgWidth, imgHeight);
-            
-            // Actualizar posición Y para contenido adicional
-            y += imgHeight + 10;
-            
-            // Añadir leyenda debajo del mapa
-            doc.setFontSize(8);
-            doc.text("Vista del mapa con las ubicaciones relacionadas", pageWidth / 2, y, { align: "center" });
-            y += 8;
-          } catch (e) {
-            console.error("Error al añadir imagen del mapa al PDF:", e);
-            // Continuamos sin la imagen
-          }
-        }
-        
-        // Si no pudimos incluir la imagen o después de incluirla
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("Listado de ubicaciones:", margin, y);
-        y += 8;
-        doc.setFont("helvetica", "normal");
-        
-        // Tabla de detalle de ubicaciones
-        locations.forEach((loc: LocationData, index: number) => {
-          if (y > pageHeight - 40) {
+      // Si tenemos imagen del mapa, la incluimos antes de las tablas
+      if (mapImageUrl) {
+        try {
+          // Verificar si necesitamos una nueva página
+          if (yPos > 150) {
             doc.addPage();
-            y = 20;
+            yPos = 30;
           }
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.text('MAPA DE UBICACIONES', 20, yPos);
+          yPos += 10;
+
+          // Calcular dimensiones manteniendo la proporción
+          const imgWidth = pageWidth - 40;
+          const imgHeight = (imgWidth * 3) / 4; // Proporción aproximada 4:3
           
-          const tipo = loc.title || "Sin tipo";
-          const coordenadas = `Lat: ${loc.lat.toFixed(6)}, Lng: ${loc.lng.toFixed(6)}`;
-          const descripcion = loc.description || "Sin descripción";
+          // Añadir la imagen del mapa
+          doc.addImage(mapImageUrl, 'PNG', 20, yPos, imgWidth, imgHeight);
           
-          // Limitar longitud de la descripción
-          const textoDesc = descripcion.length > 50 ? descripcion.substring(0, 50) + "..." : descripcion;
+          // Actualizar posición Y para contenido adicional
+          yPos += imgHeight + 15;
           
-          doc.setFont("helvetica", "bold");
-          doc.text(`Ubicación #${index+1}:`, margin, y); y += 5;
-          doc.setFont("helvetica", "normal");
-          doc.text(`• Tipo: ${tipo}`, margin + 5, y); y += 5;
-          doc.text(`• Coordenadas: ${coordenadas}`, margin + 5, y); y += 5;
-          doc.text(`• Descripción: ${textoDesc}`, margin + 5, y); y += 8;
+          // Añadir leyenda debajo del mapa
+          doc.setFontSize(8);
+          doc.text("Vista del mapa con las ubicaciones relacionadas", pageWidth / 2, yPos, { align: "center" });
+          yPos += 15;
+        } catch (e) {
+          console.error("Error al añadir imagen del mapa al PDF:", e);
+          // Continuamos sin la imagen
+        }
+      }
+
+      // Tabla de ubicaciones directas
+      const ubicacionesDirectas = locations.filter(loc => loc.relation === 'direct');
+      const ubicacionesRelacionadas = locations.filter(loc => loc.relation === 'related');
+
+      if (ubicacionesDirectas.length > 0) {
+        // Verificar si necesitamos una nueva página
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 30;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('UBICACIONES DIRECTAS', 20, yPos);
+        yPos += 10;
+
+        const columnasDirectas = [
+          { header: 'Tipo', dataKey: 'tipo' },
+          { header: 'Descripción', dataKey: 'descripcion' },
+          { header: 'Latitud', dataKey: 'latitud' },
+          { header: 'Longitud', dataKey: 'longitud' }
+        ];
+
+        const datosDirectas = ubicacionesDirectas.map(loc => ({
+          tipo: loc.title,
+          descripcion: loc.description,
+          latitud: loc.lat.toFixed(6),
+          longitud: loc.lng.toFixed(6)
+        }));
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [columnasDirectas.map(col => col.header)],
+          body: datosDirectas.map(row => columnasDirectas.map(col => row[col.dataKey as keyof typeof row])),
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [59, 130, 246],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            cellWidth: 'wrap'
+          },
+          columnStyles: {
+            0: { cellWidth: 25 }, // Tipo
+            1: { cellWidth: 75 }, // Descripción 
+            2: { cellWidth: 30 }, // Latitud
+            3: { cellWidth: 30 }  // Longitud
+          },
+          margin: { left: 20, right: 20 },
+          tableWidth: 'wrap'
+        });
+
+        yPos = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // Tabla de ubicaciones relacionadas
+      if (ubicacionesRelacionadas.length > 0) {
+        // Verificar si necesitamos una nueva página
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 30;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('UBICACIONES RELACIONADAS', 20, yPos);
+        yPos += 10;
+
+        const columnasRelacionadas = [
+          { header: 'Tipo', dataKey: 'tipo' },
+          { header: 'Descripción', dataKey: 'descripcion' },
+          { header: 'Latitud', dataKey: 'latitud' },
+          { header: 'Longitud', dataKey: 'longitud' }
+        ];
+
+        const datosRelacionadas = ubicacionesRelacionadas.map(loc => ({
+          tipo: loc.title,
+          descripcion: loc.description,
+          latitud: loc.lat.toFixed(6),
+          longitud: loc.lng.toFixed(6)
+        }));
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [columnasRelacionadas.map(col => col.header)],
+          body: datosRelacionadas.map(row => columnasRelacionadas.map(col => row[col.dataKey as keyof typeof row])),
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [59, 130, 246],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            cellWidth: 'wrap'
+          },
+          columnStyles: {
+            0: { cellWidth: 25 }, // Tipo
+            1: { cellWidth: 75 }, // Descripción 
+            2: { cellWidth: 30 }, // Latitud
+            3: { cellWidth: 30 }  // Longitud
+          },
+          margin: { left: 20, right: 20 },
+          tableWidth: 'wrap'
         });
       }
-      
+
       // Pie de página en todas las páginas
       try {
         const totalPages = doc.getNumberOfPages();
@@ -271,38 +368,26 @@ export default function UbicacionesPage() {
           doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
           
           // Texto confidencial a la izquierda
-          doc.text("INFORME CONFIDENCIAL", margin, pageHeight - 10);
+          doc.text("INFORME CONFIDENCIAL", 20, pageHeight - 10);
         }
       } catch (e) {
         console.error("Error al añadir pies de página:", e);
       }
-      
+
       // Guardar el PDF
-      try {
-        // Limpiar el nombre para el archivo
-        let nombre = selectedResult.nombre || "informe";
-        nombre = nombre.replace(/[^a-zA-Z0-9]/g, "_");
-        nombre = nombre.substring(0, 20); // Limitar longitud
-        
-        doc.save(`Informe_Ubicaciones_${nombre}.pdf`);
-        
-        toast({
-          title: "Informe generado exitosamente",
-          description: "El PDF se ha descargado correctamente"
-        });
-      } catch (e) {
-        console.error("Error al guardar PDF:", e);
-        toast({
-          title: "Error al guardar",
-          description: "Ocurrió un error al guardar el PDF",
-          variant: "destructive"
-        });
-      }
+      const nombreArchivo = `informe_ubicaciones_${selectedResult.tipo}_${selectedResult.id}_${fecha.replace(/\//g, '-')}.pdf`;
+      doc.save(nombreArchivo);
+
+      toast({
+        title: "Informe generado exitosamente",
+        description: `Se ha descargado el archivo: ${nombreArchivo}`
+      });
+
     } catch (error) {
-      console.error("Error general al generar PDF:", error);
+      console.error('Error al generar el informe PDF:', error);
       toast({
         title: "Error al generar informe",
-        description: "Ocurrió un error al generar el PDF. Por favor, intente nuevamente.",
+        description: "No se pudo generar el informe PDF. Inténtalo de nuevo.",
         variant: "destructive"
       });
     }
