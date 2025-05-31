@@ -496,26 +496,6 @@ export default function VehiculoForm() {
               selectedEntities={relacionPersonas}
               multiple={true}
             />
-            
-            {relacionPersonas.length > 0 && (
-              <div className="mt-2">
-                {relacionPersonas.map((persona) => (
-                  <div 
-                    key={persona.id} 
-                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
-                  >
-                    <span className="text-sm">{persona.nombre}</span>
-                    <button 
-                      type="button" 
-                      onClick={() => removeRelacionPersona(persona.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
         
@@ -529,26 +509,6 @@ export default function VehiculoForm() {
               selectedEntities={relacionVehiculos}
               multiple={true}
             />
-            
-            {relacionVehiculos.length > 0 && (
-              <div className="mt-2">
-                {relacionVehiculos.map((vehiculo) => (
-                  <div 
-                    key={vehiculo.id} 
-                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
-                  >
-                    <span className="text-sm">{vehiculo.nombre}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeRelacionVehiculo(vehiculo.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
         
@@ -562,26 +522,6 @@ export default function VehiculoForm() {
               selectedEntities={relacionInmuebles}
               multiple={true}
             />
-            
-            {relacionInmuebles.length > 0 && (
-              <div className="mt-2">
-                {relacionInmuebles.map((inmueble) => (
-                  <div 
-                    key={inmueble.id} 
-                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md mb-1"
-                  >
-                    <span className="text-sm">{inmueble.nombre}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeRelacionInmueble(inmueble.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
         
