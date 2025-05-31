@@ -1094,7 +1094,7 @@ export default function UbicacionesPage() {
           
           {selectedResult ? (
             <div className="space-y-6">
-              <div className="flex items-center mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <h2 className="text-xl font-bold">
                   Ubicaciones de{' '}
                   {selectedResult.tipo === 'persona' && selectedResult.nombre}
@@ -1108,6 +1108,16 @@ export default function UbicacionesPage() {
                     {selectedResult.tipo === 'ubicacion' && 'Ubicación'}
                   </span>
                 </h2>
+                
+                {/* Botón para generar informe PDF */}
+                <Button
+                  onClick={generarInformePDF}
+                  disabled={!selectedResult || locations.length === 0 || isLoading}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <FileText className="h-4 w-4" />
+                  Generar Informe PDF
+                </Button>
               </div>
               
               {/* Cambiando el layout para ser más responsive */}
