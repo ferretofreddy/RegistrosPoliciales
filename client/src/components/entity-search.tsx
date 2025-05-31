@@ -47,7 +47,7 @@ export default function EntitySearch({
         return {
           endpoint: '/api/personas',
           searchFields: ['nombre', 'identificacion'],
-          displayField: (item: any) => `${item.nombre} - ${item.identificacion}`,
+          displayField: (item: any) => `${item.nombre || 'Sin nombre'} - ${item.identificacion || 'Sin ID'}`,
           icon: User,
           color: 'bg-blue-50 border-blue-200'
         };
@@ -55,7 +55,7 @@ export default function EntitySearch({
         return {
           endpoint: '/api/vehiculos',
           searchFields: ['placa', 'marca', 'modelo'],
-          displayField: (item: any) => `${item.placa} - ${item.marca} ${item.modelo}`,
+          displayField: (item: any) => `${item.placa || 'Sin placa'} - ${item.marca || ''} ${item.modelo || ''}`.trim(),
           icon: Car,
           color: 'bg-green-50 border-green-200'
         };
@@ -63,7 +63,7 @@ export default function EntitySearch({
         return {
           endpoint: '/api/inmuebles',
           searchFields: ['direccion', 'tipo'],
-          displayField: (item: any) => `${item.tipo} - ${item.direccion}`,
+          displayField: (item: any) => `${item.tipo || 'Inmueble'} - ${item.direccion || 'Sin dirección'}`,
           icon: Building,
           color: 'bg-purple-50 border-purple-200'
         };
@@ -71,7 +71,7 @@ export default function EntitySearch({
         return {
           endpoint: '/api/ubicaciones',
           searchFields: ['tipo', 'observaciones'],
-          displayField: (item: any) => `${item.tipo} - Lat: ${item.latitud?.toFixed(6)}, Lng: ${item.longitud?.toFixed(6)}`,
+          displayField: (item: any) => `${item.tipo || 'Ubicación'} - Lat: ${item.latitud?.toFixed(6) || 'N/A'}, Lng: ${item.longitud?.toFixed(6) || 'N/A'}`,
           icon: MapPin,
           color: 'bg-red-50 border-red-200'
         };
