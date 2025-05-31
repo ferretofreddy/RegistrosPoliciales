@@ -223,12 +223,13 @@ export default function UbicacionesPage() {
             cellWidth: 'wrap'
           },
           columnStyles: {
-            0: { cellWidth: 30 }, // Tipo
-            1: { cellWidth: 90 }, // Descripción (aprovechando el ancho disponible)
-            2: { cellWidth: 35 }, // Latitud
-            3: { cellWidth: 35 }  // Longitud
+            0: { cellWidth: 25 }, // Tipo
+            1: { cellWidth: 75 }, // Descripción 
+            2: { cellWidth: 30 }, // Latitud
+            3: { cellWidth: 30 }  // Longitud
           },
-          margin: { top: 10, right: 20, bottom: 10, left: 20 }
+          margin: { left: 20, right: 20 },
+          tableWidth: 'wrap'
         });
 
         yPos = (doc as any).lastAutoTable.finalY + 15;
@@ -277,12 +278,13 @@ export default function UbicacionesPage() {
             cellWidth: 'wrap'
           },
           columnStyles: {
-            0: { cellWidth: 30 }, // Tipo
-            1: { cellWidth: 90 }, // Descripción (aprovechando el ancho disponible)
-            2: { cellWidth: 35 }, // Latitud
-            3: { cellWidth: 35 }  // Longitud
+            0: { cellWidth: 25 }, // Tipo
+            1: { cellWidth: 75 }, // Descripción 
+            2: { cellWidth: 30 }, // Latitud
+            3: { cellWidth: 30 }  // Longitud
           },
-          margin: { top: 10, right: 20, bottom: 10, left: 20 }
+          margin: { left: 20, right: 20 },
+          tableWidth: 'wrap'
         });
       }
 
