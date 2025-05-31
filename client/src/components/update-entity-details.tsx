@@ -251,6 +251,14 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
   
   // Manejar envío de nueva relación
   const onSubmitRelacion = (data: z.infer<typeof relacionSchema>) => {
+    if (!selectedEntity) {
+      toast({
+        title: "Error",
+        description: "Debe seleccionar una entidad para crear la relación",
+        variant: "destructive",
+      });
+      return;
+    }
     addRelacionMutation.mutate(data);
   };
 

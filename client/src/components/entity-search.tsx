@@ -112,11 +112,14 @@ export default function EntitySearch({
         const newSelection = [...selectedItems, entity];
         setSelectedItems(newSelection);
         onSelect(entity);
+        // Limpiar búsqueda después de seleccionar
+        setSearchQuery("");
       }
     } else {
       setSelectedItems([entity]);
       onSelect(entity);
-      setSearchQuery(config.displayField(entity));
+      // Limpiar búsqueda después de seleccionar
+      setSearchQuery("");
     }
     setShowResults(false);
   };
