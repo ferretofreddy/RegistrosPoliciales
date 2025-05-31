@@ -518,7 +518,12 @@ export default function EstructurasPage() {
                 {relaciones.personas.map((persona: any) => (
                   <TableRow key={persona.id}>
                     <TableCell>{persona.nombre}</TableCell>
-                    <TableCell>{persona.identificacion}</TableCell>
+                    <TableCell>
+                      {persona.tipoIdentificacion && (
+                        <span className="text-gray-600 mr-2">({persona.tipoIdentificacion})</span>
+                      )}
+                      {persona.identificacion}
+                    </TableCell>
                     <TableCell>
                       {persona.posicionEstructura && persona.posicionEstructura !== 'sin_posicion' 
                         ? persona.posicionEstructura 

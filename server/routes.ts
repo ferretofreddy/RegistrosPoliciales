@@ -1342,27 +1342,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtener personas relacionadas
       if (tipo === "persona") {
         // Las personas relacionadas con esta persona (búsqueda bidireccional)
-        const relacionesPersonas1 = await db
-          .select({
-            persona: personas
-          })
-          .from(personasPersonas)
-          .innerJoin(personas, eq(personasPersonas.personaId2, personas.id))
-          .where(eq(personasPersonas.personaId1, id));
+        // Consulta SQL directa para incluir tipos de identificación
+        const relacionesPersonas1Result = await pool.query(`
+          SELECT p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
+                 p.foto, p.posicion_estructura, p.tipo_identificacion_id,
+                 ti.tipo as tipo_identificacion
+          FROM personas_personas pp
+          INNER JOIN personas p ON pp.persona_id_2 = p.id
+          LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+          WHERE pp.persona_id_1 = $1
+        `, [id]);
           
-        const relacionesPersonas2 = await db
-          .select({
-            persona: personas
-          })
-          .from(personasPersonas)
-          .innerJoin(personas, eq(personasPersonas.personaId1, personas.id))
-          .where(eq(personasPersonas.personaId2, id));
+        const relacionesPersonas2Result = await pool.query(`
+          SELECT p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
+                 p.foto, p.posicion_estructura, p.tipo_identificacion_id,
+                 ti.tipo as tipo_identificacion
+          FROM personas_personas pp
+          INNER JOIN personas p ON pp.persona_id_1 = p.id
+          LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+          WHERE pp.persona_id_2 = $1
+        `, [id]);
           
-        // Combinar los resultados de ambas direcciones
-        relaciones.personas = [
-          ...relacionesPersonas1.map(r => r.persona),
-          ...relacionesPersonas2.map(r => r.persona)
+        // Combinar los resultados de ambas direcciones y formatear
+        const personasRelacionadas = [
+          ...relacionesPersonas1Result.rows.map(persona => ({
+            ...persona,
+            alias: persona.alias || [],
+            telefonos: persona.telefonos || [],
+            domicilios: persona.domicilios || [],
+            posicionEstructura: persona.posicion_estructura,
+            tipoIdentificacionId: persona.tipo_identificacion_id,
+            tipoIdentificacion: persona.tipo_identificacion
+          })),
+          ...relacionesPersonas2Result.rows.map(persona => ({
+            ...persona,
+            alias: persona.alias || [],
+            telefonos: persona.telefonos || [],
+            domicilios: persona.domicilios || [],
+            posicionEstructura: persona.posicion_estructura,
+            tipoIdentificacionId: persona.tipo_identificacion_id,
+            tipoIdentificacion: persona.tipo_identificacion
+          }))
         ];
+        
+        relaciones.personas = personasRelacionadas;
         
         // Vehículos relacionados con esta persona
         const relacionesVehiculos = await db
@@ -1419,16 +1442,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relaciones.otrasUbicaciones = otrasUbicaciones;
       }
       else if (tipo === "vehiculo") {
-        // Personas relacionadas con este vehículo
-        const relacionesPersonas = await db
-          .select({
-            persona: personas
-          })
-          .from(personasVehiculos)
-          .innerJoin(personas, eq(personasVehiculos.personaId, personas.id))
-          .where(eq(personasVehiculos.vehiculoId, id));
+        // Personas relacionadas con este vehículo - usando SQL directo
+        const relacionesPersonasResult = await pool.query(`
+          SELECT p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
+                 p.foto, p.posicion_estructura, p.tipo_identificacion_id,
+                 ti.tipo as tipo_identificacion
+          FROM personas_vehiculos pv
+          INNER JOIN personas p ON pv.persona_id = p.id
+          LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+          WHERE pv.vehiculo_id = $1
+        `, [id]);
           
-        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        relaciones.personas = relacionesPersonasResult.rows.map(persona => ({
+          ...persona,
+          alias: persona.alias || [],
+          telefonos: persona.telefonos || [],
+          domicilios: persona.domicilios || [],
+          posicionEstructura: persona.posicion_estructura,
+          tipoIdentificacionId: persona.tipo_identificacion_id,
+          tipoIdentificacion: persona.tipo_identificacion
+        }));
         
         // Otros vehículos relacionados con este vehículo
         const relacionesVehiculos = await db.execute(
@@ -1469,16 +1502,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relaciones.otrasUbicaciones = otrasUbicaciones;
       }
       else if (tipo === "inmueble") {
-        // Personas relacionadas con este inmueble
-        const relacionesPersonas = await db
-          .select({
-            persona: personas
-          })
-          .from(personasInmuebles)
-          .innerJoin(personas, eq(personasInmuebles.personaId, personas.id))
-          .where(eq(personasInmuebles.inmuebleId, id));
+        // Personas relacionadas con este inmueble - usando SQL directo
+        const relacionesPersonasResult = await pool.query(`
+          SELECT p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
+                 p.foto, p.posicion_estructura, p.tipo_identificacion_id,
+                 ti.tipo as tipo_identificacion
+          FROM personas_inmuebles pi
+          INNER JOIN personas p ON pi.persona_id = p.id
+          LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+          WHERE pi.inmueble_id = $1
+        `, [id]);
           
-        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        relaciones.personas = relacionesPersonasResult.rows.map(persona => ({
+          ...persona,
+          alias: persona.alias || [],
+          telefonos: persona.telefonos || [],
+          domicilios: persona.domicilios || [],
+          posicionEstructura: persona.posicion_estructura,
+          tipoIdentificacionId: persona.tipo_identificacion_id,
+          tipoIdentificacion: persona.tipo_identificacion
+        }));
         
         // Vehículos relacionados con este inmueble
         const relacionesVehiculos = await db.execute(
