@@ -224,12 +224,29 @@ export default function UbicacionesPage() {
           doc.text('MAPA DE UBICACIONES', 20, yPos);
           yPos += 10;
 
-          // Calcular dimensiones manteniendo la proporción
-          const imgWidth = pageWidth - 40;
-          const imgHeight = (imgWidth * 3) / 4; // Proporción aproximada 4:3
+          // Obtener las dimensiones originales del canvas para mantener la proporción
+          const img = new Image();
+          img.src = mapImageUrl;
+          
+          // Calcular dimensiones manteniendo la proporción original
+          const maxWidth = pageWidth - 40; // Ancho máximo disponible
+          const originalAspectRatio = img.width / img.height;
+          
+          let imgWidth = maxWidth;
+          let imgHeight = imgWidth / originalAspectRatio;
+          
+          // Si la altura calculada es muy grande, limitarla y recalcular el ancho
+          const maxHeight = 120; // Altura máxima en mm
+          if (imgHeight > maxHeight) {
+            imgHeight = maxHeight;
+            imgWidth = imgHeight * originalAspectRatio;
+          }
+          
+          // Centrar la imagen horizontalmente
+          const xOffset = (pageWidth - imgWidth) / 2;
           
           // Añadir la imagen del mapa
-          doc.addImage(mapImageUrl, 'PNG', 20, yPos, imgWidth, imgHeight);
+          doc.addImage(mapImageUrl, 'PNG', xOffset, yPos, imgWidth, imgHeight);
           
           // Actualizar posición Y para contenido adicional
           yPos += imgHeight + 15;
