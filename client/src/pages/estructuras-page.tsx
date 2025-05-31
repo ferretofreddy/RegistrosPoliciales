@@ -676,7 +676,12 @@ export default function EstructurasPage() {
       switch (selectedResult.tipo) {
         case "persona":
           y = addTextRow(doc, "Nombre:", entityData.nombre || "N/A", margin, y);
-          y = addTextRow(doc, "Identificación:", entityData.identificacion || "N/A", margin, y);
+          
+          // Construir identificación con tipo si está disponible
+          const identificacionTexto = entityData.tipoIdentificacion 
+            ? `(${entityData.tipoIdentificacion}) ${entityData.identificacion || "N/A"}`
+            : entityData.identificacion || "N/A";
+          y = addTextRow(doc, "Identificación:", identificacionTexto, margin, y);
           
           if (entityData.posicionEstructura && entityData.posicionEstructura !== 'sin_posicion') {
             y = addTextRow(doc, "Posición en la estructura:", entityData.posicionEstructura, margin, y);
@@ -862,9 +867,9 @@ export default function EstructurasPage() {
           // Configuración de la tabla
           const tableX = margin;
           const tableWidth = pageWidth - (2 * margin);
-          const col1Width = tableWidth * 0.4; // Nombre - 40%
-          const col2Width = tableWidth * 0.3; // Identificación - 30%
-          const col3Width = tableWidth * 0.3; // Posición - 30%
+          const col1Width = tableWidth * 0.45; // Nombre - 45%
+          const col2Width = tableWidth * 0.35; // Identificación - 35% (más espacio para tipos)
+          const col3Width = tableWidth * 0.20; // Posición - 20%
           
           // Encabezados de la tabla
           doc.setFont("helvetica", "bold");
@@ -916,10 +921,10 @@ export default function EstructurasPage() {
             // Texto de la fila
             doc.setTextColor(0, 0, 0);
             
-            // Truncar texto si es muy largo
-            const maxNombreLength = 25;
-            const maxIdLength = 25; // Aumentado para incluir tipo de identificación
-            const maxPosicionLength = 20;
+            // Truncar texto si es muy largo (ajustado a nuevos anchos de columna)
+            const maxNombreLength = 30; // 45% del ancho
+            const maxIdLength = 35; // 35% del ancho, más espacio para tipos de identificación
+            const maxPosicionLength = 15; // 20% del ancho
             
             const nombreDisplay = nombre.length > maxNombreLength ? nombre.substring(0, maxNombreLength) + "..." : nombre;
             const idDisplay = identificacionCompleta.length > maxIdLength ? identificacionCompleta.substring(0, maxIdLength) + "..." : identificacionCompleta;
