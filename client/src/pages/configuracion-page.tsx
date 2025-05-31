@@ -517,6 +517,90 @@ export default function ConfiguracionPage() {
     retry: 0
   });
 
+  // Mutaciones para tipos de identificación
+  const createTipoIdentificacionMutation = useMutation({
+    mutationFn: async (values: TipoIdentificacionFormValues) => {
+      const res = await apiRequest("POST", "/api/tipos-identificacion-admin", values);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Éxito",
+        description: "Tipo de identificación creado correctamente",
+      });
+      tipoIdentificacionForm.reset();
+      refetchTiposIdentificacion();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Error al crear tipo de identificación: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateTipoIdentificacionMutation = useMutation({
+    mutationFn: async ({ id, values }: { id: number; values: TipoIdentificacionFormValues }) => {
+      const res = await apiRequest("PUT", `/api/tipos-identificacion-admin/${id}`, values);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Éxito",
+        description: "Tipo de identificación actualizado correctamente",
+      });
+      setEditingTipoIdentificacionId(null);
+      tipoIdentificacionForm.reset();
+      refetchTiposIdentificacion();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Error al actualizar tipo de identificación: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTipoIdentificacionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/tipos-identificacion-admin/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Error al eliminar tipo de identificación");
+      }
+      
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Éxito",
+        description: data.message || "Tipo de identificación eliminado correctamente",
+      });
+      
+      setTimeout(() => {
+        refetchTiposIdentificacion();
+        queryClient.invalidateQueries({ queryKey: ["/api/tipos-identificacion"] });
+      }, 500);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Error al eliminar tipo de identificación: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+    retry: 0
+  });
+
   // Función para manejar la edición de un tipo de inmueble
   const handleEditTipoInmueble = (tipo: TipoInmueble) => {
     setEditingTipoInmuebleId(tipo.id);
@@ -611,6 +695,35 @@ export default function ConfiguracionPage() {
     }
   };
 
+  // === FUNCIONES DE MANEJO PARA TIPOS DE IDENTIFICACIÓN ===
+  // Función para manejar la edición de un tipo de identificación
+  const handleEditTipoIdentificacion = (tipo: TipoIdentificacion) => {
+    setEditingTipoIdentificacionId(tipo.id);
+    tipoIdentificacionForm.reset({
+      tipo: tipo.tipo,
+    });
+  };
+
+  // Función para cancelar la edición de tipo de identificación
+  const handleCancelEditTipoIdentificacion = () => {
+    setEditingTipoIdentificacionId(null);
+    tipoIdentificacionForm.reset({
+      tipo: "",
+    });
+  };
+
+  // Manejar envío del formulario de tipo de identificación
+  const onSubmitTipoIdentificacion = (values: TipoIdentificacionFormValues) => {
+    if (editingTipoIdentificacionId !== null) {
+      updateTipoIdentificacionMutation.mutate({
+        id: editingTipoIdentificacionId,
+        values,
+      });
+    } else {
+      createTipoIdentificacionMutation.mutate(values);
+    }
+  };
+
   return (
     <>
       <MainLayout>
@@ -622,6 +735,7 @@ export default function ConfiguracionPage() {
               <TabsTrigger value="inmuebles">Tipos de Inmuebles</TabsTrigger>
               <TabsTrigger value="ubicaciones">Tipos de Ubicaciones</TabsTrigger>
               <TabsTrigger value="posiciones">Posiciones Estructura</TabsTrigger>
+              <TabsTrigger value="identificacion">Tipos de Identificación</TabsTrigger>
             </TabsList>
         
         {/* Contenido para Tipos de Inmuebles */}
@@ -1084,6 +1198,135 @@ export default function ConfiguracionPage() {
             </Card>
           </div>
         </TabsContent>
+
+        {/* Contenido para Tipos de Identificación */}
+        <TabsContent value="identificacion">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Formulario para crear/editar tipos de identificación */}
+            <Card className="md:col-span-1">
+              <CardHeader>
+                <CardTitle>
+                  {editingTipoIdentificacionId ? "Editar Tipo de Identificación" : "Nuevo Tipo de Identificación"}
+                </CardTitle>
+                <CardDescription>
+                  {editingTipoIdentificacionId
+                    ? "Actualice los datos del tipo de identificación"
+                    : "Complete los datos para crear un nuevo tipo de identificación"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...tipoIdentificacionForm}>
+                  <form
+                    onSubmit={tipoIdentificacionForm.handleSubmit(onSubmitTipoIdentificacion)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={tipoIdentificacionForm.control}
+                      name="tipo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Identificación</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ejemplo: Cédula, Pasaporte, Licencia..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        disabled={createTipoIdentificacionMutation.isPending || updateTipoIdentificacionMutation.isPending}
+                        className="flex-1"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {editingTipoIdentificacionId ? "Actualizar" : "Crear"}
+                      </Button>
+                      
+                      {editingTipoIdentificacionId && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleCancelEditTipoIdentificacion}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+
+            {/* Lista de tipos de identificación */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Tipos de Identificación Registrados</CardTitle>
+                <CardDescription>
+                  Lista de todos los tipos de identificación disponibles en el sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingTiposIdentificacion ? (
+                  <div className="flex justify-center items-center h-32">
+                    <div className="text-muted-foreground">Cargando tipos de identificación...</div>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tiposIdentificacion?.map((tipo: TipoIdentificacion) => (
+                        <TableRow key={tipo.id}>
+                          <TableCell className="font-medium">{tipo.id}</TableCell>
+                          <TableCell>{tipo.tipo}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditTipoIdentificacion(tipo)}
+                                disabled={editingTipoIdentificacionId === tipo.id}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => deleteTipoIdentificacionMutation.mutate(tipo.id)}
+                                disabled={deleteTipoIdentificacionMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {(!tiposIdentificacion || tiposIdentificacion.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-muted-foreground">
+                            No hay tipos de identificación registrados
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
       </Tabs>
         </div>
       </MainLayout>
