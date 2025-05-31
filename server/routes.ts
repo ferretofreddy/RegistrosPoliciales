@@ -2194,6 +2194,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error al eliminar usuario' });
     }
   });
+
+  // === TIPOS DE IDENTIFICACIÓN ===
+  // Obtener todos los tipos de identificación (público)
+  app.get("/api/tipos-identificacion", async (req, res) => {
+    try {
+      const allTipos = await storage.getAllTiposIdentificacion();
+      res.json(allTipos);
+    } catch (error) {
+      console.error("Error al obtener tipos de identificación:", error);
+      res.status(500).json({ message: "Error al obtener tipos de identificación" });
+    }
+  });
+
+  // Obtener todos los tipos de identificación (admin)
+  app.get("/api/tipos-identificacion-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const allTipos = await storage.getAllTiposIdentificacion();
+      res.json(allTipos);
+    } catch (error) {
+      console.error("Error al obtener tipos de identificación para admin:", error);
+      res.status(500).json({ message: "Error al obtener tipos de identificación" });
+    }
+  });
+
+  // Crear nuevo tipo de identificación (admin)
+  app.post("/api/tipos-identificacion-admin", requireRole(["admin"]), async (req, res) => {
+    try {
+      const { tipo } = req.body;
+      
+      if (!tipo) {
+        return res.status(400).json({ message: "El tipo es obligatorio" });
+      }
+      
+      // Verificar si ya existe un tipo con ese nombre
+      const allTipos = await storage.getAllTiposIdentificacion();
+      const existingTipo = allTipos.find(t => t.tipo.toLowerCase() === tipo.toLowerCase());
+      
+      if (existingTipo) {
+        return res.status(400).json({ message: "Ya existe un tipo de identificación con ese nombre" });
+      }
+      
+      const nuevoTipo = await storage.createTipoIdentificacion({ tipo });
+      res.status(201).json(nuevoTipo);
+    } catch (error) {
+      console.error("Error al crear tipo de identificación:", error);
+      res.status(500).json({ message: "Error al crear tipo de identificación" });
+    }
+  });
+
+  // Actualizar tipo de identificación (admin)
+  app.put("/api/tipos-identificacion-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { tipo } = req.body;
+      
+      if (!tipo) {
+        return res.status(400).json({ message: "El tipo es obligatorio" });
+      }
+      
+      // Verificar si ya existe otro tipo con ese nombre
+      const allTipos = await storage.getAllTiposIdentificacion();
+      const existingTipo = allTipos.find(t => t.tipo.toLowerCase() === tipo.toLowerCase() && t.id !== id);
+      
+      if (existingTipo) {
+        return res.status(400).json({ message: "Ya existe un tipo de identificación con ese nombre" });
+      }
+      
+      const tipoActualizado = await storage.updateTipoIdentificacion(id, { tipo });
+      
+      if (!tipoActualizado) {
+        return res.status(404).json({ message: "Tipo de identificación no encontrado" });
+      }
+      
+      res.json(tipoActualizado);
+    } catch (error) {
+      console.error("Error al actualizar tipo de identificación:", error);
+      res.status(500).json({ message: "Error al actualizar tipo de identificación" });
+    }
+  });
+
+  // Eliminar tipo de identificación (admin)
+  app.delete("/api/tipos-identificacion-admin/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      const success = await storage.deleteTipoIdentificacion(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Tipo de identificación no encontrado" });
+      }
+      
+      res.json({ message: "Tipo de identificación eliminado correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar tipo de identificación:", error);
+      res.status(500).json({ message: "Error al eliminar tipo de identificación" });
+    }
+  });
   
   return httpServer;
 }

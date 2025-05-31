@@ -287,6 +287,20 @@ export type InsertTipoInmueble = z.infer<typeof insertTipoInmuebleSchema>;
 export type TipoUbicacion = typeof tiposUbicaciones.$inferSelect;
 export type InsertTipoUbicacion = z.infer<typeof insertTipoUbicacionSchema>;
 
+// Tipos de identificación
+export const tiposIdentificacion = pgTable("tipos_identificacion", {
+  id: serial("id").primaryKey(),
+  tipo: text("tipo").notNull(),
+  activo: text("activo").default("true")
+});
+
+export const insertTipoIdentificacionSchema = createInsertSchema(tiposIdentificacion).pick({
+  tipo: true
+});
+
+export type TipoIdentificacion = typeof tiposIdentificacion.$inferSelect;
+export type InsertTipoIdentificacion = z.infer<typeof insertTipoIdentificacionSchema>;
+
 // Tabla para posiciones en estructura
 export const posicionesEstructura = pgTable("posiciones_estructura", {
   id: serial("id").primaryKey(),
