@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { TipoInmueble, TipoUbicacion, PosicionEstructura } from "@shared/schema";
+import { TipoInmueble, TipoUbicacion, PosicionEstructura, TipoIdentificacion } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/main-layout";
@@ -68,16 +68,25 @@ const posicionEstructuraFormSchema = z.object({
   descripcion: z.string().optional(),
 });
 
+// Esquema para el formulario de tipo de identificación
+const tipoIdentificacionFormSchema = z.object({
+  tipo: z.string().min(2, {
+    message: "El tipo debe tener al menos 2 caracteres",
+  }),
+});
+
 // Tipos para los formularios
 type TipoInmuebleFormValues = z.infer<typeof tipoInmuebleFormSchema>;
 type TipoUbicacionFormValues = z.infer<typeof tipoUbicacionFormSchema>;
 type PosicionEstructuraFormValues = z.infer<typeof posicionEstructuraFormSchema>;
+type TipoIdentificacionFormValues = z.infer<typeof tipoIdentificacionFormSchema>;
 
 export default function ConfiguracionPage() {
   const { toast } = useToast();
   const [editingTipoInmuebleId, setEditingTipoInmuebleId] = useState<number | null>(null);
   const [editingTipoUbicacionId, setEditingTipoUbicacionId] = useState<number | null>(null);
   const [editingPosicionEstructuraId, setEditingPosicionEstructuraId] = useState<number | null>(null);
+  const [editingTipoIdentificacionId, setEditingTipoIdentificacionId] = useState<number | null>(null);
 
   // Formulario para tipos de inmuebles
   const inmuebleForm = useForm<TipoInmuebleFormValues>({
@@ -105,6 +114,14 @@ export default function ConfiguracionPage() {
     defaultValues: {
       nombre: "",
       descripcion: "",
+    },
+  });
+
+  // Formulario para tipos de identificación
+  const tipoIdentificacionForm = useForm<TipoIdentificacionFormValues>({
+    resolver: zodResolver(tipoIdentificacionFormSchema),
+    defaultValues: {
+      tipo: "",
     },
   });
 
@@ -146,6 +163,20 @@ export default function ConfiguracionPage() {
     queryFn: async () => {
       const res = await fetch("/api/posiciones-estructura-admin");
       if (!res.ok) throw new Error("Error al cargar posiciones de estructura");
+      return res.json();
+    },
+  });
+
+  // Consulta para obtener todos los tipos de identificación
+  const {
+    data: tiposIdentificacion,
+    isLoading: loadingTiposIdentificacion,
+    refetch: refetchTiposIdentificacion,
+  } = useQuery({
+    queryKey: ["/api/tipos-identificacion-admin"],
+    queryFn: async () => {
+      const res = await fetch("/api/tipos-identificacion-admin");
+      if (!res.ok) throw new Error("Error al cargar tipos de identificación");
       return res.json();
     },
   });
