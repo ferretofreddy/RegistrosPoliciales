@@ -868,8 +868,8 @@ export default function EstructurasPage() {
           const tableX = margin;
           const tableWidth = pageWidth - (2 * margin);
           const col1Width = tableWidth * 0.4; // Nombre - 40%
-          const col2Width = tableWidth * 0.3; // Identificación - 30%
-          const col3Width = tableWidth * 0.3; // Posición - 30%
+          const col2Width = tableWidth * 0.4; // Identificación - 40%
+          const col3Width = tableWidth * 0.2; // Posición - 20%
           
           // Encabezados de la tabla
           doc.setFont("helvetica", "bold");
