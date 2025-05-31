@@ -460,7 +460,7 @@ export default function UbicacionForm() {
       console.log('Agregando persona:', persona);
       setRelacionPersonas([...relacionPersonas, { 
         id: persona.id,
-        nombre: `${persona.nombre} (${persona.identificacion})`
+        nombre: `${persona.nombre || 'Sin nombre'} (${persona.identificacion || 'Sin ID'})`
       }]);
     }
   };
@@ -475,7 +475,7 @@ export default function UbicacionForm() {
       console.log('Agregando vehículo:', vehiculo);
       setRelacionVehiculos([...relacionVehiculos, { 
         id: vehiculo.id,
-        nombre: `${vehiculo.marca} (${vehiculo.placa})`
+        nombre: `${vehiculo.marca || ''} ${vehiculo.modelo || ''} (${vehiculo.placa})`.trim()
       }]);
     }
   };
@@ -490,7 +490,7 @@ export default function UbicacionForm() {
       console.log('Agregando inmueble:', inmueble);
       setRelacionInmuebles([...relacionInmuebles, { 
         id: inmueble.id,
-        nombre: `${inmueble.tipo} (${inmueble.direccion})`
+        nombre: `${inmueble.tipo || 'Inmueble'} - ${inmueble.direccion || 'Sin dirección'}`
       }]);
     }
   };
