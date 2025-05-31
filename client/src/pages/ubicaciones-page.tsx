@@ -121,7 +121,22 @@ export default function UbicacionesPage() {
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
-      doc.text('INFORMACIÓN DE LA ENTIDAD', 20, 45);
+      
+      // Título específico según el tipo de entidad
+      switch (selectedResult.tipo) {
+        case 'persona':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE PERSONA', 20, 45);
+          break;
+        case 'vehiculo':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE VEHÍCULO', 20, 45);
+          break;
+        case 'inmueble':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE INMUEBLE', 20, 45);
+          break;
+        case 'ubicacion':
+          doc.text('INFORMACIÓN DE UBICACIÓN', 20, 45);
+          break;
+      }
 
       // Línea separadora
       doc.setDrawColor(59, 130, 246);
@@ -136,20 +151,29 @@ export default function UbicacionesPage() {
       // Información específica según el tipo de entidad
       switch (selectedResult.tipo) {
         case 'persona':
-          doc.text(`Tipo: Persona`, 20, yPos);
-          doc.text(`Nombre: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          doc.text(`Nombre: ${selectedResult.nombre || selectedResult.referencia || 'N/A'}`, 20, yPos);
+          if (selectedResult.identificacion) {
+            doc.text(`Identificación: ${selectedResult.identificacion}`, 20, yPos + 6);
+            yPos += 6;
+          }
           break;
         case 'vehiculo':
-          doc.text(`Tipo: Vehículo`, 20, yPos);
-          doc.text(`Vehículo: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          doc.text(`Marca: ${selectedResult.marca || 'N/A'}`, 20, yPos);
+          doc.text(`Modelo: ${selectedResult.modelo || 'N/A'}`, 20, yPos + 6);
+          doc.text(`Placa: ${selectedResult.placa || 'Sin placa'}`, 20, yPos + 12);
+          yPos += 6;
           break;
         case 'inmueble':
-          doc.text(`Tipo: Inmueble`, 20, yPos);
-          doc.text(`Inmueble: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          doc.text(`Tipo de inmueble: ${selectedResult.tipo_inmueble || selectedResult.referencia || 'N/A'}`, 20, yPos);
+          doc.text(`Dirección: ${selectedResult.direccion || 'N/A'}`, 20, yPos + 6);
+          yPos += 6;
           break;
         case 'ubicacion':
-          doc.text(`Tipo: Ubicación`, 20, yPos);
-          doc.text(`Ubicación: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          doc.text(`Tipo de ubicación: ${selectedResult.tipo_ubicacion || selectedResult.referencia || 'N/A'}`, 20, yPos);
+          if (selectedResult.observaciones) {
+            doc.text(`Observaciones: ${selectedResult.observaciones}`, 20, yPos + 6);
+            yPos += 6;
+          }
           break;
       }
 
