@@ -48,22 +48,46 @@ export class DatabaseStorage {
 
   // PERSONAS METHODS
   async getAllPersonas(): Promise<any[]> {
-    const result = await db.execute(sql`
-      SELECT p.*, ti.tipo as tipo_identificacion 
-      FROM personas p 
-      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
-    `);
-    return result.rows;
+    // Obtenemos todas las personas
+    const personas = await db.select().from(personas);
+    
+    // Para cada persona, agregamos el tipo de identificación
+    const personasConTipo = await Promise.all(
+      personas.map(async (persona) => {
+        let tipoIdentificacion = null;
+        if (persona.tipoIdentificacionId) {
+          const [tipo] = await db.select().from(tiposIdentificacion).where(eq(tiposIdentificacion.id, persona.tipoIdentificacionId));
+          tipoIdentificacion = tipo?.tipo || null;
+        }
+        
+        return {
+          ...persona,
+          tipoIdentificacion
+        };
+      })
+    );
+    
+    return personasConTipo;
   }
 
   async getPersona(id: number): Promise<any> {
-    const [persona] = await db.execute(sql`
-      SELECT p.*, ti.tipo as tipo_identificacion 
-      FROM personas p 
-      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id 
-      WHERE p.id = ${id}
-    `);
-    return persona;
+    // Primero obtenemos la persona con el método original
+    const [persona] = await db.select().from(personas).where(eq(personas.id, id));
+    
+    if (!persona) return undefined;
+    
+    // Luego obtenemos el tipo de identificación si existe
+    let tipoIdentificacion = null;
+    if (persona.tipoIdentificacionId) {
+      const [tipo] = await db.select().from(tiposIdentificacion).where(eq(tiposIdentificacion.id, persona.tipoIdentificacionId));
+      tipoIdentificacion = tipo?.tipo || null;
+    }
+    
+    // Retornamos la persona con el tipo de identificación incluido
+    return {
+      ...persona,
+      tipoIdentificacion
+    };
   }
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
