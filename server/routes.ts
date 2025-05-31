@@ -1578,16 +1578,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relaciones.otrasUbicaciones = otrasUbicaciones;
       }
       else if (tipo === "ubicacion") {
-        // Personas relacionadas con esta ubicación
-        const relacionesPersonas = await db
-          .select({
-            persona: personas
-          })
-          .from(personasUbicaciones)
-          .innerJoin(personas, eq(personasUbicaciones.personaId, personas.id))
-          .where(eq(personasUbicaciones.ubicacionId, id));
+        // Personas relacionadas con esta ubicación - usando SQL directo
+        const relacionesPersonasResult = await pool.query(`
+          SELECT p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
+                 p.foto, p.posicion_estructura, p.tipo_identificacion_id,
+                 ti.tipo as tipo_identificacion
+          FROM personas_ubicaciones pu
+          INNER JOIN personas p ON pu.persona_id = p.id
+          LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+          WHERE pu.ubicacion_id = $1
+        `, [id]);
           
-        relaciones.personas = relacionesPersonas.map(r => r.persona);
+        relaciones.personas = relacionesPersonasResult.rows.map(persona => ({
+          ...persona,
+          alias: persona.alias || [],
+          telefonos: persona.telefonos || [],
+          domicilios: persona.domicilios || [],
+          posicionEstructura: persona.posicion_estructura,
+          tipoIdentificacionId: persona.tipo_identificacion_id,
+          tipoIdentificacion: persona.tipo_identificacion
+        }));
         
         // Vehículos relacionados con esta ubicación
         const relacionesVehiculos = await db
