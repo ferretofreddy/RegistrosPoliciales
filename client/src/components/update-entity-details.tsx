@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import EntitySearch from "@/components/entity-search";
 
 // Esquema para las observaciones
 const observacionSchema = z.object({
@@ -37,7 +38,6 @@ const observacionSchema = z.object({
 
 // Esquema para las relaciones
 const relacionSchema = z.object({
-  entidadId: z.string().min(1, { message: "Seleccione una entidad" }),
   tipo: z.enum(["persona", "vehiculo", "inmueble", "ubicacion"]),
 });
 
@@ -93,6 +93,7 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
   const [showObservacionForm, setShowObservacionForm] = useState(false);
   const [relacionTipo, setRelacionTipo] = useState<"persona" | "vehiculo" | "inmueble" | "ubicacion">("persona");
   const [showRelacionForm, setShowRelacionForm] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<any>(null);
   
   // Estado para guardar las observaciones y relaciones
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
@@ -115,7 +116,6 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
   const relacionForm = useForm<z.infer<typeof relacionSchema>>({
     resolver: zodResolver(relacionSchema),
     defaultValues: {
-      entidadId: "",
       tipo: "persona",
     },
   });
@@ -203,8 +203,12 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
   // Mutación para agregar una relación
   const addRelacionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof relacionSchema>) => {
+      if (!selectedEntity) {
+        throw new Error('Debe seleccionar una entidad');
+      }
+      
       // Construir la URL según los tipos de entidades
-      let url = `/api/relaciones/${entityType}/${entityId}/${data.tipo}/${data.entidadId}`;
+      let url = `/api/relaciones/${entityType}/${entityId}/${data.tipo}/${selectedEntity.id}`;
       
       const response = await fetch(url, {
         method: 'POST',
@@ -225,9 +229,9 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
         description: "La relación se ha creado correctamente.",
       });
       relacionForm.reset({ 
-        entidadId: "", 
         tipo: relacionTipo 
       });
+      setSelectedEntity(null);
       setShowRelacionForm(false);
       refetchRelaciones();
     },
@@ -581,48 +585,18 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                   </Button>
                 </div>
                 
-                <FormField
-                  control={relacionForm.control}
-                  name="entidadId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Seleccionar {relacionTipo}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={`Seleccionar ${relacionTipo}`} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {relacionTipo === "persona" && (personas as Persona[]).map((persona) => (
-                            <SelectItem key={persona.id} value={persona.id.toString()}>
-                              {persona.nombre} ({persona.identificacion})
-                            </SelectItem>
-                          ))}
-                          {relacionTipo === "vehiculo" && (vehiculos as Vehiculo[]).map((vehiculo) => (
-                            <SelectItem key={vehiculo.id} value={vehiculo.id.toString()}>
-                              {vehiculo.placa} - {vehiculo.marca} {vehiculo.modelo}
-                            </SelectItem>
-                          ))}
-                          {relacionTipo === "inmueble" && (inmuebles as Inmueble[]).map((inmueble) => (
-                            <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
-                              {inmueble.tipo}: {inmueble.direccion}
-                            </SelectItem>
-                          ))}
-                          {relacionTipo === "ubicacion" && (ubicaciones as Ubicacion[]).map((ubicacion) => (
-                            <SelectItem key={ubicacion.id} value={ubicacion.id.toString()}>
-                              {ubicacion.tipo} - {ubicacion.observaciones || 'Sin observaciones'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div>
+                  <FormLabel>Seleccionar {relacionTipo}</FormLabel>
+                  <div className="mt-1">
+                    <EntitySearch
+                      entityType={relacionTipo}
+                      placeholder={`Buscar ${relacionTipo}...`}
+                      onSelect={(entity) => setSelectedEntity(entity)}
+                      selectedEntities={selectedEntity ? [selectedEntity] : []}
+                      multiple={false}
+                    />
+                  </div>
+                </div>
                 
 
                 
