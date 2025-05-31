@@ -250,7 +250,7 @@ export default function VehiculoForm() {
       console.log('Agregando vehículo:', vehiculo);
       setRelacionVehiculos([...relacionVehiculos, { 
         id: vehiculo.id,
-        nombre: `${vehiculo.marca} ${vehiculo.modelo || ''} (${vehiculo.placa})`
+        nombre: `${vehiculo.marca || ''} ${vehiculo.modelo || ''} (${vehiculo.placa})`.trim()
       }]);
     }
   };
@@ -265,7 +265,7 @@ export default function VehiculoForm() {
       console.log('Agregando inmueble:', inmueble);
       setRelacionInmuebles([...relacionInmuebles, { 
         id: inmueble.id,
-        nombre: `${inmueble.tipo}: ${inmueble.direccion}`
+        nombre: `${inmueble.tipo || 'Inmueble'} - ${inmueble.direccion || 'Sin dirección'}`
       }]);
     }
   };
