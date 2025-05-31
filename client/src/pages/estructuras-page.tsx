@@ -885,7 +885,7 @@ export default function EstructurasPage() {
           doc.setTextColor(0, 0, 0);
           doc.text("Nombre", tableX + 2, y + 2);
           doc.text("Identificación", tableX + col1Width + 2, y + 2);
-          doc.text("Posición en la estructura", tableX + col1Width + col2Width + 2, y + 2);
+          doc.text("Posición", tableX + col1Width + col2Width + 2, y + 2);
           y += 6;
           
           // Línea bajo encabezados
@@ -921,10 +921,10 @@ export default function EstructurasPage() {
             // Texto de la fila
             doc.setTextColor(0, 0, 0);
             
-            // Truncar texto si es muy largo - aumentada cantidad de caracteres al ancho actual
-            const maxNombreLength = 35; // Más caracteres para nombres completos
-            const maxIdLength = 30; // Más caracteres para incluir tipos de identificación  
-            const maxPosicionLength = 25; // Más caracteres para posiciones completas
+            // Límites de caracteres máximos para cada ancho de columna (40%-40%-20%)
+            const maxNombreLength = 50; // Máximo para 40% del ancho - nombres completos
+            const maxIdLength = 50; // Máximo para 40% del ancho - tipos e identificación completos  
+            const maxPosicionLength = 20; // Máximo para 20% del ancho - posiciones
             
             const nombreDisplay = nombre.length > maxNombreLength ? nombre.substring(0, maxNombreLength) + "..." : nombre;
             const idDisplay = identificacionCompleta.length > maxIdLength ? identificacionCompleta.substring(0, maxIdLength) + "..." : identificacionCompleta;
