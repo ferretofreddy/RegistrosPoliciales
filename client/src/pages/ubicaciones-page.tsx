@@ -10,7 +10,7 @@ import { MapPin, Search, User, Building, Car, FileText } from "lucide-react";
 import { SearchResult } from "@/components/search-component";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 // Coordenadas por defecto (centro de Costa Rica)
 const DEFAULT_CENTER: [number, number] = [9.9281, -84.0907];
@@ -182,7 +182,7 @@ export default function UbicacionesPage() {
           longitud: loc.lng.toFixed(6)
         }));
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: yPos,
           head: [columnasDirectas.map(col => col.header)],
           body: datosDirectas.map(row => columnasDirectas.map(col => row[col.dataKey as keyof typeof row])),
@@ -233,7 +233,7 @@ export default function UbicacionesPage() {
           longitud: loc.lng.toFixed(6)
         }));
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: yPos,
           head: [columnasRelacionadas.map(col => col.header)],
           body: datosRelacionadas.map(row => columnasRelacionadas.map(col => row[col.dataKey as keyof typeof row])),
