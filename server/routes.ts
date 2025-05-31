@@ -1826,7 +1826,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Endpoint para crear relaciones usando body (usado por el cliente)
+  app.post("/api/relaciones", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const { tipo1, id1, tipo2, id2 } = req.body;
+      
+      if (!tipo1 || !id1 || !tipo2 || !id2) {
+        return res.status(400).json({ message: "Faltan datos para crear la relación" });
+      }
+      
+      let resultado;
+      
+      // Relaciones entre persona e inmueble (ambas direcciones)
+      if ((tipo1 === "persona" && tipo2 === "inmueble") || (tipo1 === "inmueble" && tipo2 === "persona")) {
+        let personaId, inmuebleId;
+        
+        if (tipo1 === "persona") {
+          personaId = id1;
+          inmuebleId = id2;
+        } else {
+          personaId = id2;
+          inmuebleId = id1;
+        }
+        
+        // Verificar si la relación ya existe
+        const relacionExistente = await db
+          .select()
+          .from(personasInmuebles)
+          .where(
+            and(
+              eq(personasInmuebles.personaId, personaId),
+              eq(personasInmuebles.inmuebleId, inmuebleId)
+            )
+          )
+          .limit(1);
+        
+        if (relacionExistente.length > 0) {
+          return res.status(400).json({ 
+            message: "La relación entre esta persona e inmueble ya existe" 
+          });
+        }
+        
+        const [relacion] = await db.insert(personasInmuebles).values({
+          personaId: personaId,
+          inmuebleId: inmuebleId
+        }).returning();
+        resultado = relacion;
+      }
+      // Relaciones entre persona y vehículo (ambas direcciones)
+      else if ((tipo1 === "persona" && tipo2 === "vehiculo") || (tipo1 === "vehiculo" && tipo2 === "persona")) {
+        let personaId, vehiculoId;
+        
+        if (tipo1 === "persona") {
+          personaId = id1;
+          vehiculoId = id2;
+        } else {
+          personaId = id2;
+          vehiculoId = id1;
+        }
+        
+        // Verificar si la relación ya existe
+        const relacionExistente = await db
+          .select()
+          .from(personasVehiculos)
+          .where(
+            and(
+              eq(personasVehiculos.personaId, personaId),
+              eq(personasVehiculos.vehiculoId, vehiculoId)
+            )
+          )
+          .limit(1);
+        
+        if (relacionExistente.length > 0) {
+          return res.status(400).json({ 
+            message: "La relación entre esta persona y vehículo ya existe" 
+          });
+        }
+        
+        const [relacion] = await db.insert(personasVehiculos).values({
+          personaId: personaId,
+          vehiculoId: vehiculoId
+        }).returning();
+        resultado = relacion;
+      }
+      // Otras relaciones (sin validación de duplicados por ahora)
+      else if (tipo1 === "persona" && tipo2 === "persona") {
+        const [relacion] = await db.insert(personasPersonas).values({
+          personaId1: id1,
+          personaId2: id2
+        }).returning();
+        resultado = relacion;
+      }
+      else if ((tipo1 === "persona" && tipo2 === "ubicacion") || (tipo1 === "ubicacion" && tipo2 === "persona")) {
+        let personaId, ubicacionId;
+        
+        if (tipo1 === "persona") {
+          personaId = id1;
+          ubicacionId = id2;
+        } else {
+          personaId = id2;
+          ubicacionId = id1;
+        }
+        
+        const [relacion] = await db.insert(personasUbicaciones).values({
+          personaId: personaId,
+          ubicacionId: ubicacionId
+        }).returning();
+        resultado = relacion;
+      }
+      else if ((tipo1 === "vehiculo" && tipo2 === "ubicacion") || (tipo1 === "ubicacion" && tipo2 === "vehiculo")) {
+        let vehiculoId, ubicacionId;
+        
+        if (tipo1 === "vehiculo") {
+          vehiculoId = id1;
+          ubicacionId = id2;
+        } else {
+          vehiculoId = id2;
+          ubicacionId = id1;
+        }
+        
+        const [relacion] = await db.insert(vehiculosUbicaciones).values({
+          vehiculoId: vehiculoId,
+          ubicacionId: ubicacionId
+        }).returning();
+        resultado = relacion;
+      }
+      else if ((tipo1 === "inmueble" && tipo2 === "ubicacion") || (tipo1 === "ubicacion" && tipo2 === "inmueble")) {
+        let inmuebleId, ubicacionId;
+        
+        if (tipo1 === "inmueble") {
+          inmuebleId = id1;
+          ubicacionId = id2;
+        } else {
+          inmuebleId = id2;
+          ubicacionId = id1;
+        }
+        
+        const [relacion] = await db.insert(inmueblesUbicaciones).values({
+          inmuebleId: inmuebleId,
+          ubicacionId: ubicacionId
+        }).returning();
+        resultado = relacion;
+      }
+      else {
+        return res.status(400).json({ message: "Tipo de relación no soportada" });
+      }
+      
+      res.status(201).json(resultado);
+    } catch (error) {
+      console.error("Error al crear relación:", error);
+      res.status(500).json({ message: "Error al crear relación" });
+    }
+  });
 
   // API de búsqueda centralizada para todas las entidades
   app.get("/api/buscar", async (req, res) => {
