@@ -48,10 +48,30 @@ export class DatabaseStorage {
 
   // PERSONAS METHODS
   async getAllPersonas(): Promise<any[]> {
-    return await db.select().from(personas);
+    const result = await pool.query(`
+      SELECT 
+        p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
+        p.foto, p.posicion_estructura, p.tipo_identificacion_id,
+        ti.tipo as tipo_identificacion
+      FROM personas p 
+      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+      ORDER BY p.id
+    `);
+    
+    return result.rows.map(persona => ({
+      ...persona,
+      alias: persona.alias ? JSON.parse(persona.alias) : [],
+      telefonos: persona.telefonos ? JSON.parse(persona.telefonos) : [],
+      domicilios: persona.domicilios ? JSON.parse(persona.domicilios) : [],
+      posicionEstructura: persona.posicion_estructura,
+      tipoIdentificacionId: persona.tipo_identificacion_id,
+      tipoIdentificacion: persona.tipo_identificacion
+    }));
   }
 
   async getPersona(id: number): Promise<any> {
+    console.log('[DEBUG] getPersona llamado con ID:', id);
+    
     const result = await pool.query(`
       SELECT 
         p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
@@ -62,12 +82,14 @@ export class DatabaseStorage {
       WHERE p.id = $1
     `, [id]);
     
+    console.log('[DEBUG] Resultado SQL:', result.rows[0]);
+    
     if (result.rows.length === 0) return undefined;
     
     const persona = result.rows[0];
     
     // Convertir campos JSON de strings a arrays
-    return {
+    const resultado = {
       ...persona,
       alias: persona.alias ? JSON.parse(persona.alias) : [],
       telefonos: persona.telefonos ? JSON.parse(persona.telefonos) : [],
@@ -76,6 +98,9 @@ export class DatabaseStorage {
       tipoIdentificacionId: persona.tipo_identificacion_id,
       tipoIdentificacion: persona.tipo_identificacion
     };
+    
+    console.log('[DEBUG] Resultado final:', resultado);
+    return resultado;
   }
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {

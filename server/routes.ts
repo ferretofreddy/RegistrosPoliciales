@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID inválido" });
       }
       
-      const [persona] = await db.select().from(personas).where(eq(personas.id, id));
+      const persona = await storage.getPersona(id);
       
       if (!persona) {
         return res.status(404).json({ message: "Persona no encontrada" });
