@@ -233,10 +233,11 @@ export default function VehiculoForm() {
   const addRelacionPersona = (persona: any) => {
     if (persona && !relacionPersonas.some(rp => rp.id === persona.id)) {
       console.log('Agregando persona:', persona);
-      setRelacionPersonas([...relacionPersonas, { 
-        id: persona.id,
-        nombre: `${persona.nombre || 'Sin nombre'} (${persona.identificacion || 'Sin ID'})`
-      }]);
+      const personaConNombre = {
+        ...persona,
+        nombre: `${persona.nombre} (${persona.identificacion})`
+      };
+      setRelacionPersonas([...relacionPersonas, personaConNombre]);
     }
   };
 
@@ -248,10 +249,11 @@ export default function VehiculoForm() {
   const addRelacionVehiculo = (vehiculo: any) => {
     if (vehiculo && !relacionVehiculos.some(rv => rv.id === vehiculo.id)) {
       console.log('Agregando vehículo:', vehiculo);
-      setRelacionVehiculos([...relacionVehiculos, { 
-        id: vehiculo.id,
-        nombre: `${vehiculo.marca || ''} ${vehiculo.modelo || ''} (${vehiculo.placa})`.trim()
-      }]);
+      const vehiculoConNombre = {
+        ...vehiculo,
+        nombre: `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})`
+      };
+      setRelacionVehiculos([...relacionVehiculos, vehiculoConNombre]);
     }
   };
 
@@ -263,10 +265,11 @@ export default function VehiculoForm() {
   const addRelacionInmueble = (inmueble: any) => {
     if (inmueble && !relacionInmuebles.some(ri => ri.id === inmueble.id)) {
       console.log('Agregando inmueble:', inmueble);
-      setRelacionInmuebles([...relacionInmuebles, { 
-        id: inmueble.id,
-        nombre: `${inmueble.tipo || 'Inmueble'} - ${inmueble.direccion || 'Sin dirección'}`
-      }]);
+      const inmuebleConNombre = {
+        ...inmueble,
+        nombre: `${inmueble.tipo} - ${inmueble.direccion}`
+      };
+      setRelacionInmuebles([...relacionInmuebles, inmuebleConNombre]);
     }
   };
 
