@@ -47,12 +47,22 @@ export class DatabaseStorage {
   }
 
   // PERSONAS METHODS
-  async getAllPersonas(): Promise<Persona[]> {
-    return await db.select().from(personas);
+  async getAllPersonas(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT p.*, ti.tipo as tipo_identificacion 
+      FROM personas p 
+      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+    `);
+    return result.rows;
   }
 
-  async getPersona(id: number): Promise<Persona | undefined> {
-    const [persona] = await db.select().from(personas).where(eq(personas.id, id));
+  async getPersona(id: number): Promise<any> {
+    const [persona] = await db.execute(sql`
+      SELECT p.*, ti.tipo as tipo_identificacion 
+      FROM personas p 
+      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id 
+      WHERE p.id = ${id}
+    `);
     return persona;
   }
 
