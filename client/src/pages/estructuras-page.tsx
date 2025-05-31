@@ -987,69 +987,7 @@ export default function EstructurasPage() {
           });
         }
       }
-      
-      // Nueva página para mapa y ubicaciones
-      if (locations && locations.length > 0) {
-        doc.addPage();
-        y = 20;
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text("UBICACIONES", margin, y);
-        y += 10;
-        
-        // Si tenemos imagen del mapa, la incluimos
-        if (mapImageUrl) {
-          try {
-            // Calcular dimensiones para mantener la proporción
-            const imgWidth = pageWidth - (2 * margin);
-            const imgHeight = (imgWidth * 3) / 4; // Proporción aproximada 4:3
-            
-            // Añadir la imagen del mapa
-            doc.addImage(mapImageUrl, 'PNG', margin, y, imgWidth, imgHeight);
-            
-            // Actualizar posición Y para contenido adicional
-            y += imgHeight + 10;
-            
-            // Añadir leyenda debajo del mapa
-            doc.setFontSize(8);
-            doc.text("Vista del mapa con las ubicaciones relacionadas", pageWidth / 2, y, { align: "center" });
-            y += 8;
-          } catch (e) {
-            console.error("Error al añadir imagen del mapa al PDF:", e);
-            // Continuamos sin la imagen
-          }
-        }
-        
-        // Si no pudimos incluir la imagen o después de incluirla
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("Listado de ubicaciones:", margin, y);
-        y += 8;
-        doc.setFont("helvetica", "normal");
-        
-        // Tabla de detalle de ubicaciones
-        locations.forEach((loc: LocationData, index: number) => {
-          if (y > pageHeight - 40) {
-            doc.addPage();
-            y = 20;
-          }
-          
-          const tipo = loc.title || "Sin tipo";
-          const coordenadas = `Lat: ${loc.lat.toFixed(6)}, Lng: ${loc.lng.toFixed(6)}`;
-          const descripcion = loc.description || "Sin descripción";
-          
-          // Limitar longitud de la descripción
-          const textoDesc = descripcion.length > 50 ? descripcion.substring(0, 50) + "..." : descripcion;
-          
-          doc.setFont("helvetica", "bold");
-          doc.text(`Ubicación #${index+1}:`, margin, y); y += 5;
-          doc.setFont("helvetica", "normal");
-          doc.text(`• Tipo: ${tipo}`, margin + 5, y); y += 5;
-          doc.text(`• Coordenadas: ${coordenadas}`, margin + 5, y); y += 5;
-          doc.text(`• Descripción: ${textoDesc}`, margin + 5, y); y += 8;
-        });
-      }
+
       
       // Pie de página en todas las páginas
       try {
