@@ -60,9 +60,9 @@ export class DatabaseStorage {
     
     return result.rows.map(persona => ({
       ...persona,
-      alias: persona.alias ? JSON.parse(persona.alias) : [],
-      telefonos: persona.telefonos ? JSON.parse(persona.telefonos) : [],
-      domicilios: persona.domicilios ? JSON.parse(persona.domicilios) : [],
+      alias: persona.alias || [],
+      telefonos: persona.telefonos || [],
+      domicilios: persona.domicilios || [],
       posicionEstructura: persona.posicion_estructura,
       tipoIdentificacionId: persona.tipo_identificacion_id,
       tipoIdentificacion: persona.tipo_identificacion
@@ -88,12 +88,15 @@ export class DatabaseStorage {
     
     const persona = result.rows[0];
     
-    // Convertir campos JSON de strings a arrays
+    // Mapear nombres de campos de la base de datos
     const resultado = {
-      ...persona,
-      alias: persona.alias ? JSON.parse(persona.alias) : [],
-      telefonos: persona.telefonos ? JSON.parse(persona.telefonos) : [],
-      domicilios: persona.domicilios ? JSON.parse(persona.domicilios) : [],
+      id: persona.id,
+      nombre: persona.nombre,
+      identificacion: persona.identificacion,
+      alias: persona.alias || [],
+      telefonos: persona.telefonos || [],
+      domicilios: persona.domicilios || [],
+      foto: persona.foto,
       posicionEstructura: persona.posicion_estructura,
       tipoIdentificacionId: persona.tipo_identificacion_id,
       tipoIdentificacion: persona.tipo_identificacion
