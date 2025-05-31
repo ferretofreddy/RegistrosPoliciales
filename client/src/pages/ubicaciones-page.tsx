@@ -242,14 +242,14 @@ export default function UbicacionesPage() {
       const getIconSymbol = (type: string) => {
         switch (type.toLowerCase()) {
           case 'persona':
-            return '👤'; // Icono de persona
+            return '●'; // Círculo azul para persona
           case 'vehiculo':
-            return '🚗'; // Icono de vehículo
+            return '■'; // Cuadrado verde para vehículo
           case 'inmueble':
-            return '🏢'; // Icono de edificio
+            return '▲'; // Triángulo púrpura para inmueble
           case 'ubicacion':
           default:
-            return '📍'; // Icono de ubicación
+            return '♦'; // Diamante rojo para ubicación
         }
       };
 
