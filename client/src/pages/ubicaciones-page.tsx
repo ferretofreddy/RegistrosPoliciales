@@ -238,6 +238,21 @@ export default function UbicacionesPage() {
         }
       }
 
+      // Función para obtener el símbolo de icono según el tipo
+      const getIconSymbol = (type: string) => {
+        switch (type.toLowerCase()) {
+          case 'persona':
+            return '👤'; // Icono de persona
+          case 'vehiculo':
+            return '🚗'; // Icono de vehículo
+          case 'inmueble':
+            return '🏢'; // Icono de edificio
+          case 'ubicacion':
+          default:
+            return '📍'; // Icono de ubicación
+        }
+      };
+
       // Tablas de ubicaciones
       const ubicacionesDirectas = locations.filter(loc => loc.relation === 'direct');
       const ubicacionesRelacionadas = locations.filter(loc => loc.relation === 'related');
@@ -261,7 +276,7 @@ export default function UbicacionesPage() {
         ];
 
         const datosDirectas = ubicacionesDirectas.map(loc => ({
-          tipo: loc.title,
+          tipo: `${getIconSymbol(loc.type)} ${loc.title}`,
           descripcion: loc.description,
           latitud: loc.lat.toFixed(6),
           longitud: loc.lng.toFixed(6)
@@ -314,7 +329,7 @@ export default function UbicacionesPage() {
         ];
 
         const datosRelacionadas = ubicacionesRelacionadas.map(loc => ({
-          tipo: loc.title,
+          tipo: `${getIconSymbol(loc.type)} ${loc.title}`,
           descripcion: loc.description,
           latitud: loc.lat.toFixed(6),
           longitud: loc.lng.toFixed(6)
