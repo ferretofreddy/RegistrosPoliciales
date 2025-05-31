@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./database-storage";
 import { z } from "zod";
-import { eq, or, sql, like } from "drizzle-orm";
+import { eq, or, sql, like, and } from "drizzle-orm";
 import { db, pool } from "./db";
 import { 
   users, personas, vehiculos, inmuebles,
@@ -1849,19 +1849,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           inmuebleId = id1;
         }
         
-        // Verificar si la relación ya existe
-        const relacionExistente = await db
-          .select()
-          .from(personasInmuebles)
-          .where(
-            and(
-              eq(personasInmuebles.personaId, personaId),
-              eq(personasInmuebles.inmuebleId, inmuebleId)
-            )
-          )
-          .limit(1);
+        // Verificar si la relación ya existe usando SQL directo
+        const relacionExistente = await db.execute(
+          sql`SELECT * FROM personas_inmuebles WHERE persona_id = ${personaId} AND inmueble_id = ${inmuebleId} LIMIT 1`
+        );
         
-        if (relacionExistente.length > 0) {
+        if (relacionExistente.rows.length > 0) {
           return res.status(400).json({ 
             message: "La relación entre esta persona e inmueble ya existe" 
           });
@@ -1885,19 +1878,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           vehiculoId = id1;
         }
         
-        // Verificar si la relación ya existe
-        const relacionExistente = await db
-          .select()
-          .from(personasVehiculos)
-          .where(
-            and(
-              eq(personasVehiculos.personaId, personaId),
-              eq(personasVehiculos.vehiculoId, vehiculoId)
-            )
-          )
-          .limit(1);
+        // Verificar si la relación ya existe usando SQL directo
+        const relacionExistente = await db.execute(
+          sql`SELECT * FROM personas_vehiculos WHERE persona_id = ${personaId} AND vehiculo_id = ${vehiculoId} LIMIT 1`
+        );
         
-        if (relacionExistente.length > 0) {
+        if (relacionExistente.rows.length > 0) {
           return res.status(400).json({ 
             message: "La relación entre esta persona y vehículo ya existe" 
           });
@@ -1967,6 +1953,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ubicacionId: ubicacionId
         }).returning();
         resultado = relacion;
+      }
+      // Relaciones entre vehículo e inmueble (ambas direcciones)
+      else if ((tipo1 === "vehiculo" && tipo2 === "inmueble") || (tipo1 === "inmueble" && tipo2 === "vehiculo")) {
+        let vehiculoId, inmuebleId;
+        
+        if (tipo1 === "vehiculo") {
+          vehiculoId = id1;
+          inmuebleId = id2;
+        } else {
+          vehiculoId = id2;
+          inmuebleId = id1;
+        }
+        
+        const result = await db.execute(
+          sql`INSERT INTO vehiculos_inmuebles (vehiculo_id, inmueble_id) VALUES (${vehiculoId}, ${inmuebleId}) RETURNING *`
+        );
+        resultado = result.rows[0];
+      }
+      // Relaciones entre vehículos
+      else if (tipo1 === "vehiculo" && tipo2 === "vehiculo") {
+        const result = await db.execute(
+          sql`INSERT INTO vehiculos_vehiculos (vehiculo_id_1, vehiculo_id_2) VALUES (${id1}, ${id2}) RETURNING *`
+        );
+        resultado = result.rows[0];
+      }
+      // Relaciones entre inmuebles
+      else if (tipo1 === "inmueble" && tipo2 === "inmueble") {
+        const result = await db.execute(
+          sql`INSERT INTO inmuebles_inmuebles (inmueble_id_1, inmueble_id_2) VALUES (${id1}, ${id2}) RETURNING *`
+        );
+        resultado = result.rows[0];
       }
       else {
         return res.status(400).json({ message: "Tipo de relación no soportada" });
