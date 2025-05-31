@@ -106,7 +106,6 @@ export default function UbicacionesPage() {
       let mapImageUrl: string | null = null;
       if (mapContainerRef.current && locations.length > 0) {
         try {
-          // Intentamos capturar el mapa como imagen
           const canvas = await html2canvas(mapContainerRef.current, {
             useCORS: true,
             allowTaint: true,
@@ -121,7 +120,6 @@ export default function UbicacionesPage() {
           console.log("Mapa capturado como imagen");
         } catch (e) {
           console.error("Error al capturar el mapa:", e);
-          // Continuamos sin la imagen
         }
       }
 
@@ -135,10 +133,9 @@ export default function UbicacionesPage() {
       });
 
       // Configurar encabezado azul con título
-      doc.setFillColor(59, 130, 246); // bg-blue-500
+      doc.setFillColor(59, 130, 246);
       doc.rect(0, 0, 210, 30, 'F');
       
-      // Título en blanco
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(18);
@@ -149,7 +146,6 @@ export default function UbicacionesPage() {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       
-      // Título específico según el tipo de entidad
       switch (selectedResult.tipo) {
         case 'persona':
           doc.text('INFORMACIÓN DE UBICACIÓN DE PERSONA', 20, 45);
@@ -165,21 +161,17 @@ export default function UbicacionesPage() {
           break;
       }
 
-      // Línea separadora
       doc.setDrawColor(59, 130, 246);
       doc.setLineWidth(0.5);
       doc.line(20, 48, 190, 48);
 
-      // Detalles de la entidad
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(11);
       let yPos = 58;
 
-      // Información específica según el tipo de entidad
       switch (selectedResult.tipo) {
         case 'persona':
           doc.text(`Nombre: ${selectedResult.nombre || selectedResult.referencia || 'N/A'}`, 20, yPos);
-          // Obtener identificación desde entityData
           if (entityData && entityData.identificacion) {
             doc.text(`Identificación: ${entityData.identificacion}`, 20, yPos + 6);
             yPos += 6;
@@ -210,10 +202,9 @@ export default function UbicacionesPage() {
 
       yPos += 35;
 
-      // Si tenemos imagen del mapa, la incluimos antes de las tablas
+      // Incluir mapa si está disponible
       if (mapImageUrl) {
         try {
-          // Verificar si necesitamos una nueva página
           if (yPos > 150) {
             doc.addPage();
             yPos = 30;
@@ -224,49 +215,34 @@ export default function UbicacionesPage() {
           doc.text('MAPA DE UBICACIONES', 20, yPos);
           yPos += 10;
 
-          // Obtener las dimensiones originales del canvas para mantener la proporción
-          const img = new Image();
-          img.src = mapImageUrl;
-          
-          // Calcular dimensiones manteniendo la proporción original
-          const maxWidth = pageWidth - 40; // Ancho máximo disponible
-          const originalAspectRatio = img.width / img.height;
-          
+          const maxWidth = pageWidth - 40;
           let imgWidth = maxWidth;
-          let imgHeight = imgWidth / originalAspectRatio;
+          let imgHeight = imgWidth * (9 / 16);
           
-          // Si la altura calculada es muy grande, limitarla y recalcular el ancho
-          const maxHeight = 120; // Altura máxima en mm
+          const maxHeight = 100;
           if (imgHeight > maxHeight) {
             imgHeight = maxHeight;
-            imgWidth = imgHeight * originalAspectRatio;
+            imgWidth = imgHeight * (16 / 9);
           }
           
-          // Centrar la imagen horizontalmente
           const xOffset = (pageWidth - imgWidth) / 2;
           
-          // Añadir la imagen del mapa
           doc.addImage(mapImageUrl, 'PNG', xOffset, yPos, imgWidth, imgHeight);
-          
-          // Actualizar posición Y para contenido adicional
           yPos += imgHeight + 15;
           
-          // Añadir leyenda debajo del mapa
           doc.setFontSize(8);
           doc.text("Vista del mapa con las ubicaciones relacionadas", pageWidth / 2, yPos, { align: "center" });
           yPos += 15;
         } catch (e) {
           console.error("Error al añadir imagen del mapa al PDF:", e);
-          // Continuamos sin la imagen
         }
       }
 
-      // Tabla de ubicaciones directas
+      // Tablas de ubicaciones
       const ubicacionesDirectas = locations.filter(loc => loc.relation === 'direct');
       const ubicacionesRelacionadas = locations.filter(loc => loc.relation === 'related');
 
       if (ubicacionesDirectas.length > 0) {
-        // Verificar si necesitamos una nueva página
         if (yPos > 200) {
           doc.addPage();
           yPos = 30;
@@ -307,10 +283,10 @@ export default function UbicacionesPage() {
             cellWidth: 'wrap'
           },
           columnStyles: {
-            0: { cellWidth: 25 }, // Tipo
-            1: { cellWidth: 75 }, // Descripción 
-            2: { cellWidth: 30 }, // Latitud
-            3: { cellWidth: 30 }  // Longitud
+            0: { cellWidth: 25 },
+            1: { cellWidth: 75 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 30 }
           },
           margin: { left: 20, right: 20 },
           tableWidth: 'wrap'
@@ -319,9 +295,7 @@ export default function UbicacionesPage() {
         yPos = (doc as any).lastAutoTable.finalY + 15;
       }
 
-      // Tabla de ubicaciones relacionadas
       if (ubicacionesRelacionadas.length > 0) {
-        // Verificar si necesitamos una nueva página
         if (yPos > 200) {
           doc.addPage();
           yPos = 30;
@@ -362,36 +336,28 @@ export default function UbicacionesPage() {
             cellWidth: 'wrap'
           },
           columnStyles: {
-            0: { cellWidth: 25 }, // Tipo
-            1: { cellWidth: 75 }, // Descripción 
-            2: { cellWidth: 30 }, // Latitud
-            3: { cellWidth: 30 }  // Longitud
+            0: { cellWidth: 25 },
+            1: { cellWidth: 75 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 30 }
           },
           margin: { left: 20, right: 20 },
           tableWidth: 'wrap'
         });
       }
 
-      // Pie de página en todas las páginas
-      try {
-        const totalPages = doc.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-          doc.setPage(i);
-          doc.setFontSize(8);
-          doc.setTextColor(100, 100, 100);
-          
-          // Centrar el número de página
-          const pageText = `Página ${i} de ${totalPages}`;
-          doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
-          
-          // Texto confidencial a la izquierda
-          doc.text("INFORME CONFIDENCIAL", 20, pageHeight - 10);
-        }
-      } catch (e) {
-        console.error("Error al añadir pies de página:", e);
+      // Pie de página
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        
+        const pageText = `Página ${i} de ${totalPages}`;
+        doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
+        doc.text("INFORME CONFIDENCIAL", 20, pageHeight - 10);
       }
 
-      // Guardar el PDF
       const nombreArchivo = `informe_ubicaciones_${selectedResult.tipo}_${selectedResult.id}_${fecha.replace(/\//g, '-')}.pdf`;
       doc.save(nombreArchivo);
 
