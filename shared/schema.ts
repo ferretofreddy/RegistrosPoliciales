@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, json, timestamp, doublePrecision, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, json, timestamp, doublePrecision, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -143,14 +143,20 @@ export const personasVehiculos = pgTable("personas_vehiculos", {
   id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   vehiculoId: integer("vehiculo_id").notNull().references(() => vehiculos.id),
-});
+}, (table) => ({
+  // Constraint único para evitar relaciones duplicadas
+  uniquePersonaVehiculo: unique().on(table.personaId, table.vehiculoId),
+}));
 
 // Relación Personas-Inmuebles
 export const personasInmuebles = pgTable("personas_inmuebles", {
   id: serial("id").primaryKey(),
   personaId: integer("persona_id").notNull().references(() => personas.id),
   inmuebleId: integer("inmueble_id").notNull().references(() => inmuebles.id),
-});
+}, (table) => ({
+  // Constraint único para evitar relaciones duplicadas
+  uniquePersonaInmueble: unique().on(table.personaId, table.inmuebleId),
+}));
 
 // Relación Personas-Personas
 export const personasPersonas = pgTable("personas_personas", {
