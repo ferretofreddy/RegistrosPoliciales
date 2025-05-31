@@ -360,8 +360,11 @@ export default function UbicacionForm() {
       setRelacionPersonas([]);
       setRelacionVehiculos([]);
       setRelacionInmuebles([]);
-      // Usar la función centralizada para invalidar todas las consultas
-      invalidateAllQueries('/api/ubicaciones');
+      // Invalidar todas las consultas relacionadas para actualizar las listas
+      queryClient.invalidateQueries({ queryKey: ['/api/ubicaciones'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
     },
     onError: (error) => {
       toast({

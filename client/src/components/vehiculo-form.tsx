@@ -204,8 +204,11 @@ export default function VehiculoForm() {
         setObservaciones([]);
         setShowObservacionForm(false);
         
-        // Usar la función centralizada para invalidar todas las consultas
-        invalidateAllQueries('/api/vehiculos');
+        // Invalidar todas las consultas relacionadas para actualizar las listas
+        queryClient.invalidateQueries({ queryKey: ['/api/vehiculos'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/personas'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/inmuebles'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/ubicaciones'] });
         
       } catch (error) {
         console.error("Error al crear relaciones:", error);
