@@ -23,6 +23,7 @@ import { X, Plus, CalendarClock, AlertCircle } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
+import EntitySearch from "@/components/entity-search";
 
 // Esquema para observaciones
 const observacionSchema = z.object({

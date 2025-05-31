@@ -25,6 +25,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
 import LocationMapDialog from "@/components/location-map-dialog";
+import EntitySearch from "@/components/entity-search";
 
 // Esquema para observaciones
 const observacionSchema = z.object({
@@ -892,43 +893,13 @@ export default function PersonaForm() {
         <div>
           <FormLabel>Relaciones con Vehículos</FormLabel>
           <div className="mt-1">
-            <FormField
-              control={form.control}
-              name="vehiculoSeleccionado"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar vehículo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {vehiculos && vehiculos.map((vehiculo: any) => (
-                        <SelectItem key={vehiculo.id} value={vehiculo.id.toString()}>
-                          {vehiculo.marca} {vehiculo.modelo} ({vehiculo.placa})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <EntitySearch
+              entityType="vehiculo"
+              placeholder="Buscar vehículo..."
+              onSelect={addRelacionVehiculo}
+              selectedEntities={relacionVehiculos}
+              multiple={true}
             />
-            
-            <div className="mt-2 flex justify-end">
-              <Button 
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addRelacionVehiculo}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Vincular vehículo
-              </Button>
-            </div>
             
             {relacionVehiculos.length > 0 && (
               <div className="mt-2">
@@ -954,45 +925,14 @@ export default function PersonaForm() {
         
         <div>
           <FormLabel>Relaciones con Inmuebles</FormLabel>
-          <div className="space-y-2">
-            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-              <div className="flex-grow">
-                <FormField
-                  control={form.control}
-                  name="inmuebleSeleccionado"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar inmueble" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {inmuebles && inmuebles.map((inmueble: any) => (
-                            <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
-                              {inmueble.tipo} ({inmueble.direccion})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addRelacionInmueble}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Vincular inmueble
-              </Button>
-            </div>
+          <div className="mt-1">
+            <EntitySearch
+              entityType="inmueble"
+              placeholder="Buscar inmueble..."
+              onSelect={addRelacionInmueble}
+              selectedEntities={relacionInmuebles}
+              multiple={true}
+            />
             
             {relacionInmuebles.length > 0 && (
               <div className="mt-2">
@@ -1016,48 +956,16 @@ export default function PersonaForm() {
           </div>
         </div>
         
-        {/* Sección de relaciones con Personas */}
-        <div className="mt-4">
-          <FormLabel>Relaciones con Personas</FormLabel>
-          <div className="space-y-2">
-            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-              <div className="flex-grow">
-                <FormField
-                  control={form.control}
-                  name="personaSeleccionada"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar persona" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {personas && personas.map((persona: any) => (
-                            <SelectItem key={persona.id} value={persona.id.toString()}>
-                              {persona.nombre} ({persona.identificacion})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addRelacionPersona}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Vincular persona
-              </Button>
-            </div>
+        <div>
+          <FormLabel>Relaciones con otras Personas</FormLabel>
+          <div className="mt-1">
+            <EntitySearch
+              entityType="persona"
+              placeholder="Buscar persona..."
+              onSelect={addRelacionPersona}
+              selectedEntities={relacionPersonas}
+              multiple={true}
+            />
             
             {relacionPersonas.length > 0 && (
               <div className="mt-2">
