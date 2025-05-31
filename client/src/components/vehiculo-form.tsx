@@ -235,7 +235,7 @@ export default function VehiculoForm() {
       console.log('Agregando persona:', persona);
       setRelacionPersonas([...relacionPersonas, { 
         id: persona.id,
-        nombre: `${persona.nombre} (${persona.identificacion})`
+        nombre: `${persona.nombre || 'Sin nombre'} (${persona.identificacion || 'Sin ID'})`
       }]);
     }
   };
