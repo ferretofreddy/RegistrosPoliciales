@@ -302,7 +302,12 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                     {relaciones.personas.map((persona) => (
                       <TableRow key={persona.id}>
                         <TableCell>{persona.nombre}</TableCell>
-                        <TableCell>{persona.identificacion}</TableCell>
+                        <TableCell>
+                          {persona.tipoIdentificacion && (
+                            <span className="text-gray-600 mr-2">({persona.tipoIdentificacion})</span>
+                          )}
+                          {persona.identificacion}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

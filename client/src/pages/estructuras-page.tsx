@@ -895,7 +895,9 @@ export default function EstructurasPage() {
             }
             
             const nombre = persona.nombre || "Sin nombre";
-            const identificacion = persona.identificacion || "Sin identificación";
+            const identificacionCompleta = persona.tipoIdentificacion 
+              ? `(${persona.tipoIdentificacion}) ${persona.identificacion || "Sin identificación"}`
+              : persona.identificacion || "Sin identificación";
             const posicion = persona.posicionEstructura && persona.posicionEstructura !== 'sin_posicion' 
               ? persona.posicionEstructura 
               : "Sin posición específica";
@@ -915,7 +917,7 @@ export default function EstructurasPage() {
             const maxPosicionLength = 20;
             
             const nombreDisplay = nombre.length > maxNombreLength ? nombre.substring(0, maxNombreLength) + "..." : nombre;
-            const idDisplay = identificacion.length > maxIdLength ? identificacion.substring(0, maxIdLength) + "..." : identificacion;
+            const idDisplay = identificacionCompleta.length > maxIdLength ? identificacionCompleta.substring(0, maxIdLength) + "..." : identificacionCompleta;
             const posicionDisplay = posicion.length > maxPosicionLength ? posicion.substring(0, maxPosicionLength) + "..." : posicion;
             
             doc.text(nombreDisplay, tableX + 2, y + 2);
