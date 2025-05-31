@@ -823,9 +823,9 @@ export default function EstructurasPage() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         
-        // Imprimimos las observaciones como texto simple
+        // Imprimimos las observaciones con texto completo en múltiples líneas
         observaciones.forEach((obs: any, index: number) => {
-          if (y > pageHeight - 30) {
+          if (y > pageHeight - 40) {
             doc.addPage();
             y = 20;
           }
@@ -834,14 +834,14 @@ export default function EstructurasPage() {
           const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A";
           const usuario = obs.usuario || "Sistema";
           
-          // Limitamos el largo del detalle para evitar problemas
-          const textoDetalle = detalle.length > 60 ? detalle.substring(0, 60) + "..." : detalle;
-          
           doc.setFont("helvetica", "bold");
           doc.text(`Observación #${index+1}:`, margin, y); y += 5;
           doc.setFont("helvetica", "normal");
-          doc.text(`• ${textoDetalle}`, margin + 5, y); y += 5;
-          doc.text(`• Fecha: ${fecha} - Usuario: ${usuario}`, margin + 5, y); y += 8;
+          
+          // Usar función de múltiples líneas para el detalle completo
+          y = addMultiLineText(doc, "Detalle:", detalle, margin, y);
+          
+          doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 5, y); y += 8;
         });
       }
       
@@ -1006,24 +1006,16 @@ export default function EstructurasPage() {
             y = 20;
           }
           
-          doc.setFont("helvetica", "bold");
-          doc.text("Inmuebles relacionados:", margin, y); y += 5;
-          doc.setFont("helvetica", "normal");
+          // Crear texto completo de inmuebles relacionados
+          const inmueblesTexto = relaciones.inmuebles
+            .map((inmueble: any) => {
+              const tipo = inmueble.tipo || "Sin tipo";
+              const direccion = inmueble.direccion || "Sin dirección";
+              return `• ${tipo}: ${direccion}`;
+            })
+            .join('\n');
           
-          relaciones.inmuebles.forEach((inmueble: any) => {
-            if (y > pageHeight - 30) {
-              doc.addPage();
-              y = 20;
-            }
-            
-            const tipo = inmueble.tipo || "Sin tipo";
-            const direccion = inmueble.direccion || "Sin dirección";
-            
-            // Limitar la longitud de la dirección
-            const textoDir = direccion.length > 50 ? direccion.substring(0, 50) + "..." : direccion;
-            
-            doc.text(`• ${tipo}: ${textoDir}`, margin + 5, y); y += 5;
-          });
+          y = addMultiLineText(doc, "Inmuebles relacionados:", inmueblesTexto, margin, y);
         }
       }
 
