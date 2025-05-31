@@ -97,6 +97,16 @@ export default function PersonaForm() {
     }
   });
   
+  // Obtener tipos de identificación para el select
+  const { data: tiposIdentificacion } = useQuery({
+    queryKey: ['/api/tipos-identificacion'],
+    queryFn: async () => {
+      const res = await fetch('/api/tipos-identificacion');
+      if (!res.ok) throw new Error('Error al cargar tipos de identificación');
+      return res.json();
+    }
+  });
+
   // Obtener lista de personas disponibles para las relaciones
   const { data: personas } = useQuery({
     queryKey: ['/api/personas'],

@@ -30,6 +30,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const personas = pgTable("personas", {
   id: serial("id").primaryKey(),
   nombre: text("nombre").notNull(),
+  tipoIdentificacionId: integer("tipo_identificacion_id").references(() => tiposIdentificacion.id),
   identificacion: text("identificacion").notNull(),
   alias: json("alias").$type<string[]>().default([]),
   telefonos: json("telefonos").$type<string[]>().default([]),
@@ -40,6 +41,7 @@ export const personas = pgTable("personas", {
 
 export const insertPersonaSchema = createInsertSchema(personas).pick({
   nombre: true,
+  tipoIdentificacionId: true,
   identificacion: true,
   alias: true,
   telefonos: true,
