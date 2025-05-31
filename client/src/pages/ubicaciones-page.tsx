@@ -5,8 +5,12 @@ import SearchComponent from "@/components/search-component";
 import LocationMap from "@/components/location-map";
 import LocationsTable, { LocationData } from "@/components/locations-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Search, User, Building, Car } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Search, User, Building, Car, FileText } from "lucide-react";
 import { SearchResult } from "@/components/search-component";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 // Coordenadas por defecto (centro de Costa Rica)
 const DEFAULT_CENTER: [number, number] = [9.9281, -84.0907];
@@ -70,6 +74,7 @@ export default function UbicacionesPage() {
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   // Obtener datos de la entidad seleccionada
   const { data: entityData } = useQuery<any>({
@@ -82,6 +87,192 @@ export default function UbicacionesPage() {
     queryKey: [selectedResult ? `api/relaciones/${selectedResult.tipo}/${selectedResult.id}` : null],
     enabled: !!selectedResult
   });
+
+  // Función para generar informe PDF de ubicaciones
+  const generarInformePDF = () => {
+    if (!selectedResult || locations.length === 0) {
+      toast({
+        title: "No se puede generar el informe",
+        description: "Selecciona una entidad con ubicaciones para generar el informe",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const fecha = new Date().toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+
+      // Configurar encabezado azul con título
+      doc.setFillColor(59, 130, 246); // bg-blue-500
+      doc.rect(0, 0, 210, 30, 'F');
+      
+      // Título en blanco
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('INFORME DE UBICACIONES', 105, 20, { align: 'center' });
+
+      // Información de la entidad
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('INFORMACIÓN DE LA ENTIDAD', 20, 45);
+
+      // Línea separadora
+      doc.setDrawColor(59, 130, 246);
+      doc.setLineWidth(0.5);
+      doc.line(20, 48, 190, 48);
+
+      // Detalles de la entidad
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      let yPos = 58;
+
+      // Información específica según el tipo de entidad
+      switch (selectedResult.tipo) {
+        case 'persona':
+          doc.text(`Tipo: Persona`, 20, yPos);
+          doc.text(`Nombre: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          break;
+        case 'vehiculo':
+          doc.text(`Tipo: Vehículo`, 20, yPos);
+          doc.text(`Vehículo: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          break;
+        case 'inmueble':
+          doc.text(`Tipo: Inmueble`, 20, yPos);
+          doc.text(`Inmueble: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          break;
+        case 'ubicacion':
+          doc.text(`Tipo: Ubicación`, 20, yPos);
+          doc.text(`Ubicación: ${selectedResult.referencia || 'N/A'}`, 20, yPos + 6);
+          break;
+      }
+
+      doc.text(`Fecha de generación: ${fecha}`, 20, yPos + 12);
+      doc.text(`Total de ubicaciones: ${locations.length}`, 20, yPos + 18);
+
+      // Tabla de ubicaciones directas
+      const ubicacionesDirectas = locations.filter(loc => loc.relation === 'direct');
+      const ubicacionesRelacionadas = locations.filter(loc => loc.relation === 'related');
+
+      yPos += 35;
+
+      if (ubicacionesDirectas.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('UBICACIONES DIRECTAS', 20, yPos);
+        yPos += 10;
+
+        const columnasDirectas = [
+          { header: 'Tipo', dataKey: 'tipo' },
+          { header: 'Descripción', dataKey: 'descripcion' },
+          { header: 'Latitud', dataKey: 'latitud' },
+          { header: 'Longitud', dataKey: 'longitud' }
+        ];
+
+        const datosDirectas = ubicacionesDirectas.map(loc => ({
+          tipo: loc.title,
+          descripcion: loc.description.length > 40 ? loc.description.substring(0, 40) + '...' : loc.description,
+          latitud: loc.lat.toFixed(6),
+          longitud: loc.lng.toFixed(6)
+        }));
+
+        (doc as any).autoTable({
+          startY: yPos,
+          head: [columnasDirectas.map(col => col.header)],
+          body: datosDirectas.map(row => columnasDirectas.map(col => row[col.dataKey as keyof typeof row])),
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [59, 130, 246],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          styles: {
+            fontSize: 9,
+            cellPadding: 3
+          },
+          columnStyles: {
+            1: { cellWidth: 50 }, // Descripción más ancha
+            2: { cellWidth: 25 }, // Latitud
+            3: { cellWidth: 25 }  // Longitud
+          }
+        });
+
+        yPos = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // Tabla de ubicaciones relacionadas
+      if (ubicacionesRelacionadas.length > 0) {
+        // Verificar si necesitamos una nueva página
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 30;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('UBICACIONES RELACIONADAS', 20, yPos);
+        yPos += 10;
+
+        const columnasRelacionadas = [
+          { header: 'Tipo', dataKey: 'tipo' },
+          { header: 'Descripción', dataKey: 'descripcion' },
+          { header: 'Latitud', dataKey: 'latitud' },
+          { header: 'Longitud', dataKey: 'longitud' }
+        ];
+
+        const datosRelacionadas = ubicacionesRelacionadas.map(loc => ({
+          tipo: loc.title,
+          descripcion: loc.description.length > 40 ? loc.description.substring(0, 40) + '...' : loc.description,
+          latitud: loc.lat.toFixed(6),
+          longitud: loc.lng.toFixed(6)
+        }));
+
+        (doc as any).autoTable({
+          startY: yPos,
+          head: [columnasRelacionadas.map(col => col.header)],
+          body: datosRelacionadas.map(row => columnasRelacionadas.map(col => row[col.dataKey as keyof typeof row])),
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [59, 130, 246],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          styles: {
+            fontSize: 9,
+            cellPadding: 3
+          },
+          columnStyles: {
+            1: { cellWidth: 50 }, // Descripción más ancha
+            2: { cellWidth: 25 }, // Latitud
+            3: { cellWidth: 25 }  // Longitud
+          }
+        });
+      }
+
+      // Guardar el PDF
+      const nombreArchivo = `informe_ubicaciones_${selectedResult.tipo}_${selectedResult.id}_${fecha.replace(/\//g, '-')}.pdf`;
+      doc.save(nombreArchivo);
+
+      toast({
+        title: "Informe generado exitosamente",
+        description: `Se ha descargado el archivo: ${nombreArchivo}`
+      });
+
+    } catch (error) {
+      console.error('Error al generar el informe PDF:', error);
+      toast({
+        title: "Error al generar informe",
+        description: "No se pudo generar el informe PDF. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Manejar la selección de un resultado de búsqueda
   const handleResultSelect = (result: SearchResult) => {
