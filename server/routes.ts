@@ -1,7 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, hashPassword } from "./auth";
-import { storage } from "./storage";
+import { storage } from "./database-storage";
 import { z } from "zod";
 import { eq, or, sql, like } from "drizzle-orm";
 import { db, pool } from "./db";
