@@ -152,8 +152,8 @@ export default function UbicacionesPage() {
       switch (selectedResult.tipo) {
         case 'persona':
           doc.text(`Nombre: ${selectedResult.nombre || selectedResult.referencia || 'N/A'}`, 20, yPos);
-          if (selectedResult.identificacion) {
-            doc.text(`Identificación: ${selectedResult.identificacion}`, 20, yPos + 6);
+          if ((selectedResult as any).identificacion) {
+            doc.text(`Identificación: ${(selectedResult as any).identificacion}`, 20, yPos + 6);
             yPos += 6;
           }
           break;
@@ -164,14 +164,14 @@ export default function UbicacionesPage() {
           yPos += 6;
           break;
         case 'inmueble':
-          doc.text(`Tipo de inmueble: ${selectedResult.tipo_inmueble || selectedResult.referencia || 'N/A'}`, 20, yPos);
+          doc.text(`Tipo de inmueble: ${(selectedResult as any).tipo_inmueble || selectedResult.referencia || 'N/A'}`, 20, yPos);
           doc.text(`Dirección: ${selectedResult.direccion || 'N/A'}`, 20, yPos + 6);
           yPos += 6;
           break;
         case 'ubicacion':
-          doc.text(`Tipo de ubicación: ${selectedResult.tipo_ubicacion || selectedResult.referencia || 'N/A'}`, 20, yPos);
-          if (selectedResult.observaciones) {
-            doc.text(`Observaciones: ${selectedResult.observaciones}`, 20, yPos + 6);
+          doc.text(`Tipo de ubicación: ${(selectedResult as any).tipo_ubicacion || selectedResult.referencia || 'N/A'}`, 20, yPos);
+          if ((selectedResult as any).observaciones) {
+            doc.text(`Observaciones: ${(selectedResult as any).observaciones}`, 20, yPos + 6);
             yPos += 6;
           }
           break;
@@ -201,7 +201,7 @@ export default function UbicacionesPage() {
 
         const datosDirectas = ubicacionesDirectas.map(loc => ({
           tipo: loc.title,
-          descripcion: loc.description.length > 40 ? loc.description.substring(0, 40) + '...' : loc.description,
+          descripcion: loc.description, // Mostrar descripción completa
           latitud: loc.lat.toFixed(6),
           longitud: loc.lng.toFixed(6)
         }));
@@ -218,12 +218,14 @@ export default function UbicacionesPage() {
           },
           styles: {
             fontSize: 9,
-            cellPadding: 3
+            cellPadding: 3,
+            cellWidth: 'wrap'
           },
           columnStyles: {
-            1: { cellWidth: 50 }, // Descripción más ancha
-            2: { cellWidth: 25 }, // Latitud
-            3: { cellWidth: 25 }  // Longitud
+            0: { cellWidth: 20 }, // Tipo más angosto
+            1: { cellWidth: 80 }, // Descripción mucho más ancha
+            2: { cellWidth: 30 }, // Latitud
+            3: { cellWidth: 30 }  // Longitud
           }
         });
 
@@ -252,7 +254,7 @@ export default function UbicacionesPage() {
 
         const datosRelacionadas = ubicacionesRelacionadas.map(loc => ({
           tipo: loc.title,
-          descripcion: loc.description.length > 40 ? loc.description.substring(0, 40) + '...' : loc.description,
+          descripcion: loc.description, // Mostrar descripción completa
           latitud: loc.lat.toFixed(6),
           longitud: loc.lng.toFixed(6)
         }));
@@ -269,12 +271,14 @@ export default function UbicacionesPage() {
           },
           styles: {
             fontSize: 9,
-            cellPadding: 3
+            cellPadding: 3,
+            cellWidth: 'wrap'
           },
           columnStyles: {
-            1: { cellWidth: 50 }, // Descripción más ancha
-            2: { cellWidth: 25 }, // Latitud
-            3: { cellWidth: 25 }  // Longitud
+            0: { cellWidth: 20 }, // Tipo más angosto
+            1: { cellWidth: 80 }, // Descripción mucho más ancha
+            2: { cellWidth: 30 }, // Latitud
+            3: { cellWidth: 30 }  // Longitud
           }
         });
       }
