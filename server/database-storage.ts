@@ -48,45 +48,33 @@ export class DatabaseStorage {
 
   // PERSONAS METHODS
   async getAllPersonas(): Promise<any[]> {
-    // Obtenemos todas las personas
-    const personas = await db.select().from(personas);
-    
-    // Para cada persona, agregamos el tipo de identificación
-    const personasConTipo = await Promise.all(
-      personas.map(async (persona) => {
-        let tipoIdentificacion = null;
-        if (persona.tipoIdentificacionId) {
-          const [tipo] = await db.select().from(tiposIdentificacion).where(eq(tiposIdentificacion.id, persona.tipoIdentificacionId));
-          tipoIdentificacion = tipo?.tipo || null;
-        }
-        
-        return {
-          ...persona,
-          tipoIdentificacion
-        };
-      })
-    );
-    
-    return personasConTipo;
+    return await db.select().from(personas);
   }
 
   async getPersona(id: number): Promise<any> {
-    // Primero obtenemos la persona con el método original
-    const [persona] = await db.select().from(personas).where(eq(personas.id, id));
+    const result = await pool.query(`
+      SELECT 
+        p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
+        p.foto, p.posicion_estructura, p.tipo_identificacion_id,
+        ti.tipo as tipo_identificacion
+      FROM personas p 
+      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id 
+      WHERE p.id = $1
+    `, [id]);
     
-    if (!persona) return undefined;
+    if (result.rows.length === 0) return undefined;
     
-    // Luego obtenemos el tipo de identificación si existe
-    let tipoIdentificacion = null;
-    if (persona.tipoIdentificacionId) {
-      const [tipo] = await db.select().from(tiposIdentificacion).where(eq(tiposIdentificacion.id, persona.tipoIdentificacionId));
-      tipoIdentificacion = tipo?.tipo || null;
-    }
+    const persona = result.rows[0];
     
-    // Retornamos la persona con el tipo de identificación incluido
+    // Convertir campos JSON de strings a arrays
     return {
       ...persona,
-      tipoIdentificacion
+      alias: persona.alias ? JSON.parse(persona.alias) : [],
+      telefonos: persona.telefonos ? JSON.parse(persona.telefonos) : [],
+      domicilios: persona.domicilios ? JSON.parse(persona.domicilios) : [],
+      posicionEstructura: persona.posicion_estructura,
+      tipoIdentificacionId: persona.tipo_identificacion_id,
+      tipoIdentificacion: persona.tipo_identificacion
     };
   }
 

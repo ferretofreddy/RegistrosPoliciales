@@ -96,7 +96,12 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
             </div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold">Identificación:</h3>
-              <p>{entityData.identificacion}</p>
+              <p>
+                {entityData.tipoIdentificacion && (
+                  <span className="text-gray-600 mr-2">({entityData.tipoIdentificacion})</span>
+                )}
+                {entityData.identificacion}
+              </p>
             </div>
             {entityData.alias && entityData.alias.length > 0 && (
               <div className="flex flex-wrap gap-2">
