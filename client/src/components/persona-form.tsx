@@ -35,6 +35,7 @@ const observacionSchema = z.object({
 // Esquema base para el formulario de persona
 const personaFormSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
+  tipoIdentificacionId: z.string().optional(),
   identificacion: z.string().min(1, "La identificación es requerida"),
   posicionEstructura: z.string().optional(),
   alias: z.array(z.string()).optional(),
@@ -152,6 +153,7 @@ export default function PersonaForm() {
       // Preparar los datos para enviar al servidor
       const personaData = {
         nombre: values.nombre,
+        tipoIdentificacionId: values.tipoIdentificacionId ? parseInt(values.tipoIdentificacionId) : null,
         identificacion: values.identificacion,
         posicionEstructura: values.posicionEstructura,
         alias: aliases,
@@ -495,6 +497,35 @@ export default function PersonaForm() {
                 <FormControl>
                   <Input placeholder="Nombre y apellidos" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="tipoIdentificacionId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de Identificación</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona el tipo de identificación" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {tiposIdentificacion?.map((tipo: any) => (
+                      <SelectItem key={tipo.id} value={tipo.id.toString()}>
+                        {tipo.tipo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
