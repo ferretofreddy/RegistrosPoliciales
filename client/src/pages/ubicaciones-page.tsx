@@ -152,8 +152,9 @@ export default function UbicacionesPage() {
       switch (selectedResult.tipo) {
         case 'persona':
           doc.text(`Nombre: ${selectedResult.nombre || selectedResult.referencia || 'N/A'}`, 20, yPos);
-          if ((selectedResult as any).identificacion) {
-            doc.text(`Identificación: ${(selectedResult as any).identificacion}`, 20, yPos + 6);
+          // Obtener identificación desde entityData
+          if (entityData && entityData.identificacion) {
+            doc.text(`Identificación: ${entityData.identificacion}`, 20, yPos + 6);
             yPos += 6;
           }
           break;
@@ -222,11 +223,12 @@ export default function UbicacionesPage() {
             cellWidth: 'wrap'
           },
           columnStyles: {
-            0: { cellWidth: 20 }, // Tipo más angosto
-            1: { cellWidth: 80 }, // Descripción mucho más ancha
-            2: { cellWidth: 30 }, // Latitud
-            3: { cellWidth: 30 }  // Longitud
-          }
+            0: { cellWidth: 30 }, // Tipo
+            1: { cellWidth: 90 }, // Descripción (aprovechando el ancho disponible)
+            2: { cellWidth: 35 }, // Latitud
+            3: { cellWidth: 35 }  // Longitud
+          },
+          margin: { top: 10, right: 20, bottom: 10, left: 20 }
         });
 
         yPos = (doc as any).lastAutoTable.finalY + 15;
@@ -275,11 +277,12 @@ export default function UbicacionesPage() {
             cellWidth: 'wrap'
           },
           columnStyles: {
-            0: { cellWidth: 20 }, // Tipo más angosto
-            1: { cellWidth: 80 }, // Descripción mucho más ancha
-            2: { cellWidth: 30 }, // Latitud
-            3: { cellWidth: 30 }  // Longitud
-          }
+            0: { cellWidth: 30 }, // Tipo
+            1: { cellWidth: 90 }, // Descripción (aprovechando el ancho disponible)
+            2: { cellWidth: 35 }, // Latitud
+            3: { cellWidth: 35 }  // Longitud
+          },
+          margin: { top: 10, right: 20, bottom: 10, left: 20 }
         });
       }
 
