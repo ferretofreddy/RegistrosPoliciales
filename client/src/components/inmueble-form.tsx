@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Plus, Upload, MapPin, Map, CalendarClock, AlertCircle } from "lucide-react";
+import EntitySearch from "@/components/entity-search";
 import {
   Table,
   TableBody,
@@ -757,43 +758,13 @@ export default function InmuebleForm() {
         <div>
           <FormLabel>Relaciones con Personas</FormLabel>
           <div className="mt-1">
-            <FormField
-              control={form.control}
-              name="personaSeleccionada"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar persona" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {personas && personas.map((persona: any) => (
-                        <SelectItem key={persona.id} value={persona.id.toString()}>
-                          {persona.nombre} ({persona.identificacion})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <EntitySearch
+              entityType="persona"
+              placeholder="Buscar persona..."
+              onSelect={addRelacionPersona}
+              selectedEntities={relacionPersonas}
+              multiple={true}
             />
-            
-            <div className="mt-2 flex justify-end">
-              <Button 
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addRelacionPersona}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Vincular persona
-              </Button>
-            </div>
             
             {relacionPersonas.length > 0 && (
               <div className="mt-2">
@@ -820,43 +791,13 @@ export default function InmuebleForm() {
         <div>
           <FormLabel>Relaciones con Vehículos</FormLabel>
           <div className="mt-1">
-            <FormField
-              control={form.control}
-              name="vehiculoSeleccionado"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar vehículo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {vehiculos && vehiculos.map((vehiculo: any) => (
-                        <SelectItem key={vehiculo.id} value={vehiculo.id.toString()}>
-                          {vehiculo.marca} {vehiculo.modelo} ({vehiculo.placa})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <EntitySearch
+              entityType="vehiculo"
+              placeholder="Buscar vehículo..."
+              onSelect={addRelacionVehiculo}
+              selectedEntities={relacionVehiculos}
+              multiple={true}
             />
-            
-            <div className="mt-2 flex justify-end">
-              <Button 
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addRelacionVehiculo}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Vincular vehículo
-              </Button>
-            </div>
             
             {relacionVehiculos.length > 0 && (
               <div className="mt-2">
@@ -883,43 +824,13 @@ export default function InmuebleForm() {
         <div>
           <FormLabel>Relaciones con Otros Inmuebles</FormLabel>
           <div className="mt-1">
-            <FormField
-              control={form.control}
-              name="inmuebleSeleccionado"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar inmueble" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {inmuebles && inmuebles.map((inmueble: any) => (
-                        <SelectItem key={inmueble.id} value={inmueble.id.toString()}>
-                          {inmueble.tipo}: {inmueble.direccion}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <EntitySearch
+              entityType="inmueble"
+              placeholder="Buscar inmueble..."
+              onSelect={addRelacionInmueble}
+              selectedEntities={relacionInmuebles}
+              multiple={true}
             />
-            
-            <div className="mt-2 flex justify-end">
-              <Button 
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addRelacionInmueble}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Vincular inmueble
-              </Button>
-            </div>
             
             {relacionInmuebles.length > 0 && (
               <div className="mt-2">
