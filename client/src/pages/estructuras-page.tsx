@@ -672,6 +672,40 @@ export default function EstructurasPage() {
       
       const entityData = entity as any;
       
+      // Función auxiliar para agregar texto de una línea
+      const addTextRow = (doc: any, label: string, value: string, x: number, currentY: number) => {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`${label} ${value}`, x, currentY);
+        return currentY + 5;
+      };
+
+      // Función auxiliar para texto de múltiples líneas usando todo el ancho
+      const addMultiLineText = (doc: any, label: string, text: string, x: number, currentY: number) => {
+        if (!text || text.trim() === '') return currentY;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        
+        // Mostrar la etiqueta
+        doc.text(`${label}`, x, currentY);
+        currentY += 5;
+        
+        // Calcular ancho disponible para el texto (respetando márgenes)
+        const availableWidth = pageWidth - (2 * margin) - 5; // 5px de indentación
+        
+        // Dividir el texto en líneas que caben en el ancho disponible
+        const lines = doc.splitTextToSize(text, availableWidth);
+        
+        // Agregar cada línea
+        lines.forEach((line: string) => {
+          doc.text(line, x + 5, currentY); // Indentar el contenido
+          currentY += 5;
+        });
+        
+        return currentY + 2; // Espacio extra después del bloque
+      };
+      
       // Información según tipo de entidad
       switch (selectedResult.tipo) {
         case "persona":
@@ -698,15 +732,15 @@ export default function EstructurasPage() {
           }
           
           if (entityData.domicilios && entityData.domicilios.length > 0) {
-            doc.text("Domicilios:", margin, y); y += 5;
+            // Unir todos los domicilios en un solo texto
+            const domiciliosTexto = entityData.domicilios
+              .filter((dom: string) => dom && dom.trim())
+              .map((dom: string) => `• ${dom}`)
+              .join('\n');
             
-            entityData.domicilios.forEach((dom: string) => {
-              if (dom && dom.trim()) {
-                // Limitar longitud del texto
-                const text = dom.length > 50 ? dom.substring(0, 50) + "..." : dom;
-                doc.text(`• ${text}`, margin + 5, y); y += 5;
-              }
-            });
+            if (domiciliosTexto) {
+              y = addMultiLineText(doc, "Domicilios:", domiciliosTexto, margin, y);
+            }
           }
           break;
           
@@ -721,10 +755,7 @@ export default function EstructurasPage() {
           }
           
           if (entityData.observaciones) {
-            const text = entityData.observaciones.length > 80 
-              ? entityData.observaciones.substring(0, 80) + "..." 
-              : entityData.observaciones;
-            y = addTextRow(doc, "Observaciones:", text, margin, y);
+            y = addMultiLineText(doc, "Observaciones:", entityData.observaciones, margin, y);
           }
           break;
           
@@ -732,10 +763,7 @@ export default function EstructurasPage() {
           y = addTextRow(doc, "Tipo:", entityData.tipo || "N/A", margin, y);
           
           if (entityData.direccion) {
-            const text = entityData.direccion.length > 80 
-              ? entityData.direccion.substring(0, 80) + "..." 
-              : entityData.direccion;
-            y = addTextRow(doc, "Dirección:", text, margin, y);
+            y = addMultiLineText(doc, "Dirección:", entityData.direccion, margin, y);
           } else {
             y = addTextRow(doc, "Dirección:", "N/A", margin, y);
           }
@@ -745,10 +773,7 @@ export default function EstructurasPage() {
           }
           
           if (entityData.observaciones) {
-            const text = entityData.observaciones.length > 80 
-              ? entityData.observaciones.substring(0, 80) + "..." 
-              : entityData.observaciones;
-            y = addTextRow(doc, "Observaciones:", text, margin, y);
+            y = addMultiLineText(doc, "Observaciones:", entityData.observaciones, margin, y);
           }
           break;
           
@@ -777,10 +802,7 @@ export default function EstructurasPage() {
           }
           
           if (entityData.observaciones) {
-            const text = entityData.observaciones.length > 80 
-              ? entityData.observaciones.substring(0, 80) + "..." 
-              : entityData.observaciones;
-            y = addTextRow(doc, "Observaciones:", text, margin, y);
+            y = addMultiLineText(doc, "Observaciones:", entityData.observaciones, margin, y);
           }
           break;
       }
