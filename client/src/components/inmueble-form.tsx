@@ -285,17 +285,13 @@ export default function InmuebleForm() {
   };
 
   // Funciones para manejar relaciones con personas
-  const addRelacionPersona = () => {
-    const personaId = form.getValues("personaSeleccionada");
-    if (personaId && personas) {
-      const persona = personas.find((p: any) => p.id.toString() === personaId);
-      if (persona && !relacionPersonas.some(rp => rp.id === persona.id)) {
-        setRelacionPersonas([...relacionPersonas, { 
-          id: persona.id,
-          nombre: `${persona.nombre} (${persona.identificacion})`
-        }]);
-        form.setValue("personaSeleccionada", "");
-      }
+  const addRelacionPersona = (persona: any) => {
+    if (persona && !relacionPersonas.some(rp => rp.id === persona.id)) {
+      console.log('Agregando persona:', persona);
+      setRelacionPersonas([...relacionPersonas, { 
+        id: persona.id,
+        nombre: `${persona.nombre} (${persona.identificacion})`
+      }]);
     }
   };
 

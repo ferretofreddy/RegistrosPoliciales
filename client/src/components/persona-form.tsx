@@ -332,17 +332,13 @@ export default function PersonaForm() {
   };
 
   // Funciones para manejar relaciones con vehículos
-  const addRelacionVehiculo = () => {
-    const vehiculoId = form.getValues("vehiculoSeleccionado");
-    if (vehiculoId && vehiculos) {
-      const vehiculo = vehiculos.find((v: any) => v.id.toString() === vehiculoId);
-      if (vehiculo && !relacionVehiculos.some(rv => rv.id === vehiculo.id)) {
-        setRelacionVehiculos([...relacionVehiculos, { 
-          id: vehiculo.id,
-          nombre: `${vehiculo.marca} (${vehiculo.placa})`
-        }]);
-        form.setValue("vehiculoSeleccionado", "");
-      }
+  const addRelacionVehiculo = (vehiculo: any) => {
+    if (vehiculo && !relacionVehiculos.some(rv => rv.id === vehiculo.id)) {
+      console.log('Agregando vehículo:', vehiculo);
+      setRelacionVehiculos([...relacionVehiculos, { 
+        id: vehiculo.id,
+        nombre: `${vehiculo.marca || vehiculo.modelo || ''} (${vehiculo.placa})`
+      }]);
     }
   };
 
@@ -351,24 +347,13 @@ export default function PersonaForm() {
   };
   
   // Funciones para relaciones con inmuebles
-  const addRelacionInmueble = () => {
-    const inmuebleId = form.getValues("inmuebleSeleccionado");
-    if (!inmuebleId) {
-      toast({
-        title: "Error",
-        description: "Debe seleccionar un inmueble",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const inmuebleSeleccionado = inmuebles?.find((i: any) => i.id.toString() === inmuebleId);
-    if (inmuebleSeleccionado && !relacionInmuebles.some((i: {id: number}) => i.id === inmuebleSeleccionado.id)) {
+  const addRelacionInmueble = (inmueble: any) => {
+    if (inmueble && !relacionInmuebles.some((i: {id: number}) => i.id === inmueble.id)) {
+      console.log('Agregando inmueble:', inmueble);
       setRelacionInmuebles([...relacionInmuebles, { 
-        id: inmuebleSeleccionado.id, 
-        nombre: `${inmuebleSeleccionado.tipo} (${inmuebleSeleccionado.direccion})`
+        id: inmueble.id, 
+        nombre: `${inmueble.tipo} (${inmueble.direccion})`
       }]);
-      form.setValue("inmuebleSeleccionado", "");
     }
   };
 
@@ -377,24 +362,13 @@ export default function PersonaForm() {
   };
   
   // Funciones para relaciones con otras personas
-  const addRelacionPersona = () => {
-    const personaId = form.getValues("personaSeleccionada");
-    if (!personaId) {
-      toast({
-        title: "Error",
-        description: "Debe seleccionar una persona",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const personaSeleccionada = personas?.find((p: any) => p.id.toString() === personaId);
-    if (personaSeleccionada && !relacionPersonas.some((p: {id: number}) => p.id === personaSeleccionada.id)) {
+  const addRelacionPersona = (persona: any) => {
+    if (persona && !relacionPersonas.some((p: {id: number}) => p.id === persona.id)) {
+      console.log('Agregando persona:', persona);
       setRelacionPersonas([...relacionPersonas, { 
-        id: personaSeleccionada.id, 
-        nombre: `${personaSeleccionada.nombre} (${personaSeleccionada.identificacion})`
+        id: persona.id, 
+        nombre: `${persona.nombre} (${persona.identificacion})`
       }]);
-      form.setValue("personaSeleccionada", "");
     }
   };
 
