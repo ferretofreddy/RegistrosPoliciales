@@ -30,6 +30,7 @@ import { Calendar, Link2, Plus, User, Car, Building, MapPin } from "lucide-react
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import EntitySearch from "@/components/entity-search";
 
 // Esquema para las observaciones
 const observacionSchema = z.object({
