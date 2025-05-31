@@ -1891,31 +1891,57 @@ export class DatabaseStorage {
           
           console.log(`[DEBUG] Verificación de existencia de persona ID ${id}:`, personaExiste[0]);
           
-          // Buscar otras personas relacionadas
-          const personasRelacionadas1 = await db
-            .select({
-              persona: personas
-            })
-            .from(personasPersonas)
-            .innerJoin(personas, eq(personasPersonas.personaId2, personas.id))
-            .where(eq(personasPersonas.personaId1, id));
+          // Buscar otras personas relacionadas CON tipos de identificación
+          const personasRelacionadas1Result = await db.execute(
+            sql`SELECT p.*, ti.nombre as tipo_identificacion 
+                FROM personas_personas pp
+                JOIN personas p ON pp.persona_id2 = p.id
+                LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+                WHERE pp.persona_id1 = ${id}`
+          );
           
-          const personasRelacionadas2 = await db
-            .select({
-              persona: personas
-            })
-            .from(personasPersonas)
-            .innerJoin(personas, eq(personasPersonas.personaId1, personas.id))
-            .where(eq(personasPersonas.personaId2, id));
+          const personasRelacionadas2Result = await db.execute(
+            sql`SELECT p.*, ti.nombre as tipo_identificacion 
+                FROM personas_personas pp
+                JOIN personas p ON pp.persona_id1 = p.id
+                LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+                WHERE pp.persona_id2 = ${id}`
+          );
+          
+          // Procesar los resultados para incluir el tipo de identificación
+          const personasRelacionadas1 = personasRelacionadas1Result.rows || [];
+          const personasRelacionadas2 = personasRelacionadas2Result.rows || [];
           
           console.log(`[DEBUG] Personas relacionadas: 
             - Dirección 1->2: ${personasRelacionadas1.length}
             - Dirección 2->1: ${personasRelacionadas2.length}`);
           
-          // Obtener las personas relacionadas
+          // Obtener las personas relacionadas con tipo de identificación
           const personasRelacionadasArray = [
-            ...personasRelacionadas1.map(r => r.persona),
-            ...personasRelacionadas2.map(r => r.persona)
+            ...personasRelacionadas1.map(row => ({
+              id: row.id,
+              nombre: row.nombre,
+              identificacion: row.identificacion,
+              alias: row.alias || [],
+              telefonos: row.telefonos || [],
+              domicilios: row.domicilios || [],
+              foto: row.foto,
+              posicionEstructura: row.posicion_estructura,
+              tipoIdentificacionId: row.tipo_identificacion_id,
+              tipoIdentificacion: row.tipo_identificacion
+            })),
+            ...personasRelacionadas2.map(row => ({
+              id: row.id,
+              nombre: row.nombre,
+              identificacion: row.identificacion,
+              alias: row.alias || [],
+              telefonos: row.telefonos || [],
+              domicilios: row.domicilios || [],
+              foto: row.foto,
+              posicionEstructura: row.posicion_estructura,
+              tipoIdentificacionId: row.tipo_identificacion_id,
+              tipoIdentificacion: row.tipo_identificacion
+            }))
           ];
           
           resultado.personas = personasRelacionadasArray;
@@ -2062,24 +2088,31 @@ export class DatabaseStorage {
             ...vehiculosRelacionados2.map(r => r.vehiculo)
           ];
           
-          // Buscar personas relacionadas
-          // Consulta SQL directa para debug
-          const sqlLog = await db.execute(sql`
-            SELECT * FROM personas_vehiculos WHERE vehiculo_id = ${id}
-          `);
-          console.log(`[DEBUG] Raw SQL check personas_vehiculos for vehiculo:`, sqlLog.rows);
+          // Buscar personas relacionadas CON tipos de identificación
+          const personasVehiculoResult = await db.execute(
+            sql`SELECT p.*, ti.nombre as tipo_identificacion 
+                FROM personas_vehiculos pv
+                JOIN personas p ON pv.persona_id = p.id
+                LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+                WHERE pv.vehiculo_id = ${id}`
+          );
           
-          const personasRelacionadas = await db
-            .select({
-              persona: personas
-            })
-            .from(personasVehiculos)
-            .innerJoin(personas, eq(personasVehiculos.personaId, personas.id))
-            .where(eq(personasVehiculos.vehiculoId, id));
+          const personasVehiculoArray = (personasVehiculoResult.rows || []).map(row => ({
+            id: row.id,
+            nombre: row.nombre,
+            identificacion: row.identificacion,
+            alias: row.alias || [],
+            telefonos: row.telefonos || [],
+            domicilios: row.domicilios || [],
+            foto: row.foto,
+            posicionEstructura: row.posicion_estructura,
+            tipoIdentificacionId: row.tipo_identificacion_id,
+            tipoIdentificacion: row.tipo_identificacion
+          }));
           
-          console.log(`[DEBUG] Personas relacionadas: ${personasRelacionadas.length}`);
+          console.log(`[DEBUG] Personas relacionadas: ${personasVehiculoArray.length}`);
           
-          resultado.personas = personasRelacionadas.map(r => r.persona);
+          resultado.personas = personasVehiculoArray;
           
           // Buscar inmuebles relacionados
           const inmueblesRelacionados = await db
@@ -2151,24 +2184,31 @@ export class DatabaseStorage {
             ...inmueblesRelacionados2.map(r => r.inmueble)
           ];
           
-          // Buscar personas relacionadas
-          // Consulta SQL directa para debug
-          const sqlLog = await db.execute(sql`
-            SELECT * FROM personas_inmuebles WHERE inmueble_id = ${id}
-          `);
-          console.log(`[DEBUG] Raw SQL check personas_inmuebles:`, sqlLog.rows);
+          // Buscar personas relacionadas CON tipos de identificación
+          const personasInmuebleResult = await db.execute(
+            sql`SELECT p.*, ti.nombre as tipo_identificacion 
+                FROM personas_inmuebles pi
+                JOIN personas p ON pi.persona_id = p.id
+                LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+                WHERE pi.inmueble_id = ${id}`
+          );
           
-          const personasRelacionadas = await db
-            .select({
-              persona: personas
-            })
-            .from(personasInmuebles)
-            .innerJoin(personas, eq(personasInmuebles.personaId, personas.id))
-            .where(eq(personasInmuebles.inmuebleId, id));
+          const personasInmuebleArray = (personasInmuebleResult.rows || []).map(row => ({
+            id: row.id,
+            nombre: row.nombre,
+            identificacion: row.identificacion,
+            alias: row.alias || [],
+            telefonos: row.telefonos || [],
+            domicilios: row.domicilios || [],
+            foto: row.foto,
+            posicionEstructura: row.posicion_estructura,
+            tipoIdentificacionId: row.tipo_identificacion_id,
+            tipoIdentificacion: row.tipo_identificacion
+          }));
           
-          console.log(`[DEBUG] Personas relacionadas: ${personasRelacionadas.length}`);
+          console.log(`[DEBUG] Personas relacionadas: ${personasInmuebleArray.length}`);
           
-          resultado.personas = personasRelacionadas.map(r => r.persona);
+          resultado.personas = personasInmuebleArray;
           
           // Buscar vehículos relacionados
           const vehiculosRelacionados = await db

@@ -313,7 +313,12 @@ export default function EstructurasPage() {
             </div>
             <div className="flex items-center gap-2">
               <h3 className="font-semibold">Identificación:</h3>
-              <p>{entityData.identificacion}</p>
+              <p>
+                {entityData.tipoIdentificacion && (
+                  <span className="text-gray-600 mr-2">({entityData.tipoIdentificacion})</span>
+                )}
+                {entityData.identificacion}
+              </p>
             </div>
             {entityData.posicionEstructura && (
               <div className="flex items-center gap-2">
@@ -913,7 +918,7 @@ export default function EstructurasPage() {
             
             // Truncar texto si es muy largo
             const maxNombreLength = 25;
-            const maxIdLength = 15;
+            const maxIdLength = 25; // Aumentado para incluir tipo de identificación
             const maxPosicionLength = 20;
             
             const nombreDisplay = nombre.length > maxNombreLength ? nombre.substring(0, maxNombreLength) + "..." : nombre;
