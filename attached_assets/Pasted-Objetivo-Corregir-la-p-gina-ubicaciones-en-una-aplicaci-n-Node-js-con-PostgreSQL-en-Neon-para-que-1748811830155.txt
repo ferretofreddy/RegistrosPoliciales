@@ -1,0 +1,70 @@
+Objetivo
+Corregir la página "ubicaciones" en una aplicación Node.js con PostgreSQL en Neon para que:
+1.	Muestre un mapa con marcadores de ubicaciones directas (ejemplo: domicilios de Andrey Oviedo) y relacionadas (ejemplo: domicilios de personas relacionadas, coordenadas de inmuebles o registros de ubicaciones relacionados).
+2.	Muestre dos tablas debajo del mapa: una para ubicaciones directas y otra para ubicaciones relacionadas, con sus detalles.
+3.	Asegure que la generación de informes en PDF funcione correctamente. La solución debe evitar afectar otros módulos, mantener un código limpio, incluir logs para depuración y ser probada exhaustivamente.
+Configuración del Proyecto
+•	Entorno: Node.js con Express (ajustar si se usa otro framework).
+•	Base de datos: PostgreSQL en Neon, configurada con variable de entorno DATABASE_URL.
+•	Dependencias: Verificar en package.json la presencia de: 
+o	Librería para PostgreSQL (pg o pg-promise).
+o	Librería de logging (winston).
+o	Librería de mapas (ejemplo: Leaflet o Google Maps).
+o	Librería para PDF (ejemplo: pdfkit o jsPDF).
+•	Frontend: Ajustar según el framework usado (React, Vue, o vanilla JS).
+Pasos para Resolver
+1. Configuración Inicial y Depuración
+•	Configurar un sistema de logging con winston para registrar errores, consultas y operaciones en un archivo (logs/app.log) y en la consola.
+•	Verificar la conexión a la base de datos Neon con una consulta de prueba (ejemplo: SELECT NOW()) y registrar el resultado en los logs.
+2. Revisión de la Base de Datos
+•	Confirmar la estructura de las tablas (personas, vehiculos, inmuebles, ubicaciones, relaciones) usando una consulta al esquema (information_schema.columns).
+•	Asegurarse de que la tabla ubicaciones tenga columnas latitude y longitude no nulas para los registros relevantes.
+•	Verificar que la tabla relaciones contenga las relaciones entre entidades 
+•	Registrar el esquema en los logs para validación.
+3. Backend
+•	Crear o actualizar un endpoint para devolver ubicaciones directas y relacionadas. 
+o	Consultar ubicaciones directas donde entity_type y entity_id coincidan con la entidad consultada, filtrando por latitude y longitude no nulos.
+o	Consultar ubicaciones relacionadas, filtrando por la entidad consultada y coordenadas no nulas.
+o	Registrar el número de ubicaciones encontradas en los logs.
+o	Devolver un objeto JSON con dos arrays: ubicacionesDirectas y ubicacionesRelacionadas.
+•	Verificar o actualizar el endpoint de generación de 
+o	Usar la misma lógica de consultas que el endpoint principal.
+o	Generar un PDF con captura del mapa en formato 16:9 del ancho completo de la página respetando los márgenes establecidos, secciones para ubicaciones directas y relacionadas, incluyendo detalles como descripción, latitud y longitud.
+o	Registrar la generación del PDF en los logs.
+•	Manejar errores en ambos endpoints, registrando detalles en los logs y devolviendo respuestas HTTP apropiadas.
+4. Frontend
+•	Actualizar el componente del mapa para consumir el endpoint y mostrar marcadores: 
+o	Marcadores para ubicaciones directas con un estilo distintivo.
+o	Marcadores para ubicaciones relacionadas con un estilo diferente (ejemplo: ícono distinto).
+o	Ajustar el mapa para que se centre y muestre todos los marcadores.
+•	Actualizar las tablas para mostrar: 
+o	Ubicaciones directas con columnas para descripción, latitud y longitud.
+o	Ubicaciones relacionadas con las mismas columnas.
+•	Agregar un botón o enlace para descargar el informe en PDF, consumiendo el endpoint correspondiente.
+•	Registrar errores del frontend en la consola del navegador.
+5. Pruebas
+•	Probar la página "ubicaciones" con una entidad de prueba 
+o	Verificar que el mapa muestre marcadores para ubicaciones directas y ubicaciones relacionadas (domicilios, inmuebles, ubicaciones).
+o	Confirmar que las tablas muestren los detalles correctos.
+o	Descargar y validar el contenido del PDF.
+•	Probar otras páginas y módulos para asegurar que no haya regresiones.
+•	Revisar logs/app.log y la consola del navegador para detectar errores.
+6. Código Limpio
+•	Seguir las convenciones de estilo del proyecto (ejemplo: usar ESLint si está configurado).
+•	Usar nombres descriptivos para variables y funciones.
+•	Comentar la lógica compleja.
+•	Modularizar el código (separar rutas, controladores, servicios si aplica).
+•	Evitar cambios en archivos no relacionados con la página "ubicaciones".
+7. Depuración Adicional
+•	Si los marcadores o tablas no se muestran: 
+o	Ejecutar consultas SQL directamente en Neon para verificar datos.
+o	Confirmar que latitude y longitude no son nulos.
+o	Inspeccionar respuestas de la API en la consola del navegador.
+•	Si el PDF no se genera: 
+o	Verificar la instalación y configuración de la librería de PDF.
+o	Revisar logs para identificar errores específicos.
+Notas Finales
+•	Revisar logs/app.log después de cada prueba para identificar problemas.
+•	Asegurarse de que las variables de entorno estén configuradas correctamente en Replit.
+•	Documentar los resultados de las pruebas (ejemplo: capturas de pantalla).
+•	Ajustar la implementación según el framework frontend y la librería de mapas utilizados.
