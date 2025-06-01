@@ -497,33 +497,78 @@ export default function UbicacionesPage() {
       doc.setLineWidth(1);
       doc.line(margin, 50, pageWidth - margin, 50);
       
-      // Sección de información general
+      // Sección de información de la entidad
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 25, 112);
-      doc.text("RESUMEN EJECUTIVO", margin, 65);
-      
-      // Información resumida
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-      
-      const directCount = locations.filter(loc => loc.relation === 'direct').length;
-      const relatedCount = locations.filter(loc => loc.relation === 'related').length;
-      
-      let yPos = 75;
-      doc.text(`• Total de ubicaciones registradas: ${locations.length}`, margin + 5, yPos);
-      yPos += 8;
-      doc.text(`• Ubicaciones directas: ${directCount}`, margin + 5, yPos);
-      yPos += 8;
-      doc.text(`• Ubicaciones relacionadas: ${relatedCount}`, margin + 5, yPos);
       
       if (selectedEntity) {
+        doc.text(`ENTIDAD: ${selectedEntity.tipo.toUpperCase()}`, margin, 65);
+        
+        // Información específica según el tipo de entidad
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        
+        let yPos = 75;
+        
+        if (selectedEntity.tipo === "persona") {
+          // Obtener información adicional de la persona desde relationData
+          doc.text(`• Nombre: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Identificación: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+          // Nota: Tipo de identificación se podría obtener de relationData si está disponible
+        } else if (selectedEntity.tipo === "vehiculo") {
+          // Para vehículos: placa, marca, modelo, color
+          doc.text(`• Placa: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Vehículo: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+        } else if (selectedEntity.tipo === "inmueble") {
+          // Para inmuebles: tipo, dirección
+          doc.text(`• Descripción: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Referencia: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+        } else if (selectedEntity.tipo === "ubicacion") {
+          // Para ubicaciones: tipo, descripción
+          doc.text(`• Ubicación: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Referencia: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+        }
+        
+        yPos += 5;
+        
+        // Información resumida de ubicaciones
+        const directCount = locations.filter(loc => loc.relation === 'direct').length;
+        const relatedCount = locations.filter(loc => loc.relation === 'related').length;
+        
+        doc.text(`• Total de ubicaciones registradas: ${locations.length}`, margin + 5, yPos);
         yPos += 8;
-        doc.text(`• Entidad consultada: ${selectedEntity.referencia}`, margin + 5, yPos);
+        doc.text(`• Ubicaciones directas: ${directCount}`, margin + 5, yPos);
+        yPos += 8;
+        doc.text(`• Ubicaciones relacionadas: ${relatedCount}`, margin + 5, yPos);
+        yPos += 15;
+      } else {
+        doc.text("RESUMEN EJECUTIVO", margin, 65);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        
+        const directCount = locations.filter(loc => loc.relation === 'direct').length;
+        const relatedCount = locations.filter(loc => loc.relation === 'related').length;
+        
+        let yPos = 75;
+        doc.text(`• Total de ubicaciones registradas: ${locations.length}`, margin + 5, yPos);
+        yPos += 8;
+        doc.text(`• Ubicaciones directas: ${directCount}`, margin + 5, yPos);
+        yPos += 8;
+        doc.text(`• Ubicaciones relacionadas: ${relatedCount}`, margin + 5, yPos);
+        yPos += 15;
       }
-      
-      yPos += 15;
 
       // Tabla de ubicaciones directas
       const directLocations = locations.filter(loc => loc.relation === 'direct');
