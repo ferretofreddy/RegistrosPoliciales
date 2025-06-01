@@ -399,6 +399,7 @@ export default function UbicacionesPage() {
 
       try {
         console.log("[UBICACIONES] Procesando entidad:", selectedResult.tipo, selectedResult);
+        console.log("[UBICACIONES] Datos de entidad:", entityData);
         console.log("[UBICACIONES] Datos de relaciones:", relationData);
         
         // Caso especial: entidad es una ubicación
@@ -423,10 +424,10 @@ export default function UbicacionesPage() {
           }
         }
         
-        // Procesar ubicaciones de los datos de relaciones
+        // Procesar ubicaciones directas según el tipo de entidad
         if (relationData) {
-          // 1. Ubicaciones directas
-          if (relationData.ubicaciones) {
+          // 1. Ubicaciones directas (domicilios para personas, coordenadas para inmuebles, etc.)
+          if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
             console.log("[UBICACIONES] Procesando ubicaciones directas:", relationData.ubicaciones.length);
             
             for (const ubicacion of relationData.ubicaciones) {
@@ -434,13 +435,40 @@ export default function UbicacionesPage() {
               const lng = parseFloat(String(ubicacion.longitud));
               
               if (!isNaN(lat) && !isNaN(lng)) {
+                let title = "";
+                let description = "";
+                let entityType: "persona" | "vehiculo" | "inmueble" | "ubicacion" = "ubicacion";
+                
+                // Determinar el tipo y descripción según el tipo de entidad principal
+                switch (selectedResult.tipo) {
+                  case "persona":
+                    title = ubicacion.tipo || "Domicilio";
+                    description = `Domicilio de ${selectedResult.nombre}`;
+                    entityType = "persona";
+                    break;
+                  case "inmueble":
+                    title = "Ubicación del inmueble";
+                    description = `Ubicación de ${selectedResult.referencia || "inmueble"} en ${selectedResult.direccion}`;
+                    entityType = "inmueble";
+                    break;
+                  case "vehiculo":
+                    title = ubicacion.tipo || "Ubicación del vehículo";
+                    description = `Ubicación de vehículo ${selectedResult.placa} (${selectedResult.marca} ${selectedResult.modelo})`;
+                    entityType = "vehiculo";
+                    break;
+                  default:
+                    title = ubicacion.tipo || "Ubicación directa";
+                    description = ubicacion.observaciones || "Ubicación directa";
+                    entityType = "ubicacion";
+                }
+                
                 ubicacionesEncontradas.push({
                   id: ubicacion.id,
                   lat,
                   lng,
-                  title: ubicacion.tipo || "Ubicación directa",
-                  description: ubicacion.observaciones || `Ubicación directa de ${selectedResult.nombre || selectedResult.referencia}`,
-                  type: "ubicacion",
+                  title,
+                  description: ubicacion.observaciones || description,
+                  type: entityType,
                   relation: "direct",
                   entityId: selectedResult.id
                 });
@@ -453,8 +481,8 @@ export default function UbicacionesPage() {
             }
           }
           
-          // 2. Otras ubicaciones
-          if (relationData.otrasUbicaciones) {
+          // 2. Otras ubicaciones (avistamientos, ubicaciones relacionadas)
+          if (relationData.otrasUbicaciones && relationData.otrasUbicaciones.length > 0) {
             console.log("[UBICACIONES] Procesando otras ubicaciones:", relationData.otrasUbicaciones.length);
             
             for (const ubicacion of relationData.otrasUbicaciones) {
@@ -466,9 +494,9 @@ export default function UbicacionesPage() {
                   id: ubicacion.id,
                   lat,
                   lng,
-                  title: ubicacion.tipo || "Ubicación relacionada",
-                  description: ubicacion.observaciones || `Ubicación relacionada con ${selectedResult.nombre || selectedResult.referencia}`,
-                  type: "ubicacion",
+                  title: ubicacion.tipo || "Avistamiento",
+                  description: ubicacion.observaciones || `Avistamiento de ${selectedResult.nombre || selectedResult.placa || selectedResult.referencia}`,
+                  type: selectedResult.tipo as "persona" | "vehiculo" | "inmueble" | "ubicacion",
                   relation: "related",
                   entityId: selectedResult.id
                 });
@@ -482,52 +510,55 @@ export default function UbicacionesPage() {
           }
           
           // 3. Ubicaciones de entidades relacionadas
-          if (relationData.personas) {
+          // Personas relacionadas
+          if (relationData.personas && relationData.personas.length > 0) {
             console.log("[UBICACIONES] Procesando personas relacionadas:", relationData.personas.length);
             
             for (const persona of relationData.personas) {
               try {
                 const response = await fetch(`/api/relaciones/persona/${persona.id}`);
-                const personaData = await response.json();
-                
-                // Ubicaciones directas de la persona relacionada
-                if (personaData.ubicaciones) {
-                  for (const ubicacion of personaData.ubicaciones) {
-                    const lat = parseFloat(String(ubicacion.latitud));
-                    const lng = parseFloat(String(ubicacion.longitud));
-                    
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      ubicacionesEncontradas.push({
-                        id: ubicacion.id,
-                        lat,
-                        lng,
-                        title: ubicacion.tipo || "Domicilio",
-                        description: `Domicilio de ${persona.nombre} (relacionada)`,
-                        type: "ubicacion",
-                        relation: "related",
-                        entityId: persona.id
-                      });
+                if (response.ok) {
+                  const personaData = await response.json();
+                  
+                  // Domicilios de personas relacionadas
+                  if (personaData.ubicaciones) {
+                    for (const ubicacion of personaData.ubicaciones) {
+                      const lat = parseFloat(String(ubicacion.latitud));
+                      const lng = parseFloat(String(ubicacion.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        ubicacionesEncontradas.push({
+                          id: ubicacion.id,
+                          lat,
+                          lng,
+                          title: `Domicilio de ${persona.nombre}`,
+                          description: `Domicilio de ${persona.nombre} (persona relacionada)`,
+                          type: "persona",
+                          relation: "related",
+                          entityId: persona.id
+                        });
+                      }
                     }
                   }
-                }
-                
-                // Otras ubicaciones de la persona relacionada
-                if (personaData.otrasUbicaciones) {
-                  for (const ubicacion of personaData.otrasUbicaciones) {
-                    const lat = parseFloat(String(ubicacion.latitud));
-                    const lng = parseFloat(String(ubicacion.longitud));
-                    
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      ubicacionesEncontradas.push({
-                        id: ubicacion.id,
-                        lat,
-                        lng,
-                        title: ubicacion.tipo || "Avistamiento",
-                        description: `${ubicacion.tipo || "Avistamiento"} de ${persona.nombre}`,
-                        type: "ubicacion",
-                        relation: "related",
-                        entityId: persona.id
-                      });
+                  
+                  // Otras ubicaciones de personas relacionadas
+                  if (personaData.otrasUbicaciones) {
+                    for (const ubicacion of personaData.otrasUbicaciones) {
+                      const lat = parseFloat(String(ubicacion.latitud));
+                      const lng = parseFloat(String(ubicacion.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        ubicacionesEncontradas.push({
+                          id: ubicacion.id,
+                          lat,
+                          lng,
+                          title: `${ubicacion.tipo || "Avistamiento"} de ${persona.nombre}`,
+                          description: `${ubicacion.tipo || "Avistamiento"} de ${persona.nombre} (persona relacionada)`,
+                          type: "persona",
+                          relation: "related",
+                          entityId: persona.id
+                        });
+                      }
                     }
                   }
                 }
@@ -537,51 +568,33 @@ export default function UbicacionesPage() {
             }
           }
           
-          // 4. Inmuebles relacionados
-          if (relationData.inmuebles) {
+          // Inmuebles relacionados
+          if (relationData.inmuebles && relationData.inmuebles.length > 0) {
             console.log("[UBICACIONES] Procesando inmuebles relacionados:", relationData.inmuebles.length);
             
             for (const inmueble of relationData.inmuebles) {
               try {
                 const response = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
-                const inmuebleData = await response.json();
-                
-                if (inmuebleData.ubicaciones) {
-                  for (const ubicacion of inmuebleData.ubicaciones) {
-                    const lat = parseFloat(String(ubicacion.latitud));
-                    const lng = parseFloat(String(ubicacion.longitud));
-                    
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      ubicacionesEncontradas.push({
-                        id: ubicacion.id,
-                        lat,
-                        lng,
-                        title: inmueble.tipo || "Inmueble",
-                        description: `${inmueble.tipo || "Inmueble"} en ${inmueble.direccion}`,
-                        type: "inmueble",
-                        relation: "related",
-                        entityId: inmueble.id
-                      });
-                    }
-                  }
-                }
-                
-                if (inmuebleData.otrasUbicaciones) {
-                  for (const ubicacion of inmuebleData.otrasUbicaciones) {
-                    const lat = parseFloat(String(ubicacion.latitud));
-                    const lng = parseFloat(String(ubicacion.longitud));
-                    
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      ubicacionesEncontradas.push({
-                        id: ubicacion.id,
-                        lat,
-                        lng,
-                        title: ubicacion.tipo || "Ubicación",
-                        description: ubicacion.observaciones || "Ubicación relacionada con inmueble",
-                        type: "ubicacion",
-                        relation: "related",
-                        entityId: inmueble.id
-                      });
+                if (response.ok) {
+                  const inmuebleData = await response.json();
+                  
+                  if (inmuebleData.ubicaciones) {
+                    for (const ubicacion of inmuebleData.ubicaciones) {
+                      const lat = parseFloat(String(ubicacion.latitud));
+                      const lng = parseFloat(String(ubicacion.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        ubicacionesEncontradas.push({
+                          id: ubicacion.id,
+                          lat,
+                          lng,
+                          title: `${inmueble.tipo || "Inmueble"} relacionado`,
+                          description: `${inmueble.tipo || "Inmueble"} en ${inmueble.direccion} (relacionado)`,
+                          type: "inmueble",
+                          relation: "related",
+                          entityId: inmueble.id
+                        });
+                      }
                     }
                   }
                 }
@@ -591,31 +604,33 @@ export default function UbicacionesPage() {
             }
           }
           
-          // 5. Vehículos relacionados
-          if (relationData.vehiculos) {
+          // Vehículos relacionados
+          if (relationData.vehiculos && relationData.vehiculos.length > 0) {
             console.log("[UBICACIONES] Procesando vehículos relacionados:", relationData.vehiculos.length);
             
             for (const vehiculo of relationData.vehiculos) {
               try {
                 const response = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
-                const vehiculoData = await response.json();
-                
-                if (vehiculoData.otrasUbicaciones) {
-                  for (const ubicacion of vehiculoData.otrasUbicaciones) {
-                    const lat = parseFloat(String(ubicacion.latitud));
-                    const lng = parseFloat(String(ubicacion.longitud));
-                    
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      ubicacionesEncontradas.push({
-                        id: ubicacion.id,
-                        lat,
-                        lng,
-                        title: ubicacion.tipo || "Avistamiento",
-                        description: `${ubicacion.tipo || "Avistamiento"} de vehículo ${vehiculo.placa}`,
-                        type: "vehiculo",
-                        relation: "related",
-                        entityId: vehiculo.id
-                      });
+                if (response.ok) {
+                  const vehiculoData = await response.json();
+                  
+                  if (vehiculoData.otrasUbicaciones) {
+                    for (const ubicacion of vehiculoData.otrasUbicaciones) {
+                      const lat = parseFloat(String(ubicacion.latitud));
+                      const lng = parseFloat(String(ubicacion.longitud));
+                      
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        ubicacionesEncontradas.push({
+                          id: ubicacion.id,
+                          lat,
+                          lng,
+                          title: `${ubicacion.tipo || "Avistamiento"} de ${vehiculo.placa}`,
+                          description: `${ubicacion.tipo || "Avistamiento"} de vehículo ${vehiculo.placa} (${vehiculo.marca} ${vehiculo.modelo})`,
+                          type: "vehiculo",
+                          relation: "related",
+                          entityId: vehiculo.id
+                        });
+                      }
                     }
                   }
                 }
@@ -709,7 +724,7 @@ export default function UbicacionesPage() {
                     <CardContent>
                       <div ref={mapContainerRef} className="h-96 w-full rounded-lg overflow-hidden border">
                         <LocationMap 
-                          locations={locations} 
+                          markers={locations} 
                           center={mapCenter}
                           zoom={locations.length === 1 ? 15 : 10}
                         />
@@ -731,7 +746,6 @@ export default function UbicacionesPage() {
                         <LocationsTable 
                           locations={locations.filter(loc => loc.relation === 'direct')}
                           onLocationClick={handleLocationClick}
-                          type="direct"
                         />
                       </CardContent>
                     </Card>
@@ -748,7 +762,6 @@ export default function UbicacionesPage() {
                         <LocationsTable 
                           locations={locations.filter(loc => loc.relation === 'related')}
                           onLocationClick={handleLocationClick}
-                          type="related"
                         />
                       </CardContent>
                     </Card>
