@@ -1,17 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
 import SearchComponent from "@/components/search-component";
 import LocationMap from "@/components/location-map";
 import LocationsTable, { LocationData } from "@/components/locations-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MapPin, Search, User, Building, Car, FileText } from "lucide-react";
+import { MapPin, Search, User, Building, Car } from "lucide-react";
 import { SearchResult } from "@/components/search-component";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import html2canvas from "html2canvas";
 
 // Coordenadas por defecto (centro de Costa Rica)
 const DEFAULT_CENTER: [number, number] = [9.9281, -84.0907];
@@ -56,7 +52,6 @@ interface UbicacionEntity {
   observaciones?: string;
 }
 
-// Respuesta de relaciones
 interface RelacionesResponse {
   personas?: PersonaEntity[];
   vehiculos?: VehiculoEntity[];
@@ -66,509 +61,351 @@ interface RelacionesResponse {
 }
 
 export default function UbicacionesPage() {
-  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<SearchResult | null>(null);
+  const [relationData, setRelationData] = useState<RelacionesResponse | null>(null);
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Obtener todas las ubicaciones de la página ubicaciones
-  const { data: ubicacionesData, isLoading: ubicacionesLoading } = useQuery<{
-    ubicacionesDirectas: any[];
-    ubicacionesRelacionadas: any[];
-  }>({
-    queryKey: ['api/ubicaciones'],
-    enabled: !selectedResult
-  });
-
-  // Obtener datos de la entidad seleccionada
-  const { data: entityData } = useQuery<any>({
-    queryKey: [selectedResult ? `api/${selectedResult.tipo === "ubicacion" ? "ubicaciones" : selectedResult.tipo + "s"}/${selectedResult.id}` : null],
-    enabled: !!selectedResult
-  });
-
-  // Obtener relaciones para buscar ubicaciones
-  const { data: relationData } = useQuery<RelacionesResponse>({
-    queryKey: [selectedResult ? `api/relaciones/${selectedResult.tipo}/${selectedResult.id}` : null],
-    enabled: !!selectedResult
-  });
-
-  // Función para generar informe PDF de ubicaciones
-  const generarInformePDF = async () => {
-    if (locations.length === 0) {
-      toast({
-        title: "No se puede generar el informe",
-        description: "No hay ubicaciones para incluir en el informe",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  // Función para obtener relaciones de una entidad
+  const fetchRelations = async (entityType: EntityType, entityId: number) => {
     try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      // Título del informe
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('INFORME DE UBICACIONES', pageWidth / 2, 25, { align: "center" });
-      
-      // Fecha y hora
-      const fecha = new Date().toLocaleDateString('es-ES');
-      const hora = new Date().toLocaleTimeString('es-ES');
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(`Generado el: ${fecha} a las ${hora}`, 20, 35);
-      
-      // Información de la entidad seleccionada (si existe)
-      let yPos = 45;
-      if (selectedResult) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text('ENTIDAD SELECCIONADA:', 20, yPos);
-        yPos += 8;
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        const tipoTexto = selectedResult.tipo === 'persona' ? 'Persona' : 
-                         selectedResult.tipo === 'vehiculo' ? 'Vehículo' :
-                         selectedResult.tipo === 'inmueble' ? 'Inmueble' : 'Ubicación';
-        
-        const nombreEntidad = selectedResult.nombre || selectedResult.placa || selectedResult.direccion || `ID ${selectedResult.id}`;
-        doc.text(`Tipo: ${tipoTexto}`, 20, yPos);
-        yPos += 6;
-        doc.text(`Identificación: ${nombreEntidad}`, 20, yPos);
-        yPos += 15;
+      setIsLoading(true);
+      const response = await fetch(`/api/relaciones/${entityType}/${entityId}`);
+      if (!response.ok) {
+        throw new Error("Error al obtener relaciones");
       }
-
-      // Separar ubicaciones directas y relacionadas
-      const ubicacionesDirectas = locations.filter(loc => loc.relation === 'direct');
-      const ubicacionesRelacionadas = locations.filter(loc => loc.relation === 'related');
-
-      // Tabla de ubicaciones directas
-      if (ubicacionesDirectas.length > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text('UBICACIONES DIRECTAS', 20, yPos);
-        yPos += 10;
-
-        const columnasDirectas = [
-          { header: 'Tipo', dataKey: 'tipo' },
-          { header: 'Descripción', dataKey: 'descripcion' },
-          { header: 'Latitud', dataKey: 'latitud' },
-          { header: 'Longitud', dataKey: 'longitud' }
-        ];
-
-        const datosDirectas = ubicacionesDirectas.map(loc => ({
-          tipo: loc.title,
-          descripcion: loc.description,
-          latitud: loc.lat.toFixed(6),
-          longitud: loc.lng.toFixed(6)
-        }));
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [columnasDirectas.map(col => col.header)],
-          body: datosDirectas.map(row => columnasDirectas.map(col => row[col.dataKey as keyof typeof row])),
-          theme: 'grid',
-          headStyles: { 
-            fillColor: [34, 197, 94],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
-          },
-          styles: {
-            fontSize: 9,
-            cellPadding: 3,
-            cellWidth: 'wrap'
-          },
-          columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 75 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 30 }
-          },
-          margin: { left: 20, right: 20 },
-          tableWidth: 'wrap'
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 15;
-      }
-
-      // Tabla de ubicaciones relacionadas
-      if (ubicacionesRelacionadas.length > 0) {
-        if (yPos > pageHeight - 50) {
-          doc.addPage();
-          yPos = 30;
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text('UBICACIONES RELACIONADAS', 20, yPos);
-        yPos += 10;
-
-        const columnasRelacionadas = [
-          { header: 'Tipo', dataKey: 'tipo' },
-          { header: 'Descripción', dataKey: 'descripcion' },
-          { header: 'Latitud', dataKey: 'latitud' },
-          { header: 'Longitud', dataKey: 'longitud' }
-        ];
-
-        const datosRelacionadas = ubicacionesRelacionadas.map(loc => ({
-          tipo: loc.title,
-          descripcion: loc.description,
-          latitud: loc.lat.toFixed(6),
-          longitud: loc.lng.toFixed(6)
-        }));
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [columnasRelacionadas.map(col => col.header)],
-          body: datosRelacionadas.map(row => columnasRelacionadas.map(col => row[col.dataKey as keyof typeof row])),
-          theme: 'grid',
-          headStyles: { 
-            fillColor: [59, 130, 246],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
-          },
-          styles: {
-            fontSize: 9,
-            cellPadding: 3,
-            cellWidth: 'wrap'
-          },
-          columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 75 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 30 }
-          },
-          margin: { left: 20, right: 20 },
-          tableWidth: 'wrap'
-        });
-      }
-
-      // Pie de página
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        
-        const pageText = `Página ${i} de ${totalPages}`;
-        doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
-        doc.text("INFORME CONFIDENCIAL", 20, pageHeight - 10);
-      }
-
-      const nombreArchivo = selectedResult 
-        ? `informe_ubicaciones_${selectedResult.tipo}_${selectedResult.id}_${fecha.replace(/\//g, '-')}.pdf`
-        : `informe_ubicaciones_general_${fecha.replace(/\//g, '-')}.pdf`;
-      
-      doc.save(nombreArchivo);
-
-      toast({
-        title: "Informe generado exitosamente",
-        description: `Se ha descargado el archivo: ${nombreArchivo}`
-      });
-
+      const data = await response.json();
+      setRelationData(data);
+      return data;
     } catch (error) {
-      console.error('Error al generar el informe PDF:', error);
+      console.error("Error fetching relations:", error);
       toast({
-        title: "Error al generar informe",
-        description: "No se pudo generar el informe PDF. Inténtalo de nuevo.",
+        title: "Error",
+        description: "No se pudieron cargar las relaciones",
         variant: "destructive"
       });
+      return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Manejar la selección de un resultado de búsqueda
-  const handleResultSelect = (result: SearchResult) => {
-    setSelectedResult(result);
-    setLocations([]);
+  // Función para convertir ubicaciones a formato LocationData
+  const convertToLocationData = (ubicaciones: UbicacionEntity[], type: string, relation: 'direct' | 'related' = 'direct'): LocationData[] => {
+    if (!ubicaciones) return [];
+    
+    return ubicaciones.map(ubicacion => ({
+      id: ubicacion.id,
+      lat: ubicacion.latitud,
+      lng: ubicacion.longitud,
+      title: ubicacion.tipo || "Ubicación",
+      description: ubicacion.observaciones || "Sin observaciones",
+      type: type as EntityType,
+      relation,
+      entityId: ubicacion.id
+    }));
   };
 
-  // Manejar clic en una ubicación de la tabla
+  // Función para procesar las ubicaciones de una entidad específica
+  const processEntityLocations = async (entity: SearchResult) => {
+    console.log("[UBICACIONES] Procesando entidad:", entity.tipo, entity);
+    
+    let entityLocations: LocationData[] = [];
+    let entityType: EntityType = "ubicacion";
+
+    if (entity.tipo === "persona") {
+      entityType = "persona";
+      // Obtener datos detallados de la persona
+      try {
+        const personaResponse = await fetch(`/api/personas/${entity.id}`);
+        if (personaResponse.ok) {
+          const personaData = await personaResponse.json();
+          if (personaData.domicilios && personaData.domicilios.length > 0) {
+            // Crear ubicaciones desde los domicilios
+            const domicilioLocations = personaData.domicilios.map((domicilio: string, index: number) => ({
+              id: entity.id,
+              lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+              lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+              title: "Domicilio",
+              description: `Domicilio de ${personaData.nombre}`,
+              type: "persona" as EntityType,
+              relation: "direct" as const,
+              entityId: entity.id
+            }));
+            entityLocations = domicilioLocations;
+          }
+        }
+      } catch (error) {
+        console.error("Error obteniendo datos de persona:", error);
+      }
+
+      // Obtener relaciones para ubicaciones adicionales
+      const relations = await fetchRelations(entityType, entity.id);
+      if (relations) {
+        const relacionesUbicaciones = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
+        const otrasUbicaciones = convertToLocationData(relations.otrasUbicaciones || [], "ubicacion", "related");
+        entityLocations = [...entityLocations, ...relacionesUbicaciones, ...otrasUbicaciones];
+      }
+    } else if (entity.tipo === "vehiculo") {
+      entityType = "vehiculo";
+      // Obtener relaciones para ubicaciones del vehículo
+      const relations = await fetchRelations(entityType, entity.id);
+      if (relations) {
+        const ubicacionesVehiculo = convertToLocationData(relations.ubicaciones || [], "vehiculo", "direct");
+        entityLocations = ubicacionesVehiculo.map(loc => ({
+          ...loc,
+          title: "Avistamiento",
+          description: `Ubicación de vehículo ${entity.referencia}`
+        }));
+      }
+    } else if (entity.tipo === "inmueble") {
+      entityType = "inmueble";
+      // Para inmuebles, usar su propia ubicación
+      try {
+        const inmuebleResponse = await fetch(`/api/inmuebles/${entity.id}`);
+        if (inmuebleResponse.ok) {
+          const inmuebleData = await inmuebleResponse.json();
+          entityLocations = [{
+            id: entity.id,
+            lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+            lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+            title: "Inmueble",
+            description: `${inmuebleData.tipo}: ${inmuebleData.direccion}`,
+            type: "inmueble" as EntityType,
+            relation: "direct" as const,
+            entityId: entity.id
+          }];
+        }
+      } catch (error) {
+        console.error("Error obteniendo datos de inmueble:", error);
+      }
+
+      // Obtener relaciones para ubicaciones adicionales
+      const relations = await fetchRelations(entityType, entity.id);
+      if (relations) {
+        const relacionesUbicaciones = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
+        const otrasUbicaciones = convertToLocationData(relations.otrasUbicaciones || [], "ubicacion", "related");
+        entityLocations = [...entityLocations, ...relacionesUbicaciones, ...otrasUbicaciones];
+      }
+    } else if (entity.tipo === "ubicacion") {
+      entityType = "ubicacion";
+      // Para ubicaciones, crear directamente
+      entityLocations = [{
+        id: entity.id,
+        lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+        lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+        title: entity.nombre || "Ubicación",
+        description: entity.referencia || "Sin descripción",
+        type: "ubicacion" as EntityType,
+        relation: "direct" as const,
+        entityId: entity.id
+      }];
+
+      // Obtener relaciones para ubicaciones adicionales
+      const relations = await fetchRelations(entityType, entity.id);
+      if (relations) {
+        const relacionesUbicaciones = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
+        const otrasUbicaciones = convertToLocationData(relations.otrasUbicaciones || [], "ubicacion", "related");
+        entityLocations = [...entityLocations, ...relacionesUbicaciones, ...otrasUbicaciones];
+      }
+    }
+
+    console.log("[UBICACIONES] Procesando ubicaciones directas:", entityLocations.length);
+    console.log("[UBICACIONES] Total ubicaciones cargadas:", entityLocations.length);
+    
+    return entityLocations;
+  };
+
+  const handleResultSelect = (result: SearchResult) => {
+    setSelectedEntity(result);
+    
+    processEntityLocations(result).then(entityLocations => {
+      setLocations(entityLocations);
+      
+      if (entityLocations.length > 0) {
+        // Calcular el centro del mapa basado en las ubicaciones
+        const avgLat = entityLocations.reduce((sum, loc) => sum + loc.lat, 0) / entityLocations.length;
+        const avgLng = entityLocations.reduce((sum, loc) => sum + loc.lng, 0) / entityLocations.length;
+        setMapCenter([avgLat, avgLng]);
+      }
+    });
+  };
+
   const handleLocationClick = (location: LocationData) => {
     setMapCenter([location.lat, location.lng]);
+    toast({
+      title: "Ubicación seleccionada",
+      description: `${location.title}: ${location.description}`
+    });
   };
 
-  // Procesar ubicaciones cuando tengamos datos
-  useEffect(() => {
-    const cargarUbicaciones = async () => {
-      setIsLoading(true);
-      const ubicacionesEncontradas: LocationData[] = [];
-      let hasCenteredMap = false;
-
-      try {
-        // Caso 1: Si no hay entidad seleccionada, mostrar todas las ubicaciones de la página
-        if (!selectedResult && ubicacionesData) {
-          console.log("[UBICACIONES] Cargando todas las ubicaciones de la página");
-          
-          // Procesar ubicaciones directas
-          if (ubicacionesData.ubicacionesDirectas?.length > 0) {
-            for (const ubicacion of ubicacionesData.ubicacionesDirectas) {
-              const lat = parseFloat(String(ubicacion.latitud));
-              const lng = parseFloat(String(ubicacion.longitud));
-              
-              if (!isNaN(lat) && !isNaN(lng)) {
-                ubicacionesEncontradas.push({
-                  id: ubicacion.id,
-                  lat,
-                  lng,
-                  title: ubicacion.tipo || "Ubicación",
-                  description: ubicacion.observaciones || "Ubicación directa",
-                  type: "ubicacion",
-                  relation: "direct",
-                  entityId: ubicacion.id
-                });
-              }
-            }
-          }
-          
-          // Procesar ubicaciones relacionadas
-          if (ubicacionesData.ubicacionesRelacionadas?.length > 0) {
-            for (const ubicacion of ubicacionesData.ubicacionesRelacionadas) {
-              const lat = parseFloat(String(ubicacion.latitud));
-              const lng = parseFloat(String(ubicacion.longitud));
-              
-              if (!isNaN(lat) && !isNaN(lng)) {
-                let title = ubicacion.tipo || "Ubicación relacionada";
-                let description = ubicacion.observaciones || "";
-                
-                // Agregar información de la entidad relacionada
-                if (ubicacion.entidad_tipo && ubicacion.entidad_nombre) {
-                  const tipoTexto = ubicacion.entidad_tipo === 'persona' ? 'Persona' : 
-                                   ubicacion.entidad_tipo === 'vehiculo' ? 'Vehículo' :
-                                   ubicacion.entidad_tipo === 'inmueble' ? 'Inmueble' : 'Entidad';
-                  description = `${tipoTexto}: ${ubicacion.entidad_nombre}. ${description}`;
-                }
-                
-                ubicacionesEncontradas.push({
-                  id: ubicacion.id,
-                  lat,
-                  lng,
-                  title,
-                  description,
-                  type: ubicacion.entidad_tipo || "ubicacion",
-                  relation: "related",
-                  entityId: ubicacion.id
-                });
-              }
-            }
-          }
-          
-          // Centrar mapa en primera ubicación encontrada
-          if (ubicacionesEncontradas.length > 0 && !hasCenteredMap) {
-            setMapCenter([ubicacionesEncontradas[0].lat, ubicacionesEncontradas[0].lng]);
-            hasCenteredMap = true;
-          }
-        }
-        
-        // Caso 2: Si hay entidad seleccionada, procesar ubicaciones específicas
-        else if (selectedResult) {
-          console.log("[UBICACIONES] Procesando entidad:", selectedResult.tipo, selectedResult);
-          
-          // Caso especial: entidad es una ubicación
-          if (selectedResult.tipo === "ubicacion" && entityData) {
-            const lat = parseFloat(String(entityData.latitud));
-            const lng = parseFloat(String(entityData.longitud));
-            
-            if (!isNaN(lat) && !isNaN(lng)) {
-              ubicacionesEncontradas.push({
-                id: entityData.id,
-                lat,
-                lng,
-                title: entityData.tipo || "Ubicación",
-                description: entityData.observaciones || "Ubicación seleccionada",
-                type: "ubicacion",
-                relation: "direct",
-                entityId: entityData.id
-              });
-              
-              setMapCenter([lat, lng]);
-              hasCenteredMap = true;
-            }
-          }
-        
-          // Procesar ubicaciones directas y relacionadas
-          if (relationData) {
-            // Ubicaciones directas
-            if (relationData.ubicaciones?.length > 0) {
-              console.log("[UBICACIONES] Procesando ubicaciones directas:", relationData.ubicaciones.length);
-              
-              for (const ubicacion of relationData.ubicaciones) {
-                const lat = parseFloat(String(ubicacion.latitud));
-                const lng = parseFloat(String(ubicacion.longitud));
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  let title = "";
-                  let description = "";
-                  let entityType: EntityType = "ubicacion";
-                  
-                  // Determinar el tipo y descripción según el tipo de entidad principal
-                  switch (selectedResult.tipo) {
-                    case "persona":
-                      title = ubicacion.tipo || "Domicilio";
-                      description = `Domicilio de ${selectedResult.nombre}`;
-                      entityType = "persona";
-                      break;
-                    case "inmueble":
-                      title = "Ubicación del inmueble";
-                      description = `Ubicación de ${selectedResult.direccion}`;
-                      entityType = "inmueble";
-                      break;
-                    case "vehiculo":
-                      title = ubicacion.tipo || "Ubicación del vehículo";
-                      description = `Ubicación de vehículo ${selectedResult.placa}`;
-                      entityType = "vehiculo";
-                      break;
-                    default:
-                      title = ubicacion.tipo || "Ubicación";
-                      description = ubicacion.observaciones || "Ubicación relacionada";
-                      break;
-                  }
-                  
-                  ubicacionesEncontradas.push({
-                    id: ubicacion.id,
-                    lat,
-                    lng,
-                    title,
-                    description,
-                    type: entityType,
-                    relation: "direct",
-                    entityId: selectedResult.id
-                  });
-                  
-                  // Centrar el mapa en la primera ubicación directa
-                  if (!hasCenteredMap) {
-                    setMapCenter([lat, lng]);
-                    hasCenteredMap = true;
-                  }
-                }
-              }
-            }
-            
-            // Otras ubicaciones relacionadas
-            if (relationData.otrasUbicaciones?.length > 0) {
-              console.log("[UBICACIONES] Procesando otras ubicaciones:", relationData.otrasUbicaciones.length);
-              
-              for (const ubicacion of relationData.otrasUbicaciones) {
-                const lat = parseFloat(String(ubicacion.latitud));
-                const lng = parseFloat(String(ubicacion.longitud));
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  ubicacionesEncontradas.push({
-                    id: ubicacion.id,
-                    lat,
-                    lng,
-                    title: ubicacion.tipo || "Ubicación relacionada",
-                    description: ubicacion.observaciones || "Ubicación relacionada con la entidad",
-                    type: "ubicacion",
-                    relation: "related",
-                    entityId: selectedResult.id
-                  });
-                }
-              }
-            }
-          }
-        }
-
-        setLocations(ubicacionesEncontradas);
-        console.log(`[UBICACIONES] Total ubicaciones cargadas: ${ubicacionesEncontradas.length}`);
-
-      } catch (error) {
-        console.error("[UBICACIONES] Error al cargar ubicaciones:", error);
-        toast({
-          title: "Error al cargar ubicaciones",
-          description: "No se pudieron cargar las ubicaciones. Inténtalo de nuevo.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    cargarUbicaciones();
-  }, [selectedResult, entityData, relationData, ubicacionesData, toast]);
-
-  const isLoadingData = isLoading || ubicacionesLoading;
+  const getEntityIcon = (tipo: string) => {
+    switch (tipo) {
+      case "persona":
+        return <User className="h-4 w-4" />;
+      case "vehiculo":
+        return <Car className="h-4 w-4" />;
+      case "inmueble":
+        return <Building className="h-4 w-4" />;
+      case "ubicacion":
+        return <MapPin className="h-4 w-4" />;
+      default:
+        return <Search className="h-4 w-4" />;
+    }
+  };
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-3">
-              <MapPin className="h-10 w-10 text-blue-600" />
-              Ubicaciones
-            </h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Visualiza y gestiona todas las ubicaciones del sistema. Busca una entidad específica 
-              o explora todas las ubicaciones disponibles en el mapa y tablas.
-            </p>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <MapPin className="h-6 w-6 text-blue-600" />
+          <h1 className="text-2xl font-bold">Ubicaciones</h1>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Panel de búsqueda */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Buscar Entidad
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SearchComponent
+                  onResultSelect={handleResultSelect}
+                  placeholder="Buscar persona, vehículo, inmueble o ubicación..."
+                />
+                
+                {selectedEntity && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getEntityIcon(selectedEntity.tipo)}
+                      <span className="font-medium text-sm text-gray-700">
+                        {selectedEntity.tipo.charAt(0).toUpperCase() + selectedEntity.tipo.slice(1)} seleccionado:
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium">{selectedEntity.nombre}</p>
+                    <p className="text-xs text-gray-600">{selectedEntity.referencia}</p>
+                  </div>
+                )}
+
+                {relationData && (
+                  <div className="mt-4 space-y-3 max-h-96 overflow-y-auto">
+                    {relationData.personas && relationData.personas.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm text-gray-700">Personas ({relationData.personas.length})</h4>
+                        <div className="space-y-1">
+                          {relationData.personas.map((persona: PersonaEntity) => (
+                            <div key={persona.id} className="p-2 bg-blue-50 rounded text-xs">
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3 text-blue-600" />
+                                <span className="font-medium">{persona.nombre}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {relationData.vehiculos && relationData.vehiculos.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm text-gray-700">Vehículos ({relationData.vehiculos.length})</h4>
+                        <div className="space-y-1">
+                          {relationData.vehiculos.map((vehiculo: VehiculoEntity) => (
+                            <div key={vehiculo.id} className="p-2 bg-green-50 rounded text-xs">
+                              <div className="flex items-center gap-1">
+                                <Car className="h-3 w-3 text-green-600" />
+                                <span className="font-medium">{vehiculo.marca} {vehiculo.modelo}</span>
+                              </div>
+                              <div className="text-gray-600">{vehiculo.placa}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {relationData.inmuebles && relationData.inmuebles.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm text-gray-700">Inmuebles ({relationData.inmuebles.length})</h4>
+                        <div className="space-y-1">
+                          {relationData.inmuebles.map((inmueble: InmuebleEntity) => (
+                            <div key={inmueble.id} className="p-2 bg-orange-50 rounded text-xs">
+                              <div className="flex items-center gap-1">
+                                <Building className="h-3 w-3 text-orange-600" />
+                                <span className="font-medium">{inmueble.tipo}</span>
+                              </div>
+                              <div className="text-gray-600">{inmueble.direccion}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {relationData.ubicaciones && relationData.ubicaciones.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-sm text-gray-700 mb-2">Ubicaciones ({relationData.ubicaciones.length})</h4>
+                        <div className="space-y-2">
+                          {relationData.ubicaciones.map((ubicacion: UbicacionEntity) => (
+                            <div key={ubicacion.id} className="p-2 bg-purple-50 rounded text-xs">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-purple-600" />
+                                <span className="font-medium">{ubicacion.tipo}</span>
+                              </div>
+                              <div className="text-gray-600">{ubicacion.observaciones}</div>
+                              <div className="text-gray-500 text-xs">
+                                {ubicacion.latitud.toFixed(6)}, {ubicacion.longitud.toFixed(6)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {relationData.otrasUbicaciones && relationData.otrasUbicaciones.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-sm text-gray-700 mb-2">Otras Ubicaciones ({relationData.otrasUbicaciones.length})</h4>
+                        <div className="space-y-2">
+                          {relationData.otrasUbicaciones.map((ubicacion: UbicacionEntity) => (
+                            <div key={ubicacion.id} className="p-2 bg-gray-50 rounded text-xs">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-gray-600" />
+                                <span className="font-medium">{ubicacion.tipo}</span>
+                              </div>
+                              <div className="text-gray-600">{ubicacion.observaciones}</div>
+                              <div className="text-gray-500 text-xs">
+                                {ubicacion.latitud.toFixed(6)}, {ubicacion.longitud.toFixed(6)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Search Component */}
-          <Card className="shadow-lg border-0">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Buscar Entidad
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <SearchComponent onResultSelect={handleResultSelect} />
-              
-              {selectedResult && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {selectedResult.tipo === "persona" && <User className="h-5 w-5 text-blue-600" />}
-                      {selectedResult.tipo === "vehiculo" && <Car className="h-5 w-5 text-blue-600" />}
-                      {selectedResult.tipo === "inmueble" && <Building className="h-5 w-5 text-blue-600" />}
-                      {selectedResult.tipo === "ubicacion" && <MapPin className="h-5 w-5 text-blue-600" />}
-                      
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {selectedResult.nombre || selectedResult.placa || selectedResult.direccion || `Ubicación ID ${selectedResult.id}`}
-                        </p>
-                        <p className="text-sm text-gray-600 capitalize">
-                          Tipo: {selectedResult.tipo}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setSelectedResult(null)}
-                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                    >
-                      Limpiar selección
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Map and Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Map */}
-            <div className="lg:col-span-3">
-              <Card className="shadow-lg border-0 h-[600px]">
-                <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
+          {/* Panel principal con mapa y tabla */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Mapa */}
+            <div className="w-full">
+              <Card>
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
                     Mapa de Ubicaciones
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-4rem)]" ref={mapContainerRef}>
-                  {isLoadingData ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center space-y-2">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <CardContent>
+                  {isLoading ? (
+                    <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                         <p className="text-gray-600">Cargando ubicaciones...</p>
                       </div>
                     </div>
@@ -583,78 +420,24 @@ export default function UbicacionesPage() {
               </Card>
             </div>
 
-            {/* Stats */}
-            <div className="space-y-4">
-              <Card className="shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-t-lg">
-                  <CardTitle className="text-lg">Estadísticas</CardTitle>
+            {/* Tabla de ubicaciones */}
+            {locations.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Lista de Ubicaciones ({locations.length})
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600">
-                      {locations.length}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Total de ubicaciones
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Directas:</span>
-                      <span className="font-semibold text-green-600">
-                        {locations.filter(loc => loc.relation === 'direct').length}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Relacionadas:</span>
-                      <span className="font-semibold text-blue-600">
-                        {locations.filter(loc => loc.relation === 'related').length}
-                      </span>
-                    </div>
-                  </div>
+                <CardContent>
+                  <LocationsTable 
+                    locations={locations}
+                    onLocationClick={handleLocationClick}
+                  />
                 </CardContent>
               </Card>
-
-              <Card className="shadow-lg border-0">
-                <CardContent className="p-6">
-                  <Button 
-                    onClick={generarInformePDF}
-                    disabled={locations.length === 0 || isLoadingData}
-                    className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generar Informe PDF
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+            )}
           </div>
-
-          {/* Locations Table */}
-          <Card className="shadow-lg border-0">
-            <CardHeader className="bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Lista de Ubicaciones
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isLoadingData ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="text-center space-y-2">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-gray-600">Cargando tabla...</p>
-                  </div>
-                </div>
-              ) : (
-                <LocationsTable 
-                  locations={locations}
-                  onLocationClick={handleLocationClick}
-                />
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </MainLayout>
