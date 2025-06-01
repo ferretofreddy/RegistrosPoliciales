@@ -306,15 +306,33 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
   // Mutación para eliminar relaciones
   const deleteRelacionMutation = useMutation({
     mutationFn: async ({ tipoRelacion, relacionId }: { tipoRelacion: string, relacionId: number }) => {
-      const response = await fetch(`/api/relaciones/${entityType}/${entityId}/${tipoRelacion}/${relacionId}`, {
-        method: 'DELETE',
+      console.log('[deleteRelacionMutation] Eliminando relación:', { 
+        tipoOrigen: entityType, 
+        idOrigen: entityId, 
+        tipoDestino: tipoRelacion, 
+        idDestino: relacionId 
       });
       
+      const response = await fetch(`/api/relaciones/${entityType}/${entityId}/${tipoRelacion}/${relacionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      console.log('[deleteRelacionMutation] Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Error al eliminar la relación');
+        const errorText = await response.text();
+        console.error('[deleteRelacionMutation] Error response:', errorText);
+        throw new Error(`Error al eliminar la relación: ${response.status}`);
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log('[deleteRelacionMutation] Success result:', result);
+      return result;
     },
     onSuccess: () => {
       toast({

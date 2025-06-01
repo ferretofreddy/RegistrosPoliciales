@@ -1226,6 +1226,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al actualizar posición de persona" });
     }
   });
+
+  // Eliminar relaciones entre entidades
+  app.delete("/api/relaciones/:tipoOrigen/:idOrigen/:tipoDestino/:idDestino", ensureAuthenticated, async (req, res) => {
+    try {
+      const { tipoOrigen, idOrigen, tipoDestino, idDestino } = req.params;
+      
+      console.log(`[DELETE] Eliminando relación:`, { 
+        tipoOrigen, 
+        idOrigen: parseInt(idOrigen), 
+        tipoDestino, 
+        idDestino: parseInt(idDestino) 
+      });
+      
+      const id1 = parseInt(idOrigen);
+      const id2 = parseInt(idDestino);
+      
+      if (isNaN(id1) || isNaN(id2)) {
+        return res.status(400).json({ message: "IDs inválidos" });
+      }
+      
+      // Determinar qué tabla de relación usar y eliminar
+      if (tipoOrigen === "persona" && tipoDestino === "vehiculo") {
+        await db.delete(personasVehiculos)
+          .where(and(
+            eq(personasVehiculos.personaId, id1),
+            eq(personasVehiculos.vehiculoId, id2)
+          ));
+      } else if (tipoOrigen === "persona" && tipoDestino === "inmueble") {
+        await db.delete(personasInmuebles)
+          .where(and(
+            eq(personasInmuebles.personaId, id1),
+            eq(personasInmuebles.inmuebleId, id2)
+          ));
+      } else if (tipoOrigen === "persona" && tipoDestino === "ubicacion") {
+        await db.delete(personasUbicaciones)
+          .where(and(
+            eq(personasUbicaciones.personaId, id1),
+            eq(personasUbicaciones.ubicacionId, id2)
+          ));
+      } else if (tipoOrigen === "persona" && tipoDestino === "persona") {
+        await db.delete(personasPersonas)
+          .where(and(
+            eq(personasPersonas.personaId1, id1),
+            eq(personasPersonas.personaId2, id2)
+          ));
+      } else if (tipoOrigen === "vehiculo" && tipoDestino === "inmueble") {
+        await db.delete(vehiculosInmuebles)
+          .where(and(
+            eq(vehiculosInmuebles.vehiculoId, id1),
+            eq(vehiculosInmuebles.inmuebleId, id2)
+          ));
+      } else if (tipoOrigen === "vehiculo" && tipoDestino === "ubicacion") {
+        await db.delete(vehiculosUbicaciones)
+          .where(and(
+            eq(vehiculosUbicaciones.vehiculoId, id1),
+            eq(vehiculosUbicaciones.ubicacionId, id2)
+          ));
+      } else if (tipoOrigen === "inmueble" && tipoDestino === "ubicacion") {
+        await db.delete(inmueblesUbicaciones)
+          .where(and(
+            eq(inmueblesUbicaciones.inmuebleId, id1),
+            eq(inmueblesUbicaciones.ubicacionId, id2)
+          ));
+      } else {
+        return res.status(400).json({ message: "Tipo de relación no válido" });
+      }
+      
+      console.log(`[DELETE] Relación eliminada exitosamente`);
+      res.json({ message: "Relación eliminada correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar relación:", error);
+      res.status(500).json({ message: "Error al eliminar relación" });
+    }
+  });
   
   // === ADMINISTRACION DE USUARIOS ===
   // Obtener todos los usuarios (solo admin)
