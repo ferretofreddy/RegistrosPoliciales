@@ -1247,6 +1247,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "IDs inválidos" });
       }
       
+      console.log(`[DELETE] Evaluando caso: ${tipoOrigen} → ${tipoDestino}`);
+      
       // Determinar qué tabla de relación usar y eliminar
       let deleteResult;
       
