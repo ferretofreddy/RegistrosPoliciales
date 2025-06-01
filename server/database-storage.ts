@@ -106,7 +106,18 @@ export class DatabaseStorage {
     return resultado;
   }
 
+  async checkPersonaIdentificacionExists(identificacion: string): Promise<boolean> {
+    const [existing] = await db.select().from(personas).where(eq(personas.identificacion, identificacion));
+    return !!existing;
+  }
+
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
+    // Validar unicidad del número de identificación
+    const identificacionExists = await this.checkPersonaIdentificacionExists(insertPersona.identificacion);
+    if (identificacionExists) {
+      throw new Error("El número de identificación que intentas guardar ya se encuentra registrado");
+    }
+
     // Fix para arrays
     const datosPersona = { 
       ...insertPersona,
@@ -131,7 +142,18 @@ export class DatabaseStorage {
     return vehiculo;
   }
 
+  async checkVehiculoPlacaExists(placa: string): Promise<boolean> {
+    const [existing] = await db.select().from(vehiculos).where(eq(vehiculos.placa, placa));
+    return !!existing;
+  }
+
   async createVehiculo(insertVehiculo: InsertVehiculo): Promise<Vehiculo> {
+    // Validar unicidad de la placa
+    const placaExists = await this.checkVehiculoPlacaExists(insertVehiculo.placa);
+    if (placaExists) {
+      throw new Error("El número de placa que intentas guardar ya se encuentra registrado");
+    }
+
     const [vehiculo] = await db.insert(vehiculos).values(insertVehiculo).returning();
     return vehiculo;
   }

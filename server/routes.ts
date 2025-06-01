@@ -203,6 +203,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(persona);
     } catch (error) {
       console.error("Error al crear persona:", error);
+      
+      // Manejar errores específicos de validación de unicidad
+      if (error instanceof Error && error.message.includes("ya se encuentra registrado")) {
+        return res.status(400).json({ message: error.message });
+      }
+      
       res.status(500).json({ message: "Error al crear persona" });
     }
   });
@@ -359,11 +365,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const [vehiculo] = await db.insert(vehiculos).values(result.data).returning();
+      const vehiculo = await storage.createVehiculo(result.data);
       
       res.status(201).json(vehiculo);
     } catch (error) {
       console.error("Error al crear vehículo:", error);
+      
+      // Manejar errores específicos de validación de unicidad
+      if (error instanceof Error && error.message.includes("ya se encuentra registrado")) {
+        return res.status(400).json({ message: error.message });
+      }
+      
       res.status(500).json({ message: "Error al crear vehículo" });
     }
   });
