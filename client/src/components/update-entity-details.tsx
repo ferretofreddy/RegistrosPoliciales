@@ -733,6 +733,7 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                     <TableRow>
                       <TableHead>Nombre</TableHead>
                       <TableHead>Identificación</TableHead>
+                      <TableHead className="w-16">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -740,6 +741,16 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                       <TableRow key={persona.id}>
                         <TableCell>{persona.nombre}</TableCell>
                         <TableCell>{persona.identificacion}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteRelacion("persona", persona.id, persona.nombre)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -760,6 +771,7 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                       <TableHead>Placa</TableHead>
                       <TableHead>Marca</TableHead>
                       <TableHead>Modelo</TableHead>
+                      <TableHead className="w-16">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -768,6 +780,16 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                         <TableCell>{vehiculo.placa}</TableCell>
                         <TableCell>{vehiculo.marca}</TableCell>
                         <TableCell>{vehiculo.modelo}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteRelacion("vehiculo", vehiculo.id, vehiculo.placa)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -787,6 +809,7 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                     <TableRow>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Dirección</TableHead>
+                      <TableHead className="w-16">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -794,6 +817,16 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                       <TableRow key={inmueble.id}>
                         <TableCell>{inmueble.tipo}</TableCell>
                         <TableCell>{inmueble.direccion}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteRelacion("inmueble", inmueble.id, inmueble.direccion)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -874,7 +907,7 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
                   <SelectValue placeholder="Seleccionar posición" />
                 </SelectTrigger>
                 <SelectContent>
-                  {posicionesEstructura.map((posicion: any) => (
+                  {(posicionesEstructura as any[]).map((posicion: any) => (
                     <SelectItem key={posicion.id} value={posicion.nombre}>
                       {posicion.nombre}
                     </SelectItem>
@@ -930,6 +963,23 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
           </div>
         </CardContent>
       </Card>
+
+      {/* Estructura y Posiciones - Solo para personas */}
+      {entityType === "persona" && (
+        <Card className="w-full">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <User className="h-5 w-5" />
+              <span>Estructura y Posiciones</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="p-1">
+              {renderEstructuraPosiciones()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Observaciones */}
       <Card className="w-full">
