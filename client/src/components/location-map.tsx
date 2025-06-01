@@ -30,20 +30,27 @@ function MapBoundsAdjuster({ markers }: { markers: MapMarker[] }) {
   
   useEffect(() => {
     if (markers.length > 0) {
-      // Crear un bounds que contenga todos los marcadores
-      const bounds = new LatLngBounds([]);
-      
-      markers.forEach(marker => {
-        bounds.extend(new LatLng(marker.lat, marker.lng));
-      });
-      
-      // Ajustar el mapa a los límites con padding
-      map.fitBounds(bounds, { 
-        padding: [50, 50], // Añadir padding para que los marcadores no estén en el borde
-        maxZoom: 15 // No hacer zoom demasiado cercano
-      });
-      
-      console.log("Ajustando mapa para mostrar todos los marcadores");
+      if (markers.length === 1) {
+        // Para un solo marcador, centrar en él con zoom moderado
+        const marker = markers[0];
+        map.setView([marker.lat, marker.lng], 12); // Zoom moderado para un solo marcador
+        console.log("Centrando mapa en marcador único con zoom moderado");
+      } else {
+        // Para múltiples marcadores, ajustar bounds
+        const bounds = new LatLngBounds([]);
+        
+        markers.forEach(marker => {
+          bounds.extend(new LatLng(marker.lat, marker.lng));
+        });
+        
+        // Ajustar el mapa a los límites con padding
+        map.fitBounds(bounds, { 
+          padding: [50, 50], // Añadir padding para que los marcadores no estén en el borde
+          maxZoom: 15 // No hacer zoom demasiado cercano
+        });
+        
+        console.log("Ajustando mapa para mostrar todos los marcadores");
+      }
     }
   }, [markers, map]);
   
@@ -134,7 +141,7 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {markers.length > 1 && <MapBoundsAdjuster markers={markers} />}
+        {markers.length > 0 && <MapBoundsAdjuster markers={markers} />}
         
         {markers.map((marker) => (
           <Marker 
