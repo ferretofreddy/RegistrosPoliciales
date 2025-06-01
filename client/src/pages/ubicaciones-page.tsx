@@ -5,9 +5,12 @@ import SearchComponent from "@/components/search-component";
 import LocationMap from "@/components/location-map";
 import LocationsTable, { LocationData } from "@/components/locations-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Search, User, Building, Car } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Search, User, Building, Car, FileText } from "lucide-react";
 import { SearchResult } from "@/components/search-component";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Coordenadas por defecto (centro de Costa Rica)
 const DEFAULT_CENTER: [number, number] = [9.9281, -84.0907];
@@ -189,6 +192,32 @@ export default function UbicacionesPage() {
           }
         }
 
+        // Ubicaciones de vehículos relacionados
+        if (relations.vehiculos) {
+          for (const vehiculoRelacionado of relations.vehiculos) {
+            try {
+              const vehiculoRelResponse = await fetch(`/api/relaciones/vehiculo/${vehiculoRelacionado.id}`);
+              if (vehiculoRelResponse.ok) {
+                const vehiculoRelData = await vehiculoRelResponse.json();
+                if (vehiculoRelData.ubicaciones) {
+                  const ubicacionesVehiculoRel = vehiculoRelData.ubicaciones.filter(
+                    (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
+                  );
+                  const ubicacionesConvertidas = convertToLocationData(ubicacionesVehiculoRel, "ubicacion", "related");
+                  const ubicacionesFormateadas = ubicacionesConvertidas.map(loc => ({
+                    ...loc,
+                    title: "Avistamiento",
+                    description: `Ubicación de vehículo ${vehiculoRelacionado.marca} ${vehiculoRelacionado.modelo} (${vehiculoRelacionado.placa})`
+                  }));
+                  relatedLocations = [...relatedLocations, ...ubicacionesFormateadas];
+                }
+              }
+            } catch (error) {
+              console.error("Error obteniendo ubicaciones de vehículo relacionado:", error);
+            }
+          }
+        }
+
         // Ubicaciones de la tabla ubicaciones (excluyendo Domicilio e Inmueble)
         const ubicacionesFiltradas = (relations.ubicaciones || []).filter(
           (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
@@ -214,24 +243,46 @@ export default function UbicacionesPage() {
           relation: "related" as const
         }));
 
-        // Ubicaciones de vehículos relacionados (relaciones de segundo nivel)
-        if (relations.vehiculos) {
-          for (const vehiculoRelacionado of relations.vehiculos) {
+        // Domicilios de personas relacionadas
+        if (relations.personas) {
+          for (const personaRelacionada of relations.personas) {
             try {
-              const vehiculoRelResponse = await fetch(`/api/relaciones/vehiculo/${vehiculoRelacionado.id}`);
-              if (vehiculoRelResponse.ok) {
-                const vehiculoRelData = await vehiculoRelResponse.json();
-                if (vehiculoRelData.ubicaciones) {
-                  const ubicacionesVehiculoRel = vehiculoRelData.ubicaciones.filter(
-                    (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
-                  );
-                  const ubicacionesConvertidas = convertToLocationData(ubicacionesVehiculoRel, "ubicacion", "related");
-                  relatedLocations = [...relatedLocations, ...ubicacionesConvertidas];
+              const personaRelResponse = await fetch(`/api/personas/${personaRelacionada.id}`);
+              if (personaRelResponse.ok) {
+                const personaRelData = await personaRelResponse.json();
+                if (personaRelData.domicilios && personaRelData.domicilios.length > 0) {
+                  const domiciliosRelacionados = personaRelData.domicilios.map((domicilio: string, index: number) => ({
+                    id: personaRelacionada.id + index * 1000,
+                    lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+                    lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+                    title: "Domicilio",
+                    description: `Domicilio de ${personaRelData.nombre}: ${domicilio}`,
+                    type: "persona" as EntityType,
+                    relation: "related" as const,
+                    entityId: personaRelacionada.id
+                  }));
+                  relatedLocations = [...relatedLocations, ...domiciliosRelacionados];
                 }
               }
             } catch (error) {
-              console.error("Error obteniendo ubicaciones de vehículo relacionado:", error);
+              console.error("Error obteniendo datos de persona relacionada:", error);
             }
+          }
+        }
+
+        // Ubicaciones de inmuebles relacionados
+        if (relations.inmuebles) {
+          for (const inmuebleRelacionado of relations.inmuebles) {
+            relatedLocations.push({
+              id: inmuebleRelacionado.id,
+              lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+              lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+              title: "Inmueble",
+              description: `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
+              type: "inmueble" as EntityType,
+              relation: "related" as const,
+              entityId: inmuebleRelacionado.id
+            });
           }
         }
       }
@@ -394,6 +445,89 @@ export default function UbicacionesPage() {
     toast({
       title: "Ubicación seleccionada",
       description: `${location.title}: ${location.description}`
+    });
+  };
+
+  const exportToPDF = () => {
+    if (locations.length === 0) {
+      toast({
+        title: "Sin datos",
+        description: "No hay ubicaciones para exportar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Encabezado
+    doc.setFontSize(16);
+    doc.text("Informe de Ubicaciones", 20, 20);
+    
+    if (selectedEntity) {
+      doc.setFontSize(12);
+      doc.text(`Entidad: ${selectedEntity.nombre}`, 20, 35);
+      doc.text(`Tipo: ${selectedEntity.tipo}`, 20, 45);
+      doc.text(`Referencia: ${selectedEntity.referencia}`, 20, 55);
+    }
+    
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 65);
+    doc.text(`Total de ubicaciones: ${locations.length}`, 20, 75);
+
+    // Tabla de ubicaciones directas
+    const directLocations = locations.filter(loc => loc.relation === 'direct');
+    if (directLocations.length > 0) {
+      doc.setFontSize(14);
+      doc.text("Ubicaciones Directas", 20, 90);
+      
+      const directData = directLocations.map(loc => [
+        loc.title,
+        loc.description,
+        `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`
+      ]);
+
+      autoTable(doc, {
+        head: [['Tipo', 'Descripción', 'Coordenadas']],
+        body: directData,
+        startY: 95,
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [66, 139, 202] }
+      });
+    }
+
+    // Tabla de ubicaciones relacionadas
+    const relatedLocations = locations.filter(loc => loc.relation === 'related');
+    if (relatedLocations.length > 0) {
+      const startY = directLocations.length > 0 ? (doc as any).lastAutoTable.finalY + 10 : 90;
+      
+      doc.setFontSize(14);
+      doc.text("Ubicaciones Relacionadas", 20, startY);
+      
+      const relatedData = relatedLocations.map(loc => [
+        loc.title,
+        loc.description,
+        `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`
+      ]);
+
+      autoTable(doc, {
+        head: [['Tipo', 'Descripción', 'Coordenadas']],
+        body: relatedData,
+        startY: startY + 5,
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [92, 184, 92] }
+      });
+    }
+
+    // Guardar el PDF
+    const fileName = selectedEntity 
+      ? `ubicaciones_${selectedEntity.tipo}_${selectedEntity.referencia}.pdf`
+      : `ubicaciones_${new Date().toISOString().split('T')[0]}.pdf`;
+    
+    doc.save(fileName);
+    
+    toast({
+      title: "PDF exportado",
+      description: `Se ha generado el archivo ${fileName}`,
     });
   };
 
@@ -579,6 +713,14 @@ export default function UbicacionesPage() {
             {/* Tablas de ubicaciones separadas */}
             {locations.length > 0 && (
               <div className="space-y-6">
+                {/* Botón de exportar PDF */}
+                <div className="flex justify-end">
+                  <Button onClick={exportToPDF} className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Exportar a PDF
+                  </Button>
+                </div>
+
                 {/* Tabla de ubicaciones directas */}
                 {locations.filter(loc => loc.relation === 'direct').length > 0 && (
                   <Card>
