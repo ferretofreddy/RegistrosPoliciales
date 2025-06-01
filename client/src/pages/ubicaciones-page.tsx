@@ -189,26 +189,51 @@ export default function UbicacionesPage() {
           }
         }
 
-        // Ubicaciones directas de la tabla ubicaciones (excluyendo Domicilio e Inmueble)
-        const ubicacionesDirectas = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related").filter(
-          loc => loc.title !== "Domicilio" && loc.title !== "Inmueble"
+        // Ubicaciones de la tabla ubicaciones (excluyendo Domicilio e Inmueble)
+        const ubicacionesFiltradas = (relations.ubicaciones || []).filter(
+          (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
         );
-        relatedLocations = [...relatedLocations, ...ubicacionesDirectas];
+        const ubicacionesConvertidas = convertToLocationData(ubicacionesFiltradas, "ubicacion", "related");
+        relatedLocations = [...relatedLocations, ...ubicacionesConvertidas];
       }
     } else if (entity.tipo === "vehiculo") {
       entityType = "vehiculo";
       
       // UBICACIONES DIRECTAS: Vehículos no tienen ubicaciones directas según las instrucciones
       
-      // UBICACIONES RELACIONADAS: Ubicaciones desde las relaciones
+      // UBICACIONES RELACIONADAS: Ubicaciones desde las relaciones (excluyendo Domicilio e Inmueble)
       if (relations) {
-        const ubicacionesVehiculo = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
+        const ubicacionesFiltradas = (relations.ubicaciones || []).filter(
+          (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
+        );
+        const ubicacionesVehiculo = convertToLocationData(ubicacionesFiltradas, "ubicacion", "related");
         relatedLocations = ubicacionesVehiculo.map(loc => ({
           ...loc,
           title: "Avistamiento",
           description: `Ubicación de vehículo ${entity.referencia}`,
           relation: "related" as const
         }));
+
+        // Ubicaciones de vehículos relacionados (relaciones de segundo nivel)
+        if (relations.vehiculos) {
+          for (const vehiculoRelacionado of relations.vehiculos) {
+            try {
+              const vehiculoRelResponse = await fetch(`/api/relaciones/vehiculo/${vehiculoRelacionado.id}`);
+              if (vehiculoRelResponse.ok) {
+                const vehiculoRelData = await vehiculoRelResponse.json();
+                if (vehiculoRelData.ubicaciones) {
+                  const ubicacionesVehiculoRel = vehiculoRelData.ubicaciones.filter(
+                    (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
+                  );
+                  const ubicacionesConvertidas = convertToLocationData(ubicacionesVehiculoRel, "ubicacion", "related");
+                  relatedLocations = [...relatedLocations, ...ubicacionesConvertidas];
+                }
+              }
+            } catch (error) {
+              console.error("Error obteniendo ubicaciones de vehículo relacionado:", error);
+            }
+          }
+        }
       }
     } else if (entity.tipo === "inmueble") {
       entityType = "inmueble";
@@ -263,9 +288,10 @@ export default function UbicacionesPage() {
         }
 
         // Otras ubicaciones (excluyendo tipos no relevantes)
-        const ubicacionesOtras = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related").filter(
-          loc => loc.title !== "Domicilio" && loc.title !== "Inmueble"
+        const ubicacionesFiltradas = (relations.ubicaciones || []).filter(
+          (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
         );
+        const ubicacionesOtras = convertToLocationData(ubicacionesFiltradas, "ubicacion", "related");
         relatedLocations = [...relatedLocations, ...ubicacionesOtras];
       }
     } else if (entity.tipo === "ubicacion") {
@@ -550,22 +576,45 @@ export default function UbicacionesPage() {
               </Card>
             </div>
 
-            {/* Tabla de ubicaciones */}
+            {/* Tablas de ubicaciones separadas */}
             {locations.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Lista de Ubicaciones ({locations.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <LocationsTable 
-                    locations={locations}
-                    onLocationClick={handleLocationClick}
-                  />
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                {/* Tabla de ubicaciones directas */}
+                {locations.filter(loc => loc.relation === 'direct').length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-blue-600" />
+                        Ubicaciones Directas ({locations.filter(loc => loc.relation === 'direct').length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <LocationsTable 
+                        locations={locations.filter(loc => loc.relation === 'direct')}
+                        onLocationClick={handleLocationClick}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Tabla de ubicaciones relacionadas */}
+                {locations.filter(loc => loc.relation === 'related').length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-green-600" />
+                        Ubicaciones Relacionadas ({locations.filter(loc => loc.relation === 'related').length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <LocationsTable 
+                        locations={locations.filter(loc => loc.relation === 'related')}
+                        onLocationClick={handleLocationClick}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             )}
           </div>
         </div>
