@@ -502,6 +502,10 @@ export default function UbicacionesPage() {
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 25, 112);
       
+      let yPos = 75;
+      const directCount = locations.filter(loc => loc.relation === 'direct').length;
+      const relatedCount = locations.filter(loc => loc.relation === 'related').length;
+      
       if (selectedEntity) {
         doc.text(`ENTIDAD: ${selectedEntity.tipo.toUpperCase()}`, margin, 65);
         
@@ -510,29 +514,22 @@ export default function UbicacionesPage() {
         doc.setFont("helvetica", "normal");
         doc.setTextColor(0, 0, 0);
         
-        let yPos = 75;
-        
         if (selectedEntity.tipo === "persona") {
-          // Obtener información adicional de la persona desde relationData
           doc.text(`• Nombre: ${selectedEntity.nombre}`, margin + 5, yPos);
           yPos += 8;
           doc.text(`• Identificación: ${selectedEntity.referencia}`, margin + 5, yPos);
           yPos += 8;
-          // Nota: Tipo de identificación se podría obtener de relationData si está disponible
         } else if (selectedEntity.tipo === "vehiculo") {
-          // Para vehículos: placa, marca, modelo, color
           doc.text(`• Placa: ${selectedEntity.referencia}`, margin + 5, yPos);
           yPos += 8;
           doc.text(`• Vehículo: ${selectedEntity.nombre}`, margin + 5, yPos);
           yPos += 8;
         } else if (selectedEntity.tipo === "inmueble") {
-          // Para inmuebles: tipo, dirección
           doc.text(`• Descripción: ${selectedEntity.nombre}`, margin + 5, yPos);
           yPos += 8;
           doc.text(`• Referencia: ${selectedEntity.referencia}`, margin + 5, yPos);
           yPos += 8;
         } else if (selectedEntity.tipo === "ubicacion") {
-          // Para ubicaciones: tipo, descripción
           doc.text(`• Ubicación: ${selectedEntity.nombre}`, margin + 5, yPos);
           yPos += 8;
           doc.text(`• Referencia: ${selectedEntity.referencia}`, margin + 5, yPos);
@@ -542,9 +539,6 @@ export default function UbicacionesPage() {
         yPos += 5;
         
         // Información resumida de ubicaciones
-        const directCount = locations.filter(loc => loc.relation === 'direct').length;
-        const relatedCount = locations.filter(loc => loc.relation === 'related').length;
-        
         doc.text(`• Total de ubicaciones registradas: ${locations.length}`, margin + 5, yPos);
         yPos += 8;
         doc.text(`• Ubicaciones directas: ${directCount}`, margin + 5, yPos);
@@ -558,10 +552,6 @@ export default function UbicacionesPage() {
         doc.setFont("helvetica", "normal");
         doc.setTextColor(0, 0, 0);
         
-        const directCount = locations.filter(loc => loc.relation === 'direct').length;
-        const relatedCount = locations.filter(loc => loc.relation === 'related').length;
-        
-        let yPos = 75;
         doc.text(`• Total de ubicaciones registradas: ${locations.length}`, margin + 5, yPos);
         yPos += 8;
         doc.text(`• Ubicaciones directas: ${directCount}`, margin + 5, yPos);
@@ -577,7 +567,6 @@ export default function UbicacionesPage() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(25, 25, 112);
         doc.text("UBICACIONES DIRECTAS", margin, yPos);
-        yPos += 5;
         
         const directData = directLocations.map(loc => [
           loc.title,
@@ -588,7 +577,7 @@ export default function UbicacionesPage() {
         autoTable(doc, {
           head: [['Tipo de Ubicación', 'Descripción Completa', 'Coordenadas GPS']],
           body: directData,
-          startY: yPos,
+          startY: yPos + 5,
           styles: { 
             fontSize: 9,
             cellPadding: 3,
@@ -625,7 +614,6 @@ export default function UbicacionesPage() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(25, 25, 112);
         doc.text("UBICACIONES RELACIONADAS", margin, yPos);
-        yPos += 5;
         
         const relatedData = relatedLocations.map(loc => [
           loc.title,
@@ -636,7 +624,7 @@ export default function UbicacionesPage() {
         autoTable(doc, {
           head: [['Tipo de Ubicación', 'Descripción Completa', 'Coordenadas GPS']],
           body: relatedData,
-          startY: yPos,
+          startY: yPos + 5,
           styles: { 
             fontSize: 9,
             cellPadding: 3,
