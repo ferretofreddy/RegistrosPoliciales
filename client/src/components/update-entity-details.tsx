@@ -262,19 +262,29 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
   // Mutación para actualizar posición de estructura
   const updatePosicionMutation = useMutation({
     mutationFn: async (nuevaPosicion: string) => {
+      console.log('[updatePosicionMutation] Enviando datos:', { posicion: nuevaPosicion });
+      
       const response = await fetch(`/api/personas/${entityId}/posicion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({ posicionEstructura: nuevaPosicion }),
+        body: JSON.stringify({ posicion: nuevaPosicion }),
+        credentials: 'include'
       });
       
+      console.log('[updatePosicionMutation] Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Error al actualizar la posición de estructura');
+        const errorText = await response.text();
+        console.error('[updatePosicionMutation] Error response:', errorText);
+        throw new Error(`Error al actualizar la posición: ${response.status}`);
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log('[updatePosicionMutation] Success result:', result);
+      return result;
     },
     onSuccess: () => {
       toast({

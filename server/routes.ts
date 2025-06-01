@@ -1191,6 +1191,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al eliminar posición de estructura" });
     }
   });
+
+  // Actualizar posición de estructura de una persona
+  app.patch("/api/personas/:id/posicion", ensureAuthenticated, async (req, res) => {
+    try {
+      const personaId = parseInt(req.params.id);
+      const { posicion } = req.body;
+      
+      console.log(`[PATCH /api/personas/${personaId}/posicion] Datos recibidos:`, { posicion });
+      
+      if (isNaN(personaId)) {
+        return res.status(400).json({ message: "ID de persona inválido" });
+      }
+      
+      if (!posicion || typeof posicion !== 'string') {
+        return res.status(400).json({ message: "La posición es requerida" });
+      }
+      
+      // Actualizar la posición en la base de datos
+      const result = await db
+        .update(personas)
+        .set({ posicionEstructura: posicion })
+        .where(eq(personas.id, personaId))
+        .returning();
+      
+      if (!result.length) {
+        return res.status(404).json({ message: "Persona no encontrada" });
+      }
+      
+      console.log(`[PATCH /api/personas/${personaId}/posicion] Actualización exitosa:`, result[0]);
+      res.json({ message: "Posición actualizada correctamente", persona: result[0] });
+    } catch (error) {
+      console.error("Error al actualizar posición de persona:", error);
+      res.status(500).json({ message: "Error al actualizar posición de persona" });
+    }
+  });
   
   // === ADMINISTRACION DE USUARIOS ===
   // Obtener todos los usuarios (solo admin)
