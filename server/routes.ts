@@ -1257,6 +1257,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             eq(personasVehiculos.vehiculoId, id2)
           ))
           .returning();
+      } else if (tipoOrigen === "vehiculo" && tipoDestino === "persona") {
+        deleteResult = await db.delete(personasVehiculos)
+          .where(and(
+            eq(personasVehiculos.personaId, id2),
+            eq(personasVehiculos.vehiculoId, id1)
+          ))
+          .returning();
       } else if (tipoOrigen === "persona" && tipoDestino === "inmueble") {
         deleteResult = await db.delete(personasInmuebles)
           .where(and(
@@ -1264,11 +1271,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             eq(personasInmuebles.inmuebleId, id2)
           ))
           .returning();
+      } else if (tipoOrigen === "inmueble" && tipoDestino === "persona") {
+        deleteResult = await db.delete(personasInmuebles)
+          .where(and(
+            eq(personasInmuebles.personaId, id2),
+            eq(personasInmuebles.inmuebleId, id1)
+          ))
+          .returning();
       } else if (tipoOrigen === "persona" && tipoDestino === "ubicacion") {
         deleteResult = await db.delete(personasUbicaciones)
           .where(and(
             eq(personasUbicaciones.personaId, id1),
             eq(personasUbicaciones.ubicacionId, id2)
+          ))
+          .returning();
+      } else if (tipoOrigen === "ubicacion" && tipoDestino === "persona") {
+        deleteResult = await db.delete(personasUbicaciones)
+          .where(and(
+            eq(personasUbicaciones.personaId, id2),
+            eq(personasUbicaciones.ubicacionId, id1)
           ))
           .returning();
       } else if (tipoOrigen === "persona" && tipoDestino === "persona") {
