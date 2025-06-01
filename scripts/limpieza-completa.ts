@@ -36,7 +36,7 @@ async function limpiezaCompleta() {
     
     // Eliminar todas las relaciones entre entidades
     await db.delete(personasUbicaciones);
-    await db.delete(inmueblesInmuebles);
+    await db.delete(personasPersonas);
     await db.delete(vehiculosUbicaciones);
     await db.delete(inmueblesUbicaciones);
     await db.delete(vehiculosInmuebles);
