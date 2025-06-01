@@ -11,6 +11,7 @@ import { SearchResult } from "@/components/search-component";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 // Coordenadas por defecto (centro de Costa Rica)
 const DEFAULT_CENTER: [number, number] = [9.9281, -84.0907];
@@ -448,7 +449,7 @@ export default function UbicacionesPage() {
     });
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (locations.length === 0) {
       toast({
         title: "Sin datos",
@@ -536,28 +537,47 @@ export default function UbicacionesPage() {
           yPos += 8;
         }
         
-        yPos += 5;
-        
-        // Información resumida de ubicaciones
-        doc.text(`• Total de ubicaciones registradas: ${locations.length}`, margin + 5, yPos);
-        yPos += 8;
-        doc.text(`• Ubicaciones directas: ${directCount}`, margin + 5, yPos);
-        yPos += 8;
-        doc.text(`• Ubicaciones relacionadas: ${relatedCount}`, margin + 5, yPos);
         yPos += 15;
       } else {
         doc.text("RESUMEN EJECUTIVO", margin, 65);
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-        
-        doc.text(`• Total de ubicaciones registradas: ${locations.length}`, margin + 5, yPos);
-        yPos += 8;
-        doc.text(`• Ubicaciones directas: ${directCount}`, margin + 5, yPos);
-        yPos += 8;
-        doc.text(`• Ubicaciones relacionadas: ${relatedCount}`, margin + 5, yPos);
         yPos += 15;
+      }
+
+      // Captura del mapa
+      const mapElement = document.querySelector('.leaflet-container') as HTMLElement;
+      if (mapElement && locations.length > 0) {
+        try {
+          const canvas = await html2canvas(mapElement, {
+            useCORS: true,
+            allowTaint: true,
+            scale: 1,
+            width: mapElement.offsetWidth,
+            height: mapElement.offsetHeight
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const mapWidth = pageWidth - (margin * 2);
+          const mapHeight = (canvas.height * mapWidth) / canvas.width;
+          
+          // Verificar si necesitamos nueva página
+          if (yPos + mapHeight + 20 > pageHeight - 30) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(25, 25, 112);
+          doc.text("MAPA DE UBICACIONES", margin, yPos);
+          yPos += 10;
+          
+          doc.addImage(imgData, 'PNG', margin, yPos, mapWidth, mapHeight);
+          yPos += mapHeight + 15;
+          
+        } catch (error) {
+          console.error("Error capturando el mapa:", error);
+          // Continuar sin el mapa si hay error
+        }
       }
 
       // Tabla de ubicaciones directas
