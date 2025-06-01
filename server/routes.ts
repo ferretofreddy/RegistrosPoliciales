@@ -1393,6 +1393,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ))
           .returning();
       } else {
+        console.log(`[DELETE] ERROR: Caso no encontrado para: "${tipoOrigen}" → "${tipoDestino}"`);
+        console.log(`[DELETE] tipoOrigen type: ${typeof tipoOrigen}, value: '${tipoOrigen}'`);
+        console.log(`[DELETE] tipoDestino type: ${typeof tipoDestino}, value: '${tipoDestino}'`);
         return res.status(400).json({ message: "Tipo de relación no válido" });
       }
       
