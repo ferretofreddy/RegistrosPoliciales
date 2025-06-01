@@ -1721,21 +1721,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         relaciones.inmuebles = relacionesInmuebles.rows;
         
-        // Ubicaciones relacionadas con este vehículo 
-        // (todas son consideradas "otras" ya que los vehículos no tienen ubicaciones directas)
-        const otrasUbicacionesResult = await db.execute(
+        // Ubicaciones relacionadas con este vehículo (consideradas directas)
+        const ubicacionesResult = await db.execute(
           sql`SELECT u.* FROM ubicaciones u
               JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
               WHERE vu.vehiculo_id = ${id}
               AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
         );
         
-        const otrasUbicaciones = otrasUbicacionesResult.rows || [];
-        console.log(`[DEBUG] Ubicaciones de vehículo encontradas (routes): ${otrasUbicaciones.length}`);
+        const ubicaciones = ubicacionesResult.rows || [];
+        console.log(`[DEBUG] Ubicaciones de vehículo encontradas (routes): ${ubicaciones.length}`);
         
-        // Asignar todas como otras ubicaciones, no como directas
-        relaciones.ubicaciones = [];
-        relaciones.otrasUbicaciones = otrasUbicaciones;
+        // Asignar ubicaciones directas para vehículos
+        relaciones.ubicaciones = ubicaciones;
+        relaciones.otrasUbicaciones = [];
       }
       else if (tipo === "inmueble") {
         // Personas relacionadas con este inmueble - usando SQL directo

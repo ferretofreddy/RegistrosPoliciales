@@ -152,7 +152,33 @@ export default function EstructurasPage() {
         }
       } 
       else if (selectedResult.tipo === 'vehiculo') {
-        // Para vehículos, todas son ubicaciones relacionadas
+        // Procesar ubicaciones directas para vehículos
+        if (relacionesData.ubicaciones && relacionesData.ubicaciones.length > 0) {
+          for (const ubicacion of relacionesData.ubicaciones) {
+            const lat = parseFloat(String(ubicacion.latitud));
+            const lng = parseFloat(String(ubicacion.longitud));
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+              ubicacionesEncontradas.push({
+                id: ubicacion.id,
+                lat,
+                lng,
+                title: ubicacion.tipo || "Ubicación del vehículo",
+                description: ubicacion.observaciones || `Ubicación de vehículo ${selectedResult.placa}`,
+                type: "vehiculo",
+                relation: "direct",
+                entityId: selectedResult.id
+              });
+            }
+          }
+          
+          // Centrar el mapa en la primera ubicación
+          if (ubicacionesEncontradas.length > 0) {
+            setMapCenter([ubicacionesEncontradas[0].lat, ubicacionesEncontradas[0].lng]);
+          }
+        }
+        
+        // Procesar otras ubicaciones relacionadas (avistamientos)
         if (relacionesData.otrasUbicaciones && relacionesData.otrasUbicaciones.length > 0) {
           for (const ubicacion of relacionesData.otrasUbicaciones) {
             const lat = parseFloat(String(ubicacion.latitud));
@@ -164,17 +190,12 @@ export default function EstructurasPage() {
                 lat,
                 lng,
                 title: ubicacion.tipo || "Avistamiento",
-                description: ubicacion.observaciones || `Avistamiento de ${selectedResult.nombre}`,
-                type: "ubicacion",
+                description: ubicacion.observaciones || `Avistamiento de vehículo ${selectedResult.placa}`,
+                type: "vehiculo",
                 relation: "related",
                 entityId: selectedResult.id
               });
             }
-          }
-          
-          // Centrar el mapa en la primera ubicación
-          if (ubicacionesEncontradas.length > 0) {
-            setMapCenter([ubicacionesEncontradas[0].lat, ubicacionesEncontradas[0].lng]);
           }
         }
       }
