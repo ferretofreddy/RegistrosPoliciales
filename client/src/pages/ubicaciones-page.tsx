@@ -574,7 +574,7 @@ export default function UbicacionesPage() {
                     </div>
                   ) : (
                     <LocationMap 
-                      locations={locations}
+                      markers={locations}
                       center={mapCenter}
                       zoom={DEFAULT_ZOOM}
                     />
