@@ -1,0 +1,281 @@
+Objetivo: Implementar mejoras en el formulario de actualización de registros en la página de registros, específicamente para registros de tipo "persona". Las mejoras incluyen agregar un campo, un nuevo módulo, y funcionalidades de eliminación en el módulo de relaciones.
+
+Entorno:
+
+
+
+
+
+Plataforma: Aplicación web con formulario de actualización de registros.
+
+
+
+Tecnologías: HTML, JavaScript (con posible uso de frameworks como React o Vue.js), CSS, y backend con acceso a una base de datos relacional.
+
+
+
+Tablas relevantes:
+
+
+
+
+
+personas: Contiene información de personas, incluyendo los campos tipo_identificacion y posicion_estructura.
+
+
+
+posiciones_estructura: Contiene las opciones disponibles para el campo posicion_estructura.
+
+
+
+Tablas relacionadas para el módulo de relaciones: personas_relacionadas, vehiculos_relacionados, inmuebles_relacionados, ubicaciones_relacionadas.
+
+Instrucciones para las mejoras:
+
+
+
+
+
+Agregar campo "Tipo de Identificación" en el módulo "Información Detallada":
+
+
+
+
+
+En el formulario de actualización, en el módulo "Información Detallada de la Persona" (visible solo si el registro es de tipo "persona"), agregar un campo que muestre el valor de tipo_identificacion antes del campo de "Identificación".
+
+
+
+Implementación:
+
+
+
+
+
+Asegúrate de que el campo tipos_identificacion se obtenga desde la tabla personas para el registro actual.
+
+
+
+Mostrar el valor como un campo de solo lectura o como un <select> si es editable, con las opciones predefinidas (por ejemplo, "Cédula", "Pasaporte", "RUC", etc.).
+
+
+
+Actualizar la interfaz para que el campo "Tipo de Identificación" aparezca visualmente antes del campo "Identificación" en el formulario.
+
+
+
+Validar que el campo no esté vacío si es obligatorio en el backend al guardar el registro.
+
+
+
+Crear módulo "Estructura y Posiciones":
+
+
+
+
+
+Crear un nuevo módulo en el formulario, titulado "Estructura y Posiciones", ubicado debajo del módulo "Información Detallada" y antes del módulo "Observaciones".
+
+
+
+Funcionalidad:
+
+
+
+
+
+Mostrar el valor actual del campo posicion_estructura de la tabla personas para el registro en edición (por ejemplo, "Gerente", "Analista", etc.).
+
+
+
+Incluir un ícono de edición (por ejemplo, un lápiz <i class="fas fa-edit"></i> si usas Font Awesome) junto al valor mostrado.
+
+
+
+Al hacer clic en el ícono de edición, desplegar un <select> con las opciones disponibles en la tabla posiciones_estructura.
+
+
+
+Al seleccionar una nueva opción y confirmar (por ejemplo, con un botón "Guardar" o al salir del <select>), actualizar el campo posicion_estructura en la tabla personas para el registro actual mediante una llamada al backend (por ejemplo, una solicitud PATCH o PUT).
+
+
+
+Mostrar una notificación de éxito o error tras la actualización.
+
+
+
+Implementación:
+
+
+
+
+
+Consultar la tabla posiciones_estructura para obtener las opciones disponibles y llenar el <select>.
+
+
+
+Asegurarse de que la interfaz sea responsiva y clara, con un diseño consistente con el resto del formulario.
+
+
+
+Validar que el valor seleccionado sea válido y manejar errores (por ejemplo, si no hay conexión con el backend).
+
+
+
+Agregar funcionalidad de eliminación en el módulo "Relaciones":
+
+
+
+
+
+En el módulo "Relaciones", en los apartados "Personas Relacionadas", "Vehículos Relacionados" y "Inmuebles Relacionados", agregar un ícono de eliminación (por ejemplo, un tacho de basura <i class="fas fa-trash"></i> si usas Font Awesome) al final de cada fila de registro relacionado.
+
+
+
+Funcionalidad:
+
+
+
+
+
+Al hacer clic en el ícono de eliminación, mostrar un cuadro de confirmación (por ejemplo, usando window.confirm o un modal personalizado) con un mensaje como: "¿Está seguro de que desea eliminar esta relación?".
+
+
+
+Si el usuario confirma, enviar una solicitud al backend (por ejemplo, una solicitud DELETE) para eliminar el registro correspondiente de la tabla asociada (personas relacionadas, vehiculos relacionados o inmuebles relacionados).
+
+
+
+Actualizar la interfaz para reflejar la eliminación del registro sin recargar la página (por ejemplo, usando JavaScript para remover la fila de la tabla).
+
+
+
+Mostrar una notificación de éxito o error tras la operación.
+
+
+
+Excepción:
+
+
+
+
+
+El apartado "Ubicaciones Relacionadas" no debe incluir el ícono de eliminación ni la funcionalidad de eliminar relaciones.
+
+
+
+Implementación:
+
+
+
+
+
+Asegurarse de que cada fila en los apartados mencionados tenga un identificador único pero no visible al usuario (por ejemplo, el ID del registro relacionado) para enviar al backend.
+
+
+
+Implementar la lógica de eliminación en el backend para actualizar las tablas correspondientes.
+
+
+
+Mantener la consistencia visual del ícono de eliminación con el diseño del formulario.
+
+
+
+Validar que el usuario tenga permisos para eliminar relaciones, si aplica.
+
+Consideraciones técnicas:
+
+
+
+
+
+Frontend:
+
+
+
+
+
+Usar JavaScript (o un framework como React/Vue.js) para manejar eventos de clic, modales, y actualizaciones dinámicas de la interfaz.
+
+
+
+Mantener un diseño responsivo y consistente con el resto de la aplicación (por ejemplo, usar el mismo framework CSS como Bootstrap o Tailwind).
+
+
+
+Implementar validaciones en el frontend para evitar acciones inválidas (por ejemplo, intentar actualizar con un valor vacío en posicion_estructura en la tabla personas).
+
+
+
+Backend:
+
+
+
+
+
+Asegurarse de que las rutas API soporten las operaciones necesarias (GET para obtener datos, PATCH/PUT para actualizar posicion_estructura, DELETE para eliminar relaciones).
+
+
+
+Implementar validaciones en el backend para garantizar la integridad de los datos.
+
+
+
+Manejar errores y enviar respuestas claras al frontend (por ejemplo, códigos de estado HTTP 200, 400, 500).
+
+
+
+Base de datos:
+
+
+
+
+
+Verificar que las tablas personas, posiciones_estructura, personas_personas, vehiculos_vehiculos, inmuebles_inmuebles , personas_vehiculos , personas_inmuebles y lasubicaciones relacionadas estén correctamente estructuradas y relacionadas.
+
+
+
+Asegurarse de que las consultas SQL sean seguras (usar consultas preparadas para evitar inyecciones SQL).
+
+
+
+Interfaz de usuario:
+
+
+
+
+
+Usar iconos consistentes (por ejemplo, Font Awesome o Material Icons) para las acciones de edición y eliminación.
+
+
+
+Mostrar notificaciones (por ejemplo, con Toastify o alertas personalizadas) para informar al usuario sobre el resultado de las operaciones.
+
+Pasos de implementación:
+
+
+
+
+
+Modificar el HTML del formulario para agregar el campo tipo_identificacion en el módulo "Información Detallada".
+
+
+
+Crear el nuevo módulo "Estructura y Posiciones" con el campo posicion_estructura y la funcionalidad de edición.
+
+
+
+Agregar el ícono de eliminación y la lógica correspondiente en los apartados de "Personas Relacionadas", "Vehículos Relacionados" y "Inmuebles Relacionados".
+
+
+
+Implementar las rutas API necesarias en el backend.
+
+
+
+Probar todas las funcionalidades en un entorno de desarrollo, asegurándose de que las operaciones de actualización y eliminación sean seguras y no afecten otros módulos.
+
+
+
+Verificar que el diseño sea responsivo y consistente en diferentes dispositivos.

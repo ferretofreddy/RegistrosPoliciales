@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Calendar, Link2, Plus, Car, Building, MapPin, AlertCircle } from "lucide-react";
+import { User, Calendar, Link2, Plus, Car, Building, MapPin, AlertCircle, Edit, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntityType } from "@/components/search-component";
 import { Button } from "@/components/ui/button";
@@ -90,10 +90,12 @@ interface UpdateEntityDetailsProps {
 
 export default function UpdateEntityDetails({ entityId, entityType }: UpdateEntityDetailsProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showObservacionForm, setShowObservacionForm] = useState(false);
   const [relacionTipo, setRelacionTipo] = useState<"persona" | "vehiculo" | "inmueble" | "ubicacion">("persona");
   const [showRelacionForm, setShowRelacionForm] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
+  const [editingPosicion, setEditingPosicion] = useState(false);
   
   // Estado para guardar las observaciones y relaciones
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
@@ -162,6 +164,18 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
   const { data: ubicaciones = [] } = useQuery<Ubicacion[]>({
     queryKey: ['/api/ubicaciones'],
     enabled: showRelacionForm && relacionTipo === "ubicacion"
+  });
+
+  // Obtener tipos de identificación para personas
+  const { data: tiposIdentificacion = [] } = useQuery({
+    queryKey: ['/api/tipos-identificacion'],
+    enabled: entityType === "persona"
+  });
+
+  // Obtener posiciones de estructura para personas
+  const { data: posicionesEstructura = [] } = useQuery({
+    queryKey: ['/api/posiciones-estructura-admin'],
+    enabled: entityType === "persona"
   });
   
   // Mutación para agregar una observación
@@ -243,6 +257,69 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
       });
     }
   });
+
+  // Mutación para actualizar posición de estructura
+  const updatePosicionMutation = useMutation({
+    mutationFn: async (nuevaPosicion: string) => {
+      const response = await fetch(`/api/personas/${entityId}/posicion`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ posicionEstructura: nuevaPosicion }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar la posición de estructura');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Posición actualizada",
+        description: "La posición de estructura se ha actualizado correctamente.",
+      });
+      setEditingPosicion(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/personas/${entityId}`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar la posición: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutación para eliminar relaciones
+  const deleteRelacionMutation = useMutation({
+    mutationFn: async ({ tipoRelacion, relacionId }: { tipoRelacion: string, relacionId: number }) => {
+      const response = await fetch(`/api/relaciones/${entityType}/${entityId}/${tipoRelacion}/${relacionId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al eliminar la relación');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Relación eliminada",
+        description: "La relación se ha eliminado correctamente.",
+      });
+      refetchRelaciones();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar la relación: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
   
   // Manejar envío de nueva observación
   const onSubmitObservacion = (data: z.infer<typeof observacionSchema>) => {
@@ -260,6 +337,13 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
       return;
     }
     addRelacionMutation.mutate(data);
+  };
+
+  // Función para confirmar y eliminar relación
+  const handleDeleteRelacion = (tipoRelacion: string, relacionId: number, nombreEntidad: string) => {
+    if (window.confirm(`¿Está seguro de que desea eliminar esta relación con "${nombreEntidad}"?`)) {
+      deleteRelacionMutation.mutate({ tipoRelacion, relacionId });
+    }
   };
 
   // Actualizar los estados cuando llegan los datos
@@ -301,6 +385,12 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
               <h3 className="text-lg font-semibold">Nombre:</h3>
               <p>{entityData.nombre}</p>
             </div>
+            {entityData.tipoIdentificacion && (
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Tipo de Identificación:</h3>
+                <p>{entityData.tipoIdentificacion}</p>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold">Identificación:</h3>
               <p>{entityData.identificacion}</p>
@@ -755,6 +845,66 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
             )}
           </div>
         )}
+      </div>
+    );
+  };
+
+  // Renderizar módulo de Estructura y Posiciones
+  const renderEstructuraPosiciones = () => {
+    if (entityType !== "persona" || !entity) return null;
+
+    const entityData = entity as any;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-md font-semibold">Posición en la Estructura</h3>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {editingPosicion ? (
+            <div className="flex items-center gap-2 flex-1">
+              <Select
+                value={entityData.posicionEstructura || ""}
+                onValueChange={(value) => {
+                  updatePosicionMutation.mutate(value);
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Seleccionar posición" />
+                </SelectTrigger>
+                <SelectContent>
+                  {posicionesEstructura.map((posicion: any) => (
+                    <SelectItem key={posicion.id} value={posicion.nombre}>
+                      {posicion.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingPosicion(false)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-1">
+              <p className="text-lg">
+                {entityData.posicionEstructura || "No asignada"}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingPosicion(true)}
+                className="h-8 w-8 p-0"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
