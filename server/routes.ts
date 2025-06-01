@@ -560,18 +560,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === UBICACIONES ===
   app.get("/api/ubicaciones", async (req, res) => {
     try {
-      // Excluir ubicaciones de tipo "domicilio" e "inmueble" según los requisitos
-      const allUbicaciones = await db.execute(
-        sql`SELECT * FROM ubicaciones 
-            WHERE (LOWER(tipo) != 'domicilio' 
-            AND LOWER(tipo) NOT LIKE '%domicilio%'
-            AND LOWER(tipo) != 'inmueble'
-            AND LOWER(tipo) NOT LIKE '%inmueble%')
-            OR tipo IS NULL`
-      );
+      console.log("[DEBUG] Iniciando consulta completa de ubicaciones para página ubicaciones");
+      
+      const resultado = {
+        ubicacionesDirectas: [],
+        ubicacionesRelacionadas: []
+      };
 
-      console.log(`[DEBUG] Ubicaciones filtradas (excluyendo domicilio/inmueble): ${allUbicaciones.rows.length}`);
-      res.json(allUbicaciones.rows);
+      // 1. UBICACIONES DIRECTAS
+      // Ubicaciones propias (excluyendo Domicilio e Inmueble)
+      const ubicacionesDirectasResult = await db.execute(
+        sql`SELECT * FROM ubicaciones 
+            WHERE latitud IS NOT NULL 
+            AND longitud IS NOT NULL
+            AND (tipo IS NULL 
+                 OR (LOWER(tipo) != 'domicilio' 
+                     AND LOWER(tipo) NOT LIKE '%domicilio%'
+                     AND LOWER(tipo) != 'inmueble'
+                     AND LOWER(tipo) NOT LIKE '%inmueble%'))
+            ORDER BY id`
+      );
+      
+      console.log(`[DEBUG] Ubicaciones directas encontradas: ${ubicacionesDirectasResult.rows.length}`);
+      resultado.ubicacionesDirectas = ubicacionesDirectasResult.rows || [];
+
+      // 2. UBICACIONES RELACIONADAS 
+      // Domicilios de personas (via personas_ubicaciones)
+      const domiciliosPersonasResult = await db.execute(
+        sql`SELECT DISTINCT u.*, 'persona' as entidad_tipo, p.nombre as entidad_nombre
+            FROM ubicaciones u
+            JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
+            JOIN personas p ON pu.persona_id = p.id
+            WHERE u.latitud IS NOT NULL 
+            AND u.longitud IS NOT NULL
+            AND (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')
+            ORDER BY u.id`
+      );
+      
+      console.log(`[DEBUG] Domicilios de personas encontrados: ${domiciliosPersonasResult.rows.length}`);
+
+      // Ubicaciones de inmuebles (via inmuebles_ubicaciones)
+      const ubicacionesInmueblesResult = await db.execute(
+        sql`SELECT DISTINCT u.*, 'inmueble' as entidad_tipo, i.direccion as entidad_nombre
+            FROM ubicaciones u
+            JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
+            JOIN inmuebles i ON iu.inmueble_id = i.id
+            WHERE u.latitud IS NOT NULL 
+            AND u.longitud IS NOT NULL
+            AND (u.tipo ILIKE '%inmueble%' OR u.tipo = 'Inmueble')
+            ORDER BY u.id`
+      );
+      
+      console.log(`[DEBUG] Ubicaciones de inmuebles encontradas: ${ubicacionesInmueblesResult.rows.length}`);
+
+      // Ubicaciones de vehículos (via vehiculos_ubicaciones)
+      const ubicacionesVehiculosResult = await db.execute(
+        sql`SELECT DISTINCT u.*, 'vehiculo' as entidad_tipo, 
+                   CONCAT(v.marca, ' ', v.modelo, ' (', v.placa, ')') as entidad_nombre
+            FROM ubicaciones u
+            JOIN vehiculos_ubicaciones vu ON u.id = vu.ubicacion_id
+            JOIN vehiculos v ON vu.vehiculo_id = v.id
+            WHERE u.latitud IS NOT NULL 
+            AND u.longitud IS NOT NULL
+            ORDER BY u.id`
+      );
+      
+      console.log(`[DEBUG] Ubicaciones de vehículos encontradas: ${ubicacionesVehiculosResult.rows.length}`);
+
+      // Combinar todas las ubicaciones relacionadas
+      resultado.ubicacionesRelacionadas = [
+        ...(domiciliosPersonasResult.rows || []),
+        ...(ubicacionesInmueblesResult.rows || []),
+        ...(ubicacionesVehiculosResult.rows || [])
+      ];
+
+      console.log(`[DEBUG] Total ubicaciones directas: ${resultado.ubicacionesDirectas.length}`);
+      console.log(`[DEBUG] Total ubicaciones relacionadas: ${resultado.ubicacionesRelacionadas.length}`);
+      
+      res.json(resultado);
     } catch (error) {
       console.error("Error al obtener ubicaciones:", error);
       res.status(500).json({ message: "Error al obtener ubicaciones" });
