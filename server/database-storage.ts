@@ -2071,7 +2071,7 @@ export class DatabaseStorage {
       } 
       
       // Relaciones vehículo
-      else if (tipo === 'vehiculos') {
+      else if (tipo === 'vehiculo') {
         console.log(`[DEBUG] Buscando relaciones para vehículo con ID ${id}`);
         
         try {
