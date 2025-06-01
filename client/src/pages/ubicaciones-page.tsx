@@ -112,62 +112,113 @@ export default function UbicacionesPage() {
   const processEntityLocations = async (entity: SearchResult) => {
     console.log("[UBICACIONES] Procesando entidad:", entity.tipo, entity);
     
-    let entityLocations: LocationData[] = [];
+    let directLocations: LocationData[] = [];
+    let relatedLocations: LocationData[] = [];
     let entityType: EntityType = "ubicacion";
+
+    // Obtener relaciones de la entidad
+    const relations = await fetchRelations(entity.tipo as EntityType, entity.id);
 
     if (entity.tipo === "persona") {
       entityType = "persona";
-      // Obtener datos detallados de la persona
+      
+      // UBICACIONES DIRECTAS: Domicilios de la persona (vía personas_ubicaciones)
       try {
         const personaResponse = await fetch(`/api/personas/${entity.id}`);
         if (personaResponse.ok) {
           const personaData = await personaResponse.json();
           if (personaData.domicilios && personaData.domicilios.length > 0) {
-            // Crear ubicaciones desde los domicilios
-            const domicilioLocations = personaData.domicilios.map((domicilio: string, index: number) => ({
-              id: entity.id,
+            directLocations = personaData.domicilios.map((domicilio: string, index: number) => ({
+              id: entity.id + index * 1000, // ID único para cada domicilio
               lat: 9.9281 + (Math.random() - 0.5) * 0.1,
               lng: -84.0907 + (Math.random() - 0.5) * 0.1,
               title: "Domicilio",
-              description: `Domicilio de ${personaData.nombre}`,
+              description: `Domicilio de ${personaData.nombre}: ${domicilio}`,
               type: "persona" as EntityType,
               relation: "direct" as const,
               entityId: entity.id
             }));
-            entityLocations = domicilioLocations;
           }
         }
       } catch (error) {
         console.error("Error obteniendo datos de persona:", error);
       }
 
-      // Obtener relaciones para ubicaciones adicionales
-      const relations = await fetchRelations(entityType, entity.id);
+      // UBICACIONES RELACIONADAS: Domicilios de personas relacionadas + ubicaciones de inmuebles relacionados
       if (relations) {
-        const relacionesUbicaciones = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
-        const otrasUbicaciones = convertToLocationData(relations.otrasUbicaciones || [], "ubicacion", "related");
-        entityLocations = [...entityLocations, ...relacionesUbicaciones, ...otrasUbicaciones];
+        // Domicilios de personas relacionadas
+        if (relations.personas) {
+          for (const personaRelacionada of relations.personas) {
+            try {
+              const personaRelResponse = await fetch(`/api/personas/${personaRelacionada.id}`);
+              if (personaRelResponse.ok) {
+                const personaRelData = await personaRelResponse.json();
+                if (personaRelData.domicilios && personaRelData.domicilios.length > 0) {
+                  const domiciliosRelacionados = personaRelData.domicilios.map((domicilio: string, index: number) => ({
+                    id: personaRelacionada.id + index * 1000,
+                    lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+                    lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+                    title: "Domicilio",
+                    description: `Domicilio de ${personaRelData.nombre}: ${domicilio}`,
+                    type: "persona" as EntityType,
+                    relation: "related" as const,
+                    entityId: personaRelacionada.id
+                  }));
+                  relatedLocations = [...relatedLocations, ...domiciliosRelacionados];
+                }
+              }
+            } catch (error) {
+              console.error("Error obteniendo datos de persona relacionada:", error);
+            }
+          }
+        }
+
+        // Ubicaciones de inmuebles relacionados
+        if (relations.inmuebles) {
+          for (const inmuebleRelacionado of relations.inmuebles) {
+            relatedLocations.push({
+              id: inmuebleRelacionado.id,
+              lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+              lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+              title: "Inmueble",
+              description: `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
+              type: "inmueble" as EntityType,
+              relation: "related" as const,
+              entityId: inmuebleRelacionado.id
+            });
+          }
+        }
+
+        // Ubicaciones directas de la tabla ubicaciones (excluyendo Domicilio e Inmueble)
+        const ubicacionesDirectas = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related").filter(
+          loc => loc.title !== "Domicilio" && loc.title !== "Inmueble"
+        );
+        relatedLocations = [...relatedLocations, ...ubicacionesDirectas];
       }
     } else if (entity.tipo === "vehiculo") {
       entityType = "vehiculo";
-      // Obtener relaciones para ubicaciones del vehículo
-      const relations = await fetchRelations(entityType, entity.id);
+      
+      // UBICACIONES DIRECTAS: Vehículos no tienen ubicaciones directas según las instrucciones
+      
+      // UBICACIONES RELACIONADAS: Ubicaciones desde las relaciones
       if (relations) {
-        const ubicacionesVehiculo = convertToLocationData(relations.ubicaciones || [], "vehiculo", "direct");
-        entityLocations = ubicacionesVehiculo.map(loc => ({
+        const ubicacionesVehiculo = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
+        relatedLocations = ubicacionesVehiculo.map(loc => ({
           ...loc,
           title: "Avistamiento",
-          description: `Ubicación de vehículo ${entity.referencia}`
+          description: `Ubicación de vehículo ${entity.referencia}`,
+          relation: "related" as const
         }));
       }
     } else if (entity.tipo === "inmueble") {
       entityType = "inmueble";
-      // Para inmuebles, usar su propia ubicación
+      
+      // UBICACIONES DIRECTAS: Ubicación propia del inmueble (tipo = 'Inmueble' en ubicaciones)
       try {
         const inmuebleResponse = await fetch(`/api/inmuebles/${entity.id}`);
         if (inmuebleResponse.ok) {
           const inmuebleData = await inmuebleResponse.json();
-          entityLocations = [{
+          directLocations = [{
             id: entity.id,
             lat: 9.9281 + (Math.random() - 0.5) * 0.1,
             lng: -84.0907 + (Math.random() - 0.5) * 0.1,
@@ -182,40 +233,119 @@ export default function UbicacionesPage() {
         console.error("Error obteniendo datos de inmueble:", error);
       }
 
-      // Obtener relaciones para ubicaciones adicionales
-      const relations = await fetchRelations(entityType, entity.id);
+      // UBICACIONES RELACIONADAS: Ubicaciones de entidades relacionadas
       if (relations) {
-        const relacionesUbicaciones = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
-        const otrasUbicaciones = convertToLocationData(relations.otrasUbicaciones || [], "ubicacion", "related");
-        entityLocations = [...entityLocations, ...relacionesUbicaciones, ...otrasUbicaciones];
+        // Domicilios de personas relacionadas
+        if (relations.personas) {
+          for (const personaRelacionada of relations.personas) {
+            try {
+              const personaRelResponse = await fetch(`/api/personas/${personaRelacionada.id}`);
+              if (personaRelResponse.ok) {
+                const personaRelData = await personaRelResponse.json();
+                if (personaRelData.domicilios && personaRelData.domicilios.length > 0) {
+                  const domiciliosRelacionados = personaRelData.domicilios.map((domicilio: string, index: number) => ({
+                    id: personaRelacionada.id + index * 1000,
+                    lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+                    lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+                    title: "Domicilio",
+                    description: `Domicilio de ${personaRelData.nombre}: ${domicilio}`,
+                    type: "persona" as EntityType,
+                    relation: "related" as const,
+                    entityId: personaRelacionada.id
+                  }));
+                  relatedLocations = [...relatedLocations, ...domiciliosRelacionados];
+                }
+              }
+            } catch (error) {
+              console.error("Error obteniendo datos de persona relacionada:", error);
+            }
+          }
+        }
+
+        // Otras ubicaciones (excluyendo tipos no relevantes)
+        const ubicacionesOtras = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related").filter(
+          loc => loc.title !== "Domicilio" && loc.title !== "Inmueble"
+        );
+        relatedLocations = [...relatedLocations, ...ubicacionesOtras];
       }
     } else if (entity.tipo === "ubicacion") {
       entityType = "ubicacion";
-      // Para ubicaciones, crear directamente
-      entityLocations = [{
-        id: entity.id,
-        lat: 9.9281 + (Math.random() - 0.5) * 0.1,
-        lng: -84.0907 + (Math.random() - 0.5) * 0.1,
-        title: entity.nombre || "Ubicación",
-        description: entity.referencia || "Sin descripción",
-        type: "ubicacion" as EntityType,
-        relation: "direct" as const,
-        entityId: entity.id
-      }];
+      
+      // UBICACIONES DIRECTAS: Sus propios registros en ubicaciones, excluyendo tipo = 'Inmueble' o 'Domicilio'
+      try {
+        const ubicacionResponse = await fetch(`/api/ubicaciones/${entity.id}`);
+        if (ubicacionResponse.ok) {
+          const ubicacionData = await ubicacionResponse.json();
+          if (ubicacionData.tipo !== "Inmueble" && ubicacionData.tipo !== "Domicilio") {
+            directLocations = [{
+              id: entity.id,
+              lat: ubicacionData.latitud || 9.9281 + (Math.random() - 0.5) * 0.1,
+              lng: ubicacionData.longitud || -84.0907 + (Math.random() - 0.5) * 0.1,
+              title: ubicacionData.tipo || "Ubicación",
+              description: ubicacionData.observaciones || "Sin descripción",
+              type: "ubicacion" as EntityType,
+              relation: "direct" as const,
+              entityId: entity.id
+            }];
+          }
+        }
+      } catch (error) {
+        console.error("Error obteniendo datos de ubicación:", error);
+      }
 
-      // Obtener relaciones para ubicaciones adicionales
-      const relations = await fetchRelations(entityType, entity.id);
+      // UBICACIONES RELACIONADAS: Ubicaciones de entidades relacionadas
       if (relations) {
-        const relacionesUbicaciones = convertToLocationData(relations.ubicaciones || [], "ubicacion", "related");
-        const otrasUbicaciones = convertToLocationData(relations.otrasUbicaciones || [], "ubicacion", "related");
-        entityLocations = [...entityLocations, ...relacionesUbicaciones, ...otrasUbicaciones];
+        // Domicilios de personas relacionadas
+        if (relations.personas) {
+          for (const personaRelacionada of relations.personas) {
+            try {
+              const personaRelResponse = await fetch(`/api/personas/${personaRelacionada.id}`);
+              if (personaRelResponse.ok) {
+                const personaRelData = await personaRelResponse.json();
+                if (personaRelData.domicilios && personaRelData.domicilios.length > 0) {
+                  const domiciliosRelacionados = personaRelData.domicilios.map((domicilio: string, index: number) => ({
+                    id: personaRelacionada.id + index * 1000,
+                    lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+                    lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+                    title: "Domicilio",
+                    description: `Domicilio de ${personaRelData.nombre}: ${domicilio}`,
+                    type: "persona" as EntityType,
+                    relation: "related" as const,
+                    entityId: personaRelacionada.id
+                  }));
+                  relatedLocations = [...relatedLocations, ...domiciliosRelacionados];
+                }
+              }
+            } catch (error) {
+              console.error("Error obteniendo datos de persona relacionada:", error);
+            }
+          }
+        }
+
+        // Ubicaciones de inmuebles relacionados
+        if (relations.inmuebles) {
+          for (const inmuebleRelacionado of relations.inmuebles) {
+            relatedLocations.push({
+              id: inmuebleRelacionado.id,
+              lat: 9.9281 + (Math.random() - 0.5) * 0.1,
+              lng: -84.0907 + (Math.random() - 0.5) * 0.1,
+              title: "Inmueble",
+              description: `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
+              type: "inmueble" as EntityType,
+              relation: "related" as const,
+              entityId: inmuebleRelacionado.id
+            });
+          }
+        }
       }
     }
 
-    console.log("[UBICACIONES] Procesando ubicaciones directas:", entityLocations.length);
-    console.log("[UBICACIONES] Total ubicaciones cargadas:", entityLocations.length);
+    const allLocations = [...directLocations, ...relatedLocations];
+    console.log("[UBICACIONES] Ubicaciones directas:", directLocations.length);
+    console.log("[UBICACIONES] Ubicaciones relacionadas:", relatedLocations.length);
+    console.log("[UBICACIONES] Total ubicaciones cargadas:", allLocations.length);
     
-    return entityLocations;
+    return allLocations;
   };
 
   const handleResultSelect = (result: SearchResult) => {
