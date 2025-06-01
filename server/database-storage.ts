@@ -1980,7 +1980,7 @@ export class DatabaseStorage {
                   JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
                   WHERE pu.persona_id = ${personaRelacionada.id}
                   AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
-                  AND LOWER(u.tipo) LIKE '%domicilio%'`
+                  AND (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')`
             );
             
             const domicilios = domiciliosResult.rows || [];
@@ -2053,8 +2053,7 @@ export class DatabaseStorage {
                 JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
                 WHERE pu.persona_id = ${id}
                 AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
-                AND LOWER(u.tipo) != 'domicilio' 
-                AND LOWER(u.tipo) NOT LIKE '%domicilio%'`
+                AND NOT (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')`
           );
           
           const otrasUbicaciones = otrasUbicacionesResult.rows || [];
