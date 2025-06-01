@@ -1247,50 +1247,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Determinar qué tabla de relación usar y eliminar
+      let deleteResult;
+      
       if (tipoOrigen === "persona" && tipoDestino === "vehiculo") {
-        await db.delete(personasVehiculos)
+        deleteResult = await db.delete(personasVehiculos)
           .where(and(
             eq(personasVehiculos.personaId, id1),
             eq(personasVehiculos.vehiculoId, id2)
-          ));
+          ))
+          .returning();
       } else if (tipoOrigen === "persona" && tipoDestino === "inmueble") {
-        await db.delete(personasInmuebles)
+        deleteResult = await db.delete(personasInmuebles)
           .where(and(
             eq(personasInmuebles.personaId, id1),
             eq(personasInmuebles.inmuebleId, id2)
-          ));
+          ))
+          .returning();
       } else if (tipoOrigen === "persona" && tipoDestino === "ubicacion") {
-        await db.delete(personasUbicaciones)
+        deleteResult = await db.delete(personasUbicaciones)
           .where(and(
             eq(personasUbicaciones.personaId, id1),
             eq(personasUbicaciones.ubicacionId, id2)
-          ));
+          ))
+          .returning();
       } else if (tipoOrigen === "persona" && tipoDestino === "persona") {
-        await db.delete(personasPersonas)
-          .where(and(
-            eq(personasPersonas.personaId1, id1),
-            eq(personasPersonas.personaId2, id2)
-          ));
+        // Para relaciones persona-persona, pueden estar en cualquier orden
+        deleteResult = await db.delete(personasPersonas)
+          .where(or(
+            and(
+              eq(personasPersonas.personaId1, id1),
+              eq(personasPersonas.personaId2, id2)
+            ),
+            and(
+              eq(personasPersonas.personaId1, id2),
+              eq(personasPersonas.personaId2, id1)
+            )
+          ))
+          .returning();
       } else if (tipoOrigen === "vehiculo" && tipoDestino === "inmueble") {
-        await db.delete(vehiculosInmuebles)
+        deleteResult = await db.delete(vehiculosInmuebles)
           .where(and(
             eq(vehiculosInmuebles.vehiculoId, id1),
             eq(vehiculosInmuebles.inmuebleId, id2)
-          ));
+          ))
+          .returning();
       } else if (tipoOrigen === "vehiculo" && tipoDestino === "ubicacion") {
-        await db.delete(vehiculosUbicaciones)
+        deleteResult = await db.delete(vehiculosUbicaciones)
           .where(and(
             eq(vehiculosUbicaciones.vehiculoId, id1),
             eq(vehiculosUbicaciones.ubicacionId, id2)
-          ));
+          ))
+          .returning();
       } else if (tipoOrigen === "inmueble" && tipoDestino === "ubicacion") {
-        await db.delete(inmueblesUbicaciones)
+        deleteResult = await db.delete(inmueblesUbicaciones)
           .where(and(
             eq(inmueblesUbicaciones.inmuebleId, id1),
             eq(inmueblesUbicaciones.ubicacionId, id2)
-          ));
+          ))
+          .returning();
       } else {
         return res.status(400).json({ message: "Tipo de relación no válido" });
+      }
+      
+      console.log(`[DELETE] Registros eliminados:`, deleteResult);
+      
+      if (!deleteResult || deleteResult.length === 0) {
+        return res.status(404).json({ message: "Relación no encontrada o ya eliminada" });
       }
       
       console.log(`[DELETE] Relación eliminada exitosamente`);
