@@ -1248,6 +1248,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`[DELETE] Evaluando caso: ${tipoOrigen} → ${tipoDestino}`);
+      console.log(`[DELETE] Tipos exactos:`, {
+        tipoOrigen: `"${tipoOrigen}"`,
+        tipoDestino: `"${tipoDestino}"`,
+        tipoOrigenLength: tipoOrigen.length,
+        tipoDestinoLength: tipoDestino.length
+      });
       
       // Determinar qué tabla de relación usar y eliminar
       let deleteResult;
