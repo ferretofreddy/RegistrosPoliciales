@@ -67,11 +67,13 @@ export async function apiRequest(
   } catch (error) {
     console.error(`Error de red en solicitud ${method} a ${fullUrl}:`, error);
     
-    // Si el error ya contiene un mensaje específico (como ACCESO RESTRINGIDO), lánzalo directamente
+    // Si el error ya contiene un mensaje específico, lánzalo directamente
     if (error instanceof Error && 
         (error.message.includes("ACCESO RESTRINGIDO") || 
          error.message.includes("autorizado") || 
-         error.message.includes("contraseña"))) {
+         error.message.includes("contraseña") ||
+         error.message.includes("ya se encuentra registrado") ||
+         error.message.includes("400:"))) {
       throw error;
     }
     
