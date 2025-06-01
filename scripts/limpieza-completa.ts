@@ -4,8 +4,9 @@ import {
   personasObservaciones, vehiculosObservaciones, 
   inmueblesObservaciones, ubicacionesObservaciones,
   personasVehiculos, personasInmuebles, vehiculosInmuebles,
-  inmueblesUbicaciones, vehiculosUbicaciones, ubicacionesUbicaciones,
-  mensajes, archivosAdjuntos, conversaciones, participantesConversacion
+  inmueblesUbicaciones, vehiculosUbicaciones, vehiculosVehiculos,
+  personasUbicaciones, personasPersonas,
+  mensajes, archivosAdjuntos, conversaciones
 } from "../shared/schema";
 import { sql } from "drizzle-orm";
 
@@ -29,19 +30,17 @@ async function limpiezaCompleta() {
     await db.delete(mensajes);
     console.log("✅ Mensajes eliminados");
     
-    // Eliminar participantes de conversaciones
-    await db.delete(participantesConversacion);
-    console.log("✅ Participantes de conversaciones eliminados");
-    
     // Eliminar conversaciones
     await db.delete(conversaciones);
     console.log("✅ Conversaciones eliminadas");
     
     // Eliminar todas las relaciones entre entidades
-    await db.delete(ubicacionesUbicaciones);
+    await db.delete(personasUbicaciones);
+    await db.delete(inmueblesInmuebles);
     await db.delete(vehiculosUbicaciones);
     await db.delete(inmueblesUbicaciones);
     await db.delete(vehiculosInmuebles);
+    await db.delete(vehiculosVehiculos);
     await db.delete(personasInmuebles);
     await db.delete(personasVehiculos);
     console.log("✅ Todas las relaciones entre entidades eliminadas");
