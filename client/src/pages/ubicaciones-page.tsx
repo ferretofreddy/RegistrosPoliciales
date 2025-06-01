@@ -401,786 +401,258 @@ export default function UbicacionesPage() {
         console.log("[UBICACIONES] Procesando entidad:", selectedResult.tipo, selectedResult);
         console.log("[UBICACIONES] Datos de relaciones:", relationData);
         
-        // Procesar según el tipo de entidad
-        switch (selectedResult.tipo) {
-          case "persona":
-            // 1. Ubicaciones directas (domicilios)
-            if (relationData?.ubicaciones?.length > 0) {
-              console.log("[UBICACIONES] Domicilios directos encontrados:", relationData.ubicaciones.length);
-              
-              for (const ubicacion of relationData.ubicaciones) {
-                const lat = parseFloat(String(ubicacion.latitud));
-                const lng = parseFloat(String(ubicacion.longitud));
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  ubicacionesEncontradas.push({
-                    id: ubicacion.id,
-                    lat,
-                    lng,
-                    title: ubicacion.tipo || "Domicilio",
-                    description: ubicacion.observaciones || `Domicilio de ${selectedResult.nombre}`,
-                    type: "ubicacion",
-                    relation: "direct",
-                    entityId: selectedResult.id
-                  });
-                  
-                  if (!hasCenteredMap) {
-                    setMapCenter([lat, lng]);
-                    hasCenteredMap = true;
-                  }
-                }
-              }
-            }
+        // Caso especial: entidad es una ubicación
+        if (selectedResult.tipo === "ubicacion" && entityData) {
+          const lat = parseFloat(String(entityData.latitud));
+          const lng = parseFloat(String(entityData.longitud));
+          
+          if (!isNaN(lat) && !isNaN(lng)) {
+            ubicacionesEncontradas.push({
+              id: entityData.id,
+              lat,
+              lng,
+              title: entityData.tipo || "Ubicación",
+              description: entityData.observaciones || "Ubicación seleccionada",
+              type: "ubicacion",
+              relation: "direct",
+              entityId: entityData.id
+            });
             
-            // 2. Otras ubicaciones (avistamientos, etc.)
-            if (relationData?.otrasUbicaciones?.length > 0) {
-              console.log("[UBICACIONES] Otras ubicaciones encontradas:", relationData.otrasUbicaciones.length);
-              
-              for (const ubicacion of relationData.otrasUbicaciones) {
-                const lat = parseFloat(String(ubicacion.latitud));
-                const lng = parseFloat(String(ubicacion.longitud));
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  ubicacionesEncontradas.push({
-                    id: ubicacion.id,
-                    lat,
-                    lng,
-                    title: ubicacion.tipo || "Avistamiento",
-                    description: ubicacion.observaciones || `${ubicacion.tipo || "Avistamiento"} de ${selectedResult.nombre}`,
-                    type: "ubicacion",
-                    relation: "related",
-                    entityId: selectedResult.id
-                  });
-                  
-                  if (!hasCenteredMap) {
-                    setMapCenter([lat, lng]);
-                    hasCenteredMap = true;
-                  }
-                }
-              }
-            }
-
-            // 3. Ubicaciones de personas relacionadas
-            if (relationData?.personas?.length > 0) {
-              console.log("[UBICACIONES] Procesando personas relacionadas:", relationData.personas.length);
-              
-              for (const personaRelacionada of relationData.personas) {
-                try {
-                  const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
-                  const datosPersona = await respuestaPersona.json();
-                  
-                  // Domicilios de personas relacionadas
-                  if (datosPersona.ubicaciones?.length > 0) {
-                    for (const ubicacionRelacionada of datosPersona.ubicaciones) {
-                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
-                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        ubicacionesEncontradas.push({
-                          id: ubicacionRelacionada.id,
-                          lat,
-                          lng,
-                          title: ubicacionRelacionada.tipo || "Domicilio",
-                          description: `Domicilio de ${personaRelacionada.nombre} (relacionada)`,
-                          type: "ubicacion",
-                          relation: "related",
-                          entityId: personaRelacionada.id
-                        });
-                      }
-                    }
-                  }
-                  
-                  // Otras ubicaciones de personas relacionadas
-                  if (datosPersona.otrasUbicaciones?.length > 0) {
-                    for (const ubicacionRelacionada of datosPersona.otrasUbicaciones) {
-                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
-                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        ubicacionesEncontradas.push({
-                          id: ubicacionRelacionada.id,
-                          lat,
-                          lng,
-                          title: ubicacionRelacionada.tipo || "Avistamiento",
-                          description: `${ubicacionRelacionada.tipo || "Avistamiento"} de ${personaRelacionada.nombre} (relacionada)`,
-                          type: "ubicacion",
-                          relation: "related",
-                          entityId: personaRelacionada.id
-                        });
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("[UBICACIONES] Error al obtener ubicaciones de persona relacionada:", error);
-                }
-              }
-            }
+            setMapCenter([lat, lng]);
+            hasCenteredMap = true;
+          }
+        }
+        
+        // Procesar ubicaciones de los datos de relaciones
+        if (relationData) {
+          // 1. Ubicaciones directas
+          if (relationData.ubicaciones) {
+            console.log("[UBICACIONES] Procesando ubicaciones directas:", relationData.ubicaciones.length);
             
-            // 4. Ubicaciones de inmuebles relacionados
-            if (relationData?.inmuebles?.length > 0) {
-              console.log("[UBICACIONES] Procesando inmuebles relacionados:", relationData.inmuebles.length);
-              
-              for (const inmueble of relationData.inmuebles) {
-                try {
-                  const respuestaInmueble = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
-                  const datosInmueble = await respuestaInmueble.json();
-                  
-                  // Ubicaciones directas del inmueble
-                  if (datosInmueble.ubicaciones?.length > 0) {
-                    for (const ubicacionInmueble of datosInmueble.ubicaciones) {
-                      const lat = parseFloat(String(ubicacionInmueble.latitud));
-                      const lng = parseFloat(String(ubicacionInmueble.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        ubicacionesEncontradas.push({
-                          id: ubicacionInmueble.id,
-                          lat,
-                          lng,
-                          title: inmueble.tipo || "Inmueble",
-                          description: `${inmueble.tipo || "Inmueble"} en ${inmueble.direccion || "ubicación"}`,
-                          type: "inmueble",
-                          relation: "related",
-                          entityId: inmueble.id
-                        });
-                      }
-                    }
-                  }
-                  
-                  // Otras ubicaciones del inmueble
-                  if (datosInmueble.otrasUbicaciones?.length > 0) {
-                    for (const ubicacionInmueble of datosInmueble.otrasUbicaciones) {
-                      const lat = parseFloat(String(ubicacionInmueble.latitud));
-                      const lng = parseFloat(String(ubicacionInmueble.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        ubicacionesEncontradas.push({
-                          id: ubicacionInmueble.id,
-                          lat,
-                          lng,
-                          title: ubicacionInmueble.tipo || "Ubicación",
-                          description: `${ubicacionInmueble.tipo || "Ubicación"} relacionada con inmueble`,
-                          type: "ubicacion",
-                          relation: "related",
-                          entityId: inmueble.id
-                        });
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("[UBICACIONES] Error al obtener ubicaciones del inmueble:", error);
-                }
-              }
-            }
-            break;
-            
-          case "inmueble":
-            // 1. Ubicaciones directas del inmueble
-            if (relationData && relationData.ubicaciones) {
-              console.log("Ubicaciones directas encontradas para inmueble:", relationData.ubicaciones);
-              
-              const ubicacionesInmueble = relationData.ubicaciones || [];
-              
-              for (const ubicacion of ubicacionesInmueble) {
-                const lat = parseFloat(String(ubicacion.latitud));
-                const lng = parseFloat(String(ubicacion.longitud));
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  console.log(`Agregando ubicación directa de inmueble: ${ubicacion.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
-                  
-                  ubicacionesEncontradas.push({
-                    id: ubicacion.id,
-                    lat: lat,
-                    lng: lng,
-                    title: ubicacion.tipo || "Inmueble",
-                    description: ubicacion.observaciones || `Ubicación de inmueble: ${selectedResult.direccion || selectedResult.nombre}`,
-                    type: "inmueble",
-                    relation: "direct",
-                    entityId: selectedResult.id,
-                    relationInfo: (() => {
-                      let info = "Sin relaciones";
-                      if (relationData) {
-                        const relaciones = [];
-                        
-                        // Relaciones con personas
-                        if (relationData.personas && relationData.personas.length > 0) {
-                          relaciones.push(`Personas: ${relationData.personas.map(p => p.nombre).join(', ')}`);
-                        }
-                        
-                        // Relaciones con vehículos
-                        if (relationData.vehiculos && relationData.vehiculos.length > 0) {
-                          relaciones.push(`Vehículos: ${relationData.vehiculos.map(v => `${v.marca} ${v.modelo} (${v.placa})`).join(', ')}`);
-                        }
-                        
-                        // Relaciones con inmuebles
-                        if (relationData.inmuebles && relationData.inmuebles.length > 0) {
-                          relaciones.push(`Inmuebles: ${relationData.inmuebles.map(i => `${i.tipo} en ${i.direccion}`).join(', ')}`);
-                        }
-                        
-                        // Relaciones con ubicaciones
-                        if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-                          relaciones.push(`Ubicaciones: ${relationData.ubicaciones.map(u => u.tipo || "Sin tipo").join(', ')}`);
-                        }
-                        
-                        if (relaciones.length > 0) {
-                          info = `Relacionado con: ${relaciones.join(' | ')}`;
-                        }
-                      }
-                      return info;
-                    })()
-                  });
-                  
-                  if (!hasCenteredMap) {
-                    setMapCenter([lat, lng]);
-                    hasCenteredMap = true;
-                  }
-                }
-              }
-            }
-            
-            // 2. Personas relacionadas con este inmueble
-            if (relationData && relationData.personas && relationData.personas.length > 0) {
-              console.log("Personas relacionadas con inmueble:", relationData.personas);
-              
-              for (const personaRelacionada of relationData.personas) {
-                try {
-                  // Obtener datos específicos de las personas relacionadas
-                  const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
-                  const datosPersona = await respuestaPersona.json();
-                  
-                  // Buscar domicilios de la persona relacionada con inmueble
-                  if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
-                    for (const ubicacionRelacionada of datosPersona.ubicaciones) {
-                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
-                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando domicilio de persona relacionada con inmueble: ${ubicacionRelacionada.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionRelacionada.id,
-                          lat: lat,
-                          lng: lng,
-                          title: ubicacionRelacionada.tipo || "Domicilio",
-                          description: ubicacionRelacionada.observaciones || `Domicilio de ${personaRelacionada.nombre} (persona relacionada con ${selectedResult.referencia || "Inmueble"} en ${selectedResult.direccion || "ubicación desconocida"})`,
-                          type: "ubicacion",
-                          relation: "related",
-                          entityId: personaRelacionada.id
-                        });
-                      }
-                    }
-                  }
-                  
-                  // Buscar avistamientos de la persona relacionada con inmueble
-                  if (datosPersona.otrasUbicaciones && datosPersona.otrasUbicaciones.length > 0) {
-                    for (const ubicacionRelacionada of datosPersona.otrasUbicaciones) {
-                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
-                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando avistamiento de persona relacionada con inmueble: ${ubicacionRelacionada.tipo || "Avistamiento"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionRelacionada.id,
-                          lat: lat,
-                          lng: lng,
-                          title: ubicacionRelacionada.tipo || "Avistamiento",
-                          description: ubicacionRelacionada.observaciones || `${ubicacionRelacionada.tipo || "Avistamiento"} de ${personaRelacionada.nombre} (persona relacionada con ${selectedResult.referencia || "Inmueble"} en ${selectedResult.direccion || "ubicación desconocida"})`,
-                          type: "ubicacion",
-                          relation: "related",
-                          entityId: personaRelacionada.id
-                        });
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error al obtener ubicaciones de persona relacionada con inmueble:", error);
-                }
-              }
-            }
-            
-            // 3. Inmuebles relacionados con este inmueble
-            if (relationData && relationData.inmuebles && relationData.inmuebles.length > 0) {
-              console.log("Inmuebles relacionados con este inmueble:", relationData.inmuebles);
-              
-              for (const inmuebleRelacionado of relationData.inmuebles) {
-                try {
-                  // Obtener datos específicos del inmueble relacionado
-                  const respuestaInmueble = await fetch(`/api/relaciones/inmueble/${inmuebleRelacionado.id}`);
-                  const datosInmueble = await respuestaInmueble.json();
-                  
-                  if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
-                    for (const ubicacionInmueble of datosInmueble.ubicaciones) {
-                      const lat = parseFloat(String(ubicacionInmueble.latitud));
-                      const lng = parseFloat(String(ubicacionInmueble.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando ubicación de inmueble relacionado: ${inmuebleRelacionado.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionInmueble.id,
-                          lat: lat,
-                          lng: lng,
-                          title: inmuebleRelacionado.tipo || "Inmueble",
-                          description: `${inmuebleRelacionado.tipo || "Inmueble"} en ${inmuebleRelacionado.direccion || "dirección desconocida"} (relacionado con ${selectedResult.referencia || "Inmueble"} en ${selectedResult.direccion || "ubicación desconocida"})`,
-                          type: "inmueble",
-                          relation: "related",
-                          entityId: inmuebleRelacionado.id
-                        });
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error al obtener ubicaciones del inmueble relacionado:", error);
-                }
-              }
-            }
-            
-            // 4. Ubicaciones relacionadas directamente con este inmueble
-            if (relationData && relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-              console.log("Ubicaciones adicionales relacionadas con este inmueble:", relationData.ubicaciones);
-              
-              for (const ubicacion of relationData.ubicaciones) {
-                // Solo procesar si no se ha agregado antes como ubicación directa
-                const ubicacionYaProcesada = ubicacionesEncontradas.some(u => 
-                  u.id === ubicacion.id && u.type === "inmueble" && u.relation === "direct"
-                );
-                
-                if (!ubicacionYaProcesada) {
-                  const lat = parseFloat(String(ubicacion.latitud));
-                  const lng = parseFloat(String(ubicacion.longitud));
-                  
-                  if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log(`Agregando ubicación relacionada con inmueble: ${ubicacion.tipo || "Ubicación"} - lat: ${lat}, lng: ${lng}`);
-                    
-                    ubicacionesEncontradas.push({
-                      id: ubicacion.id,
-                      lat: lat,
-                      lng: lng,
-                      title: ubicacion.tipo || "Ubicación",
-                      description: ubicacion.observaciones || `Ubicación relacionada con ${selectedResult.referencia || "Inmueble"} en ${selectedResult.direccion || "ubicación desconocida"}`,
-                      type: "ubicacion",
-                      relation: "related",
-                      entityId: ubicacion.id
-                    });
-                  }
-                }
-              }
-            }
-            
-            if (!ubicacionesEncontradas.length) {
-              console.log("No se encontraron ubicaciones para este inmueble");
-            }
-            break;
-            
-          case "ubicacion":
-            // 1. La ubicación tiene coordenadas propias
-            const ubicacion = entityData as UbicacionEntity;
-            if (ubicacion.latitud && ubicacion.longitud) {
+            for (const ubicacion of relationData.ubicaciones) {
               const lat = parseFloat(String(ubicacion.latitud));
               const lng = parseFloat(String(ubicacion.longitud));
               
               if (!isNaN(lat) && !isNaN(lng)) {
-                console.log(`Agregando ubicación directa: id=${ubicacion.id} - lat: ${lat}, lng: ${lng}`);
-                
                 ubicacionesEncontradas.push({
                   id: ubicacion.id,
-                  lat: lat,
-                  lng: lng,
-                  title: ubicacion.tipo || "Ubicación",
-                  description: ubicacion.observaciones || "Sin descripción",
+                  lat,
+                  lng,
+                  title: ubicacion.tipo || "Ubicación directa",
+                  description: ubicacion.observaciones || `Ubicación directa de ${selectedResult.nombre || selectedResult.referencia}`,
                   type: "ubicacion",
                   relation: "direct",
-                  entityId: ubicacion.id,
-                  relationInfo: (() => {
-                    let info = "Sin relaciones";
-                    if (relationData) {
-                      const relaciones = [];
-                      
-                      // Relaciones con personas
-                      if (relationData.personas && relationData.personas.length > 0) {
-                        relaciones.push(`Personas: ${relationData.personas.map(p => p.nombre).join(', ')}`);
-                      }
-                      
-                      // Relaciones con vehículos
-                      if (relationData.vehiculos && relationData.vehiculos.length > 0) {
-                        relaciones.push(`Vehículos: ${relationData.vehiculos.map(v => `${v.marca} ${v.modelo} (${v.placa})`).join(', ')}`);
-                      }
-                      
-                      // Relaciones con inmuebles
-                      if (relationData.inmuebles && relationData.inmuebles.length > 0) {
-                        relaciones.push(`Inmuebles: ${relationData.inmuebles.map(i => `${i.tipo} en ${i.direccion}`).join(', ')}`);
-                      }
-                      
-                      // Relaciones con ubicaciones
-                      if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-                        relaciones.push(`Ubicaciones: ${relationData.ubicaciones.map(u => u.tipo || "Sin tipo").join(', ')}`);
-                      }
-                      
-                      if (relaciones.length > 0) {
-                        info = `Relacionado con: ${relaciones.join(' | ')}`;
-                      }
-                    }
-                    return info;
-                  })()
+                  entityId: selectedResult.id
                 });
                 
-                setMapCenter([lat, lng]);
-                hasCenteredMap = true;
-              }
-            }
-            
-            // 2. Personas relacionadas con esta ubicación
-            if (relationData && relationData.personas && relationData.personas.length > 0) {
-              console.log("Personas relacionadas con ubicación:", relationData.personas);
-              
-              for (const personaRelacionada of relationData.personas) {
-                try {
-                  // Obtener datos específicos de las personas relacionadas
-                  const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
-                  const datosPersona = await respuestaPersona.json();
-                  
-                  // Buscar domicilios de la persona relacionada con esta ubicación
-                  // NOTA: Ahora todos son considerados como "related" incluso si son domicilios
-                  if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
-                    for (const ubicacionRelacionada of datosPersona.ubicaciones) {
-                      // No incluir la ubicación actual
-                      if (ubicacionRelacionada.id === ubicacion.id) continue;
-                      
-                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
-                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando domicilio de persona relacionada con ubicación: ${ubicacionRelacionada.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionRelacionada.id,
-                          lat: lat,
-                          lng: lng,
-                          title: ubicacionRelacionada.tipo || "Domicilio",
-                          description: ubicacionRelacionada.observaciones || `Domicilio de ${personaRelacionada.nombre} (persona relacionada con ${ubicacion.tipo || "Ubicación"})`,
-                          type: "ubicacion",
-                          relation: "related", // Siempre relacionadas cuando se ve desde la entidad Ubicación
-                          entityId: personaRelacionada.id
-                        });
-                      }
-                    }
-                  }
-                  
-                  // Buscar avistamientos u otras ubicaciones (no domicilios) de la persona relacionada
-                  if (datosPersona.otrasUbicaciones && datosPersona.otrasUbicaciones.length > 0) {
-                    for (const ubicacionRelacionada of datosPersona.otrasUbicaciones) {
-                      // No incluir la ubicación actual
-                      if (ubicacionRelacionada.id === ubicacion.id) continue;
-                      
-                      const lat = parseFloat(String(ubicacionRelacionada.latitud));
-                      const lng = parseFloat(String(ubicacionRelacionada.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando avistamiento de persona relacionada con ubicación: ${ubicacionRelacionada.tipo || "Avistamiento"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionRelacionada.id,
-                          lat: lat,
-                          lng: lng,
-                          title: ubicacionRelacionada.tipo || "Avistamiento",
-                          description: ubicacionRelacionada.observaciones || `${ubicacionRelacionada.tipo || "Avistamiento"} de ${personaRelacionada.nombre} (persona relacionada con ${ubicacion.tipo || "Ubicación"})`,
-                          type: "ubicacion",
-                          relation: "related",
-                          entityId: personaRelacionada.id
-                        });
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error al obtener ubicaciones de persona relacionada con ubicación:", error);
+                if (!hasCenteredMap) {
+                  setMapCenter([lat, lng]);
+                  hasCenteredMap = true;
                 }
               }
             }
+          }
+          
+          // 2. Otras ubicaciones
+          if (relationData.otrasUbicaciones) {
+            console.log("[UBICACIONES] Procesando otras ubicaciones:", relationData.otrasUbicaciones.length);
             
-            // 3. Inmuebles relacionados con esta ubicación
-            if (relationData && relationData.inmuebles && relationData.inmuebles.length > 0) {
-              console.log("Inmuebles relacionados con ubicación:", relationData.inmuebles);
+            for (const ubicacion of relationData.otrasUbicaciones) {
+              const lat = parseFloat(String(ubicacion.latitud));
+              const lng = parseFloat(String(ubicacion.longitud));
               
-              for (const inmuebleRelacionado of relationData.inmuebles) {
-                try {
-                  // Obtener datos específicos del inmueble relacionado
-                  const respuestaInmueble = await fetch(`/api/relaciones/inmueble/${inmuebleRelacionado.id}`);
-                  const datosInmueble = await respuestaInmueble.json();
-                  
-                  if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
-                    for (const ubicacionInmueble of datosInmueble.ubicaciones) {
-                      // No incluir la ubicación actual
-                      if (ubicacionInmueble.id === ubicacion.id) continue;
-                      
-                      const lat = parseFloat(String(ubicacionInmueble.latitud));
-                      const lng = parseFloat(String(ubicacionInmueble.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando ubicación de inmueble relacionado: ${inmuebleRelacionado.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionInmueble.id,
-                          lat: lat,
-                          lng: lng,
-                          title: inmuebleRelacionado.tipo || "Inmueble",
-                          description: `${inmuebleRelacionado.tipo || "Inmueble"} en ${inmuebleRelacionado.direccion || "dirección desconocida"} (relacionado con ${ubicacion.tipo || "Ubicación"})`,
-                          type: "inmueble",
-                          relation: "related", // Siempre related cuando se ve desde entidad Ubicación, incluso si es de tipo "inmueble"
-                          entityId: inmuebleRelacionado.id
-                        });
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error al obtener ubicaciones del inmueble relacionado:", error);
-                }
-              }
-            }
-            
-            // 4. Vehículos relacionados con esta ubicación
-            if (relationData && relationData.vehiculos && relationData.vehiculos.length > 0) {
-              console.log("Vehículos relacionados con ubicación:", relationData.vehiculos);
-              
-              for (const vehiculoRelacionado of relationData.vehiculos) {
-                try {
-                  // Obtener datos específicos del vehículo relacionado
-                  const respuestaVehiculo = await fetch(`/api/relaciones/vehiculo/${vehiculoRelacionado.id}`);
-                  const datosVehiculo = await respuestaVehiculo.json();
-                  
-                  // Los vehículos no tienen ubicaciones directas, pero buscar personas relacionadas
-                  if (datosVehiculo.personas && datosVehiculo.personas.length > 0) {
-                    for (const personaRelacionada of datosVehiculo.personas) {
-                      // Obtener datos específicos de las personas relacionadas con el vehículo
-                      const respuestaPersona = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
-                      const datosPersona = await respuestaPersona.json();
-                      
-                      // Procesando domicilios de la persona relacionada
-                      if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
-                        for (const ubicacionPersona of datosPersona.ubicaciones) {
-                          // No incluir la ubicación actual
-                          if (ubicacionPersona.id === ubicacion.id) continue;
-                          
-                          const lat = parseFloat(String(ubicacionPersona.latitud));
-                          const lng = parseFloat(String(ubicacionPersona.longitud));
-                          
-                          if (!isNaN(lat) && !isNaN(lng)) {
-                            console.log(`Agregando domicilio de persona (${personaRelacionada.nombre}) relacionada con vehículo relacionado con ubicación: ${ubicacionPersona.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
-                            
-                            ubicacionesEncontradas.push({
-                              id: ubicacionPersona.id,
-                              lat: lat,
-                              lng: lng,
-                              title: ubicacionPersona.tipo || "Domicilio",
-                              description: ubicacionPersona.observaciones || 
-                                `Domicilio de ${personaRelacionada.nombre} (propietario de ${vehiculoRelacionado.marca} ${vehiculoRelacionado.modelo} - Placa: ${vehiculoRelacionado.placa}, relacionado con ${ubicacion.tipo || "Ubicación"})`,
-                              type: "ubicacion",
-                              relation: "related",
-                              entityId: personaRelacionada.id
-                            });
-                          }
-                        }
-                      }
-                      
-                      // Procesando avistamientos de la persona relacionada
-                      if (datosPersona.otrasUbicaciones && datosPersona.otrasUbicaciones.length > 0) {
-                        for (const ubicacionPersona of datosPersona.otrasUbicaciones) {
-                          // No incluir la ubicación actual
-                          if (ubicacionPersona.id === ubicacion.id) continue;
-                          
-                          const lat = parseFloat(String(ubicacionPersona.latitud));
-                          const lng = parseFloat(String(ubicacionPersona.longitud));
-                          
-                          if (!isNaN(lat) && !isNaN(lng)) {
-                            console.log(`Agregando avistamiento de persona (${personaRelacionada.nombre}) relacionada con vehículo relacionado con ubicación: ${ubicacionPersona.tipo || "Avistamiento"} - lat: ${lat}, lng: ${lng}`);
-                            
-                            ubicacionesEncontradas.push({
-                              id: ubicacionPersona.id,
-                              lat: lat,
-                              lng: lng,
-                              title: ubicacionPersona.tipo || "Avistamiento",
-                              description: ubicacionPersona.observaciones || 
-                                `${ubicacionPersona.tipo || "Avistamiento"} de ${personaRelacionada.nombre} (propietario de ${vehiculoRelacionado.marca} ${vehiculoRelacionado.modelo} - Placa: ${vehiculoRelacionado.placa}, relacionado con ${ubicacion.tipo || "Ubicación"})`,
-                              type: "ubicacion",
-                              relation: "related",
-                              entityId: personaRelacionada.id
-                            });
-                          }
-                        }
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error al obtener relaciones del vehículo relacionado con ubicación:", error);
-                }
-              }
-            }
-            
-            // 5. Ubicaciones relacionadas con esta ubicación
-            if (relationData && relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-              console.log("Ubicaciones relacionadas con esta ubicación:", relationData.ubicaciones);
-              
-              for (const ubicacionRelacionada of relationData.ubicaciones) {
-                // No incluir la ubicación actual
-                if (ubicacionRelacionada.id === ubicacion.id) continue;
+              if (!isNaN(lat) && !isNaN(lng)) {
+                ubicacionesEncontradas.push({
+                  id: ubicacion.id,
+                  lat,
+                  lng,
+                  title: ubicacion.tipo || "Ubicación relacionada",
+                  description: ubicacion.observaciones || `Ubicación relacionada con ${selectedResult.nombre || selectedResult.referencia}`,
+                  type: "ubicacion",
+                  relation: "related",
+                  entityId: selectedResult.id
+                });
                 
-                const lat = parseFloat(String(ubicacionRelacionada.latitud));
-                const lng = parseFloat(String(ubicacionRelacionada.longitud));
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  console.log(`Agregando ubicación relacionada con esta ubicación: ${ubicacionRelacionada.tipo || "Ubicación"} - lat: ${lat}, lng: ${lng}`);
-                  
-                  ubicacionesEncontradas.push({
-                    id: ubicacionRelacionada.id,
-                    lat: lat,
-                    lng: lng,
-                    title: ubicacionRelacionada.tipo || "Ubicación",
-                    description: ubicacionRelacionada.observaciones || `Ubicación relacionada con ${ubicacion.tipo || "Ubicación"}`,
-                    type: "ubicacion",
-                    relation: "related",
-                    entityId: ubicacionRelacionada.id
-                  });
+                if (!hasCenteredMap) {
+                  setMapCenter([lat, lng]);
+                  hasCenteredMap = true;
                 }
               }
             }
-            break;
+          }
+          
+          // 3. Ubicaciones de entidades relacionadas
+          if (relationData.personas) {
+            console.log("[UBICACIONES] Procesando personas relacionadas:", relationData.personas.length);
             
-          case "vehiculo":
-            // Los vehículos pueden tener relaciones con personas, inmuebles y ubicaciones
-            // Primero procesamos las personas relacionadas
-            if (relationData && relationData.personas) {
-              console.log("Personas relacionadas con vehículo:", relationData.personas);
-              
-              // Obtener personas relacionadas con el vehículo
-              for (const persona of relationData.personas) {
-                // Hacer una consulta adicional para obtener las ubicaciones de esta persona
-                try {
-                  const respuesta = await fetch(`/api/relaciones/persona/${persona.id}`);
-                  const datosPersona = await respuesta.json();
-                  
-                  if (datosPersona.ubicaciones && datosPersona.ubicaciones.length > 0) {
-                    console.log(`Ubicaciones de persona ${persona.nombre}:`, datosPersona.ubicaciones);
+            for (const persona of relationData.personas) {
+              try {
+                const response = await fetch(`/api/relaciones/persona/${persona.id}`);
+                const personaData = await response.json();
+                
+                // Ubicaciones directas de la persona relacionada
+                if (personaData.ubicaciones) {
+                  for (const ubicacion of personaData.ubicaciones) {
+                    const lat = parseFloat(String(ubicacion.latitud));
+                    const lng = parseFloat(String(ubicacion.longitud));
                     
-                    for (const ubicacionPropietario of datosPersona.ubicaciones) {
-                      const lat = parseFloat(String(ubicacionPropietario.latitud));
-                      const lng = parseFloat(String(ubicacionPropietario.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando ubicación de persona relacionada: ${ubicacionPropietario.tipo || "Domicilio"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionPropietario.id,
-                          lat: lat,
-                          lng: lng,
-                          title: ubicacionPropietario.tipo || "Domicilio",
-                          description: `Domicilio de ${persona.nombre} (persona relacionada con ${selectedResult.marca || ''} ${selectedResult.modelo || ''} - Placa: ${selectedResult.placa || 'Sin placa'})`,
-                          type: "ubicacion",
-                          relation: "related",
-                          entityId: persona.id
-                        });
-                        
-                        if (!hasCenteredMap) {
-                          setMapCenter([lat, lng]);
-                          hasCenteredMap = true;
-                        }
-                      }
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      ubicacionesEncontradas.push({
+                        id: ubicacion.id,
+                        lat,
+                        lng,
+                        title: ubicacion.tipo || "Domicilio",
+                        description: `Domicilio de ${persona.nombre} (relacionada)`,
+                        type: "ubicacion",
+                        relation: "related",
+                        entityId: persona.id
+                      });
                     }
                   }
-                } catch (error) {
-                  console.error("Error al obtener ubicaciones de la persona:", error);
                 }
-              }
-            }
-            
-            // Procesar inmuebles relacionados con el vehículo
-            if (relationData && relationData.inmuebles && relationData.inmuebles.length > 0) {
-              console.log("Inmuebles relacionados con vehículo:", relationData.inmuebles);
-              
-              for (const inmueble of relationData.inmuebles) {
-                try {
-                  // Obtener datos específicos del inmueble
-                  const respuestaInmueble = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
-                  const datosInmueble = await respuestaInmueble.json();
-                  
-                  if (datosInmueble.ubicaciones && datosInmueble.ubicaciones.length > 0) {
-                    for (const ubicacionInmueble of datosInmueble.ubicaciones) {
-                      const lat = parseFloat(String(ubicacionInmueble.latitud));
-                      const lng = parseFloat(String(ubicacionInmueble.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        console.log(`Agregando ubicación de inmueble relacionado: ${inmueble.tipo || "Inmueble"} - lat: ${lat}, lng: ${lng}`);
-                        
-                        ubicacionesEncontradas.push({
-                          id: ubicacionInmueble.id,
-                          lat: lat,
-                          lng: lng,
-                          title: inmueble.tipo || "Inmueble",
-                          description: `${inmueble.tipo || "Inmueble"} en ${inmueble.direccion || "dirección desconocida"} (relacionado con ${selectedResult.marca || ''} ${selectedResult.modelo || ''} - Placa: ${selectedResult.placa || 'Sin placa'})`,
-                          type: "inmueble",
-                          relation: "related",
-                          entityId: inmueble.id
-                        });
-                        
-                        if (!hasCenteredMap) {
-                          setMapCenter([lat, lng]);
-                          hasCenteredMap = true;
-                        }
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error al obtener ubicaciones del inmueble:", error);
-                }
-              }
-            }
-            
-            // Procesar ubicaciones relacionadas directamente con el vehículo
-            if (relationData && relationData.ubicaciones && relationData.ubicaciones.length > 0) {
-              console.log("Ubicaciones relacionadas directamente con vehículo:", relationData.ubicaciones);
-              
-              for (const ubicacion of relationData.ubicaciones) {
-                const lat = parseFloat(String(ubicacion.latitud));
-                const lng = parseFloat(String(ubicacion.longitud));
                 
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  console.log(`Agregando ubicación directamente relacionada con vehículo: ${ubicacion.tipo || "Ubicación"} - lat: ${lat}, lng: ${lng}`);
-                  
-                  ubicacionesEncontradas.push({
-                    id: ubicacion.id,
-                    lat: lat,
-                    lng: lng,
-                    title: ubicacion.tipo || "Ubicación",
-                    description: ubicacion.observaciones || `Ubicación relacionada con ${selectedResult.marca || ''} ${selectedResult.modelo || ''} - Placa: ${selectedResult.placa || 'Sin placa'}`,
-                    type: "ubicacion",
-                    relation: "related",
-                    entityId: ubicacion.id
-                  });
-                  
-                  if (!hasCenteredMap) {
-                    setMapCenter([lat, lng]);
-                    hasCenteredMap = true;
+                // Otras ubicaciones de la persona relacionada
+                if (personaData.otrasUbicaciones) {
+                  for (const ubicacion of personaData.otrasUbicaciones) {
+                    const lat = parseFloat(String(ubicacion.latitud));
+                    const lng = parseFloat(String(ubicacion.longitud));
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      ubicacionesEncontradas.push({
+                        id: ubicacion.id,
+                        lat,
+                        lng,
+                        title: ubicacion.tipo || "Avistamiento",
+                        description: `${ubicacion.tipo || "Avistamiento"} de ${persona.nombre}`,
+                        type: "ubicacion",
+                        relation: "related",
+                        entityId: persona.id
+                      });
+                    }
                   }
                 }
+              } catch (error) {
+                console.error("[UBICACIONES] Error al obtener ubicaciones de persona relacionada:", error);
               }
             }
+          }
+          
+          // 4. Inmuebles relacionados
+          if (relationData.inmuebles) {
+            console.log("[UBICACIONES] Procesando inmuebles relacionados:", relationData.inmuebles.length);
             
-            if (!ubicacionesEncontradas.length) {
-              console.log("No se encontraron ubicaciones para este vehículo");
+            for (const inmueble of relationData.inmuebles) {
+              try {
+                const response = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
+                const inmuebleData = await response.json();
+                
+                if (inmuebleData.ubicaciones) {
+                  for (const ubicacion of inmuebleData.ubicaciones) {
+                    const lat = parseFloat(String(ubicacion.latitud));
+                    const lng = parseFloat(String(ubicacion.longitud));
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      ubicacionesEncontradas.push({
+                        id: ubicacion.id,
+                        lat,
+                        lng,
+                        title: inmueble.tipo || "Inmueble",
+                        description: `${inmueble.tipo || "Inmueble"} en ${inmueble.direccion}`,
+                        type: "inmueble",
+                        relation: "related",
+                        entityId: inmueble.id
+                      });
+                    }
+                  }
+                }
+                
+                if (inmuebleData.otrasUbicaciones) {
+                  for (const ubicacion of inmuebleData.otrasUbicaciones) {
+                    const lat = parseFloat(String(ubicacion.latitud));
+                    const lng = parseFloat(String(ubicacion.longitud));
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      ubicacionesEncontradas.push({
+                        id: ubicacion.id,
+                        lat,
+                        lng,
+                        title: ubicacion.tipo || "Ubicación",
+                        description: ubicacion.observaciones || "Ubicación relacionada con inmueble",
+                        type: "ubicacion",
+                        relation: "related",
+                        entityId: inmueble.id
+                      });
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error("[UBICACIONES] Error al obtener ubicaciones del inmueble:", error);
+              }
             }
-            break;
+          }
+          
+          // 5. Vehículos relacionados
+          if (relationData.vehiculos) {
+            console.log("[UBICACIONES] Procesando vehículos relacionados:", relationData.vehiculos.length);
+            
+            for (const vehiculo of relationData.vehiculos) {
+              try {
+                const response = await fetch(`/api/relaciones/vehiculo/${vehiculo.id}`);
+                const vehiculoData = await response.json();
+                
+                if (vehiculoData.otrasUbicaciones) {
+                  for (const ubicacion of vehiculoData.otrasUbicaciones) {
+                    const lat = parseFloat(String(ubicacion.latitud));
+                    const lng = parseFloat(String(ubicacion.longitud));
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      ubicacionesEncontradas.push({
+                        id: ubicacion.id,
+                        lat,
+                        lng,
+                        title: ubicacion.tipo || "Avistamiento",
+                        description: `${ubicacion.tipo || "Avistamiento"} de vehículo ${vehiculo.placa}`,
+                        type: "vehiculo",
+                        relation: "related",
+                        entityId: vehiculo.id
+                      });
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error("[UBICACIONES] Error al obtener ubicaciones del vehículo:", error);
+              }
+            }
+          }
         }
         
-        console.log("Ubicaciones encontradas:", ubicacionesEncontradas);
+        // Establecer ubicaciones encontradas y finalizar carga
+        console.log("[UBICACIONES] Total de ubicaciones encontradas:", ubicacionesEncontradas.length);
         setLocations(ubicacionesEncontradas);
         
+        // Si no se centró el mapa en ninguna ubicación específica, centrarlo en todas las ubicaciones
+        if (!hasCenteredMap && ubicacionesEncontradas.length > 0) {
+          const lats = ubicacionesEncontradas.map(loc => loc.lat);
+          const lngs = ubicacionesEncontradas.map(loc => loc.lng);
+          const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+          const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+          setMapCenter([centerLat, centerLng]);
+        }
+        
       } catch (error) {
-        console.error("Error al cargar ubicaciones:", error);
+        console.error("[UBICACIONES] Error al cargar ubicaciones:", error);
+        toast({
+          title: "Error al cargar ubicaciones",
+          description: "No se pudieron cargar las ubicaciones. Inténtalo de nuevo.",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     };
     
     cargarUbicaciones();
-  }, [selectedResult, entityData, relationData]);
+  }, [selectedResult, entityData, relationData, toast]);
 
   return (
     <MainLayout>
@@ -1209,112 +681,89 @@ export default function UbicacionesPage() {
                   </span>
                 </h2>
                 
-                {/* Botón para generar informe PDF */}
-                <Button
+                <Button 
                   onClick={generarInformePDF}
-                  disabled={!selectedResult || locations.length === 0 || isLoading}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={locations.length === 0 || isLoading}
+                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-4 w-4 mr-2" />
                   Generar Informe PDF
                 </Button>
               </div>
-              
-              {/* Cambiando el layout para ser más responsive */}
-              <div className="flex flex-col space-y-4">
-                <Card className="w-full">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <MapPin className="h-5 w-5" />
-                      <span>Mapa de Ubicaciones</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoading ? (
-                      <div className="border rounded-md p-4 min-h-[250px] md:min-h-[300px] flex items-center justify-center text-gray-500">
-                        <p>Cargando ubicaciones...</p>
-                      </div>
-                    ) : locations.length > 0 ? (
-                      <div ref={mapContainerRef} className="h-[300px] md:h-[400px] mb-6">
-                        <LocationMap 
-                          markers={locations} 
-                          center={mapCenter}
-                          zoom={15}
-                        />
-                      </div>
-                    ) : (
-                      <div className="border rounded-md p-4 min-h-[250px] md:min-h-[300px] flex flex-col items-center justify-center text-gray-500">
-                        <MapPin className="h-8 w-8 md:h-12 md:w-12 mb-3 md:mb-4 text-gray-400" />
-                        <p className="mb-1 md:mb-2 text-base md:text-lg">No se encontraron ubicaciones</p>
-                        <p className="text-xs md:text-sm text-center max-w-xs md:max-w-md">
-                          {selectedResult.tipo === 'vehiculo' 
-                            ? 'Los vehículos no tienen ubicaciones directas. Se mostrarán los domicilios de personas relacionadas.'
-                            : 'Esta entidad no tiene coordenadas registradas'}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                <div className="space-y-4">
-                  {/* Tabla de ubicaciones directas */}
-                  <Card className="w-full">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <MapPin className="h-5 w-5" />
-                        <span>Ubicaciones Directas</span>
+
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-3">Cargando ubicaciones...</span>
+                </div>
+              ) : (
+                <>
+                  {/* Mapa */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <MapPin className="h-5 w-5 mr-2 text-red-500" />
+                        Mapa de Ubicaciones ({locations.length} ubicaciones)
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {isLoading ? (
-                        <p className="text-center py-4 text-gray-500">Cargando...</p>
-                      ) : locations.filter(loc => loc.relation === 'direct').length > 0 ? (
+                      <div ref={mapContainerRef} className="h-96 w-full rounded-lg overflow-hidden border">
+                        <LocationMap 
+                          locations={locations} 
+                          center={mapCenter}
+                          zoom={locations.length === 1 ? 15 : 10}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tablas de ubicaciones */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Ubicaciones Directas */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <MapPin className="h-5 w-5 mr-2 text-green-500" />
+                          Ubicaciones Directas ({locations.filter(loc => loc.relation === 'direct').length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
                         <LocationsTable 
                           locations={locations.filter(loc => loc.relation === 'direct')}
                           onLocationClick={handleLocationClick}
+                          type="direct"
                         />
-                      ) : (
-                        <p className="text-center py-4 text-gray-500">
-                          {selectedResult.tipo === 'vehiculo' 
-                            ? 'Los vehículos no tienen ubicaciones directas' 
-                            : 'No se encontraron ubicaciones directas para esta entidad'}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Tabla de ubicaciones relacionadas */}
-                  <Card className="w-full">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <Search className="h-5 w-5" />
-                        <span>Ubicaciones Relacionadas</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoading ? (
-                        <p className="text-center py-4 text-gray-500">Cargando...</p>
-                      ) : locations.filter(loc => loc.relation === 'related').length > 0 ? (
+                      </CardContent>
+                    </Card>
+
+                    {/* Ubicaciones Relacionadas */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+                          Ubicaciones Relacionadas ({locations.filter(loc => loc.relation === 'related').length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
                         <LocationsTable 
                           locations={locations.filter(loc => loc.relation === 'related')}
                           onLocationClick={handleLocationClick}
+                          type="related"
                         />
-                      ) : (
-                        <p className="text-center py-4 text-gray-500">
-                          No se encontraron ubicaciones relacionadas
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
-            <div className="border rounded-md p-8 min-h-[300px] flex flex-col items-center justify-center text-gray-500">
-              <Search className="h-12 w-12 mb-4 text-gray-400" />
-              <p className="mb-2 text-lg">Realice una búsqueda para ver ubicaciones</p>
-              <p className="text-sm text-center max-w-md">
-                Seleccione una persona, vehículo, inmueble o ubicación para ver sus coordenadas en el mapa
+            <div className="text-center py-12">
+              <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Buscar ubicaciones
+              </h3>
+              <p className="text-gray-500">
+                Selecciona una persona, vehículo, inmueble o ubicación para ver sus ubicaciones en el mapa
               </p>
             </div>
           )}
