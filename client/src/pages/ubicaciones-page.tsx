@@ -572,7 +572,10 @@ export default function UbicacionesPage() {
           yPos += 10;
           
           doc.addImage(imgData, 'PNG', margin, yPos, mapWidth, mapHeight);
-          yPos += mapHeight + 15;
+          
+          // Agregar nueva página después del mapa
+          doc.addPage();
+          yPos = 20;
           
         } catch (error) {
           console.error("Error capturando el mapa:", error);
