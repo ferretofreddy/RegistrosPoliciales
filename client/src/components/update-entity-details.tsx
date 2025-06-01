@@ -89,6 +89,7 @@ interface UpdateEntityDetailsProps {
 }
 
 export default function UpdateEntityDetails({ entityId, entityType }: UpdateEntityDetailsProps) {
+  console.log('[UpdateEntityDetails] Iniciando con:', { entityId, entityType });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showObservacionForm, setShowObservacionForm] = useState(false);
@@ -895,9 +896,11 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
 
   // Renderizar módulo de Estructura y Posiciones
   const renderEstructuraPosiciones = () => {
+    console.log('[renderEstructuraPosiciones] Iniciando', { entityType, entity, posicionesEstructura });
     if (entityType !== "persona" || !entity) return null;
 
     const entityData = entity as any;
+    console.log('[renderEstructuraPosiciones] entityData:', entityData);
 
     return (
       <div className="space-y-4">
@@ -908,23 +911,31 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
         <div className="flex items-center gap-2">
           {editingPosicion ? (
             <div className="flex items-center gap-2 flex-1">
-              <Select
-                value={entityData.posicionEstructura || ""}
-                onValueChange={(value) => {
-                  updatePosicionMutation.mutate(value);
-                }}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Seleccionar posición" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(posicionesEstructura as any[]).map((posicion: any) => (
-                    <SelectItem key={posicion.id} value={posicion.nombre}>
-                      {posicion.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {posicionesEstructura && Array.isArray(posicionesEstructura) ? (
+                <Select
+                  value={entityData.posicionEstructura || ""}
+                  onValueChange={(value) => {
+                    console.log('[Select onValueChange]', value);
+                    updatePosicionMutation.mutate(value);
+                    setEditingPosicion(false);
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Seleccionar posición" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {posicionesEstructura.map((posicion: any) => (
+                      <SelectItem key={posicion.id} value={posicion.nombre}>
+                        {posicion.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex-1 p-2 border rounded">
+                  Cargando posiciones...
+                </div>
+              )}
               <Button
                 variant="outline"
                 size="sm"
