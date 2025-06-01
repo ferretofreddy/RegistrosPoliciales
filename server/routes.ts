@@ -14,6 +14,7 @@ import {
   ubicacionesObservaciones, insertUbicacionObservacionSchema,
   personasVehiculos, personasInmuebles, personasPersonas, personasUbicaciones,
   vehiculosUbicaciones, inmueblesUbicaciones, vehiculosInmuebles, vehiculosVehiculos,
+  inmueblesInmuebles, ubicacionesUbicaciones,
   tiposInmuebles, tiposUbicaciones, posicionesEstructura,
   insertTipoInmuebleSchema, insertTipoUbicacionSchema, insertPosicionEstructuraSchema
 } from "@shared/schema";
@@ -1284,6 +1285,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             )
           ))
           .returning();
+      } else if (tipoOrigen === "vehiculo" && tipoDestino === "vehiculo") {
+        // Para relaciones vehiculo-vehiculo, pueden estar en cualquier orden
+        deleteResult = await db.delete(vehiculosVehiculos)
+          .where(or(
+            and(
+              eq(vehiculosVehiculos.vehiculoId1, id1),
+              eq(vehiculosVehiculos.vehiculoId2, id2)
+            ),
+            and(
+              eq(vehiculosVehiculos.vehiculoId1, id2),
+              eq(vehiculosVehiculos.vehiculoId2, id1)
+            )
+          ))
+          .returning();
       } else if (tipoOrigen === "vehiculo" && tipoDestino === "inmueble") {
         deleteResult = await db.delete(vehiculosInmuebles)
           .where(and(
@@ -1298,11 +1313,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             eq(vehiculosUbicaciones.ubicacionId, id2)
           ))
           .returning();
+      } else if (tipoOrigen === "inmueble" && tipoDestino === "inmueble") {
+        // Para relaciones inmueble-inmueble, pueden estar en cualquier orden
+        deleteResult = await db.delete(inmueblesInmuebles)
+          .where(or(
+            and(
+              eq(inmueblesInmuebles.inmuebleId1, id1),
+              eq(inmueblesInmuebles.inmuebleId2, id2)
+            ),
+            and(
+              eq(inmueblesInmuebles.inmuebleId1, id2),
+              eq(inmueblesInmuebles.inmuebleId2, id1)
+            )
+          ))
+          .returning();
       } else if (tipoOrigen === "inmueble" && tipoDestino === "ubicacion") {
         deleteResult = await db.delete(inmueblesUbicaciones)
           .where(and(
             eq(inmueblesUbicaciones.inmuebleId, id1),
             eq(inmueblesUbicaciones.ubicacionId, id2)
+          ))
+          .returning();
+      } else if (tipoOrigen === "ubicacion" && tipoDestino === "ubicacion") {
+        // Para relaciones ubicacion-ubicacion, pueden estar en cualquier orden
+        deleteResult = await db.delete(ubicacionesUbicaciones)
+          .where(or(
+            and(
+              eq(ubicacionesUbicaciones.ubicacionId1, id1),
+              eq(ubicacionesUbicaciones.ubicacionId2, id2)
+            ),
+            and(
+              eq(ubicacionesUbicaciones.ubicacionId1, id2),
+              eq(ubicacionesUbicaciones.ubicacionId2, id1)
+            )
           ))
           .returning();
       } else {

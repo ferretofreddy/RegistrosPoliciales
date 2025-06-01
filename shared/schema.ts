@@ -194,6 +194,20 @@ export const inmueblesUbicaciones = pgTable("inmuebles_ubicaciones", {
   ubicacionId: integer("ubicacion_id").notNull().references(() => ubicaciones.id),
 });
 
+// Relación Inmuebles-Inmuebles
+export const inmueblesInmuebles = pgTable("inmuebles_inmuebles", {
+  id: serial("id").primaryKey(),
+  inmuebleId1: integer("inmueble_id_1").notNull().references(() => inmuebles.id),
+  inmuebleId2: integer("inmueble_id_2").notNull().references(() => inmuebles.id),
+});
+
+// Relación Ubicaciones-Ubicaciones
+export const ubicacionesUbicaciones = pgTable("ubicaciones_ubicaciones", {
+  id: serial("id").primaryKey(),
+  ubicacionId1: integer("ubicacion_id_1").notNull().references(() => ubicaciones.id),
+  ubicacionId2: integer("ubicacion_id_2").notNull().references(() => ubicaciones.id),
+});
+
 // Ubicaciones
 export const ubicaciones = pgTable("ubicaciones", {
   id: serial("id").primaryKey(),
