@@ -27,6 +27,11 @@ async function throwIfResNotOk(res: Response) {
       errorMessage = await res.text() || res.statusText;
     }
     
+    // Para errores de validación (400), mostrar solo el mensaje sin el código
+    if (res.status === 400) {
+      throw new Error(errorMessage);
+    }
+    
     throw new Error(`${res.status}: ${errorMessage}`);
   }
 }
