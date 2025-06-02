@@ -711,15 +711,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Agregar el usuario autenticado a la observación
       const user = req.user as User;
       
-      const datosCompletos = {
-        ...req.body,
+      // Crear observación directamente sin validación Zod problemática
+      const fechaFinal = req.body.fecha ? new Date(req.body.fecha) : new Date();
+      
+      console.log(`[DEBUG] Creando observación directamente con:`, {
+        detalle: req.body.detalle,
         ubicacionId,
-        usuario: user.nombre || `Usuario ${user.id}`
-      };
-      
-      console.log(`[DEBUG] Datos completos para validación:`, datosCompletos);
-      
-      const result = insertUbicacionObservacionSchema.safeParse(datosCompletos);
+        usuario: user.nombre || `Usuario ${user.id}`,
+        fecha: fechaFinal
+      });
       
       if (!result.success) {
         console.error(`[DEBUG] Error de validación:`, result.error.format());
