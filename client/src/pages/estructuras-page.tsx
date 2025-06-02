@@ -498,7 +498,8 @@ export default function EstructurasPage() {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
+      const margin = 15;
+      const textWidth = pageWidth - (margin * 2);
       
       // Encabezado profesional con fondo (igual que ubicaciones)
       doc.setFillColor(25, 25, 112); // Azul oscuro
@@ -549,61 +550,86 @@ export default function EstructurasPage() {
         const entityData = entity as any;
         
         if (selectedResult.tipo === "persona") {
-          doc.text(`• Nombre: ${entityData.nombre}`, margin + 5, yPos);
-          yPos += 8;
-          doc.text(`• Identificación: (${entityData.tipoIdentificacion || 'No especificado'}) ${entityData.identificacion}`, margin + 5, yPos);
-          yPos += 8;
+          // Nombre con manejo de texto largo
+          const nombreLines = doc.splitTextToSize(`• Nombre: ${entityData.nombre}`, textWidth - 10);
+          doc.text(nombreLines, margin + 5, yPos);
+          yPos += nombreLines.length * 6 + 2;
+          
+          // Identificación con manejo de texto largo
+          const identLines = doc.splitTextToSize(`• Identificación: (${entityData.tipoIdentificacion || 'No especificado'}) ${entityData.identificacion}`, textWidth - 10);
+          doc.text(identLines, margin + 5, yPos);
+          yPos += identLines.length * 6 + 2;
+          
           if (entityData.posicionEstructura) {
-            doc.text(`• Posición en la estructura: ${entityData.posicionEstructura}`, margin + 5, yPos);
-            yPos += 8;
+            const posicionLines = doc.splitTextToSize(`• Posición en la estructura: ${entityData.posicionEstructura}`, textWidth - 10);
+            doc.text(posicionLines, margin + 5, yPos);
+            yPos += posicionLines.length * 6 + 2;
           }
           if (entityData.alias && Array.isArray(entityData.alias) && entityData.alias.length > 0) {
-            doc.text(`• Alias: ${entityData.alias.join(', ')}`, margin + 5, yPos);
-            yPos += 8;
+            const aliasLines = doc.splitTextToSize(`• Alias: ${entityData.alias.join(', ')}`, textWidth - 10);
+            doc.text(aliasLines, margin + 5, yPos);
+            yPos += aliasLines.length * 6 + 2;
           }
           if (entityData.telefonos && Array.isArray(entityData.telefonos) && entityData.telefonos.length > 0) {
-            doc.text(`• Teléfonos: ${entityData.telefonos.join(', ')}`, margin + 5, yPos);
-            yPos += 8;
+            const telefonosLines = doc.splitTextToSize(`• Teléfonos: ${entityData.telefonos.join(', ')}`, textWidth - 10);
+            doc.text(telefonosLines, margin + 5, yPos);
+            yPos += telefonosLines.length * 6 + 2;
           }
           if (entityData.domicilios && Array.isArray(entityData.domicilios) && entityData.domicilios.length > 0) {
             doc.text('• Domicilios:', margin + 5, yPos);
-            yPos += 6;
+            yPos += 8;
             entityData.domicilios.forEach((domicilio: string) => {
-              const lines = doc.splitTextToSize(`    ${domicilio}`, pageWidth - 60);
-              doc.text(lines, margin + 10, yPos);
-              yPos += lines.length * 5 + 2;
+              const domicilioLines = doc.splitTextToSize(`    ${domicilio}`, textWidth - 20);
+              doc.text(domicilioLines, margin + 10, yPos, { align: 'justify' });
+              yPos += domicilioLines.length * 5 + 3;
             });
           }
         } else if (selectedResult.tipo === "vehiculo") {
-          doc.text(`• Placa: ${entityData.placa}`, margin + 5, yPos);
-          yPos += 8;
-          doc.text(`• Vehículo: ${entityData.marca} ${entityData.modelo}`, margin + 5, yPos);
-          yPos += 8;
-          doc.text(`• Color: ${entityData.color}`, margin + 5, yPos);
-          yPos += 8;
+          const placaLines = doc.splitTextToSize(`• Placa: ${entityData.placa}`, textWidth - 10);
+          doc.text(placaLines, margin + 5, yPos);
+          yPos += placaLines.length * 6 + 2;
+          
+          const vehiculoLines = doc.splitTextToSize(`• Vehículo: ${entityData.marca} ${entityData.modelo}`, textWidth - 10);
+          doc.text(vehiculoLines, margin + 5, yPos);
+          yPos += vehiculoLines.length * 6 + 2;
+          
+          const colorLines = doc.splitTextToSize(`• Color: ${entityData.color}`, textWidth - 10);
+          doc.text(colorLines, margin + 5, yPos);
+          yPos += colorLines.length * 6 + 2;
+          
           if (entityData.tipo) {
-            doc.text(`• Tipo: ${entityData.tipo}`, margin + 5, yPos);
-            yPos += 8;
+            const tipoLines = doc.splitTextToSize(`• Tipo: ${entityData.tipo}`, textWidth - 10);
+            doc.text(tipoLines, margin + 5, yPos);
+            yPos += tipoLines.length * 6 + 2;
           }
         } else if (selectedResult.tipo === "inmueble") {
-          doc.text(`• Tipo: ${entityData.tipo}`, margin + 5, yPos);
-          yPos += 8;
-          doc.text(`• Dirección: ${entityData.direccion}`, margin + 5, yPos);
-          yPos += 8;
+          const tipoLines = doc.splitTextToSize(`• Tipo: ${entityData.tipo}`, textWidth - 10);
+          doc.text(tipoLines, margin + 5, yPos);
+          yPos += tipoLines.length * 6 + 2;
+          
+          const direccionLines = doc.splitTextToSize(`• Dirección: ${entityData.direccion}`, textWidth - 10);
+          doc.text(direccionLines, margin + 5, yPos, { align: 'justify' });
+          yPos += direccionLines.length * 6 + 2;
+          
           if (entityData.propietario) {
-            doc.text(`• Propietario: ${entityData.propietario}`, margin + 5, yPos);
-            yPos += 8;
+            const propietarioLines = doc.splitTextToSize(`• Propietario: ${entityData.propietario}`, textWidth - 10);
+            doc.text(propietarioLines, margin + 5, yPos);
+            yPos += propietarioLines.length * 6 + 2;
           }
         } else if (selectedResult.tipo === "ubicacion") {
-          doc.text(`• Ubicación: ${entityData.tipo || "Ubicación"}`, margin + 5, yPos);
-          yPos += 8;
+          const ubicacionLines = doc.splitTextToSize(`• Ubicación: ${entityData.tipo || "Ubicación"}`, textWidth - 10);
+          doc.text(ubicacionLines, margin + 5, yPos);
+          yPos += ubicacionLines.length * 6 + 2;
+          
           if (entityData.latitud && entityData.longitud) {
-            doc.text(`• Coordenadas: ${entityData.latitud.toFixed(6)}, ${entityData.longitud.toFixed(6)}`, margin + 5, yPos);
-            yPos += 8;
+            const coordenadasLines = doc.splitTextToSize(`• Coordenadas: ${entityData.latitud.toFixed(6)}, ${entityData.longitud.toFixed(6)}`, textWidth - 10);
+            doc.text(coordenadasLines, margin + 5, yPos);
+            yPos += coordenadasLines.length * 6 + 2;
           }
           if (entityData.fecha) {
-            doc.text(`• Fecha: ${new Date(entityData.fecha).toLocaleDateString()}`, margin + 5, yPos);
-            yPos += 8;
+            const fechaLines = doc.splitTextToSize(`• Fecha: ${new Date(entityData.fecha).toLocaleDateString()}`, textWidth - 10);
+            doc.text(fechaLines, margin + 5, yPos);
+            yPos += fechaLines.length * 6 + 2;
           }
         }
         
@@ -639,11 +665,12 @@ export default function EstructurasPage() {
           doc.text("Detalle:", margin, yPos);
           yPos += 5;
           
-          const detalleLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-          doc.text(detalleLines, margin + 5, yPos);
+          const detalleLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
+          doc.text(detalleLines, margin + 5, yPos, { align: 'justify' });
           yPos += detalleLines.length * 4 + 3;
           
-          doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
+          const fechaUserLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
+          doc.text(fechaUserLines, margin + 5, yPos);
           yPos += 15;
         });
         
@@ -686,8 +713,9 @@ export default function EstructurasPage() {
               yPos = 30;
             }
 
-            doc.text(`   • ${persona.nombre} (${persona.identificacion})${persona.posicionEstructura ? ' - ' + persona.posicionEstructura : ''}`, margin + 5, yPos);
-            yPos += 6;
+            const personaLines = doc.splitTextToSize(`   • ${persona.nombre} (${persona.identificacion})${persona.posicionEstructura ? ' - ' + persona.posicionEstructura : ''}`, textWidth - 10);
+            doc.text(personaLines, margin + 5, yPos);
+            yPos += personaLines.length * 5 + 3;
             
             // Obtener observaciones de esta persona
             try {
@@ -698,7 +726,7 @@ export default function EstructurasPage() {
                 obsPersona.forEach((obs: any, obsIndex: number) => {
                   if (yPos + 20 > pageHeight - 30) {
                     doc.addPage();
-                    yPos = 30;
+                    yPos = 20;
                   }
                   
                   doc.setFont("helvetica", "bold");
@@ -709,12 +737,13 @@ export default function EstructurasPage() {
                   doc.text("Detalle:", margin, yPos);
                   yPos += 4;
                   
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-                  doc.text(obsLines, margin + 5, yPos);
+                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
+                  doc.text(obsLines, margin + 5, yPos, { align: 'justify' });
                   yPos += obsLines.length * 4 + 3;
                   
-                  doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
-                  yPos += 10;
+                  const fechaUserRelLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
+                  doc.text(fechaUserRelLines, margin + 5, yPos);
+                  yPos += fechaUserRelLines.length * 4 + 6;
                 });
               }
             } catch (error) {
@@ -743,8 +772,9 @@ export default function EstructurasPage() {
               yPos = 30;
             }
 
-            doc.text(`   • ${vehiculo.placa}: ${vehiculo.marca} ${vehiculo.modelo}`, margin + 5, yPos);
-            yPos += 6;
+            const vehiculoLines = doc.splitTextToSize(`   • ${vehiculo.placa}: ${vehiculo.marca} ${vehiculo.modelo}`, textWidth - 10);
+            doc.text(vehiculoLines, margin + 5, yPos);
+            yPos += vehiculoLines.length * 5 + 3;
             
             // Obtener observaciones de este vehículo
             try {
@@ -755,7 +785,7 @@ export default function EstructurasPage() {
                 obsVehiculo.forEach((obs: any, obsIndex: number) => {
                   if (yPos + 20 > pageHeight - 30) {
                     doc.addPage();
-                    yPos = 30;
+                    yPos = 20;
                   }
                   
                   doc.setFont("helvetica", "bold");
@@ -766,12 +796,13 @@ export default function EstructurasPage() {
                   doc.text("Detalle:", margin, yPos);
                   yPos += 4;
                   
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-                  doc.text(obsLines, margin + 5, yPos);
+                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
+                  doc.text(obsLines, margin + 5, yPos, { align: 'justify' });
                   yPos += obsLines.length * 4 + 3;
                   
-                  doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
-                  yPos += 10;
+                  const fechaUserVehLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
+                  doc.text(fechaUserVehLines, margin + 5, yPos);
+                  yPos += fechaUserVehLines.length * 4 + 6;
                 });
               }
             } catch (error) {
@@ -800,8 +831,9 @@ export default function EstructurasPage() {
               yPos = 30;
             }
 
-            doc.text(`   • ${inmueble.tipo}: ${inmueble.direccion}`, margin + 5, yPos);
-            yPos += 6;
+            const inmuebleLines = doc.splitTextToSize(`   • ${inmueble.tipo}: ${inmueble.direccion}`, textWidth - 10);
+            doc.text(inmuebleLines, margin + 5, yPos, { align: 'justify' });
+            yPos += inmuebleLines.length * 5 + 3;
             
             // Obtener observaciones de este inmueble
             try {
@@ -812,7 +844,7 @@ export default function EstructurasPage() {
                 obsInmueble.forEach((obs: any, obsIndex: number) => {
                   if (yPos + 20 > pageHeight - 30) {
                     doc.addPage();
-                    yPos = 30;
+                    yPos = 20;
                   }
                   
                   doc.setFont("helvetica", "bold");
@@ -823,12 +855,13 @@ export default function EstructurasPage() {
                   doc.text("Detalle:", margin, yPos);
                   yPos += 4;
                   
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-                  doc.text(obsLines, margin + 5, yPos);
+                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
+                  doc.text(obsLines, margin + 5, yPos, { align: 'justify' });
                   yPos += obsLines.length * 4 + 3;
                   
-                  doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
-                  yPos += 10;
+                  const fechaUserInmLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
+                  doc.text(fechaUserInmLines, margin + 5, yPos);
+                  yPos += fechaUserInmLines.length * 4 + 6;
                 });
               }
             } catch (error) {
