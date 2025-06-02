@@ -125,14 +125,9 @@ export default function UbicacionesPage() {
     if (entity.tipo === "persona") {
       entityType = "persona";
       
-      // UBICACIONES DIRECTAS: Domicilios de la persona (vía personas_ubicaciones)
-      if (relations && relations.ubicaciones) {
-        // Filtrar solo ubicaciones de tipo domicilio
-        const domicilios = relations.ubicaciones.filter((ubicacion: UbicacionEntity) => 
-          ubicacion.tipo === "Domicilio" || !ubicacion.tipo
-        );
-        
-        directLocations = domicilios.map((ubicacion: UbicacionEntity) => ({
+      // UBICACIONES DIRECTAS: Domicilios de la persona
+      if (relations && relations.domicilios) {
+        directLocations = relations.domicilios.map((ubicacion: UbicacionEntity) => ({
           id: ubicacion.id,
           lat: ubicacion.latitud,
           lng: ubicacion.longitud,
@@ -142,6 +137,7 @@ export default function UbicacionesPage() {
           relation: "direct" as const,
           entityId: entity.id
         }));
+        console.log(`Agregados ${directLocations.length} domicilios directos de ${entity.nombre}`);
       }
 
       // UBICACIONES RELACIONADAS: Domicilios de personas relacionadas + ubicaciones de inmuebles relacionados
@@ -317,21 +313,18 @@ export default function UbicacionesPage() {
       entityType = "inmueble";
       
       // UBICACIONES DIRECTAS: Ubicación propia del inmueble
-      if (relations && relations.ubicaciones) {
-        const ubicacionesPropias = relations.ubicaciones.filter((ubicacion: UbicacionEntity) => 
-          ubicacion.tipo === "Inmueble" || !ubicacion.tipo
-        );
-        
-        directLocations = ubicacionesPropias.map((ubicacion: UbicacionEntity) => ({
+      if (relations && relations.ubicacionesDirectas) {
+        directLocations = relations.ubicacionesDirectas.map((ubicacion: UbicacionEntity) => ({
           id: ubicacion.id,
           lat: ubicacion.latitud,
           lng: ubicacion.longitud,
           title: "Inmueble",
-          description: `${entity.nombre}: ${entity.referencia}`,
+          description: ubicacion.observaciones || `${entity.tipo}: ${entity.direccion}`,
           type: "inmueble" as EntityType,
           relation: "direct" as const,
           entityId: entity.id
         }));
+        console.log(`Agregadas ${directLocations.length} ubicaciones directas del inmueble ${entity.tipo}`);
       }
 
       // UBICACIONES RELACIONADAS: Domicilios de personas relacionadas
@@ -341,10 +334,8 @@ export default function UbicacionesPage() {
             const ubicacionesRelResponse = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
             if (ubicacionesRelResponse.ok) {
               const ubicacionesRelData = await ubicacionesRelResponse.json();
-              if (ubicacionesRelData.ubicaciones) {
-                const domiciliosRel = ubicacionesRelData.ubicaciones.filter((ubicacion: UbicacionEntity) =>
-                  ubicacion.tipo === "Domicilio" || !ubicacion.tipo
-                );
+              if (ubicacionesRelData.domicilios) {
+                const domiciliosRel = ubicacionesRelData.domicilios;
                 
                 const domiciliosRelacionados = domiciliosRel.map((ubicacion: UbicacionEntity) => ({
                   id: ubicacion.id,
