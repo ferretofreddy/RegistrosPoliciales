@@ -449,12 +449,34 @@ export default function UbicacionesPage() {
       }
     }
 
-    const allLocations = [...directLocations, ...relatedLocations];
+    // Eliminar duplicados basándose en el ID de ubicación
+    const allLocationIds = new Set();
+    const uniqueLocations = [];
+    
+    // Agregar ubicaciones directas primero (tienen prioridad)
+    for (const location of directLocations) {
+      if (!allLocationIds.has(location.id)) {
+        allLocationIds.add(location.id);
+        uniqueLocations.push(location);
+      }
+    }
+    
+    // Agregar ubicaciones relacionadas solo si no están duplicadas
+    for (const location of relatedLocations) {
+      if (!allLocationIds.has(location.id)) {
+        allLocationIds.add(location.id);
+        uniqueLocations.push(location);
+      } else {
+        console.log(`[DEDUPLICACIÓN] Ubicación duplicada eliminada: ID ${location.id} - ${location.title}`);
+      }
+    }
+    
     console.log("[UBICACIONES] Ubicaciones directas:", directLocations.length);
     console.log("[UBICACIONES] Ubicaciones relacionadas:", relatedLocations.length);
-    console.log("[UBICACIONES] Total ubicaciones cargadas:", allLocations.length);
+    console.log("[UBICACIONES] Ubicaciones únicas después de deduplicación:", uniqueLocations.length);
+    console.log("[UBICACIONES] Lista completa para el mapa:", uniqueLocations);
     
-    return allLocations;
+    return uniqueLocations;
   };
 
   const handleResultSelect = (result: SearchResult) => {
