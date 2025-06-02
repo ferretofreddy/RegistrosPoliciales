@@ -182,18 +182,19 @@ export default function UbicacionesPage() {
               const inmuebleRelResponse = await fetch(`/api/relaciones/inmueble/${inmuebleRelacionado.id}`);
               if (inmuebleRelResponse.ok) {
                 const inmuebleRelData = await inmuebleRelResponse.json();
-                if (inmuebleRelData.ubicaciones && inmuebleRelData.ubicaciones.length > 0) {
-                  const ubicacionesInmueble = inmuebleRelData.ubicaciones.map((ubicacion: any) => ({
+                if (inmuebleRelData.ubicacionesDirectas && inmuebleRelData.ubicacionesDirectas.length > 0) {
+                  const ubicacionesInmueble = inmuebleRelData.ubicacionesDirectas.map((ubicacion: any) => ({
                     id: ubicacion.id,
                     lat: ubicacion.latitud,
                     lng: ubicacion.longitud,
                     title: "Inmueble",
-                    description: `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
+                    description: ubicacion.observaciones || `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
                     type: "inmueble" as EntityType,
                     relation: "related" as const,
                     entityId: inmuebleRelacionado.id
                   }));
                   relatedLocations = [...relatedLocations, ...ubicacionesInmueble];
+                  console.log(`Agregadas ${ubicacionesInmueble.length} ubicaciones de inmueble relacionado ${inmuebleRelacionado.tipo}`);
                 }
               }
             } catch (error) {
@@ -291,18 +292,19 @@ export default function UbicacionesPage() {
               const inmuebleRelResponse = await fetch(`/api/relaciones/inmueble/${inmuebleRelacionado.id}`);
               if (inmuebleRelResponse.ok) {
                 const inmuebleRelData = await inmuebleRelResponse.json();
-                if (inmuebleRelData.ubicaciones && inmuebleRelData.ubicaciones.length > 0) {
-                  const ubicacionesInmueble = inmuebleRelData.ubicaciones.map((ubicacion: any) => ({
+                if (inmuebleRelData.ubicacionesDirectas && inmuebleRelData.ubicacionesDirectas.length > 0) {
+                  const ubicacionesInmueble = inmuebleRelData.ubicacionesDirectas.map((ubicacion: any) => ({
                     id: ubicacion.id,
                     lat: ubicacion.latitud,
                     lng: ubicacion.longitud,
                     title: "Inmueble",
-                    description: `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
+                    description: ubicacion.observaciones || `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
                     type: "inmueble" as EntityType,
                     relation: "related" as const,
                     entityId: inmuebleRelacionado.id
                   }));
                   relatedLocations = [...relatedLocations, ...ubicacionesInmueble];
+                  console.log(`Agregadas ${ubicacionesInmueble.length} ubicaciones de inmueble relacionado ${inmuebleRelacionado.tipo}`);
                 }
               }
             } catch (error) {
@@ -426,18 +428,19 @@ export default function UbicacionesPage() {
               const inmuebleRelResponse = await fetch(`/api/relaciones/inmueble/${inmuebleRelacionado.id}`);
               if (inmuebleRelResponse.ok) {
                 const inmuebleRelData = await inmuebleRelResponse.json();
-                if (inmuebleRelData.ubicaciones && inmuebleRelData.ubicaciones.length > 0) {
-                  const ubicacionesInmueble = inmuebleRelData.ubicaciones.map((ubicacion: any) => ({
+                if (inmuebleRelData.ubicacionesDirectas && inmuebleRelData.ubicacionesDirectas.length > 0) {
+                  const ubicacionesInmueble = inmuebleRelData.ubicacionesDirectas.map((ubicacion: any) => ({
                     id: ubicacion.id,
                     lat: ubicacion.latitud,
                     lng: ubicacion.longitud,
                     title: "Inmueble",
-                    description: `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
+                    description: ubicacion.observaciones || `${inmuebleRelacionado.tipo}: ${inmuebleRelacionado.direccion}`,
                     type: "inmueble" as EntityType,
                     relation: "related" as const,
                     entityId: inmuebleRelacionado.id
                   }));
                   relatedLocations = [...relatedLocations, ...ubicacionesInmueble];
+                  console.log(`Agregadas ${ubicacionesInmueble.length} ubicaciones de inmueble relacionado ${inmuebleRelacionado.tipo}`);
                 }
               }
             } catch (error) {
