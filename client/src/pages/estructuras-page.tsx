@@ -323,19 +323,35 @@ export default function EstructurasPage() {
     return (
       <div className="mt-2 pl-4 border-l-2 border-gray-200">
         <h5 className="text-xs font-semibold text-gray-600 mb-2">Observaciones:</h5>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {observacionesRelacionadas.map((obs: any, index: number) => (
-            <div key={index} className="bg-gray-50 p-3 rounded text-xs min-h-fit">
-              <div className="flex justify-between items-start mb-2 flex-wrap">
-                <span className="font-medium text-gray-700 text-xs">
-                  {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'}
-                </span>
-                <span className="text-gray-500 text-xs">{obs.usuario || 'Sistema'}</span>
-              </div>
-              <div className="w-full">
-                <p className="text-gray-800 text-xs leading-relaxed whitespace-pre-wrap break-words word-wrap overflow-wrap-anywhere min-h-fit">
-                  {obs.detalle || 'Sin detalle'}
-                </p>
+            <div 
+              key={index} 
+              className="bg-gray-50 p-3 rounded border" 
+              style={{ minHeight: 'auto', height: 'auto' }}
+            >
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex justify-between items-start text-xs">
+                  <span className="font-medium text-gray-700">
+                    {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'}
+                  </span>
+                  <span className="text-gray-500">{obs.usuario || 'Sistema'}</span>
+                </div>
+                <div className="text-xs">
+                  <span className="font-medium text-gray-600">Detalle:</span>
+                  <div 
+                    className="mt-1 text-gray-800 leading-normal"
+                    style={{ 
+                      whiteSpace: 'pre-wrap', 
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      height: 'auto',
+                      minHeight: 'auto'
+                    }}
+                  >
+                    {obs.detalle || 'Sin detalle'}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
