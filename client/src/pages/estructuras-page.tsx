@@ -26,10 +26,12 @@ export default function EstructurasPage() {
     personas: any[];
     vehiculos: any[];
     inmuebles: any[];
+    ubicaciones: any[];
   }>({
     personas: [],
     vehiculos: [],
-    inmuebles: []
+    inmuebles: [],
+    ubicaciones: []
   });
 
   // Obtener los datos de la entidad
@@ -62,7 +64,8 @@ export default function EstructurasPage() {
       setRelaciones({
         personas: Array.isArray((relacionesData as any)?.personas) ? (relacionesData as any).personas : [],
         vehiculos: Array.isArray((relacionesData as any)?.vehiculos) ? (relacionesData as any).vehiculos : [],
-        inmuebles: Array.isArray((relacionesData as any)?.inmuebles) ? (relacionesData as any).inmuebles : []
+        inmuebles: Array.isArray((relacionesData as any)?.inmuebles) ? (relacionesData as any).inmuebles : [],
+        ubicaciones: Array.isArray((relacionesData as any)?.ubicaciones) ? (relacionesData as any).ubicaciones : []
       });
     }
   }, [relacionesData]);
@@ -349,7 +352,8 @@ export default function EstructurasPage() {
     const hasRelaciones = 
       (relaciones.personas && relaciones.personas.length > 0) || 
       (relaciones.vehiculos && relaciones.vehiculos.length > 0) || 
-      (relaciones.inmuebles && relaciones.inmuebles.length > 0);
+      (relaciones.inmuebles && relaciones.inmuebles.length > 0) ||
+      (relaciones.ubicaciones && relaciones.ubicaciones.length > 0);
 
     if (!hasRelaciones) {
       return <p className="text-gray-500">No hay relaciones registradas para esta entidad.</p>;
@@ -474,6 +478,55 @@ export default function EstructurasPage() {
                     </div>
                   </div>
                   <RelatedEntityObservations entityId={inmueble.id} entityType="inmueble" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ubicaciones relacionadas */}
+        {relaciones.ubicaciones && relaciones.ubicaciones.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-3">Ubicaciones relacionadas</h3>
+            <div className="space-y-4">
+              {relaciones.ubicaciones.filter((ubicacion: any) => 
+                ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
+              ).map((ubicacion: any, index: number) => (
+                <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div 
+                    className="cursor-pointer"
+                    onClick={() => handleRelatedItemClick({
+                      id: ubicacion.id,
+                      tipo: 'ubicacion',
+                      nombre: ubicacion.tipo || 'Ubicación',
+                      referencia: ubicacion.observaciones || 'Sin observaciones'
+                    })}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm text-blue-600 hover:text-blue-800">
+                          {ubicacion.tipo || 'Ubicación'}
+                        </h4>
+                        {ubicacion.latitud && ubicacion.longitud && (
+                          <p className="text-xs text-gray-600 font-mono mt-1">
+                            Lat: {ubicacion.latitud.toFixed(6)}, Lng: {ubicacion.longitud.toFixed(6)}
+                          </p>
+                        )}
+                        {ubicacion.fecha && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Fecha: {new Date(ubicacion.fecha).toLocaleDateString()}
+                          </p>
+                        )}
+                        {ubicacion.observaciones && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {ubicacion.observaciones}
+                          </p>
+                        )}
+                      </div>
+                      <Link2 className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                  <RelatedEntityObservations entityId={ubicacion.id} entityType="ubicacion" />
                 </div>
               ))}
             </div>
