@@ -699,6 +699,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID de ubicación inválido" });
       }
       
+      console.log(`[DEBUG] Creando observación para ubicación ${ubicacionId}`);
+      console.log(`[DEBUG] Datos recibidos:`, req.body);
+      
       // Verificar que existe la ubicación
       const [ubicacion] = await db.select().from(ubicaciones).where(eq(ubicaciones.id, ubicacionId));
       if (!ubicacion) {
@@ -708,20 +711,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Agregar el usuario autenticado a la observación
       const user = req.user as User;
       
-      const result = insertUbicacionObservacionSchema.safeParse({
+      const datosCompletos = {
         ...req.body,
         ubicacionId,
         usuario: user.nombre || `Usuario ${user.id}`
-      });
+      };
+      
+      console.log(`[DEBUG] Datos completos para validación:`, datosCompletos);
+      
+      const result = insertUbicacionObservacionSchema.safeParse(datosCompletos);
       
       if (!result.success) {
+        console.error(`[DEBUG] Error de validación:`, result.error.format());
         return res.status(400).json({ 
           message: "Datos de observación inválidos", 
           errors: result.error.format() 
         });
       }
       
+      console.log(`[DEBUG] Datos validados exitosamente:`, result.data);
+      
       const [observacion] = await db.insert(ubicacionesObservaciones).values(result.data).returning();
+      
+      console.log(`[DEBUG] Observación creada exitosamente:`, observacion);
       
       res.status(201).json(observacion);
     } catch (error) {
