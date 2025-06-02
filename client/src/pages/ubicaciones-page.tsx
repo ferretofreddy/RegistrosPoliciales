@@ -523,7 +523,7 @@ export default function UbicacionesPage() {
       toast({
         title: "Sin datos",
         description: "No hay ubicaciones para exportar",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -531,54 +531,246 @@ export default function UbicacionesPage() {
     try {
       const doc = new jsPDF();
       
-      // Configuración general
+      // Configuración inicial
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15;
+      const margin = 10;
       
-      // Título principal
+      // Encabezado profesional con fondo
+      doc.setFillColor(25, 25, 112); // Azul oscuro
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Título principal en blanco
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("REPORTE DE UBICACIONES", pageWidth / 2, 25, { align: "center" });
+      doc.text("INFORME DE UBICACIONES GEOGRÁFICAS", pageWidth / 2, 15, { align: "center" });
       
-      // Información de la entidad
+      // Subtítulo con tipo y nombre de entidad
       if (selectedEntity) {
-        doc.setFont("helvetica", "normal");
         doc.setFontSize(12);
-        const entityInfo = `Entidad: ${selectedEntity.nombre} (${selectedEntity.tipo})`;
-        doc.text(entityInfo, pageWidth / 2, 35, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        doc.text(`${selectedEntity.tipo.toUpperCase()}: ${selectedEntity.nombre}`, pageWidth / 2, 25, { align: "center" });
       }
       
-      // Tabla de ubicaciones
-      const tableData = locations.map(location => [
-        location.title,
-        location.description,
-        `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`,
-        location.relation === 'direct' ? 'Directa' : 'Relacionada'
-      ]);
+      // Resetear color de texto
+      doc.setTextColor(0, 0, 0);
       
-      autoTable(doc, {
-        head: [['Tipo', 'Descripción', 'Coordenadas', 'Relación']],
-        body: tableData,
-        startY: 45,
-        margin: { top: margin, right: margin, bottom: margin, left: margin },
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [66, 139, 202] }
-      });
+      // Información del documento
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 45, { align: "right" });
+      doc.text(`Sistema de Gestión de Ubicaciones`, margin, 45);
       
-      // Guardar
-      doc.save(`Ubicaciones_${selectedEntity?.nombre || 'reporte'}.pdf`);
+      // Línea separadora elegante
+      doc.setDrawColor(25, 25, 112);
+      doc.setLineWidth(1);
+      doc.line(margin, 50, pageWidth - margin, 50);
+      
+      // Sección de información de la entidad
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(25, 25, 112);
+      
+      let yPos = 75;
+      const directCount = locations.filter(loc => loc.relation === 'direct').length;
+      const relatedCount = locations.filter(loc => loc.relation === 'related').length;
+      
+      if (selectedEntity) {
+        doc.text(`ENTIDAD: ${selectedEntity.tipo.toUpperCase()}`, margin, 65);
+        
+        // Información específica según el tipo de entidad
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        
+        if (selectedEntity.tipo === "persona") {
+          doc.text(`• Nombre: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Identificación: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+        } else if (selectedEntity.tipo === "vehiculo") {
+          doc.text(`• Placa: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Vehículo: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+        } else if (selectedEntity.tipo === "inmueble") {
+          doc.text(`• Descripción: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Referencia: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+        } else if (selectedEntity.tipo === "ubicacion") {
+          doc.text(`• Ubicación: ${selectedEntity.nombre}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Referencia: ${selectedEntity.referencia}`, margin + 5, yPos);
+          yPos += 8;
+        }
+        
+        yPos += 15;
+      } else {
+        doc.text("RESUMEN EJECUTIVO", margin, 65);
+        yPos += 15;
+      }
+
+      // Captura del mapa
+      const mapElement = document.querySelector('.leaflet-container') as HTMLElement;
+      if (mapElement && locations.length > 0) {
+        try {
+          const canvas = await html2canvas(mapElement, {
+            useCORS: true,
+            allowTaint: true,
+            scale: 1,
+            width: mapElement.offsetWidth,
+            height: mapElement.offsetHeight
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const mapWidth = pageWidth - (margin * 2);
+          const mapHeight = (canvas.height * mapWidth) / canvas.width;
+          
+          // Verificar si necesitamos nueva página
+          if (yPos + mapHeight + 20 > pageHeight - 30) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(25, 25, 112);
+          doc.text("MAPA DE UBICACIONES", margin, yPos);
+          yPos += 10;
+          
+          doc.addImage(imgData, 'PNG', margin, yPos, mapWidth, mapHeight);
+          
+          // Agregar nueva página después del mapa
+          doc.addPage();
+          yPos = 20;
+          
+        } catch (error) {
+          console.error("Error capturando el mapa:", error);
+          // Continuar sin el mapa si hay error
+        }
+      }
+
+      // Tabla de ubicaciones directas
+      const directLocations = locations.filter(loc => loc.relation === 'direct');
+      if (directLocations.length > 0) {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(25, 25, 112);
+        doc.text("UBICACIONES DIRECTAS", margin, yPos);
+        
+        const directData = directLocations.map(loc => [
+          loc.title,
+          loc.description,
+          `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`
+        ]);
+
+        autoTable(doc, {
+          head: [['Tipo de Ubicación', 'Descripción Completa', 'Coordenadas GPS']],
+          body: directData,
+          startY: yPos + 5,
+          styles: { 
+            fontSize: 9,
+            cellPadding: 3,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.5
+          },
+          headStyles: { 
+            fillColor: [66, 139, 202],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245]
+          },
+          tableLineColor: [200, 200, 200],
+          tableLineWidth: 0.5,
+          margin: { left: margin, right: margin }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // Tabla de ubicaciones relacionadas
+      const relatedLocations = locations.filter(loc => loc.relation === 'related');
+      if (relatedLocations.length > 0) {
+        if (yPos > pageHeight - 50) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(25, 25, 112);
+        doc.text("UBICACIONES RELACIONADAS", margin, yPos);
+        
+        const relatedData = relatedLocations.map(loc => [
+          loc.title,
+          loc.description,
+          `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`
+        ]);
+
+        autoTable(doc, {
+          head: [['Tipo de Ubicación', 'Descripción Completa', 'Coordenadas GPS']],
+          body: relatedData,
+          startY: yPos + 5,
+          styles: { 
+            fontSize: 9,
+            cellPadding: 3,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.5
+          },
+          headStyles: { 
+            fillColor: [220, 53, 69],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245]
+          },
+          tableLineColor: [200, 200, 200],
+          tableLineWidth: 0.5,
+          margin: { left: margin, right: margin }
+        });
+      }
+
+      // Pie de páginas
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        
+        // Centrar el número de página
+        const pageText = `Página ${i} de ${totalPages}`;
+        doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
+        
+        // Texto confidencial a la izquierda
+        doc.text("INFORME CONFIDENCIAL", margin, pageHeight - 10);
+      }
+
+      // Guardar el PDF
+      let nombre = selectedEntity?.nombre || "ubicaciones";
+      nombre = nombre.replace(/[^a-zA-Z0-9]/g, "_");
+      nombre = nombre.substring(0, 20);
+      
+      const fileName = `Informe_Ubicaciones_${nombre}.pdf`;
+      doc.save(fileName);
       
       toast({
-        title: "PDF generado",
-        description: "El reporte se ha descargado exitosamente"
+        title: "PDF exportado exitosamente",
+        description: `Se ha generado el archivo ${fileName}`,
       });
+      
     } catch (error) {
-      console.error("Error generando PDF:", error);
+      console.error("Error al generar PDF:", error);
       toast({
         title: "Error",
-        description: "No se pudo generar el PDF",
-        variant: "destructive"
+        description: "Ocurrió un error al generar el PDF. Intente nuevamente.",
+        variant: "destructive",
       });
     }
   };
