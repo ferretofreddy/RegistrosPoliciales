@@ -585,36 +585,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resultado.ubicacionesDirectas = ubicacionesDirectasResult.rows || [];
 
       // 2. UBICACIONES RELACIONADAS 
-      // Domicilios de personas (via personas_ubicaciones)
-      const domiciliosPersonasResult = await db.execute(
-        sql`SELECT DISTINCT u.*, 'persona' as entidad_tipo, p.nombre as entidad_nombre
-            FROM ubicaciones u
-            JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
-            JOIN personas p ON pu.persona_id = p.id
-            WHERE u.latitud IS NOT NULL 
-            AND u.longitud IS NOT NULL
-            AND (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')
-            ORDER BY u.id`
-      );
-      
-      console.log(`[DEBUG] Domicilios de personas encontrados: ${domiciliosPersonasResult.rows.length}`);
-
-      // Ubicaciones de inmuebles (via inmuebles_ubicaciones)
-      const ubicacionesInmueblesResult = await db.execute(
-        sql`SELECT DISTINCT u.*, 'inmueble' as entidad_tipo, i.direccion as entidad_nombre
-            FROM ubicaciones u
-            JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
-            JOIN inmuebles i ON iu.inmueble_id = i.id
-            WHERE u.latitud IS NOT NULL 
-            AND u.longitud IS NOT NULL
-            AND (u.tipo ILIKE '%inmueble%' OR u.tipo = 'Inmueble')
-            ORDER BY u.id`
-      );
-      
-      console.log(`[DEBUG] Ubicaciones de inmuebles encontradas: ${ubicacionesInmueblesResult.rows.length}`);
-
-      // Ubicaciones de vehículos (via vehiculos_ubicaciones)
-      const ubicacionesVehiculosResult = await db.execute(
+      // Solo ubicaciones que NO sean domicilios ni inmuebles, relacionadas con otras entidades
+      const ubicacionesRelacionadasResult = await db.execute(
         sql`SELECT DISTINCT u.*, 'vehiculo' as entidad_tipo, 
                    CONCAT(v.marca, ' ', v.modelo, ' (', v.placa, ')') as entidad_nombre
             FROM ubicaciones u
@@ -622,17 +594,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             JOIN vehiculos v ON vu.vehiculo_id = v.id
             WHERE u.latitud IS NOT NULL 
             AND u.longitud IS NOT NULL
+            AND LOWER(u.tipo) != 'domicilio'
+            AND LOWER(u.tipo) NOT LIKE '%domicilio%'
+            AND LOWER(u.tipo) != 'inmueble'
+            AND LOWER(u.tipo) NOT LIKE '%inmueble%'
             ORDER BY u.id`
       );
       
-      console.log(`[DEBUG] Ubicaciones de vehículos encontradas: ${ubicacionesVehiculosResult.rows.length}`);
+      console.log(`[DEBUG] Ubicaciones relacionadas (no domicilios/inmuebles) encontradas: ${ubicacionesRelacionadasResult.rows.length}`);
 
-      // Combinar todas las ubicaciones relacionadas
-      resultado.ubicacionesRelacionadas = [
-        ...(domiciliosPersonasResult.rows || []),
-        ...(ubicacionesInmueblesResult.rows || []),
-        ...(ubicacionesVehiculosResult.rows || [])
-      ];
+      // Combinar ubicaciones relacionadas (excluyendo domicilios e inmuebles)
+      resultado.ubicacionesRelacionadas = ubicacionesRelacionadasResult.rows || [];
 
       console.log(`[DEBUG] Total ubicaciones directas: ${resultado.ubicacionesDirectas.length}`);
       console.log(`[DEBUG] Total ubicaciones relacionadas: ${resultado.ubicacionesRelacionadas.length}`);
