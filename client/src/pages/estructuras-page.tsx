@@ -20,8 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import LocationMap from "@/components/location-map";
-import LocationsTable, { LocationData } from "@/components/locations-table";
+
 import { jsPDF } from "jspdf";
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
@@ -29,9 +28,7 @@ import html2canvas from 'html2canvas';
 export default function EstructurasPage() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [activeTab, setActiveTab] = useState("informacion");
-  const [locations, setLocations] = useState<LocationData[]>([]);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([9.9281, -84.0907]);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+
 
   // Obtener los datos de la entidad
   const { data: entity, isLoading: isLoadingEntity } = useQuery({
@@ -80,14 +77,7 @@ export default function EstructurasPage() {
     }
   }, [relacionesData]);
 
-  // Cargar datos de ubicaciones cuando cambia el resultado seleccionado
-  useEffect(() => {
-    if (selectedResult && entity && relacionesData) {
-      loadLocationData();
-    } else {
-      setLocations([]);
-    }
-  }, [selectedResult, entity, relacionesData]);
+
 
   const handleResultSelect = (result: SearchResult) => {
     setSelectedResult(result);
@@ -95,248 +85,7 @@ export default function EstructurasPage() {
     console.log("Resultado seleccionado:", result);
   };
 
-  // Cargar datos de ubicaciones basados en la entidad seleccionada
-  const loadLocationData = async () => {
-    if (!selectedResult || !entity) return;
 
-    console.log(`[ESTRUCTURAS] Procesando entidad:`, selectedResult.tipo, selectedResult);
-    
-    const ubicacionesEncontradas: LocationData[] = [];
-    
-    try {
-      // Diferentes lógicas según el tipo de entidad
-      if (selectedResult.tipo === 'persona') {
-        // Para personas: mostrar domicilios + ubicaciones de entidades relacionadas
-        console.log(`[ESTRUCTURAS] Domicilios de persona:`, entity.domicilios);
-        
-        // Procesar domicilios directos
-        if (entity.domicilios && entity.domicilios.length > 0) {
-          for (let i = 0; i < entity.domicilios.length; i++) {
-            const domicilio = entity.domicilios[i];
-            // Usar coordenadas fijas basadas en el ID para consistencia
-            const lat = 9.936135475261185 + (selectedResult.id * 0.001) + (i * 0.0001);
-            const lng = -84.06636915064483 - (selectedResult.id * 0.001) - (i * 0.0001);
-            
-            ubicacionesEncontradas.push({
-              id: selectedResult.id + i,
-              lat,
-              lng,
-              title: "Domicilio",
-              description: `Domicilio de ${selectedResult.nombre}: ${domicilio}`,
-              type: "persona",
-              relation: "direct",
-              entityId: selectedResult.id
-            });
-          }
-        }
-        
-        // Agregar ubicaciones de entidades relacionadas (solo si existen realmente)
-        if (relacionesData) {
-          console.log(`[ESTRUCTURAS] Vehículos relacionados:`, relacionesData.vehiculos);
-          console.log(`[ESTRUCTURAS] Inmuebles relacionados:`, relacionesData.inmuebles);
-          
-          // Ubicaciones de vehículos relacionados
-          if (relacionesData.vehiculos && relacionesData.vehiculos.length > 0) {
-            relacionesData.vehiculos.forEach((vehiculo: any) => {
-              // Usar coordenadas fijas basadas en el ID del vehículo
-              const lat = 9.879425015038763 + (vehiculo.id * 0.001);
-              const lng = -84.04613358867873 - (vehiculo.id * 0.001);
-              
-              ubicacionesEncontradas.push({
-                id: vehiculo.id,
-                lat,
-                lng,
-                title: "Vehículo",
-                description: `Vehículo relacionado: ${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}`,
-                type: "vehiculo",
-                relation: "related",
-                entityId: vehiculo.id
-              });
-            });
-          }
-          
-          // Ubicaciones de inmuebles relacionados
-          if (relacionesData.inmuebles && relacionesData.inmuebles.length > 0) {
-            relacionesData.inmuebles.forEach((inmueble: any) => {
-              // Usar coordenadas fijas basadas en el ID del inmueble
-              const lat = 9.95 + (inmueble.id * 0.001);
-              const lng = -84.06 - (inmueble.id * 0.001);
-              
-              ubicacionesEncontradas.push({
-                id: inmueble.id,
-                lat,
-                lng,
-                title: "Inmueble",
-                description: `${inmueble.tipo}: ${inmueble.direccion}`,
-                type: "inmueble",
-                relation: "related",
-                entityId: inmueble.id
-              });
-            });
-          }
-        }
-      } 
-      else if (selectedResult.tipo === 'vehiculo') {
-        // Para vehículos: solo ubicaciones de entidades relacionadas
-        if (relacionesData) {
-          // Ubicaciones de personas relacionadas (domicilios)
-          if (relacionesData.personas && relacionesData.personas.length > 0) {
-            relacionesData.personas.forEach((persona: any) => {
-              if (persona.domicilios && persona.domicilios.length > 0) {
-                persona.domicilios.forEach((domicilio: string, index: number) => {
-                  const lat = 9.9 + (Math.random() - 0.5) * 0.2;
-                  const lng = -84.1 + (Math.random() - 0.5) * 0.2;
-                  
-                  ubicacionesEncontradas.push({
-                    id: persona.id + index,
-                    lat,
-                    lng,
-                    title: "Domicilio",
-                    description: `Domicilio de ${persona.nombre}: ${domicilio}`,
-                    type: "persona",
-                    relation: "related",
-                    entityId: persona.id
-                  });
-                });
-              }
-            });
-          }
-          
-          // Ubicaciones de inmuebles relacionados
-          if (relacionesData.inmuebles && relacionesData.inmuebles.length > 0) {
-            relacionesData.inmuebles.forEach((inmueble: any) => {
-              const lat = 9.9 + (Math.random() - 0.5) * 0.2;
-              const lng = -84.1 + (Math.random() - 0.5) * 0.2;
-              
-              ubicacionesEncontradas.push({
-                id: inmueble.id,
-                lat,
-                lng,
-                title: "Inmueble",
-                description: `${inmueble.tipo}: ${inmueble.direccion}`,
-                type: "inmueble",
-                relation: "related",
-                entityId: inmueble.id
-              });
-            });
-          }
-        }
-      }
-      else if (selectedResult.tipo === 'inmueble') {
-        // Para inmuebles: mostrar ubicación propia + ubicaciones de entidades relacionadas
-        // Generar coordenadas para el inmueble
-        const lat = 9.9 + (Math.random() - 0.5) * 0.2;
-        const lng = -84.1 + (Math.random() - 0.5) * 0.2;
-        
-        ubicacionesEncontradas.push({
-          id: selectedResult.id,
-          lat,
-          lng,
-          title: "Inmueble",
-          description: `${entity.tipo}: ${entity.direccion}`,
-          type: "inmueble",
-          relation: "direct",
-          entityId: selectedResult.id
-        });
-        
-        // Agregar ubicaciones de entidades relacionadas
-        if (relacionesData) {
-          // Ubicaciones de personas relacionadas (domicilios)
-          if (relacionesData.personas && relacionesData.personas.length > 0) {
-            relacionesData.personas.forEach((persona: any) => {
-              if (persona.domicilios && persona.domicilios.length > 0) {
-                persona.domicilios.forEach((domicilio: string, index: number) => {
-                  const lat = 9.9 + (Math.random() - 0.5) * 0.2;
-                  const lng = -84.1 + (Math.random() - 0.5) * 0.2;
-                  
-                  ubicacionesEncontradas.push({
-                    id: persona.id + index,
-                    lat,
-                    lng,
-                    title: "Domicilio",
-                    description: `Domicilio de ${persona.nombre}: ${domicilio}`,
-                    type: "persona",
-                    relation: "related",
-                    entityId: persona.id
-                  });
-                });
-              }
-            });
-          }
-          
-          // Ubicaciones de vehículos relacionados
-          if (relacionesData.vehiculos && relacionesData.vehiculos.length > 0) {
-            relacionesData.vehiculos.forEach((vehiculo: any) => {
-              const lat = 9.9 + (Math.random() - 0.5) * 0.2;
-              const lng = -84.1 + (Math.random() - 0.5) * 0.2;
-              
-              ubicacionesEncontradas.push({
-                id: vehiculo.id,
-                lat,
-                lng,
-                title: "Vehículo",
-                description: `Vehículo relacionado: ${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}`,
-                type: "vehiculo",
-                relation: "related",
-                entityId: vehiculo.id
-              });
-            });
-          }
-        }
-      }
-      else if (selectedResult.tipo === 'ubicacion') {
-        // Para ubicaciones: mostrar ubicación propia + solo ubicaciones relacionadas que NO sean Domicilio ni Inmueble
-        if (entity && entity.latitud && entity.longitud) {
-          const lat = parseFloat(String(entity.latitud));
-          const lng = parseFloat(String(entity.longitud));
-          
-          if (!isNaN(lat) && !isNaN(lng)) {
-            ubicacionesEncontradas.push({
-              id: entity.id,
-              lat,
-              lng,
-              title: entity.tipo || "Ubicación",
-              description: entity.observaciones || `${entity.tipo || "Ubicación"}`,
-              type: "ubicacion",
-              relation: "direct",
-              entityId: entity.id
-            });
-          }
-        }
-        
-        // Para ubicaciones relacionadas, filtrar solo las que NO son "Domicilio" ni "Inmueble"
-        if (relacionesData && relacionesData.ubicaciones) {
-          relacionesData.ubicaciones.forEach((ubicacion: any) => {
-            if (ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble") {
-              const lat = parseFloat(String(ubicacion.latitud));
-              const lng = parseFloat(String(ubicacion.longitud));
-              
-              if (!isNaN(lat) && !isNaN(lng)) {
-                ubicacionesEncontradas.push({
-                  id: ubicacion.id,
-                  lat,
-                  lng,
-                  title: ubicacion.tipo || "Ubicación",
-                  description: ubicacion.observaciones || `Ubicación relacionada`,
-                  type: "ubicacion",
-                  relation: "related",
-                  entityId: ubicacion.id
-                });
-              }
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error al cargar ubicaciones:", error);
-    }
-    
-    console.log(`[ESTRUCTURAS] Ubicaciones directas:`, ubicacionesEncontradas.filter(u => u.relation === 'direct').length);
-    console.log(`[ESTRUCTURAS] Ubicaciones relacionadas:`, ubicacionesEncontradas.filter(u => u.relation === 'related').length);
-    console.log(`[ESTRUCTURAS] Total ubicaciones cargadas:`, ubicacionesEncontradas.length);
-    
-    setLocations(ubicacionesEncontradas);
-  };
 
   // Renderizar los detalles según el tipo de entidad
   const renderEntityDetails = () => {
@@ -1364,46 +1113,7 @@ export default function EstructurasPage() {
                   </CardContent>
                 </Card>
                 
-                {/* Bloque de Ubicaciones */}
-                <Card className="w-full">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <MapPin className="h-5 w-5" />
-                      <span>Ubicaciones</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {locations.length > 0 ? (
-                      <div className="space-y-6">
-                        <div className="border rounded-lg overflow-hidden">
-                          <div className="h-[350px] md:h-[450px] w-full" ref={mapContainerRef}>
-                            <LocationMap 
-                              markers={locations} 
-                              center={mapCenter}
-                              zoom={15}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="mt-6">
-                          <h3 className="text-md font-semibold mb-3">Detalles de ubicaciones</h3>
-                          <LocationsTable 
-                            locations={locations} 
-                            onLocationClick={(location) => {
-                              setMapCenter([location.lat, location.lng]);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-gray-500 py-12">
-                        <MapPin className="h-12 w-12 mb-4 text-gray-400" />
-                        <p className="mb-1 text-lg">No hay ubicaciones registradas</p>
-                        <p className="text-sm text-center">No se encontraron coordenadas para esta entidad</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+
               </div>
             </div>
           )}
