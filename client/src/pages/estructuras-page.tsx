@@ -989,55 +989,29 @@ export default function EstructurasPage() {
                 const response = await fetch(`/api/ubicaciones/${ubicacion.id}/observaciones`);
                 const obsUbicacion = await response.json();
                 
-                if (Array.isArray(obsUbicacion) && obsUbicacion.length > 0) {
-                  doc.setFont("helvetica", "bold");
-                  doc.setFontSize(9);
-                  doc.text("     Observaciones:", margin + 10, yPos);
-                  yPos += 6;
-                  
-                  doc.setFont("helvetica", "normal");
-                  doc.setFontSize(8);
-                  
-                  obsUbicacion.slice(0, 3).forEach((obs: any, index: number) => {
-                    if (yPos + 15 > pageHeight - 30) {
+                if (obsUbicacion && Array.isArray(obsUbicacion) && obsUbicacion.length > 0) {
+                  obsUbicacion.forEach((obs: any, obsIndex: number) => {
+                    if (yPos + 20 > pageHeight - 30) {
                       doc.addPage();
-                      yPos = 30;
+                      yPos = 20;
                     }
                     
-                    // Formato consistente: Fecha - Usuario - Detalle
-                    const fechaObs = obs.fecha ? new Date(obs.fecha).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit'
-                    }) : 'S/F';
+                    doc.setFont("helvetica", "bold");
+                    doc.text(`Observación #${obsIndex + 1}:`, margin, yPos);
+                    yPos += 5;
                     
-                    const usuarioObs = obs.usuario || 'Sistema';
-                    
-                    // Header con numeración, fecha y usuario - sangría apropiada
-                    doc.setFont("helvetica", "italic");
-                    doc.setFontSize(8);
-                    const headerObs = `${index + 1}. ${fechaObs} - ${usuarioObs}:`;
-                    doc.text(headerObs, margin + 25, yPos);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Detalle:", margin, yPos);
                     yPos += 4;
                     
-                    // Detalle de la observación con sangría justificada
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8);
-                    const detalleText = obs.detalle || 'Sin detalle especificado';
-                    const detalleLines = doc.splitTextToSize(detalleText, textWidth - 35);
-                    doc.text(detalleLines, margin + 30, yPos, { 
-                      align: 'justify', 
-                      maxWidth: textWidth - 35 
-                    });
-                    yPos += detalleLines.length * 4 + 3;
+                    const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 5);
+                    doc.text(obsLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
+                    yPos += obsLines.length * 4 + 3;
+                    
+                    const fechaUserUbicLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 5);
+                    doc.text(fechaUserUbicLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
+                    yPos += fechaUserUbicLines.length * 4 + 6;
                   });
-                  
-                  if (obsUbicacion.length > 3) {
-                    doc.setFont("helvetica", "italic");
-                    doc.setFontSize(8);
-                    doc.text(`... y ${obsUbicacion.length - 3} observaciones más`, margin + 25, yPos);
-                    yPos += 5;
-                  }
                 }
               } catch (error) {
                 console.error(`Error obteniendo observaciones de ubicación ${ubicacion.id}:`, error);
