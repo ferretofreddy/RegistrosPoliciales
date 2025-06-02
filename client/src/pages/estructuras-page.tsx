@@ -297,7 +297,7 @@ export default function EstructurasPage() {
     const getObservacionesEndpoint = (type: string, id: number) => {
       switch (type) {
         case 'ubicacion':
-          return `/api/ubicacions/${id}/observaciones`;
+          return `/api/ubicaciones/${id}/observaciones`;
         case 'persona':
           return `/api/personas/${id}/observaciones`;
         case 'vehiculo':
@@ -314,11 +314,7 @@ export default function EstructurasPage() {
       enabled: !!entityId
     });
 
-    // Debug logging
-    console.log(`[DEBUG] RelatedEntityObservations - EntityType: ${entityType}, EntityId: ${entityId}`);
-    console.log(`[DEBUG] Endpoint: ${getObservacionesEndpoint(entityType, entityId)}`);
-    console.log(`[DEBUG] ObservacionesRelacionadas:`, observacionesRelacionadas);
-    console.log(`[DEBUG] IsLoading:`, isLoading);
+
 
     if (isLoading) {
       return (
@@ -989,7 +985,7 @@ export default function EstructurasPage() {
               
               // Obtener observaciones de esta ubicación
               try {
-                const response = await fetch(`/api/ubicacions/${ubicacion.id}/observaciones`);
+                const response = await fetch(`/api/ubicaciones/${ubicacion.id}/observaciones`);
                 const obsUbicacion = await response.json();
                 
                 if (Array.isArray(obsUbicacion) && obsUbicacion.length > 0) {
