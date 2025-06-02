@@ -15,6 +15,21 @@ export default function ConsultasPage() {
     console.log("Resultado seleccionado:", result);
   };
 
+  const handleRelatedItemClick = (item: { id: number; tipo: any; nombre?: string; referencia?: string }) => {
+    console.log("Ítem relacionado seleccionado:", item);
+    
+    // Crear un nuevo SearchResult basado en el ítem relacionado
+    const newResult: SearchResult = {
+      id: item.id,
+      tipo: item.tipo,
+      nombre: item.nombre || '',
+      referencia: item.referencia || ''
+    };
+    
+    // Actualizar el resultado seleccionado para realizar una nueva búsqueda
+    setSelectedResult(newResult);
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,7 +57,8 @@ export default function ConsultasPage() {
               
               <EntityDetails 
                 entityId={selectedResult.id} 
-                entityType={selectedResult.tipo} 
+                entityType={selectedResult.tipo}
+                onRelatedItemClick={handleRelatedItemClick}
               />
             </div>
           ) : (

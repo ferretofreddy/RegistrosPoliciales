@@ -25,9 +25,10 @@ type RelacionesType = {
 interface EntityDetailsProps {
   entityId: number;
   entityType: Exclude<EntityType, "todas">;
+  onRelatedItemClick?: (item: { id: number; tipo: EntityType; nombre?: string; referencia?: string }) => void;
 }
 
-export default function EntityDetails({ entityId, entityType }: EntityDetailsProps) {
+export default function EntityDetails({ entityId, entityType, onRelatedItemClick }: EntityDetailsProps) {
   // Estado para guardar las observaciones y relaciones
   const [observaciones, setObservaciones] = useState<ObservacionType[]>([]);
   const [relaciones, setRelaciones] = useState<RelacionesType>({
@@ -300,8 +301,17 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                   </TableHeader>
                   <TableBody>
                     {relaciones.personas.map((persona) => (
-                      <TableRow key={persona.id}>
-                        <TableCell>{persona.nombre}</TableCell>
+                      <TableRow 
+                        key={persona.id}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => onRelatedItemClick?.({ 
+                          id: persona.id, 
+                          tipo: 'persona' as EntityType,
+                          nombre: persona.nombre,
+                          referencia: persona.identificacion
+                        })}
+                      >
+                        <TableCell className="text-blue-600 hover:text-blue-800">{persona.nombre}</TableCell>
                         <TableCell>
                           {persona.tipoIdentificacion && (
                             <span className="text-gray-600 mr-2">({persona.tipoIdentificacion})</span>
@@ -332,8 +342,17 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                   </TableHeader>
                   <TableBody>
                     {relaciones.vehiculos.map((vehiculo) => (
-                      <TableRow key={vehiculo.id}>
-                        <TableCell>{vehiculo.placa}</TableCell>
+                      <TableRow 
+                        key={vehiculo.id}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => onRelatedItemClick?.({ 
+                          id: vehiculo.id, 
+                          tipo: 'vehiculo' as EntityType,
+                          nombre: `${vehiculo.marca} ${vehiculo.modelo}`,
+                          referencia: vehiculo.placa
+                        })}
+                      >
+                        <TableCell className="text-blue-600 hover:text-blue-800">{vehiculo.placa}</TableCell>
                         <TableCell>{vehiculo.marca}</TableCell>
                         <TableCell>{vehiculo.modelo}</TableCell>
                       </TableRow>
@@ -359,8 +378,17 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                   </TableHeader>
                   <TableBody>
                     {relaciones.inmuebles.map((inmueble) => (
-                      <TableRow key={inmueble.id}>
-                        <TableCell>{inmueble.tipo}</TableCell>
+                      <TableRow 
+                        key={inmueble.id}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => onRelatedItemClick?.({ 
+                          id: inmueble.id, 
+                          tipo: 'inmueble' as EntityType,
+                          nombre: inmueble.tipo,
+                          referencia: inmueble.direccion
+                        })}
+                      >
+                        <TableCell className="text-blue-600 hover:text-blue-800">{inmueble.tipo}</TableCell>
                         <TableCell>{inmueble.direccion}</TableCell>
                       </TableRow>
                     ))}
@@ -386,8 +414,17 @@ export default function EntityDetails({ entityId, entityType }: EntityDetailsPro
                   </TableHeader>
                   <TableBody>
                     {relaciones.ubicaciones.map((ubicacion) => (
-                      <TableRow key={ubicacion.id}>
-                        <TableCell>{ubicacion.tipo}</TableCell>
+                      <TableRow 
+                        key={ubicacion.id}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => onRelatedItemClick?.({ 
+                          id: ubicacion.id, 
+                          tipo: 'ubicacion' as EntityType,
+                          nombre: ubicacion.tipo,
+                          referencia: ubicacion.observaciones || 'Sin observaciones'
+                        })}
+                      >
+                        <TableCell className="text-blue-600 hover:text-blue-800">{ubicacion.tipo}</TableCell>
                         <TableCell>{ubicacion.observaciones || 'Sin observaciones'}</TableCell>
                         <TableCell>
                           {ubicacion.latitud && ubicacion.longitud ? 
