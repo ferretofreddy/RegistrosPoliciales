@@ -711,27 +711,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Agregar el usuario autenticado a la observación
       const user = req.user as User;
       
-      // Crear observación directamente sin validación Zod problemática
-      const fechaFinal = req.body.fecha ? new Date(req.body.fecha) : new Date();
-      
-      console.log(`[DEBUG] Creando observación directamente con:`, {
-        detalle: req.body.detalle,
-        ubicacionId,
-        usuario: user.nombre || `Usuario ${user.id}`,
-        fecha: fechaFinal
-      });
-      
-      if (!result.success) {
-        console.error(`[DEBUG] Error de validación:`, result.error.format());
+      // Validación básica de campos requeridos
+      if (!req.body.detalle || req.body.detalle.trim() === '') {
         return res.status(400).json({ 
-          message: "Datos de observación inválidos", 
-          errors: result.error.format() 
+          message: "El detalle de la observación es requerido" 
         });
       }
+
+      // Crear observación directamente
+      const fechaFinal = req.body.fecha ? new Date(req.body.fecha) : new Date();
       
-      console.log(`[DEBUG] Datos validados exitosamente:`, result.data);
+      const datosObservacion = {
+        ubicacionId,
+        detalle: req.body.detalle.trim(),
+        usuario: user.nombre || `Usuario ${user.id}`,
+        fecha: fechaFinal
+      };
       
-      const [observacion] = await db.insert(ubicacionesObservaciones).values(result.data).returning();
+      console.log(`[DEBUG] Creando observación con datos:`, datosObservacion);
+      
+      const [observacion] = await db.insert(ubicacionesObservaciones).values(datosObservacion).returning();
       
       console.log(`[DEBUG] Observación creada exitosamente:`, observacion);
       
