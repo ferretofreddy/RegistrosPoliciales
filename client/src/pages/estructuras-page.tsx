@@ -270,15 +270,11 @@ export default function EstructurasPage() {
           }
         }
         
-        // Procesar otras ubicaciones relacionadas
-        if (relacionesData.otrasUbicaciones && relacionesData.otrasUbicaciones.length > 0) {
-          for (const ubicacion of relacionesData.otrasUbicaciones) {
-            // Filtrar para excluir ubicaciones de tipo domicilio o inmueble
-            const tipoLowerCase = (ubicacion.tipo || "").toLowerCase();
-            const esDomicilio = tipoLowerCase === 'domicilio' || tipoLowerCase.includes('domicilio');
-            const esInmueble = tipoLowerCase === 'inmueble' || tipoLowerCase.includes('inmueble');
-            
-            if (!esDomicilio && !esInmueble) {
+        // Para ubicaciones relacionadas, filtrar solo las que no son "Domicilio" ni "Inmueble"
+        if (relacionesData.ubicaciones && relacionesData.ubicaciones.length > 0) {
+          for (const ubicacion of relacionesData.ubicaciones) {
+            // Filtrar para excluir ubicaciones de tipo "Domicilio" e "Inmueble"
+            if (ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble") {
               const lat = parseFloat(String(ubicacion.latitud));
               const lng = parseFloat(String(ubicacion.longitud));
               
@@ -1040,6 +1036,141 @@ export default function EstructurasPage() {
         }
       }
 
+      
+      // Sección de ubicaciones
+      if (locations && locations.length > 0) {
+        // Nueva página para ubicaciones si estamos cerca del final
+        if (y > pageHeight - 80) {
+          doc.addPage();
+          y = 20;
+        }
+        
+        y += 15;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(25, 25, 112);
+        doc.text("UBICACIONES", margin, y);
+        doc.setTextColor(0, 0, 0);
+        y += 10;
+        
+        // Agregar imagen del mapa si está disponible
+        if (mapImageUrl) {
+          try {
+            // Calcular dimensiones para la imagen del mapa
+            const mapWidth = pageWidth - (2 * margin);
+            const mapHeight = 80; // Altura fija para el mapa
+            
+            // Verificar si hay espacio suficiente para el mapa
+            if (y + mapHeight > pageHeight - 30) {
+              doc.addPage();
+              y = 20;
+            }
+            
+            // Agregar la imagen del mapa
+            doc.addImage(mapImageUrl, 'PNG', margin, y, mapWidth, mapHeight);
+            y += mapHeight + 15;
+            
+            // Agregar salto de página después del mapa
+            doc.addPage();
+            y = 20;
+          } catch (e) {
+            console.error("Error al agregar imagen del mapa:", e);
+            y += 10; // Espacio mínimo si falla la imagen
+          }
+        }
+        
+        // Tabla de ubicaciones
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("DETALLE DE UBICACIONES", margin, y);
+        y += 8;
+        
+        // Línea de separación
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 5;
+        
+        // Configuración de la tabla
+        const tableX = margin;
+        const tableWidth = pageWidth - (2 * margin);
+        const col1Width = tableWidth * 0.25; // Tipo - 25%
+        const col2Width = tableWidth * 0.35; // Descripción - 35%
+        const col3Width = tableWidth * 0.40; // Coordenadas - 40%
+        
+        // Encabezados de la tabla
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setFillColor(240, 240, 240); // Fondo gris claro para encabezados
+        
+        // Rectángulos de fondo para encabezados
+        doc.rect(tableX, y - 2, col1Width, 6, 'F');
+        doc.rect(tableX + col1Width, y - 2, col2Width, 6, 'F');
+        doc.rect(tableX + col1Width + col2Width, y - 2, col3Width, 6, 'F');
+        
+        // Texto de encabezados
+        doc.setTextColor(0, 0, 0);
+        doc.text("Tipo", tableX + 2, y + 2);
+        doc.text("Descripción", tableX + col1Width + 2, y + 2);
+        doc.text("Coordenadas", tableX + col1Width + col2Width + 2, y + 2);
+        y += 6;
+        
+        // Línea bajo encabezados
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.line(tableX, y, tableX + tableWidth, y);
+        y += 2;
+        
+        // Filas de datos
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        
+        locations.forEach((location: LocationData, index: number) => {
+          if (y > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+          }
+          
+          const tipo = location.title || "Sin tipo";
+          const descripcion = location.description || "Sin descripción";
+          const coordenadas = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
+          
+          // Fondo alternado para las filas
+          if (index % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
+            doc.rect(tableX, y - 1, tableWidth, 5, 'F');
+          }
+          
+          // Texto de la fila con límites de caracteres
+          doc.setTextColor(0, 0, 0);
+          
+          const maxTipoLength = 20;
+          const maxDescLength = 40;
+          const maxCoordLength = 25;
+          
+          const tipoDisplay = tipo.length > maxTipoLength ? tipo.substring(0, maxTipoLength) + "..." : tipo;
+          const descDisplay = descripcion.length > maxDescLength ? descripcion.substring(0, maxDescLength) + "..." : descripcion;
+          const coordDisplay = coordenadas.length > maxCoordLength ? coordenadas.substring(0, maxCoordLength) + "..." : coordenadas;
+          
+          doc.text(tipoDisplay, tableX + 2, y + 2);
+          doc.text(descDisplay, tableX + col1Width + 2, y + 2);
+          doc.text(coordDisplay, tableX + col1Width + col2Width + 2, y + 2);
+          
+          // Líneas verticales de separación
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.1);
+          doc.line(tableX + col1Width, y - 1, tableX + col1Width, y + 4);
+          doc.line(tableX + col1Width + col2Width, y - 1, tableX + col1Width + col2Width, y + 4);
+          
+          y += 5;
+        });
+        
+        // Línea final de la tabla
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.line(tableX, y, tableX + tableWidth, y);
+        y += 8;
+      }
       
       // Pie de página en todas las páginas
       try {
