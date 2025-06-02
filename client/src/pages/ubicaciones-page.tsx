@@ -250,11 +250,14 @@ export default function UbicacionesPage() {
           (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
         );
         const ubicacionesConvertidas = convertToLocationData(ubicacionesFiltradas, "ubicacion", "related");
-        const ubicacionesFormateadas = ubicacionesConvertidas.map(loc => ({
-          ...loc,
-          title: "Avistamiento",
-          description: `Ubicación de vehículo ${entity.nombre}`
-        }));
+        const ubicacionesFormateadas = ubicacionesConvertidas.map((loc, index) => {
+          const ubicacionOriginal = ubicacionesFiltradas[index];
+          return {
+            ...loc,
+            title: ubicacionOriginal.tipo || "Ubicación",
+            description: `${ubicacionOriginal.tipo || "Ubicación"} relacionada con vehículo ${entity.nombre}`
+          };
+        });
         relatedLocations = [...relatedLocations, ...ubicacionesFormateadas];
 
         // Agregar domicilios de personas relacionadas
