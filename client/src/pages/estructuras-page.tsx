@@ -731,30 +731,29 @@ export default function EstructurasPage() {
             // Obtener y agregar observaciones de la persona
             const observacionesPersona = await fetchEntityObservations(persona.id, 'persona');
             if (observacionesPersona && observacionesPersona.length > 0) {
-              doc.setFont("helvetica", "italic");
-              doc.setFontSize(9);
-              doc.text("Observaciones:", margin + 10, y); y += 4;
-              
               observacionesPersona.forEach((obs: any, index: number) => {
-                if (y > pageHeight - 20) {
+                if (y > pageHeight - 30) {
                   doc.addPage();
                   y = 20;
                 }
                 
                 const detalle = obs.detalle || "Sin detalle";
-                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "S/F";
+                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A";
                 const usuario = obs.usuario || "Sistema";
                 
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.text(`Observación #${index+1}:`, margin + 10, y); y += 5;
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(8);
-                doc.text(`${index + 1}. ${detalle} (${fecha} - ${usuario})`, margin + 15, y);
-                y += 4;
+                
+                y = addMultiLineText(doc, "Detalle:", detalle, margin + 10, y);
+                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 15, y); y += 6;
               });
               y += 2;
             } else {
               doc.setFont("helvetica", "italic");
-              doc.setFontSize(8);
-              doc.text("Sin observaciones registradas", margin + 10, y); y += 4;
+              doc.setFontSize(9);
+              doc.text("Sin observaciones registradas", margin + 10, y); y += 6;
             }
             
             doc.setFontSize(10);
@@ -785,30 +784,29 @@ export default function EstructurasPage() {
             // Obtener y agregar observaciones del vehículo
             const observacionesVehiculo = await fetchEntityObservations(vehiculo.id, 'vehiculo');
             if (observacionesVehiculo && observacionesVehiculo.length > 0) {
-              doc.setFont("helvetica", "italic");
-              doc.setFontSize(9);
-              doc.text("Observaciones:", margin + 10, y); y += 4;
-              
               observacionesVehiculo.forEach((obs: any, index: number) => {
-                if (y > pageHeight - 20) {
+                if (y > pageHeight - 30) {
                   doc.addPage();
                   y = 20;
                 }
                 
                 const detalle = obs.detalle || "Sin detalle";
-                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "S/F";
+                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A";
                 const usuario = obs.usuario || "Sistema";
                 
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.text(`Observación #${index+1}:`, margin + 10, y); y += 5;
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(8);
-                doc.text(`${index + 1}. ${detalle} (${fecha} - ${usuario})`, margin + 15, y);
-                y += 4;
+                
+                y = addMultiLineText(doc, "Detalle:", detalle, margin + 10, y);
+                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 15, y); y += 6;
               });
               y += 2;
             } else {
               doc.setFont("helvetica", "italic");
-              doc.setFontSize(8);
-              doc.text("Sin observaciones registradas", margin + 10, y); y += 4;
+              doc.setFontSize(9);
+              doc.text("Sin observaciones registradas", margin + 10, y); y += 6;
             }
             
             doc.setFontSize(10);
@@ -838,30 +836,29 @@ export default function EstructurasPage() {
             // Obtener y agregar observaciones del inmueble
             const observacionesInmueble = await fetchEntityObservations(inmueble.id, 'inmueble');
             if (observacionesInmueble && observacionesInmueble.length > 0) {
-              doc.setFont("helvetica", "italic");
-              doc.setFontSize(9);
-              doc.text("Observaciones:", margin + 10, y); y += 4;
-              
               observacionesInmueble.forEach((obs: any, index: number) => {
-                if (y > pageHeight - 20) {
+                if (y > pageHeight - 30) {
                   doc.addPage();
                   y = 20;
                 }
                 
                 const detalle = obs.detalle || "Sin detalle";
-                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "S/F";
+                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "N/A";
                 const usuario = obs.usuario || "Sistema";
                 
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.text(`Observación #${index+1}:`, margin + 10, y); y += 5;
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(8);
-                doc.text(`${index + 1}. ${detalle} (${fecha} - ${usuario})`, margin + 15, y);
-                y += 4;
+                
+                y = addMultiLineText(doc, "Detalle:", detalle, margin + 10, y);
+                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 15, y); y += 6;
               });
               y += 2;
             } else {
               doc.setFont("helvetica", "italic");
-              doc.setFontSize(8);
-              doc.text("Sin observaciones registradas", margin + 10, y); y += 4;
+              doc.setFontSize(9);
+              doc.text("Sin observaciones registradas", margin + 10, y); y += 6;
             }
             
             doc.setFontSize(10);
