@@ -254,28 +254,25 @@ export default function EstructurasPage() {
 
     return (
       <div className="space-y-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Usuario</TableHead>
-              <TableHead>Detalle</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {observaciones.map((obs: any, index: number) => (
-              <TableRow key={index}>
-                <TableCell>
-                  {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'N/A'}
-                </TableCell>
-                <TableCell>{obs.usuario || 'Sistema'}</TableCell>
-                <TableCell className="max-w-xs truncate">
-                  {obs.detalle || 'Sin detalle'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {observaciones.map((obs: any, index: number) => (
+          <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-sm font-semibold text-gray-700">
+                Observación #{index + 1}
+              </span>
+              <div className="text-sm text-gray-600">
+                <span>{obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'N/A'}</span>
+                <span className="ml-3">• {obs.usuario || 'Sistema'}</span>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-3 rounded border">
+              <div className="text-sm font-medium text-gray-700 mb-2">Detalle:</div>
+              <div className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap break-words">
+                {obs.detalle || 'Sin detalle'}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -305,7 +302,7 @@ export default function EstructurasPage() {
 
     if (isLoading) {
       return (
-        <div className="mt-3">
+        <div className="mt-2 pl-4">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4 mt-1" />
         </div>
@@ -314,38 +311,30 @@ export default function EstructurasPage() {
 
     if (!observacionesRelacionadas || observacionesRelacionadas.length === 0) {
       return (
-        <div className="mt-3 text-xs text-gray-500 italic pl-2">
+        <div className="mt-2 pl-4 text-sm text-gray-500 italic">
           Sin observaciones registradas
         </div>
       );
     }
 
     return (
-      <div className="mt-3 w-full">
-        <div className="text-xs font-semibold text-gray-600 mb-2 pl-2">Observaciones:</div>
-        {observacionesRelacionadas.map((obs: any, index: number) => (
-          <div key={index} className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3 w-full">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-medium text-blue-700">
-                Observación #{index + 1}
-              </span>
-              <div className="text-xs text-gray-600">
-                <span>{obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'}</span>
-                <span className="ml-2">• {obs.usuario || 'Sistema'}</span>
+      <div className="mt-2 pl-4 border-l-2 border-gray-200">
+        <h5 className="text-xs font-semibold text-gray-600 mb-2">Observaciones:</h5>
+        <div className="space-y-2">
+          {observacionesRelacionadas.map((obs: any, index: number) => (
+            <div key={index} className="bg-gray-50 p-2 rounded text-xs">
+              <div className="flex justify-between items-start mb-1">
+                <span className="font-medium text-gray-700">
+                  {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'}
+                </span>
+                <span className="text-gray-500">{obs.usuario || 'Sistema'}</span>
               </div>
+              <p className="text-gray-800 leading-relaxed">
+                {obs.detalle || 'Sin detalle'}
+              </p>
             </div>
-            <div className="text-xs text-gray-800">
-              <div className="font-medium text-gray-700 mb-1">Detalle:</div>
-              <div className="bg-white p-2 rounded border text-gray-900 leading-relaxed">
-                {(obs.detalle || 'Sin detalle').split('\n').map((line: string, lineIndex: number) => (
-                  <div key={lineIndex} className="mb-1 last:mb-0">
-                    {line || '\u00A0'}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };
