@@ -500,93 +500,138 @@ export default function EstructurasPage() {
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 20;
       
-      // Título exacto como el documento de referencia
-      doc.setFontSize(16);
+      // Encabezado profesional con fondo (igual que ubicaciones)
+      doc.setFillColor(25, 25, 112); // Azul oscuro
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Título principal en blanco
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 0, 0);
-      doc.text("INFORME DE ESTRUCTURAS", pageWidth / 2, 20, { align: "center" });
+      doc.text("INFORME DE ESTRUCTURAS CRIMINALES", pageWidth / 2, 15, { align: "center" });
       
       // Subtítulo con tipo y nombre de entidad
       if (selectedResult) {
-        doc.setFontSize(14);
-        doc.text(`${selectedResult.tipo.toUpperCase()}: ${selectedResult.nombre}`, pageWidth / 2, 30, { align: "center" });
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${selectedResult.tipo.toUpperCase()}: ${selectedResult.nombre}`, pageWidth / 2, 25, { align: "center" });
       }
       
-      // Líneas de separación visual
-      let yPos = 50;
+      // Resetear color de texto
+      doc.setTextColor(0, 0, 0);
+      
+      // Información del documento
       doc.setFontSize(8);
-      doc.text(`Sistema de Gestión de Estructuras`, margin, yPos);
-      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, yPos, { align: "right" });
-      
-      yPos += 20;
-      
-      // Información de la entidad principal
-      const entityData = entity as any;
-      doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
+      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 45, { align: "right" });
+      doc.text(`Sistema de Gestión de Estructuras`, margin, 45);
       
-      if (selectedResult.tipo === "persona") {
-        doc.text(`Nombre: ${entityData.nombre}`, margin, yPos);
-        yPos += 8;
-        doc.text(`Identificación: (${entityData.tipoIdentificacion || 'No especificado'}) ${entityData.identificacion}`, margin, yPos);
-        yPos += 8;
-        if (entityData.posicionEstructura) {
-          doc.text(`Posición en la estructura: ${entityData.posicionEstructura}`, margin, yPos);
+      // Línea separadora elegante
+      doc.setDrawColor(25, 25, 112);
+      doc.setLineWidth(1);
+      doc.line(margin, 50, pageWidth - margin, 50);
+      
+      // Sección de información de la entidad
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(25, 25, 112);
+      
+      let yPos = 75;
+      
+      if (selectedResult) {
+        doc.text(`ENTIDAD: ${selectedResult.tipo.toUpperCase()}`, margin, 65);
+        
+        // Información específica según el tipo de entidad
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        
+        const entityData = entity as any;
+        
+        if (selectedResult.tipo === "persona") {
+          doc.text(`• Nombre: ${entityData.nombre}`, margin + 5, yPos);
           yPos += 8;
-        }
-        if (entityData.alias && Array.isArray(entityData.alias) && entityData.alias.length > 0) {
-          doc.text(`Alias: ${entityData.alias.join(', ')}`, margin, yPos);
+          doc.text(`• Identificación: (${entityData.tipoIdentificacion || 'No especificado'}) ${entityData.identificacion}`, margin + 5, yPos);
           yPos += 8;
-        }
-        if (entityData.telefonos && Array.isArray(entityData.telefonos) && entityData.telefonos.length > 0) {
-          doc.text(`Teléfonos: ${entityData.telefonos.join(', ')}`, margin, yPos);
+          if (entityData.posicionEstructura) {
+            doc.text(`• Posición en la estructura: ${entityData.posicionEstructura}`, margin + 5, yPos);
+            yPos += 8;
+          }
+          if (entityData.alias && Array.isArray(entityData.alias) && entityData.alias.length > 0) {
+            doc.text(`• Alias: ${entityData.alias.join(', ')}`, margin + 5, yPos);
+            yPos += 8;
+          }
+          if (entityData.telefonos && Array.isArray(entityData.telefonos) && entityData.telefonos.length > 0) {
+            doc.text(`• Teléfonos: ${entityData.telefonos.join(', ')}`, margin + 5, yPos);
+            yPos += 8;
+          }
+          if (entityData.domicilios && Array.isArray(entityData.domicilios) && entityData.domicilios.length > 0) {
+            doc.text('• Domicilios:', margin + 5, yPos);
+            yPos += 6;
+            entityData.domicilios.forEach((domicilio: string) => {
+              const lines = doc.splitTextToSize(`    ${domicilio}`, pageWidth - 60);
+              doc.text(lines, margin + 10, yPos);
+              yPos += lines.length * 5 + 2;
+            });
+          }
+        } else if (selectedResult.tipo === "vehiculo") {
+          doc.text(`• Placa: ${entityData.placa}`, margin + 5, yPos);
           yPos += 8;
+          doc.text(`• Vehículo: ${entityData.marca} ${entityData.modelo}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Color: ${entityData.color}`, margin + 5, yPos);
+          yPos += 8;
+          if (entityData.tipo) {
+            doc.text(`• Tipo: ${entityData.tipo}`, margin + 5, yPos);
+            yPos += 8;
+          }
+        } else if (selectedResult.tipo === "inmueble") {
+          doc.text(`• Tipo: ${entityData.tipo}`, margin + 5, yPos);
+          yPos += 8;
+          doc.text(`• Dirección: ${entityData.direccion}`, margin + 5, yPos);
+          yPos += 8;
+          if (entityData.propietario) {
+            doc.text(`• Propietario: ${entityData.propietario}`, margin + 5, yPos);
+            yPos += 8;
+          }
+        } else if (selectedResult.tipo === "ubicacion") {
+          doc.text(`• Ubicación: ${entityData.tipo || "Ubicación"}`, margin + 5, yPos);
+          yPos += 8;
+          if (entityData.latitud && entityData.longitud) {
+            doc.text(`• Coordenadas: ${entityData.latitud.toFixed(6)}, ${entityData.longitud.toFixed(6)}`, margin + 5, yPos);
+            yPos += 8;
+          }
+          if (entityData.fecha) {
+            doc.text(`• Fecha: ${new Date(entityData.fecha).toLocaleDateString()}`, margin + 5, yPos);
+            yPos += 8;
+          }
         }
-        if (entityData.domicilios && Array.isArray(entityData.domicilios) && entityData.domicilios.length > 0) {
-          doc.text('Domicilios:', margin, yPos);
-          yPos += 6;
-          entityData.domicilios.forEach((domicilio: string) => {
-            const lines = doc.splitTextToSize(`    ${domicilio}`, pageWidth - 60);
-            doc.text(lines, margin + 10, yPos);
-            yPos += lines.length * 5 + 2;
-          });
-        }
-      } else if (selectedResult.tipo === "vehiculo") {
-        doc.text(`Placa: ${entityData.placa}`, margin, yPos);
-        yPos += 8;
-        doc.text(`Vehículo: ${entityData.marca} ${entityData.modelo}`, margin, yPos);
-        yPos += 8;
-        doc.text(`Color: ${entityData.color}`, margin, yPos);
-        yPos += 8;
-      } else if (selectedResult.tipo === "inmueble") {
-        doc.text(`Tipo: ${entityData.tipo}`, margin, yPos);
-        yPos += 8;
-        doc.text(`Dirección: ${entityData.direccion}`, margin, yPos);
-        yPos += 8;
+        
+        yPos += 15;
       }
-      
-      yPos += 15;
 
-      // Observaciones de la entidad principal - formato exacto del documento
+      // Observaciones de la entidad principal con formato profesional
       if (observaciones && observaciones.length > 0) {
         if (yPos + 40 > pageHeight - 30) {
           doc.addPage();
-          yPos = 30;
+          yPos = 20;
         }
         
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
+        doc.setTextColor(25, 25, 112);
         doc.text("OBSERVACIONES", margin, yPos);
-        yPos += 12;
+        yPos += 15;
 
         observaciones.forEach((obs, index) => {
           if (yPos + 35 > pageHeight - 30) {
             doc.addPage();
-            yPos = 30;
+            yPos = 20;
           }
 
           doc.setFont("helvetica", "bold");
           doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0);
           doc.text(`Observación #${index + 1}:`, margin, yPos);
           yPos += 8;
           
@@ -605,7 +650,7 @@ export default function EstructurasPage() {
         yPos += 10;
       }
 
-      // Relaciones - formato exacto del documento de referencia
+      // Relaciones con formato profesional
       const hasRelaciones = 
         (relaciones.personas && relaciones.personas.length > 0) || 
         (relaciones.vehiculos && relaciones.vehiculos.length > 0) || 
@@ -614,20 +659,26 @@ export default function EstructurasPage() {
       if (hasRelaciones) {
         if (yPos + 40 > pageHeight - 30) {
           doc.addPage();
-          yPos = 30;
+          yPos = 20;
         }
         
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
+        doc.setTextColor(25, 25, 112);
         doc.text("RELACIONES", margin, yPos);
         yPos += 15;
 
-        // Personas relacionadas - formato exacto
+        // Personas relacionadas - formato profesional
         if (relaciones.personas && relaciones.personas.length > 0) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(220, 53, 69);
+          doc.text("PERSONAS RELACIONADAS:", margin, yPos);
+          yPos += 10;
+          
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
-          doc.text("Personas relacionadas:", margin, yPos);
-          yPos += 8;
+          doc.setTextColor(0, 0, 0);
 
           for (const persona of relaciones.personas) {
             if (yPos + 25 > pageHeight - 30) {
@@ -674,12 +725,17 @@ export default function EstructurasPage() {
           }
         }
 
-        // Vehículos relacionados - formato exacto
+        // Vehículos relacionados - formato profesional
         if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(155, 89, 182);
+          doc.text("VEHÍCULOS RELACIONADOS:", margin, yPos);
+          yPos += 10;
+          
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
-          doc.text("Vehículos relacionados:", margin, yPos);
-          yPos += 8;
+          doc.setTextColor(0, 0, 0);
 
           for (const vehiculo of relaciones.vehiculos) {
             if (yPos + 25 > pageHeight - 30) {
@@ -726,12 +782,17 @@ export default function EstructurasPage() {
           }
         }
 
-        // Inmuebles relacionados - formato exacto
+        // Inmuebles relacionados - formato profesional
         if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(46, 125, 50);
+          doc.text("INMUEBLES RELACIONADOS:", margin, yPos);
+          yPos += 10;
+          
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
-          doc.text("Inmuebles relacionados:", margin, yPos);
-          yPos += 8;
+          doc.setTextColor(0, 0, 0);
 
           for (const inmueble of relaciones.inmuebles) {
             if (yPos + 25 > pageHeight - 30) {
@@ -779,16 +840,19 @@ export default function EstructurasPage() {
         }
       }
 
-      // Pie de página exacto como el documento de referencia
+      // Pie de página profesional como en ubicaciones
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(100, 100, 100);
         
-        // Texto confidencial a la izquierda y número de página a la derecha
-        doc.text("INFORME CONFIDENCIAL", margin, pageHeight - 10);
-        doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: "right" });
+        // Centrar el número de página
+        const pageText = `Página ${i} de ${totalPages}`;
+        doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
+        
+        // Texto confidencial a la izquierda
+        doc.text("INFORME CONFIDENCIAL - ESTRUCTURAS", margin, pageHeight - 10);
       }
 
       // Guardar el PDF
