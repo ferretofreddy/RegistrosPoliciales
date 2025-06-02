@@ -253,23 +253,17 @@ export default function EstructurasPage() {
     }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {observaciones.map((obs: any, index: number) => (
-          <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
-            <div className="flex justify-between items-start mb-3">
-              <span className="text-sm font-semibold text-gray-700">
-                Observación #{index + 1}
+          <div key={index} className="bg-gray-50 p-3 rounded border">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-xs font-medium text-gray-700">
+                {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'}
               </span>
-              <div className="text-sm text-gray-600">
-                <span>{obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'N/A'}</span>
-                <span className="ml-3">• {obs.usuario || 'Sistema'}</span>
-              </div>
+              <span className="text-xs text-gray-500">{obs.usuario || 'Sistema'}</span>
             </div>
-            <div className="bg-gray-50 p-3 rounded border">
-              <div className="text-sm font-medium text-gray-700 mb-2">Detalle:</div>
-              <div className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap break-words">
-                {obs.detalle || 'Sin detalle'}
-              </div>
+            <div className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
+              {obs.detalle || 'Sin detalle'}
             </div>
           </div>
         ))}
