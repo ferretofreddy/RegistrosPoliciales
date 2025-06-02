@@ -35,7 +35,7 @@ async function testCRUDCompleto() {
     const personaPrueba = personasExistentes[0];
     
     // Crear observación para persona
-    const [observacionPersona] = await db.insert(personaObservaciones).values({
+    const [observacionPersona] = await db.insert(personasObservaciones).values({
       personaId: personaPrueba.id,
       detalle: "Observación de prueba CRUD - " + new Date().toISOString(),
       fecha: new Date(),
