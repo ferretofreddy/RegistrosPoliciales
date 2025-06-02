@@ -1725,13 +1725,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const domicilios = domiciliosResult.rows || [];
         console.log(`[DEBUG] Domicilios directos encontrados (routes): ${domicilios.length}`);
         
-        // 2. Otras ubicaciones (avistamientos, etc.)
+        // 2. Otras ubicaciones (avistamientos, etc.) - excluyendo domicilios e inmuebles
         const otrasUbicacionesResult = await db.execute(
           sql`SELECT u.* FROM ubicaciones u
               JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
               WHERE pu.persona_id = ${id}
               AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
-              AND NOT (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')`
+              AND NOT (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')
+              AND NOT (u.tipo ILIKE '%inmueble%' OR u.tipo = 'Inmueble')`
         );
         
         const otrasUbicaciones = otrasUbicacionesResult.rows || [];
@@ -1859,14 +1860,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const ubicacionesDirectas = ubicacionesDirectasResult.rows || [];
         console.log(`[DEBUG] Ubicaciones directas tipo inmueble encontradas (routes): ${ubicacionesDirectas.length}`);
         
-        // 2. Otras ubicaciones relacionadas (no de tipo inmueble)
+        // 2. Otras ubicaciones relacionadas (excluyendo domicilios e inmuebles)
         const otrasUbicacionesResult = await db.execute(
           sql`SELECT u.* FROM ubicaciones u
               JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
               WHERE iu.inmueble_id = ${id}
               AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
               AND LOWER(u.tipo) != 'inmueble'
-              AND LOWER(u.tipo) NOT LIKE '%inmueble%'`
+              AND LOWER(u.tipo) NOT LIKE '%inmueble%'
+              AND LOWER(u.tipo) != 'domicilio'
+              AND LOWER(u.tipo) NOT LIKE '%domicilio%'`
         );
         
         const otrasUbicaciones = otrasUbicacionesResult.rows || [];
