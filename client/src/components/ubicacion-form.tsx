@@ -367,8 +367,7 @@ export default function UbicacionForm() {
             try {
               const resultado = await apiRequest("POST", `/api/ubicaciones/${ubicacionId}/observaciones`, {
                 detalle: observacion.detalle,
-                fecha: observacion.fecha || new Date(),
-                usuario: usuarioActual?.nombre || "Usuario Anónimo"
+                fecha: observacion.fecha || new Date()
               });
               console.log(`Observación creada exitosamente:`, resultado);
             } catch (error) {
