@@ -235,10 +235,9 @@ export const ubicacionesObservaciones = pgTable("ubicaciones_observaciones", {
   usuario: text("usuario"),
 });
 
-export const insertUbicacionObservacionSchema = createInsertSchema(ubicacionesObservaciones).pick({
-  ubicacionId: true,
-  detalle: true,
-  usuario: true,
+export const insertUbicacionObservacionSchema = createInsertSchema(ubicacionesObservaciones).omit({
+  id: true,
+  fecha: true
 }).extend({
   fecha: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional()
 });
