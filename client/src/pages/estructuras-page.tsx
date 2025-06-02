@@ -550,85 +550,85 @@ export default function EstructurasPage() {
         const entityData = entity as any;
         
         if (selectedResult.tipo === "persona") {
-          // Nombre con manejo de texto largo
-          const nombreLines = doc.splitTextToSize(`• Nombre: ${entityData.nombre}`, textWidth - 10);
-          doc.text(nombreLines, margin + 5, yPos);
+          // Nombre con manejo de texto largo respetando márgenes
+          const nombreLines = doc.splitTextToSize(`• Nombre: ${entityData.nombre}`, textWidth - 5);
+          doc.text(nombreLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += nombreLines.length * 6 + 2;
           
-          // Identificación con manejo de texto largo
-          const identLines = doc.splitTextToSize(`• Identificación: (${entityData.tipoIdentificacion || 'No especificado'}) ${entityData.identificacion}`, textWidth - 10);
-          doc.text(identLines, margin + 5, yPos);
+          // Identificación con manejo de texto largo respetando márgenes
+          const identLines = doc.splitTextToSize(`• Identificación: (${entityData.tipoIdentificacion || 'No especificado'}) ${entityData.identificacion}`, textWidth - 5);
+          doc.text(identLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += identLines.length * 6 + 2;
           
           if (entityData.posicionEstructura) {
-            const posicionLines = doc.splitTextToSize(`• Posición en la estructura: ${entityData.posicionEstructura}`, textWidth - 10);
-            doc.text(posicionLines, margin + 5, yPos);
+            const posicionLines = doc.splitTextToSize(`• Posición en la estructura: ${entityData.posicionEstructura}`, textWidth - 5);
+            doc.text(posicionLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += posicionLines.length * 6 + 2;
           }
           if (entityData.alias && Array.isArray(entityData.alias) && entityData.alias.length > 0) {
-            const aliasLines = doc.splitTextToSize(`• Alias: ${entityData.alias.join(', ')}`, textWidth - 10);
-            doc.text(aliasLines, margin + 5, yPos);
+            const aliasLines = doc.splitTextToSize(`• Alias: ${entityData.alias.join(', ')}`, textWidth - 5);
+            doc.text(aliasLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += aliasLines.length * 6 + 2;
           }
           if (entityData.telefonos && Array.isArray(entityData.telefonos) && entityData.telefonos.length > 0) {
-            const telefonosLines = doc.splitTextToSize(`• Teléfonos: ${entityData.telefonos.join(', ')}`, textWidth - 10);
-            doc.text(telefonosLines, margin + 5, yPos);
+            const telefonosLines = doc.splitTextToSize(`• Teléfonos: ${entityData.telefonos.join(', ')}`, textWidth - 5);
+            doc.text(telefonosLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += telefonosLines.length * 6 + 2;
           }
           if (entityData.domicilios && Array.isArray(entityData.domicilios) && entityData.domicilios.length > 0) {
             doc.text('• Domicilios:', margin + 5, yPos);
             yPos += 8;
             entityData.domicilios.forEach((domicilio: string) => {
-              const domicilioLines = doc.splitTextToSize(`    ${domicilio}`, textWidth - 20);
-              doc.text(domicilioLines, margin + 10, yPos, { align: 'justify' });
+              const domicilioLines = doc.splitTextToSize(`    ${domicilio}`, textWidth - 15);
+              doc.text(domicilioLines, margin + 10, yPos, { align: 'justify', maxWidth: textWidth - 15 });
               yPos += domicilioLines.length * 5 + 3;
             });
           }
         } else if (selectedResult.tipo === "vehiculo") {
-          const placaLines = doc.splitTextToSize(`• Placa: ${entityData.placa}`, textWidth - 10);
-          doc.text(placaLines, margin + 5, yPos);
+          const placaLines = doc.splitTextToSize(`• Placa: ${entityData.placa}`, textWidth - 5);
+          doc.text(placaLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += placaLines.length * 6 + 2;
           
-          const vehiculoLines = doc.splitTextToSize(`• Vehículo: ${entityData.marca} ${entityData.modelo}`, textWidth - 10);
-          doc.text(vehiculoLines, margin + 5, yPos);
+          const vehiculoLines = doc.splitTextToSize(`• Vehículo: ${entityData.marca} ${entityData.modelo}`, textWidth - 5);
+          doc.text(vehiculoLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += vehiculoLines.length * 6 + 2;
           
-          const colorLines = doc.splitTextToSize(`• Color: ${entityData.color}`, textWidth - 10);
-          doc.text(colorLines, margin + 5, yPos);
+          const colorLines = doc.splitTextToSize(`• Color: ${entityData.color}`, textWidth - 5);
+          doc.text(colorLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += colorLines.length * 6 + 2;
           
           if (entityData.tipo) {
-            const tipoLines = doc.splitTextToSize(`• Tipo: ${entityData.tipo}`, textWidth - 10);
-            doc.text(tipoLines, margin + 5, yPos);
+            const tipoLines = doc.splitTextToSize(`• Tipo: ${entityData.tipo}`, textWidth - 5);
+            doc.text(tipoLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += tipoLines.length * 6 + 2;
           }
         } else if (selectedResult.tipo === "inmueble") {
-          const tipoLines = doc.splitTextToSize(`• Tipo: ${entityData.tipo}`, textWidth - 10);
-          doc.text(tipoLines, margin + 5, yPos);
+          const tipoLines = doc.splitTextToSize(`• Tipo: ${entityData.tipo}`, textWidth - 5);
+          doc.text(tipoLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += tipoLines.length * 6 + 2;
           
-          const direccionLines = doc.splitTextToSize(`• Dirección: ${entityData.direccion}`, textWidth - 10);
-          doc.text(direccionLines, margin + 5, yPos, { align: 'justify' });
+          const direccionLines = doc.splitTextToSize(`• Dirección: ${entityData.direccion}`, textWidth - 5);
+          doc.text(direccionLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
           yPos += direccionLines.length * 6 + 2;
           
           if (entityData.propietario) {
-            const propietarioLines = doc.splitTextToSize(`• Propietario: ${entityData.propietario}`, textWidth - 10);
-            doc.text(propietarioLines, margin + 5, yPos);
+            const propietarioLines = doc.splitTextToSize(`• Propietario: ${entityData.propietario}`, textWidth - 5);
+            doc.text(propietarioLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += propietarioLines.length * 6 + 2;
           }
         } else if (selectedResult.tipo === "ubicacion") {
-          const ubicacionLines = doc.splitTextToSize(`• Ubicación: ${entityData.tipo || "Ubicación"}`, textWidth - 10);
-          doc.text(ubicacionLines, margin + 5, yPos);
+          const ubicacionLines = doc.splitTextToSize(`• Ubicación: ${entityData.tipo || "Ubicación"}`, textWidth - 5);
+          doc.text(ubicacionLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += ubicacionLines.length * 6 + 2;
           
           if (entityData.latitud && entityData.longitud) {
-            const coordenadasLines = doc.splitTextToSize(`• Coordenadas: ${entityData.latitud.toFixed(6)}, ${entityData.longitud.toFixed(6)}`, textWidth - 10);
-            doc.text(coordenadasLines, margin + 5, yPos);
+            const coordenadasLines = doc.splitTextToSize(`• Coordenadas: ${entityData.latitud.toFixed(6)}, ${entityData.longitud.toFixed(6)}`, textWidth - 5);
+            doc.text(coordenadasLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += coordenadasLines.length * 6 + 2;
           }
           if (entityData.fecha) {
-            const fechaLines = doc.splitTextToSize(`• Fecha: ${new Date(entityData.fecha).toLocaleDateString()}`, textWidth - 10);
-            doc.text(fechaLines, margin + 5, yPos);
+            const fechaLines = doc.splitTextToSize(`• Fecha: ${new Date(entityData.fecha).toLocaleDateString()}`, textWidth - 5);
+            doc.text(fechaLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += fechaLines.length * 6 + 2;
           }
         }
@@ -665,12 +665,12 @@ export default function EstructurasPage() {
           doc.text("Detalle:", margin, yPos);
           yPos += 5;
           
-          const detalleLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
-          doc.text(detalleLines, margin + 5, yPos, { align: 'justify' });
+          const detalleLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 5);
+          doc.text(detalleLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
           yPos += detalleLines.length * 4 + 3;
           
-          const fechaUserLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
-          doc.text(fechaUserLines, margin + 5, yPos);
+          const fechaUserLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 5);
+          doc.text(fechaUserLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
           yPos += 15;
         });
         
@@ -713,8 +713,8 @@ export default function EstructurasPage() {
               yPos = 30;
             }
 
-            const personaLines = doc.splitTextToSize(`   • ${persona.nombre} (${persona.identificacion})${persona.posicionEstructura ? ' - ' + persona.posicionEstructura : ''}`, textWidth - 10);
-            doc.text(personaLines, margin + 5, yPos);
+            const personaLines = doc.splitTextToSize(`   • ${persona.nombre} (${persona.identificacion})${persona.posicionEstructura ? ' - ' + persona.posicionEstructura : ''}`, textWidth - 5);
+            doc.text(personaLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += personaLines.length * 5 + 3;
             
             // Obtener observaciones de esta persona
@@ -737,12 +737,12 @@ export default function EstructurasPage() {
                   doc.text("Detalle:", margin, yPos);
                   yPos += 4;
                   
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
-                  doc.text(obsLines, margin + 5, yPos, { align: 'justify' });
+                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 5);
+                  doc.text(obsLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
                   yPos += obsLines.length * 4 + 3;
                   
-                  const fechaUserRelLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
-                  doc.text(fechaUserRelLines, margin + 5, yPos);
+                  const fechaUserRelLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 5);
+                  doc.text(fechaUserRelLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
                   yPos += fechaUserRelLines.length * 4 + 6;
                 });
               }
@@ -772,8 +772,8 @@ export default function EstructurasPage() {
               yPos = 30;
             }
 
-            const vehiculoLines = doc.splitTextToSize(`   • ${vehiculo.placa}: ${vehiculo.marca} ${vehiculo.modelo}`, textWidth - 10);
-            doc.text(vehiculoLines, margin + 5, yPos);
+            const vehiculoLines = doc.splitTextToSize(`   • ${vehiculo.placa}: ${vehiculo.marca} ${vehiculo.modelo}`, textWidth - 5);
+            doc.text(vehiculoLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
             yPos += vehiculoLines.length * 5 + 3;
             
             // Obtener observaciones de este vehículo
@@ -796,12 +796,12 @@ export default function EstructurasPage() {
                   doc.text("Detalle:", margin, yPos);
                   yPos += 4;
                   
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
-                  doc.text(obsLines, margin + 5, yPos, { align: 'justify' });
+                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 5);
+                  doc.text(obsLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
                   yPos += obsLines.length * 4 + 3;
                   
-                  const fechaUserVehLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
-                  doc.text(fechaUserVehLines, margin + 5, yPos);
+                  const fechaUserVehLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 5);
+                  doc.text(fechaUserVehLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
                   yPos += fechaUserVehLines.length * 4 + 6;
                 });
               }
@@ -831,8 +831,8 @@ export default function EstructurasPage() {
               yPos = 30;
             }
 
-            const inmuebleLines = doc.splitTextToSize(`   • ${inmueble.tipo}: ${inmueble.direccion}`, textWidth - 10);
-            doc.text(inmuebleLines, margin + 5, yPos, { align: 'justify' });
+            const inmuebleLines = doc.splitTextToSize(`   • ${inmueble.tipo}: ${inmueble.direccion}`, textWidth - 5);
+            doc.text(inmuebleLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
             yPos += inmuebleLines.length * 5 + 3;
             
             // Obtener observaciones de este inmueble
@@ -855,12 +855,12 @@ export default function EstructurasPage() {
                   doc.text("Detalle:", margin, yPos);
                   yPos += 4;
                   
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 10);
-                  doc.text(obsLines, margin + 5, yPos, { align: 'justify' });
+                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, textWidth - 5);
+                  doc.text(obsLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
                   yPos += obsLines.length * 4 + 3;
                   
-                  const fechaUserInmLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 10);
-                  doc.text(fechaUserInmLines, margin + 5, yPos);
+                  const fechaUserInmLines = doc.splitTextToSize(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, textWidth - 5);
+                  doc.text(fechaUserInmLines, margin + 5, yPos, { maxWidth: textWidth - 5 });
                   yPos += fechaUserInmLines.length * 4 + 6;
                 });
               }
