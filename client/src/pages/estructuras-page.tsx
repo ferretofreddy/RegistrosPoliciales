@@ -314,6 +314,12 @@ export default function EstructurasPage() {
       enabled: !!entityId
     });
 
+    // Debug logging
+    console.log(`[DEBUG] RelatedEntityObservations - EntityType: ${entityType}, EntityId: ${entityId}`);
+    console.log(`[DEBUG] Endpoint: ${getObservacionesEndpoint(entityType, entityId)}`);
+    console.log(`[DEBUG] ObservacionesRelacionadas:`, observacionesRelacionadas);
+    console.log(`[DEBUG] IsLoading:`, isLoading);
+
     if (isLoading) {
       return (
         <div className="mt-2 pl-4">
