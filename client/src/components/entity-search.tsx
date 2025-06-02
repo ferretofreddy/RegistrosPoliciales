@@ -84,7 +84,7 @@ export default function EntitySearch({
   const IconComponent = config.icon;
 
   // Cargar datos de la entidad
-  const { data: allEntities = [], isLoading } = useQuery({
+  const { data: rawData, isLoading } = useQuery({
     queryKey: [config.endpoint],
     queryFn: async () => {
       const res = await fetch(config.endpoint);
@@ -92,6 +92,11 @@ export default function EntitySearch({
       return res.json();
     }
   });
+
+  // Extraer entidades del response (manejar estructura anidada para ubicaciones)
+  const allEntities = entityType === 'ubicacion' 
+    ? (rawData?.ubicacionesDirectas || rawData || [])
+    : (rawData || []);
 
   // Filtrar resultados basados en la búsqueda
   const filteredResults = allEntities.filter((entity: SearchResult) => {

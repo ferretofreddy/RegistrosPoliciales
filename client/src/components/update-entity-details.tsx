@@ -162,10 +162,13 @@ export default function UpdateEntityDetails({ entityId, entityType }: UpdateEnti
     enabled: showRelacionForm && relacionTipo === "inmueble"
   });
 
-  const { data: ubicaciones = [] } = useQuery<Ubicacion[]>({
+  const { data: ubicacionesResponse } = useQuery({
     queryKey: ['/api/ubicaciones'],
     enabled: showRelacionForm && relacionTipo === "ubicacion"
   });
+  
+  // Extraer ubicaciones del response (que puede tener estructura anidada)
+  const ubicaciones = (ubicacionesResponse as any)?.ubicacionesDirectas || ubicacionesResponse || [];
 
   // Obtener tipos de identificación para personas
   const { data: tiposIdentificacion = [] } = useQuery({
