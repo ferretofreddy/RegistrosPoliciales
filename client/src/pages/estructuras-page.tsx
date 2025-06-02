@@ -1346,7 +1346,12 @@ export default function EstructurasPage() {
                         
                         <div className="mt-6">
                           <h3 className="text-md font-semibold mb-3">Detalles de ubicaciones</h3>
-                          <LocationsTable locations={locations} />
+                          <LocationsTable 
+                            locations={locations} 
+                            onLocationClick={(location) => {
+                              setMapCenter([location.lat, location.lng]);
+                            }}
+                          />
                         </div>
                       </div>
                     ) : (
