@@ -712,6 +712,7 @@ export default function EstructurasPage() {
         // Personas relacionadas
         if (relaciones.personas && relaciones.personas.length > 0) {
           doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
           doc.text("Personas relacionadas:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
@@ -766,6 +767,7 @@ export default function EstructurasPage() {
         // Vehículos relacionados
         if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
           doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
           doc.text("Vehículos relacionados:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
@@ -820,6 +822,7 @@ export default function EstructurasPage() {
         // Inmuebles relacionados
         if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
           doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
           doc.text("Inmuebles relacionados:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
