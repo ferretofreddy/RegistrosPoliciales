@@ -364,6 +364,24 @@ export default function UbicacionesPage() {
           }
         }
       }
+
+      // UBICACIONES RELACIONADAS: Otras ubicaciones de la entidad ubicaciones (excluyendo Domicilio e Inmueble)
+      if (relations && relations.ubicaciones) {
+        const ubicacionesFiltradas = relations.ubicaciones.filter(
+          (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
+        );
+        const ubicacionesConvertidas = convertToLocationData(ubicacionesFiltradas, "ubicacion", "related");
+        const ubicacionesFormateadas = ubicacionesConvertidas.map((loc, index) => {
+          const ubicacionOriginal = ubicacionesFiltradas[index];
+          return {
+            ...loc,
+            title: ubicacionOriginal.tipo || "Ubicación",
+            description: `${ubicacionOriginal.tipo || "Ubicación"} relacionada con inmueble ${entity.tipo}`
+          };
+        });
+        relatedLocations = [...relatedLocations, ...ubicacionesFormateadas];
+        console.log(`Agregadas ${ubicacionesFormateadas.length} ubicaciones relacionadas de entidad ubicaciones al inmueble`);
+      }
     } else if (entity.tipo === "ubicacion") {
       entityType = "ubicacion";
       
