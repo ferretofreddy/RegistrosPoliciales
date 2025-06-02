@@ -211,8 +211,8 @@ export default function UbicacionForm() {
         const observacionesAuto = [];
         
         // Si hay personas relacionadas
-        if (personasRelacionadas.length > 0) {
-          const nombresPersonas = personasRelacionadas.map(p => p.nombre).join(", ");
+        if (relacionPersonas.length > 0) {
+          const nombresPersonas = relacionPersonas.map(p => p.nombre).join(", ");
           if (values.tipo.toLowerCase().includes("avistamiento")) {
             observacionesAuto.push(`Avistamiento de ${nombresPersonas}`);
           } else if (values.tipo.toLowerCase().includes("intervención")) {
@@ -223,8 +223,16 @@ export default function UbicacionForm() {
         }
         
         // Si hay vehículos relacionados
-        if (vehiculosRelacionados.length > 0) {
-          const datosVehiculos = vehiculosRelacionados.map(v => `${v.marca} ${v.modelo} (${v.placa})`).join(", ");
+        if (relacionVehiculos.length > 0) {
+          // Obtener detalles completos de los vehículos
+          const datosVehiculos = relacionVehiculos.map(v => {
+            const vehiculoCompleto = vehiculos?.find(vh => vh.id === v.id);
+            if (vehiculoCompleto) {
+              return `${vehiculoCompleto.marca} ${vehiculoCompleto.modelo} (${vehiculoCompleto.placa})`;
+            }
+            return v.nombre;
+          }).join(", ");
+          
           if (values.tipo.toLowerCase().includes("intervención")) {
             observacionesAuto.push(`Intervención de ${datosVehiculos}`);
           } else if (values.tipo.toLowerCase().includes("avistamiento")) {
@@ -235,8 +243,15 @@ export default function UbicacionForm() {
         }
         
         // Si hay inmuebles relacionados
-        if (inmueblesRelacionados.length > 0) {
-          const datosInmuebles = inmueblesRelacionados.map(i => `${i.tipo} - ${i.direccion}`).join(", ");
+        if (relacionInmuebles.length > 0) {
+          // Obtener detalles completos de los inmuebles
+          const datosInmuebles = relacionInmuebles.map(i => {
+            const inmuebleCompleto = inmuebles?.find(inmueble => inmueble.id === i.id);
+            if (inmuebleCompleto) {
+              return `${inmuebleCompleto.tipo} - ${inmuebleCompleto.direccion}`;
+            }
+            return i.nombre;
+          }).join(", ");
           observacionesAuto.push(`${values.tipo} en ${datosInmuebles}`);
         }
         
