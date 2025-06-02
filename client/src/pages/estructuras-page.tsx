@@ -734,7 +734,8 @@ export default function EstructurasPage() {
       const hasRelaciones = 
         (relaciones.personas && relaciones.personas.length > 0) || 
         (relaciones.vehiculos && relaciones.vehiculos.length > 0) || 
-        (relaciones.inmuebles && relaciones.inmuebles.length > 0);
+        (relaciones.inmuebles && relaciones.inmuebles.length > 0) ||
+        (relaciones.ubicaciones && relaciones.ubicaciones.length > 0);
 
       if (hasRelaciones) {
         if (yPos + 40 > pageHeight - 30) {
@@ -922,6 +923,85 @@ export default function EstructurasPage() {
             }
             
             yPos += 8;
+          }
+        }
+
+        // Ubicaciones relacionadas - formato profesional
+        if (relaciones.ubicaciones && relaciones.ubicaciones.length > 0) {
+          const ubicacionesFiltradas = relaciones.ubicaciones.filter((ubicacion: any) => 
+            ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
+          );
+          
+          if (ubicacionesFiltradas.length > 0) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(46, 125, 50);
+            doc.text("UBICACIONES RELACIONADAS:", margin, yPos);
+            yPos += 10;
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+
+            for (const ubicacion of ubicacionesFiltradas) {
+              if (yPos + 25 > pageHeight - 30) {
+                doc.addPage();
+                yPos = 30;
+              }
+
+              const ubicacionLines = doc.splitTextToSize(`   • ${ubicacion.tipo || 'Ubicación'}`, textWidth - 5);
+              doc.text(ubicacionLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
+              yPos += ubicacionLines.length * 5 + 3;
+
+              if (ubicacion.latitud && ubicacion.longitud) {
+                const coordenadasLines = doc.splitTextToSize(`     Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}`, textWidth - 10);
+                doc.text(coordenadasLines, margin + 10, yPos, { maxWidth: textWidth - 10 });
+                yPos += coordenadasLines.length * 5 + 2;
+              }
+
+              if (ubicacion.fecha) {
+                const fechaLines = doc.splitTextToSize(`     Fecha: ${new Date(ubicacion.fecha).toLocaleDateString()}`, textWidth - 10);
+                doc.text(fechaLines, margin + 10, yPos, { maxWidth: textWidth - 10 });
+                yPos += fechaLines.length * 5 + 2;
+              }
+              
+              // Obtener observaciones de esta ubicación
+              try {
+                const response = await fetch(`/api/ubicacions/${ubicacion.id}/observaciones`);
+                const obsUbicacion = await response.json();
+                
+                if (Array.isArray(obsUbicacion) && obsUbicacion.length > 0) {
+                  doc.setFont("helvetica", "bold");
+                  doc.setFontSize(9);
+                  doc.text("     Observaciones:", margin + 10, yPos);
+                  yPos += 6;
+                  
+                  doc.setFont("helvetica", "normal");
+                  doc.setFontSize(8);
+                  
+                  for (const obs of obsUbicacion.slice(0, 3)) {
+                    if (yPos + 15 > pageHeight - 30) {
+                      doc.addPage();
+                      yPos = 30;
+                    }
+                    
+                    const obsText = `       - ${obs.detalle || 'Sin detalle'} (${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'})`;
+                    const obsLines = doc.splitTextToSize(obsText, textWidth - 15);
+                    doc.text(obsLines, margin + 15, yPos, { maxWidth: textWidth - 15 });
+                    yPos += obsLines.length * 4 + 2;
+                  }
+                  
+                  if (obsUbicacion.length > 3) {
+                    doc.text(`       ... y ${obsUbicacion.length - 3} observaciones más`, margin + 15, yPos);
+                    yPos += 5;
+                  }
+                }
+              } catch (error) {
+                console.error(`Error obteniendo observaciones de ubicación ${ubicacion.id}:`, error);
+              }
+              
+              yPos += 8;
+            }
           }
         }
       }
