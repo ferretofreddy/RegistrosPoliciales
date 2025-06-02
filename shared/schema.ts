@@ -236,10 +236,7 @@ export const ubicacionesObservaciones = pgTable("ubicaciones_observaciones", {
 });
 
 export const insertUbicacionObservacionSchema = createInsertSchema(ubicacionesObservaciones).omit({
-  id: true,
-  fecha: true
-}).extend({
-  fecha: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional()
+  id: true
 });
 
 // Tipos
