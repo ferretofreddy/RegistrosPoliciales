@@ -296,6 +296,52 @@ export default function EstructurasPage() {
     handleResultSelect(newResult);
   };
 
+  // Componente para mostrar observaciones de una entidad relacionada
+  const RelatedEntityObservations = ({ entityId, entityType }: { entityId: number; entityType: string }) => {
+    const { data: observacionesRelacionadas, isLoading } = useQuery({
+      queryKey: [`/api/${entityType}s/${entityId}/observaciones`],
+      enabled: !!entityId
+    });
+
+    if (isLoading) {
+      return (
+        <div className="mt-2 pl-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4 mt-1" />
+        </div>
+      );
+    }
+
+    if (!observacionesRelacionadas || observacionesRelacionadas.length === 0) {
+      return (
+        <div className="mt-2 pl-4 text-sm text-gray-500 italic">
+          Sin observaciones registradas
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-2 pl-4 border-l-2 border-gray-200">
+        <h5 className="text-xs font-semibold text-gray-600 mb-2">Observaciones:</h5>
+        <div className="space-y-2">
+          {observacionesRelacionadas.map((obs: any, index: number) => (
+            <div key={index} className="bg-gray-50 p-2 rounded text-xs">
+              <div className="flex justify-between items-start mb-1">
+                <span className="font-medium text-gray-700">
+                  {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'}
+                </span>
+                <span className="text-gray-500">{obs.usuario || 'Sistema'}</span>
+              </div>
+              <p className="text-gray-800 leading-relaxed">
+                {obs.detalle || 'Sin detalle'}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Renderizar tabla de relaciones
   const renderRelaciones = () => {
     if (isLoadingRelaciones) {
@@ -323,19 +369,11 @@ export default function EstructurasPage() {
         {relaciones.personas && relaciones.personas.length > 0 && (
           <div>
             <h3 className="font-semibold mb-3">Personas relacionadas</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Identificación</TableHead>
-                  <TableHead>Posición</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {relaciones.personas.map((persona: any, index: number) => (
-                  <TableRow 
-                    key={index} 
-                    className="cursor-pointer hover:bg-gray-50"
+            <div className="space-y-4">
+              {relaciones.personas.map((persona: any, index: number) => (
+                <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div 
+                    className="cursor-pointer"
                     onClick={() => handleRelatedItemClick({
                       id: persona.id,
                       tipo: 'persona',
@@ -343,24 +381,27 @@ export default function EstructurasPage() {
                       referencia: persona.identificacion
                     })}
                   >
-                    <TableCell className="text-blue-600 hover:text-blue-800">
-                      {persona.nombre}
-                    </TableCell>
-                    <TableCell>
-                      {persona.tipoIdentificacion && (
-                        <span className="text-gray-600 mr-2">({persona.tipoIdentificacion})</span>
-                      )}
-                      {persona.identificacion}
-                    </TableCell>
-                    <TableCell>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-blue-600 hover:text-blue-800">
+                          {persona.nombre}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {persona.tipoIdentificacion && (
+                            <span className="mr-2">({persona.tipoIdentificacion})</span>
+                          )}
+                          {persona.identificacion}
+                        </p>
+                      </div>
                       <Badge variant="secondary">
                         {persona.posicionEstructura || 'Sin posición específica'}
                       </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </div>
+                  <RelatedEntityObservations entityId={persona.id} entityType="persona" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -368,20 +409,11 @@ export default function EstructurasPage() {
         {relaciones.vehiculos && relaciones.vehiculos.length > 0 && (
           <div>
             <h3 className="font-semibold mb-3">Vehículos relacionados</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Placa</TableHead>
-                  <TableHead>Marca</TableHead>
-                  <TableHead>Modelo</TableHead>
-                  <TableHead>Color</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {relaciones.vehiculos.map((vehiculo: any, index: number) => (
-                  <TableRow 
-                    key={index}
-                    className="cursor-pointer hover:bg-gray-50"
+            <div className="space-y-4">
+              {relaciones.vehiculos.map((vehiculo: any, index: number) => (
+                <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div 
+                    className="cursor-pointer"
                     onClick={() => handleRelatedItemClick({
                       id: vehiculo.id,
                       tipo: 'vehiculo',
@@ -389,16 +421,31 @@ export default function EstructurasPage() {
                       referencia: vehiculo.placa
                     })}
                   >
-                    <TableCell className="text-blue-600 hover:text-blue-800">
-                      {vehiculo.placa}
-                    </TableCell>
-                    <TableCell>{vehiculo.marca}</TableCell>
-                    <TableCell>{vehiculo.modelo}</TableCell>
-                    <TableCell>{vehiculo.color}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Placa:</span>
+                        <p className="font-medium text-blue-600 hover:text-blue-800">
+                          {vehiculo.placa}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Marca:</span>
+                        <p className="text-sm">{vehiculo.marca}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Modelo:</span>
+                        <p className="text-sm">{vehiculo.modelo}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Color:</span>
+                        <p className="text-sm">{vehiculo.color}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <RelatedEntityObservations entityId={vehiculo.id} entityType="vehiculo" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -406,19 +453,11 @@ export default function EstructurasPage() {
         {relaciones.inmuebles && relaciones.inmuebles.length > 0 && (
           <div>
             <h3 className="font-semibold mb-3">Inmuebles relacionados</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead>Propietario</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {relaciones.inmuebles.map((inmueble: any, index: number) => (
-                  <TableRow 
-                    key={index}
-                    className="cursor-pointer hover:bg-gray-50"
+            <div className="space-y-4">
+              {relaciones.inmuebles.map((inmueble: any, index: number) => (
+                <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div 
+                    className="cursor-pointer"
                     onClick={() => handleRelatedItemClick({
                       id: inmueble.id,
                       tipo: 'inmueble',
@@ -426,15 +465,29 @@ export default function EstructurasPage() {
                       referencia: inmueble.direccion
                     })}
                   >
-                    <TableCell className="text-blue-600 hover:text-blue-800">
-                      {inmueble.tipo}
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">{inmueble.direccion}</TableCell>
-                    <TableCell>{inmueble.propietario || 'N/A'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Tipo:</span>
+                        <p className="font-medium text-blue-600 hover:text-blue-800">
+                          {inmueble.tipo}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Dirección:</span>
+                        <p className="text-sm break-words">{inmueble.direccion}</p>
+                      </div>
+                      {inmueble.propietario && (
+                        <div>
+                          <span className="text-xs font-medium text-gray-500">Propietario:</span>
+                          <p className="text-sm">{inmueble.propietario}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <RelatedEntityObservations entityId={inmueble.id} entityType="inmueble" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
