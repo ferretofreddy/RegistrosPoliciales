@@ -494,6 +494,20 @@ export default function EstructurasPage() {
     );
   };
 
+  // Función auxiliar para obtener observaciones de una entidad
+  const fetchEntityObservations = async (entityId: number, entityType: string) => {
+    try {
+      const response = await fetch(`/api/${entityType}s/${entityId}/observaciones`);
+      if (response.ok) {
+        return await response.json();
+      }
+      return [];
+    } catch (error) {
+      console.error(`Error obteniendo observaciones de ${entityType}:`, error);
+      return [];
+    }
+  };
+
   // Función para generar PDF
   const generatePDF = async () => {
     if (!selectedResult || !entity) return;
@@ -502,21 +516,38 @@ export default function EstructurasPage() {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      let y = 30;
-
-      // Encabezado
-      doc.setFont("helvetica", "bold");
+      const margin = 10;
+      
+      // Encabezado profesional con fondo
+      doc.setFillColor(25, 25, 112); // Azul oscuro
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Título principal en blanco
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(18);
-      doc.setTextColor(25, 25, 112);
-      doc.text("INFORME DE ESTRUCTURAS", pageWidth / 2, y, { align: "center" });
-      y += 20;
-
-      // Información principal
-      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("INFORME DE ESTRUCTURAS", pageWidth / 2, 15, { align: "center" });
+      
+      // Subtítulo con tipo y nombre de entidad
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${selectedResult.tipo.toUpperCase()}: ${selectedResult.nombre}`, pageWidth / 2, 25, { align: "center" });
+      
+      // Resetear color de texto
       doc.setTextColor(0, 0, 0);
-      doc.text(`${selectedResult.tipo.toUpperCase()}: ${selectedResult.nombre}`, margin, y);
-      y += 15;
+      
+      // Información del documento
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 45, { align: "right" });
+      doc.text(`Sistema de Gestión de Estructuras`, margin, 45);
+      
+      // Línea separadora elegante
+      doc.setDrawColor(25, 25, 112);
+      doc.setLineWidth(1);
+      doc.line(margin, 50, pageWidth - margin, 50);
+      
+      let y = 65;
 
       // Función auxiliar para agregar texto de una línea
       const addTextRow = (doc: any, label: string, value: string, x: number, currentY: number) => {
@@ -684,7 +715,7 @@ export default function EstructurasPage() {
           doc.text("Personas relacionadas:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
-          relaciones.personas.forEach((persona: any) => {
+          for (const persona of relaciones.personas) {
             if (y > pageHeight - 30) {
               doc.addPage();
               y = 20;
@@ -694,8 +725,41 @@ export default function EstructurasPage() {
             const identificacion = persona.identificacion || "Sin identificación";
             const posicion = persona.posicionEstructura || "Sin posición específica";
             
+            doc.setFont("helvetica", "bold");
             doc.text(`• ${nombre} (${identificacion}) - ${posicion}`, margin + 5, y); y += 5;
-          });
+            
+            // Obtener y agregar observaciones de la persona
+            const observacionesPersona = await fetchEntityObservations(persona.id, 'persona');
+            if (observacionesPersona && observacionesPersona.length > 0) {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(9);
+              doc.text("Observaciones:", margin + 10, y); y += 4;
+              
+              observacionesPersona.forEach((obs: any, index: number) => {
+                if (y > pageHeight - 20) {
+                  doc.addPage();
+                  y = 20;
+                }
+                
+                const detalle = obs.detalle || "Sin detalle";
+                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "S/F";
+                const usuario = obs.usuario || "Sistema";
+                
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.text(`${index + 1}. ${detalle} (${fecha} - ${usuario})`, margin + 15, y);
+                y += 4;
+              });
+              y += 2;
+            } else {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(8);
+              doc.text("Sin observaciones registradas", margin + 10, y); y += 4;
+            }
+            
+            doc.setFontSize(10);
+            y += 3;
+          }
           y += 5;
         }
         
@@ -705,7 +769,7 @@ export default function EstructurasPage() {
           doc.text("Vehículos relacionados:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
-          relaciones.vehiculos.forEach((vehiculo: any) => {
+          for (const vehiculo of relaciones.vehiculos) {
             if (y > pageHeight - 30) {
               doc.addPage();
               y = 20;
@@ -715,8 +779,41 @@ export default function EstructurasPage() {
             const marca = vehiculo.marca || "Sin marca";
             const modelo = vehiculo.modelo || "Sin modelo";
             
+            doc.setFont("helvetica", "bold");
             doc.text(`• ${placa}: ${marca} ${modelo}`, margin + 5, y); y += 5;
-          });
+            
+            // Obtener y agregar observaciones del vehículo
+            const observacionesVehiculo = await fetchEntityObservations(vehiculo.id, 'vehiculo');
+            if (observacionesVehiculo && observacionesVehiculo.length > 0) {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(9);
+              doc.text("Observaciones:", margin + 10, y); y += 4;
+              
+              observacionesVehiculo.forEach((obs: any, index: number) => {
+                if (y > pageHeight - 20) {
+                  doc.addPage();
+                  y = 20;
+                }
+                
+                const detalle = obs.detalle || "Sin detalle";
+                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "S/F";
+                const usuario = obs.usuario || "Sistema";
+                
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.text(`${index + 1}. ${detalle} (${fecha} - ${usuario})`, margin + 15, y);
+                y += 4;
+              });
+              y += 2;
+            } else {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(8);
+              doc.text("Sin observaciones registradas", margin + 10, y); y += 4;
+            }
+            
+            doc.setFontSize(10);
+            y += 3;
+          }
           y += 5;
         }
         
@@ -726,7 +823,7 @@ export default function EstructurasPage() {
           doc.text("Inmuebles relacionados:", margin, y); y += 5;
           doc.setFont("helvetica", "normal");
           
-          relaciones.inmuebles.forEach((inmueble: any) => {
+          for (const inmueble of relaciones.inmuebles) {
             if (y > pageHeight - 30) {
               doc.addPage();
               y = 20;
@@ -735,8 +832,42 @@ export default function EstructurasPage() {
             const tipo = inmueble.tipo || "Sin tipo";
             const direccion = inmueble.direccion || "Sin dirección";
             
+            doc.setFont("helvetica", "bold");
             doc.text(`• ${tipo}: ${direccion}`, margin + 5, y); y += 5;
-          });
+            
+            // Obtener y agregar observaciones del inmueble
+            const observacionesInmueble = await fetchEntityObservations(inmueble.id, 'inmueble');
+            if (observacionesInmueble && observacionesInmueble.length > 0) {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(9);
+              doc.text("Observaciones:", margin + 10, y); y += 4;
+              
+              observacionesInmueble.forEach((obs: any, index: number) => {
+                if (y > pageHeight - 20) {
+                  doc.addPage();
+                  y = 20;
+                }
+                
+                const detalle = obs.detalle || "Sin detalle";
+                const fecha = obs.fecha ? new Date(obs.fecha).toLocaleDateString() : "S/F";
+                const usuario = obs.usuario || "Sistema";
+                
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.text(`${index + 1}. ${detalle} (${fecha} - ${usuario})`, margin + 15, y);
+                y += 4;
+              });
+              y += 2;
+            } else {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(8);
+              doc.text("Sin observaciones registradas", margin + 10, y); y += 4;
+            }
+            
+            doc.setFontSize(10);
+            y += 3;
+          }
+          y += 5;
         }
       }
 
