@@ -241,7 +241,10 @@ export default function UbicacionesPage() {
       if (!response.ok) throw new Error("Error en la búsqueda");
       
       const data = await response.json();
-      setSearchResults(data.resultados || []);
+      console.log("Datos de búsqueda recibidos:", data);
+      // El servidor puede devolver directamente un array o un objeto con resultados
+      const resultados = Array.isArray(data) ? data : (data.resultados || []);
+      setSearchResults(resultados);
     } catch (error) {
       console.error("Error al buscar:", error);
       toast({
