@@ -113,9 +113,9 @@ export default function EstructurasPage() {
         if (entity.domicilios && entity.domicilios.length > 0) {
           for (let i = 0; i < entity.domicilios.length; i++) {
             const domicilio = entity.domicilios[i];
-            // Generar coordenadas para Costa Rica (simuladas para cada domicilio)
-            const lat = 9.9 + (Math.random() - 0.5) * 0.2; // Entre 9.8 y 10.0
-            const lng = -84.1 + (Math.random() - 0.5) * 0.2; // Entre -84.2 y -84.0
+            // Usar coordenadas fijas basadas en el ID para consistencia
+            const lat = 9.936135475261185 + (selectedResult.id * 0.001) + (i * 0.0001);
+            const lng = -84.06636915064483 - (selectedResult.id * 0.001) - (i * 0.0001);
             
             ubicacionesEncontradas.push({
               id: selectedResult.id + i,
@@ -130,14 +130,17 @@ export default function EstructurasPage() {
           }
         }
         
-        // Agregar ubicaciones de entidades relacionadas
+        // Agregar ubicaciones de entidades relacionadas (solo si existen realmente)
         if (relacionesData) {
+          console.log(`[ESTRUCTURAS] Vehículos relacionados:`, relacionesData.vehiculos);
+          console.log(`[ESTRUCTURAS] Inmuebles relacionados:`, relacionesData.inmuebles);
+          
           // Ubicaciones de vehículos relacionados
           if (relacionesData.vehiculos && relacionesData.vehiculos.length > 0) {
             relacionesData.vehiculos.forEach((vehiculo: any) => {
-              // Generar coordenadas para cada vehículo
-              const lat = 9.9 + (Math.random() - 0.5) * 0.2;
-              const lng = -84.1 + (Math.random() - 0.5) * 0.2;
+              // Usar coordenadas fijas basadas en el ID del vehículo
+              const lat = 9.879425015038763 + (vehiculo.id * 0.001);
+              const lng = -84.04613358867873 - (vehiculo.id * 0.001);
               
               ubicacionesEncontradas.push({
                 id: vehiculo.id,
@@ -155,9 +158,9 @@ export default function EstructurasPage() {
           // Ubicaciones de inmuebles relacionados
           if (relacionesData.inmuebles && relacionesData.inmuebles.length > 0) {
             relacionesData.inmuebles.forEach((inmueble: any) => {
-              // Generar coordenadas para cada inmueble
-              const lat = 9.9 + (Math.random() - 0.5) * 0.2;
-              const lng = -84.1 + (Math.random() - 0.5) * 0.2;
+              // Usar coordenadas fijas basadas en el ID del inmueble
+              const lat = 9.95 + (inmueble.id * 0.001);
+              const lng = -84.06 - (inmueble.id * 0.001);
               
               ubicacionesEncontradas.push({
                 id: inmueble.id,
