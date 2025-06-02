@@ -203,13 +203,58 @@ export default function UbicacionForm() {
         throw new Error("Las coordenadas (latitud y longitud) son obligatorias");
       }
       
+      // Auto-generar observaciones si está vacío
+      let observacionesFinales = values.observaciones || "";
+      
+      if (!observacionesFinales || observacionesFinales.trim() === "") {
+        // Generar observaciones automáticas basadas en el tipo y las relaciones
+        const observacionesAuto = [];
+        
+        // Si hay personas relacionadas
+        if (personasRelacionadas.length > 0) {
+          const nombresPersonas = personasRelacionadas.map(p => p.nombre).join(", ");
+          if (values.tipo.toLowerCase().includes("avistamiento")) {
+            observacionesAuto.push(`Avistamiento de ${nombresPersonas}`);
+          } else if (values.tipo.toLowerCase().includes("intervención")) {
+            observacionesAuto.push(`Intervención con ${nombresPersonas}`);
+          } else {
+            observacionesAuto.push(`${values.tipo} de ${nombresPersonas}`);
+          }
+        }
+        
+        // Si hay vehículos relacionados
+        if (vehiculosRelacionados.length > 0) {
+          const datosVehiculos = vehiculosRelacionados.map(v => `${v.marca} ${v.modelo} (${v.placa})`).join(", ");
+          if (values.tipo.toLowerCase().includes("intervención")) {
+            observacionesAuto.push(`Intervención de ${datosVehiculos}`);
+          } else if (values.tipo.toLowerCase().includes("avistamiento")) {
+            observacionesAuto.push(`Avistamiento de ${datosVehiculos}`);
+          } else {
+            observacionesAuto.push(`${values.tipo} de ${datosVehiculos}`);
+          }
+        }
+        
+        // Si hay inmuebles relacionados
+        if (inmueblesRelacionados.length > 0) {
+          const datosInmuebles = inmueblesRelacionados.map(i => `${i.tipo} - ${i.direccion}`).join(", ");
+          observacionesAuto.push(`${values.tipo} en ${datosInmuebles}`);
+        }
+        
+        // Si no hay relaciones específicas, usar solo el tipo
+        if (observacionesAuto.length === 0) {
+          observacionesAuto.push(`${values.tipo}`);
+        }
+        
+        observacionesFinales = observacionesAuto.join("; ");
+      }
+
       // Preparar los datos para enviar al servidor
       const ubicacionData = {
         latitud: values.latitud,
         longitud: values.longitud,
         tipo: values.tipo,
         fecha: values.fecha || new Date(), // Asegurarse de proporcionar una fecha
-        observaciones: values.observaciones || "", // Asegurarse de proporcionar observaciones (aunque sea vacío)
+        observaciones: observacionesFinales, // Usar las observaciones auto-generadas o las del usuario
       };
 
       console.log("Enviando datos de ubicación:", ubicacionData);
