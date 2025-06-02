@@ -562,9 +562,7 @@ export default function UbicacionesPage() {
           </CardHeader>
           <CardContent>
             <SearchComponent
-              onSelect={handleSearchSelect}
-              placeholder="Busca por nombre, identificación, placa o dirección..."
-              showAllTypes={true}
+              onResultSelect={handleSearchSelect}
             />
           </CardContent>
         </Card>
@@ -587,7 +585,7 @@ export default function UbicacionesPage() {
             <CardContent>
               <div id="location-map" className="h-96 w-full rounded-lg overflow-hidden">
                 <LocationMap
-                  locations={locations}
+                  markers={locations}
                   center={mapCenter}
                   zoom={DEFAULT_ZOOM}
                 />
@@ -669,7 +667,7 @@ export default function UbicacionesPage() {
               <CardTitle>Detalle de Ubicaciones</CardTitle>
             </CardHeader>
             <CardContent>
-              <LocationsTable locations={locations} />
+              <LocationsTable locations={locations} onLocationClick={() => {}} />
             </CardContent>
           </Card>
         )}
