@@ -128,25 +128,11 @@ export default function UbicacionesPage() {
       entityType = "persona";
       
       // UBICACIONES DIRECTAS: Domicilios de la persona (vía personas_ubicaciones)
-      try {
-        const personaResponse = await fetch(`/api/personas/${entity.id}`);
-        if (personaResponse.ok) {
-          const personaData = await personaResponse.json();
-          if (personaData.domicilios && personaData.domicilios.length > 0) {
-            directLocations = personaData.domicilios.map((domicilio: string, index: number) => ({
-              id: entity.id + index * 1000, // ID único para cada domicilio
-              lat: 9.9281 + (Math.random() - 0.5) * 0.1,
-              lng: -84.0907 + (Math.random() - 0.5) * 0.1,
-              title: "Domicilio",
-              description: `Domicilio de ${personaData.nombre}: ${domicilio}`,
-              type: "persona" as EntityType,
-              relation: "direct" as const,
-              entityId: entity.id
-            }));
-          }
-        }
-      } catch (error) {
-        console.error("Error obteniendo datos de persona:", error);
+      if (relations && relations.ubicaciones) {
+        const domicilios = relations.ubicaciones.filter((ubicacion: UbicacionEntity) => 
+          ubicacion.tipo === "Domicilio"
+        );
+        directLocations = convertToLocationData(domicilios, "persona", "direct");
       }
 
       // UBICACIONES RELACIONADAS: Domicilios de personas relacionadas + ubicaciones de inmuebles relacionados
