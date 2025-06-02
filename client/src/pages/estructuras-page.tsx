@@ -725,7 +725,8 @@ export default function EstructurasPage() {
             const identificacion = persona.identificacion || "Sin identificación";
             const posicion = persona.posicionEstructura || "Sin posición específica";
             
-            doc.setFont("helvetica", "bold");
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
             doc.text(`• ${nombre} (${identificacion}) - ${posicion}`, margin + 5, y); y += 5;
             
             // Obtener y agregar observaciones de la persona
@@ -743,17 +744,17 @@ export default function EstructurasPage() {
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(10);
-                doc.text(`Observación #${index+1}:`, margin + 10, y); y += 5;
+                doc.text(`Observación #${index+1}:`, margin, y); y += 5;
                 doc.setFont("helvetica", "normal");
                 
-                y = addMultiLineText(doc, "Detalle:", detalle, margin + 10, y);
-                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 15, y); y += 6;
+                y = addMultiLineText(doc, "Detalle:", detalle, margin, y);
+                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 5, y); y += 6;
               });
               y += 2;
             } else {
               doc.setFont("helvetica", "italic");
               doc.setFontSize(9);
-              doc.text("Sin observaciones registradas", margin + 10, y); y += 6;
+              doc.text("Sin observaciones registradas", margin, y); y += 6;
             }
             
             doc.setFontSize(10);
@@ -778,7 +779,8 @@ export default function EstructurasPage() {
             const marca = vehiculo.marca || "Sin marca";
             const modelo = vehiculo.modelo || "Sin modelo";
             
-            doc.setFont("helvetica", "bold");
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
             doc.text(`• ${placa}: ${marca} ${modelo}`, margin + 5, y); y += 5;
             
             // Obtener y agregar observaciones del vehículo
@@ -796,17 +798,17 @@ export default function EstructurasPage() {
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(10);
-                doc.text(`Observación #${index+1}:`, margin + 10, y); y += 5;
+                doc.text(`Observación #${index+1}:`, margin, y); y += 5;
                 doc.setFont("helvetica", "normal");
                 
-                y = addMultiLineText(doc, "Detalle:", detalle, margin + 10, y);
-                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 15, y); y += 6;
+                y = addMultiLineText(doc, "Detalle:", detalle, margin, y);
+                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 5, y); y += 6;
               });
               y += 2;
             } else {
               doc.setFont("helvetica", "italic");
               doc.setFontSize(9);
-              doc.text("Sin observaciones registradas", margin + 10, y); y += 6;
+              doc.text("Sin observaciones registradas", margin, y); y += 6;
             }
             
             doc.setFontSize(10);
@@ -830,7 +832,8 @@ export default function EstructurasPage() {
             const tipo = inmueble.tipo || "Sin tipo";
             const direccion = inmueble.direccion || "Sin dirección";
             
-            doc.setFont("helvetica", "bold");
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
             doc.text(`• ${tipo}: ${direccion}`, margin + 5, y); y += 5;
             
             // Obtener y agregar observaciones del inmueble
@@ -848,17 +851,17 @@ export default function EstructurasPage() {
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(10);
-                doc.text(`Observación #${index+1}:`, margin + 10, y); y += 5;
+                doc.text(`Observación #${index+1}:`, margin, y); y += 5;
                 doc.setFont("helvetica", "normal");
                 
-                y = addMultiLineText(doc, "Detalle:", detalle, margin + 10, y);
-                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 15, y); y += 6;
+                y = addMultiLineText(doc, "Detalle:", detalle, margin, y);
+                doc.text(`Fecha: ${fecha} - Usuario: ${usuario}`, margin + 5, y); y += 6;
               });
               y += 2;
             } else {
               doc.setFont("helvetica", "italic");
               doc.setFontSize(9);
-              doc.text("Sin observaciones registradas", margin + 10, y); y += 6;
+              doc.text("Sin observaciones registradas", margin, y); y += 6;
             }
             
             doc.setFontSize(10);
