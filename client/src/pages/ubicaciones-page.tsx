@@ -461,10 +461,8 @@ export default function UbicacionesPage() {
       referencia: item.referencia || ''
     };
     
-    // Actualizar la entidad seleccionada y cargar sus datos
-    setSelectedEntity(newResult);
-    processEntityLocations(newResult);
-    fetchRelations(newResult.tipo, newResult.id);
+    // Usar handleResultSelect para cargar todos los datos correctamente
+    handleResultSelect(newResult);
   };
 
   const exportToPDF = async () => {
