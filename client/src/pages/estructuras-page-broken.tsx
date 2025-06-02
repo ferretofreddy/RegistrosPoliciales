@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
 import { useToast } from "@/hooks/use-toast";
 
 export default function EstructurasPage() {
@@ -53,7 +54,7 @@ export default function EstructurasPage() {
   // Actualizar los estados cuando llegan los datos
   useEffect(() => {
     if (observacionesData) {
-      setObservaciones(Array.isArray(observacionesData) ? observacionesData : []);
+      setObservaciones(observacionesData as any[]);
     }
   }, [observacionesData]);
 
@@ -113,7 +114,7 @@ export default function EstructurasPage() {
                 <Badge variant="secondary" className="font-medium text-xs sm:text-sm w-fit">{entityData.posicionEstructura}</Badge>
               </div>
             )}
-            {entityData.alias && Array.isArray(entityData.alias) && entityData.alias.length > 0 && (
+            {entityData.alias && entityData.alias.length > 0 && (
               <div className="flex flex-col gap-2">
                 <h3 className="font-semibold text-sm sm:text-base">Alias:</h3>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -123,7 +124,7 @@ export default function EstructurasPage() {
                 </div>
               </div>
             )}
-            {entityData.telefonos && Array.isArray(entityData.telefonos) && entityData.telefonos.length > 0 && (
+            {entityData.telefonos && entityData.telefonos.length > 0 && (
               <div className="flex flex-col gap-2">
                 <h3 className="font-semibold text-sm sm:text-base">Teléfonos:</h3>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -133,7 +134,7 @@ export default function EstructurasPage() {
                 </div>
               </div>
             )}
-            {entityData.domicilios && Array.isArray(entityData.domicilios) && entityData.domicilios.length > 0 && (
+            {entityData.domicilios && entityData.domicilios.length > 0 && (
               <div className="flex flex-col gap-2">
                 <h3 className="font-semibold text-sm sm:text-base">Domicilios:</h3>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -304,7 +305,7 @@ export default function EstructurasPage() {
       );
     }
 
-    if (!observacionesRelacionadas || !Array.isArray(observacionesRelacionadas) || observacionesRelacionadas.length === 0) {
+    if (!observacionesRelacionadas || observacionesRelacionadas.length === 0) {
       return (
         <div className="mt-2 pl-4 text-sm text-gray-500 italic">
           Sin observaciones registradas
@@ -519,299 +520,383 @@ export default function EstructurasPage() {
       doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, yPos, { align: "right" });
       
       yPos += 20;
+    
+    // Sección de información de la entidad principal
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(25, 25, 112);
+    
+    let yPos = 75;
+    const entityData = entity as any;
+    
+    if (selectedResult) {
+      doc.text(`${selectedResult.nombre.toUpperCase()}`, margin, 65);
       
-      // Información de la entidad principal
-      const entityData = entity as any;
+      // Información específica según el tipo de entidad
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
       
       if (selectedResult.tipo === "persona") {
-        doc.text(`Nombre: ${entityData.nombre}`, margin, yPos);
+        doc.text(`• Nombre: ${entityData.nombre}`, margin + 5, yPos);
         yPos += 8;
-        doc.text(`Identificación: (${entityData.tipoIdentificacion || 'No especificado'}) ${entityData.identificacion}`, margin, yPos);
+        doc.text(`• Identificación: ${entityData.identificacion}`, margin + 5, yPos);
         yPos += 8;
+        if (entityData.tipoIdentificacion) {
+          doc.text(`• Tipo de Identificación: ${entityData.tipoIdentificacion}`, margin + 5, yPos);
+          yPos += 8;
+        }
         if (entityData.posicionEstructura) {
-          doc.text(`Posición en la estructura: ${entityData.posicionEstructura}`, margin, yPos);
+          doc.text(`• Posición en la Estructura: ${entityData.posicionEstructura}`, margin + 5, yPos);
           yPos += 8;
-        }
-        if (entityData.alias && Array.isArray(entityData.alias) && entityData.alias.length > 0) {
-          doc.text(`Alias: ${entityData.alias.join(', ')}`, margin, yPos);
-          yPos += 8;
-        }
-        if (entityData.telefonos && Array.isArray(entityData.telefonos) && entityData.telefonos.length > 0) {
-          doc.text(`Teléfonos: ${entityData.telefonos.join(', ')}`, margin, yPos);
-          yPos += 8;
-        }
-        if (entityData.domicilios && Array.isArray(entityData.domicilios) && entityData.domicilios.length > 0) {
-          doc.text('Domicilios:', margin, yPos);
-          yPos += 6;
-          entityData.domicilios.forEach((domicilio: string) => {
-            const lines = doc.splitTextToSize(`    ${domicilio}`, pageWidth - 60);
-            doc.text(lines, margin + 10, yPos);
-            yPos += lines.length * 5 + 2;
-          });
         }
       } else if (selectedResult.tipo === "vehiculo") {
-        doc.text(`Placa: ${entityData.placa}`, margin, yPos);
+        doc.text(`• Placa: ${entityData.placa}`, margin + 5, yPos);
         yPos += 8;
-        doc.text(`Vehículo: ${entityData.marca} ${entityData.modelo}`, margin, yPos);
+        doc.text(`• Vehículo: ${entityData.marca} ${entityData.modelo}`, margin + 5, yPos);
         yPos += 8;
-        doc.text(`Color: ${entityData.color}`, margin, yPos);
+        doc.text(`• Color: ${entityData.color}`, margin + 5, yPos);
         yPos += 8;
       } else if (selectedResult.tipo === "inmueble") {
-        doc.text(`Tipo: ${entityData.tipo}`, margin, yPos);
+        doc.text(`• Descripción: ${entityData.tipo}`, margin + 5, yPos);
         yPos += 8;
-        doc.text(`Dirección: ${entityData.direccion}`, margin, yPos);
+        doc.text(`• Dirección: ${entityData.direccion}`, margin + 5, yPos);
         yPos += 8;
+      } else if (selectedResult.tipo === "ubicacion") {
+        doc.text(`• Ubicación: ${entityData.tipo || "Ubicación"}`, margin + 5, yPos);
+        yPos += 8;
+        if (entityData.observaciones) {
+          doc.text(`• Observaciones: ${entityData.observaciones}`, margin + 5, yPos);
+          yPos += 8;
+        }
       }
       
       yPos += 15;
-
-      // Observaciones de la entidad principal - formato exacto del documento
-      if (observaciones && observaciones.length > 0) {
-        if (yPos + 40 > pageHeight - 30) {
-          doc.addPage();
-          yPos = 30;
-        }
-        
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("OBSERVACIONES", margin, yPos);
-        yPos += 12;
-
-        observaciones.forEach((obs, index) => {
-          if (yPos + 35 > pageHeight - 30) {
-            doc.addPage();
-            yPos = 30;
-          }
-
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(10);
-          doc.text(`Observación #${index + 1}:`, margin, yPos);
-          yPos += 8;
-          
-          doc.setFont("helvetica", "normal");
-          doc.text("Detalle:", margin, yPos);
-          yPos += 5;
-          
-          const detalleLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-          doc.text(detalleLines, margin + 5, yPos);
-          yPos += detalleLines.length * 4 + 3;
-          
-          doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
-          yPos += 15;
-        });
-        
-        yPos += 10;
-      }
-
-      // Relaciones - formato exacto del documento de referencia
-      const hasRelaciones = 
-        (relaciones.personas && relaciones.personas.length > 0) || 
-        (relaciones.vehiculos && relaciones.vehiculos.length > 0) || 
-        (relaciones.inmuebles && relaciones.inmuebles.length > 0);
-
-      if (hasRelaciones) {
-        if (yPos + 40 > pageHeight - 30) {
-          doc.addPage();
-          yPos = 30;
-        }
-        
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("RELACIONES", margin, yPos);
-        yPos += 15;
-
-        // Personas relacionadas - formato exacto
-        if (relaciones.personas && relaciones.personas.length > 0) {
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.text("Personas relacionadas:", margin, yPos);
-          yPos += 8;
-
-          for (const persona of relaciones.personas) {
-            if (yPos + 25 > pageHeight - 30) {
-              doc.addPage();
-              yPos = 30;
-            }
-
-            doc.text(`   • ${persona.nombre} (${persona.identificacion})${persona.posicionEstructura ? ' - ' + persona.posicionEstructura : ''}`, margin + 5, yPos);
-            yPos += 6;
-            
-            // Obtener observaciones de esta persona
-            try {
-              const response = await fetch(`/api/personas/${persona.id}/observaciones`);
-              const obsPersona = await response.json();
-              
-              if (obsPersona && Array.isArray(obsPersona) && obsPersona.length > 0) {
-                obsPersona.forEach((obs: any, obsIndex: number) => {
-                  if (yPos + 20 > pageHeight - 30) {
-                    doc.addPage();
-                    yPos = 30;
-                  }
-                  
-                  doc.setFont("helvetica", "bold");
-                  doc.text(`Observación #${obsIndex + 1}:`, margin, yPos);
-                  yPos += 5;
-                  
-                  doc.setFont("helvetica", "normal");
-                  doc.text("Detalle:", margin, yPos);
-                  yPos += 4;
-                  
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-                  doc.text(obsLines, margin + 5, yPos);
-                  yPos += obsLines.length * 4 + 3;
-                  
-                  doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
-                  yPos += 10;
-                });
-              }
-            } catch (error) {
-              console.error(`Error obteniendo observaciones de persona ${persona.id}:`, error);
-            }
-            
-            yPos += 8;
-          }
-        }
-
-        // Vehículos relacionados - formato exacto
-        if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.text("Vehículos relacionados:", margin, yPos);
-          yPos += 8;
-
-          for (const vehiculo of relaciones.vehiculos) {
-            if (yPos + 25 > pageHeight - 30) {
-              doc.addPage();
-              yPos = 30;
-            }
-
-            doc.text(`   • ${vehiculo.placa}: ${vehiculo.marca} ${vehiculo.modelo}`, margin + 5, yPos);
-            yPos += 6;
-            
-            // Obtener observaciones de este vehículo
-            try {
-              const response = await fetch(`/api/vehiculos/${vehiculo.id}/observaciones`);
-              const obsVehiculo = await response.json();
-              
-              if (obsVehiculo && Array.isArray(obsVehiculo) && obsVehiculo.length > 0) {
-                obsVehiculo.forEach((obs: any, obsIndex: number) => {
-                  if (yPos + 20 > pageHeight - 30) {
-                    doc.addPage();
-                    yPos = 30;
-                  }
-                  
-                  doc.setFont("helvetica", "bold");
-                  doc.text(`Observación #${obsIndex + 1}:`, margin, yPos);
-                  yPos += 5;
-                  
-                  doc.setFont("helvetica", "normal");
-                  doc.text("Detalle:", margin, yPos);
-                  yPos += 4;
-                  
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-                  doc.text(obsLines, margin + 5, yPos);
-                  yPos += obsLines.length * 4 + 3;
-                  
-                  doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
-                  yPos += 10;
-                });
-              }
-            } catch (error) {
-              console.error(`Error obteniendo observaciones de vehículo ${vehiculo.id}:`, error);
-            }
-            
-            yPos += 8;
-          }
-        }
-
-        // Inmuebles relacionados - formato exacto
-        if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.text("Inmuebles relacionados:", margin, yPos);
-          yPos += 8;
-
-          for (const inmueble of relaciones.inmuebles) {
-            if (yPos + 25 > pageHeight - 30) {
-              doc.addPage();
-              yPos = 30;
-            }
-
-            doc.text(`   • ${inmueble.tipo}: ${inmueble.direccion}`, margin + 5, yPos);
-            yPos += 6;
-            
-            // Obtener observaciones de este inmueble
-            try {
-              const response = await fetch(`/api/inmuebles/${inmueble.id}/observaciones`);
-              const obsInmueble = await response.json();
-              
-              if (obsInmueble && Array.isArray(obsInmueble) && obsInmueble.length > 0) {
-                obsInmueble.forEach((obs: any, obsIndex: number) => {
-                  if (yPos + 20 > pageHeight - 30) {
-                    doc.addPage();
-                    yPos = 30;
-                  }
-                  
-                  doc.setFont("helvetica", "bold");
-                  doc.text(`Observación #${obsIndex + 1}:`, margin, yPos);
-                  yPos += 5;
-                  
-                  doc.setFont("helvetica", "normal");
-                  doc.text("Detalle:", margin, yPos);
-                  yPos += 4;
-                  
-                  const obsLines = doc.splitTextToSize(`   ${obs.detalle || 'Sin detalle'}`, pageWidth - 50);
-                  doc.text(obsLines, margin + 5, yPos);
-                  yPos += obsLines.length * 4 + 3;
-                  
-                  doc.text(`   Fecha: ${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'} - Usuario: ${obs.usuario || 'Sistema'}`, margin + 5, yPos);
-                  yPos += 10;
-                });
-              }
-            } catch (error) {
-              console.error(`Error obteniendo observaciones de inmueble ${inmueble.id}:`, error);
-            }
-            
-            yPos += 8;
-          }
-        }
-      }
-
-      // Pie de página exacto como el documento de referencia
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        
-        // Texto confidencial a la izquierda y número de página a la derecha
-        doc.text("INFORME CONFIDENCIAL", margin, pageHeight - 10);
-        doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: "right" });
-      }
-
-      // Guardar el PDF
-      let nombre = selectedResult?.nombre || "estructura";
-      nombre = nombre.replace(/[^a-zA-Z0-9]/g, "_");
-      nombre = nombre.substring(0, 20);
-      
-      const fileName = `Informe_Estructura_${nombre}.pdf`;
-      doc.save(fileName);
-      
-      toast({
-        title: "PDF generado exitosamente",
-        description: `Se ha descargado el archivo ${fileName}`,
-      });
-      
-    } catch (error) {
-      console.error("Error al generar PDF:", error);
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al generar el PDF. Intente nuevamente.",
-        variant: "destructive",
-      });
     }
+
+    // Sección de observaciones de la entidad principal
+    if (observaciones && observaciones.length > 0) {
+      if (yPos + 30 > pageHeight - 30) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(25, 25, 112);
+      doc.text("OBSERVACIONES", margin, yPos);
+      
+      const observacionesData = observaciones.map(obs => [
+        obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F',
+        obs.detalle || 'Sin detalle',
+        obs.usuario || 'Sistema'
+      ]);
+
+      autoTable(doc, {
+        head: [['Fecha', 'Detalle', 'Usuario']],
+        body: observacionesData,
+        startY: yPos + 5,
+        styles: { 
+          fontSize: 9,
+          cellPadding: 3,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.5
+        },
+        headStyles: { 
+          fillColor: [66, 139, 202],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        tableLineColor: [200, 200, 200],
+        tableLineWidth: 0.5,
+        margin: { left: margin, right: margin }
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Tabla de relaciones con observaciones
+    const hasRelaciones = 
+      (relaciones.personas && relaciones.personas.length > 0) || 
+      (relaciones.vehiculos && relaciones.vehiculos.length > 0) || 
+      (relaciones.inmuebles && relaciones.inmuebles.length > 0);
+
+    if (hasRelaciones) {
+      if (yPos > pageHeight - 50) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(25, 25, 112);
+      doc.text("RELACIONES EN LA ESTRUCTURA", margin, yPos);
+      
+      // Crear datos para la tabla de relaciones incluyendo observaciones
+      const relacionesData: any[] = [];
+      
+      // Personas relacionadas con sus observaciones
+      if (relaciones.personas && relaciones.personas.length > 0) {
+        for (const persona of relaciones.personas) {
+          relacionesData.push([
+            'Persona',
+            persona.nombre,
+            `ID: ${persona.identificacion}${persona.posicionEstructura ? ` | Posición: ${persona.posicionEstructura}` : ''}`,
+            'Ver observaciones abajo'
+          ]);
+        }
+      }
+      
+      // Vehículos relacionados
+      if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
+        for (const vehiculo of relaciones.vehiculos) {
+          relacionesData.push([
+            'Vehículo',
+            `${vehiculo.marca} ${vehiculo.modelo}`,
+            `Placa: ${vehiculo.placa} | Color: ${vehiculo.color}`,
+            'Ver observaciones abajo'
+          ]);
+        }
+      }
+      
+      // Inmuebles relacionados
+      if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
+        for (const inmueble of relaciones.inmuebles) {
+          relacionesData.push([
+            'Inmueble',
+            inmueble.tipo,
+            inmueble.direccion,
+            'Ver observaciones abajo'
+          ]);
+        }
+      }
+
+      autoTable(doc, {
+        head: [['Tipo', 'Nombre/Descripción', 'Detalles', 'Observaciones']],
+        body: relacionesData,
+        startY: yPos + 5,
+        styles: { 
+          fontSize: 9,
+          cellPadding: 3,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.5
+        },
+        headStyles: { 
+          fillColor: [220, 53, 69],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        tableLineColor: [200, 200, 200],
+        tableLineWidth: 0.5,
+        margin: { left: margin, right: margin }
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Ahora agregar las observaciones de cada entidad relacionada
+      
+      // Observaciones de personas relacionadas
+      if (relaciones.personas && relaciones.personas.length > 0) {
+        for (const persona of relaciones.personas) {
+          try {
+            const observacionesPersona = await fetch(`/api/personas/${persona.id}/observaciones`);
+            const obsPersonaData = await observacionesPersona.json();
+            
+            if (obsPersonaData && obsPersonaData.length > 0) {
+              if (yPos > pageHeight - 50) {
+                doc.addPage();
+                yPos = 20;
+              }
+              
+              doc.setFontSize(11);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(25, 25, 112);
+              doc.text(`OBSERVACIONES - ${persona.nombre}`, margin, yPos);
+              yPos += 10;
+              
+              const obsPersonaTable = obsPersonaData.map((obs: any) => [
+                obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F',
+                obs.detalle || 'Sin detalle',
+                obs.usuario || 'Sistema'
+              ]);
+
+              autoTable(doc, {
+                head: [['Fecha', 'Detalle', 'Usuario']],
+                body: obsPersonaTable,
+                startY: yPos,
+                styles: { 
+                  fontSize: 8,
+                  cellPadding: 2,
+                  lineColor: [200, 200, 200],
+                  lineWidth: 0.5
+                },
+                headStyles: { 
+                  fillColor: [52, 152, 219],
+                  textColor: [255, 255, 255],
+                  fontStyle: 'bold',
+                  fontSize: 9
+                },
+                alternateRowStyles: {
+                  fillColor: [248, 249, 250]
+                },
+                tableLineColor: [200, 200, 200],
+                tableLineWidth: 0.5,
+                margin: { left: margin + 10, right: margin }
+              });
+              
+              yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+          } catch (error) {
+            console.error(`Error obteniendo observaciones de persona ${persona.id}:`, error);
+          }
+        }
+      }
+      
+      // Observaciones de vehículos relacionados
+      if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
+        for (const vehiculo of relaciones.vehiculos) {
+          try {
+            const observacionesVehiculo = await fetch(`/api/vehiculos/${vehiculo.id}/observaciones`);
+            const obsVehiculoData = await observacionesVehiculo.json();
+            
+            if (obsVehiculoData && obsVehiculoData.length > 0) {
+              if (yPos > pageHeight - 50) {
+                doc.addPage();
+                yPos = 20;
+              }
+              
+              doc.setFontSize(11);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(25, 25, 112);
+              doc.text(`OBSERVACIONES - ${vehiculo.marca} ${vehiculo.modelo}`, margin, yPos);
+              yPos += 10;
+              
+              const obsVehiculoTable = obsVehiculoData.map((obs: any) => [
+                obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F',
+                obs.detalle || 'Sin detalle',
+                obs.usuario || 'Sistema'
+              ]);
+
+              autoTable(doc, {
+                head: [['Fecha', 'Detalle', 'Usuario']],
+                body: obsVehiculoTable,
+                startY: yPos,
+                styles: { 
+                  fontSize: 8,
+                  cellPadding: 2,
+                  lineColor: [200, 200, 200],
+                  lineWidth: 0.5
+                },
+                headStyles: { 
+                  fillColor: [155, 89, 182],
+                  textColor: [255, 255, 255],
+                  fontStyle: 'bold',
+                  fontSize: 9
+                },
+                alternateRowStyles: {
+                  fillColor: [248, 249, 250]
+                },
+                tableLineColor: [200, 200, 200],
+                tableLineWidth: 0.5,
+                margin: { left: margin + 10, right: margin }
+              });
+              
+              yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+          } catch (error) {
+            console.error(`Error obteniendo observaciones de vehículo ${vehiculo.id}:`, error);
+          }
+        }
+      }
+      
+      // Observaciones de inmuebles relacionados
+      if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
+        for (const inmueble of relaciones.inmuebles) {
+          try {
+            const observacionesInmueble = await fetch(`/api/inmuebles/${inmueble.id}/observaciones`);
+            const obsInmuebleData = await observacionesInmueble.json();
+            
+            if (obsInmuebleData && obsInmuebleData.length > 0) {
+              if (yPos > pageHeight - 50) {
+                doc.addPage();
+                yPos = 20;
+              }
+              
+              doc.setFontSize(11);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(25, 25, 112);
+              doc.text(`OBSERVACIONES - ${inmueble.tipo}`, margin, yPos);
+              yPos += 10;
+              
+              const obsInmuebleTable = obsInmuebleData.map((obs: any) => [
+                obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F',
+                obs.detalle || 'Sin detalle',
+                obs.usuario || 'Sistema'
+              ]);
+
+              autoTable(doc, {
+                head: [['Fecha', 'Detalle', 'Usuario']],
+                body: obsInmuebleTable,
+                startY: yPos,
+                styles: { 
+                  fontSize: 8,
+                  cellPadding: 2,
+                  lineColor: [200, 200, 200],
+                  lineWidth: 0.5
+                },
+                headStyles: { 
+                  fillColor: [46, 125, 50],
+                  textColor: [255, 255, 255],
+                  fontStyle: 'bold',
+                  fontSize: 9
+                },
+                alternateRowStyles: {
+                  fillColor: [248, 249, 250]
+                },
+                tableLineColor: [200, 200, 200],
+                tableLineWidth: 0.5,
+                margin: { left: margin + 10, right: margin }
+              });
+              
+              yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+          } catch (error) {
+            console.error(`Error obteniendo observaciones de inmueble ${inmueble.id}:`, error);
+          }
+        }
+      }
+    }
+
+    // Pie de páginas
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      
+      // Centrar el número de página
+      const pageText = `Página ${i} de ${totalPages}`;
+      doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
+      
+      // Texto confidencial a la izquierda
+      doc.text("INFORME CONFIDENCIAL - ESTRUCTURAS", margin, pageHeight - 10);
+    }
+
+    // Guardar el PDF
+    let nombre = selectedResult?.nombre || "estructura";
+    nombre = nombre.replace(/[^a-zA-Z0-9]/g, "_");
+    nombre = nombre.substring(0, 20);
+    
+    const fileName = `Informe_Estructura_${nombre}.pdf`;
+    doc.save(fileName);
   };
 
   return (
