@@ -137,7 +137,7 @@ export default function UbicacionesPage() {
           lat: ubicacion.latitud,
           lng: ubicacion.longitud,
           title: "Domicilio",
-          description: `Domicilio de ${entity.nombre}: ${ubicacion.observaciones || 'Sin observaciones'}`,
+          description: ubicacion.observaciones || `Domicilio de ${entity.nombre}`,
           type: "persona" as EntityType,
           relation: "direct" as const,
           entityId: entity.id
@@ -163,7 +163,7 @@ export default function UbicacionesPage() {
                     lat: ubicacion.latitud,
                     lng: ubicacion.longitud,
                     title: "Domicilio",
-                    description: `Domicilio de ${personaRelacionada.nombre}: ${ubicacion.observaciones || 'Sin observaciones'}`,
+                    description: ubicacion.observaciones || `Domicilio de ${personaRelacionada.nombre}`,
                     type: "persona" as EntityType,
                     relation: "related" as const,
                     entityId: personaRelacionada.id
@@ -272,7 +272,7 @@ export default function UbicacionesPage() {
                     lat: ubicacion.latitud,
                     lng: ubicacion.longitud,
                     title: "Domicilio",
-                    description: `Domicilio de ${personaRelacionada.nombre}: ${ubicacion.observaciones || 'Sin observaciones'}`,
+                    description: ubicacion.observaciones || `Domicilio de ${personaRelacionada.nombre}`,
                     type: "persona" as EntityType,
                     relation: "related" as const,
                     entityId: personaRelacionada.id
@@ -351,7 +351,7 @@ export default function UbicacionesPage() {
                   lat: ubicacion.latitud,
                   lng: ubicacion.longitud,
                   title: "Domicilio",
-                  description: `Domicilio de ${personaRelacionada.nombre}: ${ubicacion.observaciones || 'Sin observaciones'}`,
+                  description: ubicacion.observaciones || `Domicilio de ${personaRelacionada.nombre}`,
                   type: "persona" as EntityType,
                   relation: "related" as const,
                   entityId: personaRelacionada.id
@@ -407,7 +407,7 @@ export default function UbicacionesPage() {
                     lat: ubicacion.latitud,
                     lng: ubicacion.longitud,
                     title: "Domicilio",
-                    description: `Domicilio de ${personaRelacionada.nombre}: ${ubicacion.observaciones || 'Sin observaciones'}`,
+                    description: ubicacion.observaciones || `Domicilio de ${personaRelacionada.nombre}`,
                     type: "persona" as EntityType,
                     relation: "related" as const,
                     entityId: personaRelacionada.id
