@@ -325,16 +325,18 @@ export default function EstructurasPage() {
         <h5 className="text-xs font-semibold text-gray-600 mb-2">Observaciones:</h5>
         <div className="space-y-2">
           {observacionesRelacionadas.map((obs: any, index: number) => (
-            <div key={index} className="bg-gray-50 p-2 rounded text-xs">
-              <div className="flex justify-between items-start mb-1">
-                <span className="font-medium text-gray-700">
+            <div key={index} className="bg-gray-50 p-3 rounded text-xs min-h-fit">
+              <div className="flex justify-between items-start mb-2 flex-wrap">
+                <span className="font-medium text-gray-700 text-xs">
                   {obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'}
                 </span>
-                <span className="text-gray-500">{obs.usuario || 'Sistema'}</span>
+                <span className="text-gray-500 text-xs">{obs.usuario || 'Sistema'}</span>
               </div>
-              <p className="text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
-                {obs.detalle || 'Sin detalle'}
-              </p>
+              <div className="w-full">
+                <p className="text-gray-800 text-xs leading-relaxed whitespace-pre-wrap break-words word-wrap overflow-wrap-anywhere min-h-fit">
+                  {obs.detalle || 'Sin detalle'}
+                </p>
+              </div>
             </div>
           ))}
         </div>
