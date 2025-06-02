@@ -978,10 +978,10 @@ export default function EstructurasPage() {
                 yPos += coordenadasLines.length * 5 + 2;
               }
 
-              if (ubicacion.fecha) {
-                const fechaLines = doc.splitTextToSize(`Fecha: ${new Date(ubicacion.fecha).toLocaleDateString()}`, textWidth - 25);
-                doc.text(fechaLines, margin + 20, yPos, { align: 'justify', maxWidth: textWidth - 25 });
-                yPos += fechaLines.length * 5 + 2;
+              if (ubicacion.observaciones) {
+                const observacionLines = doc.splitTextToSize(ubicacion.observaciones, textWidth - 25);
+                doc.text(observacionLines, margin + 20, yPos, { align: 'justify', maxWidth: textWidth - 25 });
+                yPos += observacionLines.length * 5 + 2;
               }
               
               // Obtener observaciones de esta ubicación
