@@ -1710,11 +1710,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const otrasUbicaciones = otrasUbicacionesResult.rows || [];
         console.log(`[DEBUG] Otras ubicaciones encontradas (routes): ${otrasUbicaciones.length}`);
         
-        // Asignar solo los domicilios a ubicaciones directas
-        relaciones.ubicaciones = domicilios;
+        // Asignar solo las otras ubicaciones (avistamientos, etc.) NO domicilios
+        relaciones.ubicaciones = otrasUbicaciones;
         
-        // Asignar las otras ubicaciones a una propiedad separada
-        relaciones.otrasUbicaciones = otrasUbicaciones;
+        // Los domicilios se manejan por separado en el frontend
+        relaciones.domicilios = domicilios;
       }
       else if (tipo === "vehiculo") {
         // Personas relacionadas con este vehículo - usando SQL directo
