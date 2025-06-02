@@ -531,14 +531,12 @@ export class DatabaseStorage {
         for (const persona of personasBasicas) {
           console.log(`Buscando ubicaciones relacionadas para persona ID ${persona.id}`);
           
-          // Consultar solo ubicaciones relacionadas que NO sean domicilios (excluyendo domicilios e inmuebles)
+          // Incluir todas las ubicaciones relacionadas con coordenadas válidas
           const ubicacionesResult = await db.execute(
             sql`SELECT u.* FROM ubicaciones u
                 JOIN personas_ubicaciones pu ON u.id = pu.ubicacion_id
                 WHERE pu.persona_id = ${persona.id}
-                AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
-                AND NOT (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')
-                AND NOT (u.tipo ILIKE '%inmueble%' OR u.tipo = 'Inmueble')`
+                AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
           );
           
           const ubicacionesPersona = ubicacionesResult.rows || [];
@@ -635,14 +633,12 @@ export class DatabaseStorage {
         for (const inmueble of inmueblesBasicos) {
           console.log(`Buscando ubicaciones relacionadas para inmueble ID ${inmueble.id}`);
           
-          // Consultar solo ubicaciones relacionadas que NO sean domicilios ni inmuebles
+          // Incluir todas las ubicaciones relacionadas con coordenadas válidas
           const ubicacionesResult = await db.execute(
             sql`SELECT u.* FROM ubicaciones u
                 JOIN inmuebles_ubicaciones iu ON u.id = iu.ubicacion_id
                 WHERE iu.inmueble_id = ${inmueble.id}
-                AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL
-                AND NOT (u.tipo ILIKE '%domicilio%' OR u.tipo = 'Domicilio')
-                AND NOT (u.tipo ILIKE '%inmueble%' OR u.tipo = 'Inmueble')`
+                AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`
           );
           
           const ubicacionesInmueble = ubicacionesResult.rows || [];

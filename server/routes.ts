@@ -568,16 +568,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // 1. UBICACIONES DIRECTAS
-      // Ubicaciones propias (excluyendo Domicilio e Inmueble)
+      // Todas las ubicaciones con coordenadas válidas
       const ubicacionesDirectasResult = await db.execute(
         sql`SELECT * FROM ubicaciones 
             WHERE latitud IS NOT NULL 
             AND longitud IS NOT NULL
-            AND (tipo IS NULL 
-                 OR (LOWER(tipo) != 'domicilio' 
-                     AND LOWER(tipo) NOT LIKE '%domicilio%'
-                     AND LOWER(tipo) != 'inmueble'
-                     AND LOWER(tipo) NOT LIKE '%inmueble%'))
             ORDER BY id`
       );
       
@@ -1918,9 +1913,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const tipoUbicacion = (ubicacionActual.tipo || "").toLowerCase();
           console.log(`[DEBUG] Verificando tipo de ubicación ID ${id}: ${tipoUbicacion}`);
           
-          // Buscar ubicaciones relacionadas, excluyendo domicilios e inmuebles
-          const otrasUbicacionesResult = await db.execute(
-            sql`SELECT DISTINCT u.* FROM ubicaciones u
+          // Aplicar filtros solo si es una ubicación tipo "ubicacion" (no domicilio ni inmueble)
+          let filtroSQL = sql`SELECT DISTINCT u.* FROM ubicaciones u
+              JOIN ubicaciones_ubicaciones uu ON (u.id = uu.ubicacion_id_1 OR u.id = uu.ubicacion_id_2)
+              WHERE (uu.ubicacion_id_1 = ${id} OR uu.ubicacion_id_2 = ${id})
+              AND u.id != ${id}
+              AND u.latitud IS NOT NULL AND u.longitud IS NOT NULL`;
+          
+          // Solo aplicar filtro de exclusión si la ubicación actual no es domicilio ni inmueble
+          if (tipoUbicacion !== "domicilio" && !tipoUbicacion.includes("domicilio") && 
+              tipoUbicacion !== "inmueble" && !tipoUbicacion.includes("inmueble")) {
+            filtroSQL = sql`SELECT DISTINCT u.* FROM ubicaciones u
                 JOIN ubicaciones_ubicaciones uu ON (u.id = uu.ubicacion_id_1 OR u.id = uu.ubicacion_id_2)
                 WHERE (uu.ubicacion_id_1 = ${id} OR uu.ubicacion_id_2 = ${id})
                 AND u.id != ${id}
@@ -1928,8 +1931,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 AND LOWER(u.tipo) != 'domicilio'
                 AND LOWER(u.tipo) NOT LIKE '%domicilio%'
                 AND LOWER(u.tipo) != 'inmueble'
-                AND LOWER(u.tipo) NOT LIKE '%inmueble%'`
-          );
+                AND LOWER(u.tipo) NOT LIKE '%inmueble%'`;
+          }
+          
+          const otrasUbicacionesResult = await db.execute(filtroSQL);
           
           const otrasUbicaciones = otrasUbicacionesResult.rows || [];
           console.log(`[DEBUG] Otras ubicaciones relacionadas encontradas: ${otrasUbicaciones.length}`);
