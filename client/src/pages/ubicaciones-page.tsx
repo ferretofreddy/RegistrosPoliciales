@@ -46,13 +46,13 @@ export default function UbicacionesPage() {
   const { toast } = useToast();
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Obtener todas las ubicaciones
+  // Solo obtener todas las ubicaciones si no hay entidad seleccionada (deshabilitado para empezar vacío)
   const { data: ubicacionesData, isLoading: ubicacionesLoading } = useQuery<{
     ubicacionesDirectas: any[];
     ubicacionesRelacionadas: any[];
   }>({
     queryKey: ['api/ubicaciones'],
-    enabled: !selectedResult
+    enabled: false // Deshabilitado para que el mapa empiece vacío
   });
 
   // Obtener datos de la entidad seleccionada
@@ -290,61 +290,12 @@ export default function UbicacionesPage() {
       let hasCenteredMap = false;
 
       try {
-        // Caso 1: Si no hay entidad seleccionada, mostrar todas las ubicaciones
-        if (!selectedResult && ubicacionesData) {
-          console.log("[UBICACIONES] Cargando todas las ubicaciones de la página");
-          
-          // Procesar ubicaciones directas con coordenadas reales de la base de datos
-          if (ubicacionesData.ubicacionesDirectas?.length > 0) {
-            for (const ubicacion of ubicacionesData.ubicacionesDirectas) {
-              const lat = parseFloat(String(ubicacion.latitud));
-              const lng = parseFloat(String(ubicacion.longitud));
-              
-              if (!isNaN(lat) && !isNaN(lng)) {
-                ubicacionesEncontradas.push({
-                  id: ubicacion.id,
-                  lat,
-                  lng,
-                  title: ubicacion.tipo || "Ubicación",
-                  description: ubicacion.observaciones || "Ubicación directa",
-                  type: "ubicacion",
-                  relation: "direct",
-                  entityId: ubicacion.id
-                });
-              }
-            }
-          }
-          
-          // Procesar ubicaciones relacionadas con coordenadas reales de la base de datos
-          if (ubicacionesData.ubicacionesRelacionadas?.length > 0) {
-            for (const ubicacion of ubicacionesData.ubicacionesRelacionadas) {
-              const lat = parseFloat(String(ubicacion.latitud));
-              const lng = parseFloat(String(ubicacion.longitud));
-              
-              if (!isNaN(lat) && !isNaN(lng)) {
-                let title = ubicacion.tipo || "Ubicación relacionada";
-                let description = ubicacion.observaciones || "";
-                
-                if (ubicacion.entidad_tipo && ubicacion.entidad_nombre) {
-                  const tipoTexto = ubicacion.entidad_tipo === 'persona' ? 'Persona' : 
-                                   ubicacion.entidad_tipo === 'vehiculo' ? 'Vehículo' :
-                                   ubicacion.entidad_tipo === 'inmueble' ? 'Inmueble' : 'Entidad';
-                  description = `${tipoTexto}: ${ubicacion.entidad_nombre}. ${description}`;
-                }
-                
-                ubicacionesEncontradas.push({
-                  id: ubicacion.id,
-                  lat,
-                  lng,
-                  title,
-                  description,
-                  type: (ubicacion.entidad_tipo as "persona" | "vehiculo" | "inmueble") || "ubicacion",
-                  relation: "related",
-                  entityId: ubicacion.entidad_id || ubicacion.id
-                });
-              }
-            }
-          }
+        // Solo cargar ubicaciones cuando hay una entidad seleccionada
+        if (!selectedResult) {
+          console.log("[UBICACIONES] No hay entidad seleccionada, mapa vacío");
+          setLocations([]);
+          setIsLoading(false);
+          return;
         }
         
         // Caso 2: Si hay entidad seleccionada, buscar sus ubicaciones
@@ -508,7 +459,7 @@ export default function UbicacionesPage() {
     };
     
     cargarUbicaciones();
-  }, [selectedResult, entityData, relationData, toast, ubicacionesData]);
+  }, [selectedResult, entityData, relationData, toast]);
 
   return (
     <MainLayout>
