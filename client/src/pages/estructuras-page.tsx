@@ -639,7 +639,7 @@ export default function EstructurasPage() {
       }
 
       // Inmuebles relacionados
-      if (relaciones.inmuebles?.length > 0) {
+      if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
         doc.setFont("helvetica", "bold");
         doc.text("Inmuebles:", 20, yPosition);
         yPosition += 5;
