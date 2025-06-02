@@ -14,8 +14,12 @@ import jsPDF from "jspdf";
 
 interface SearchResult {
   id: number;
-  nombre: string;
+  nombre?: string;
   tipo: string;
+  identificacion?: string;
+  latitud?: number;
+  longitud?: number;
+  observaciones?: string;
 }
 
 interface LocationData {
@@ -24,7 +28,7 @@ interface LocationData {
   lng: number;
   title: string;
   description: string;
-  type: string;
+  type: "persona" | "vehiculo" | "inmueble" | "ubicacion";
   relation: string;
   entityId: number;
 }
@@ -259,7 +263,7 @@ export default function UbicacionesPage() {
   const seleccionarEntidad = (result: SearchResult) => {
     setSelectedResult(result);
     setSearchResults([]);
-    setQuery(result.nombre);
+    setQuery(result.nombre || result.tipo || '');
   };
 
   // Función para limpiar la búsqueda
@@ -503,15 +507,18 @@ export default function UbicacionesPage() {
 
             {/* Resultados de búsqueda */}
             {searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto z-10">
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto z-50">
                 {searchResults.map((result) => (
                   <div
                     key={`${result.tipo}-${result.id}`}
                     className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
                     onClick={() => seleccionarEntidad(result)}
                   >
-                    <div className="font-medium">{result.nombre}</div>
+                    <div className="font-medium">{result.nombre || result.tipo || 'Sin nombre'}</div>
                     <div className="text-sm text-gray-500 capitalize">{result.tipo}</div>
+                    {result.identificacion && (
+                      <div className="text-xs text-gray-400">{result.identificacion}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -561,7 +568,7 @@ export default function UbicacionesPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Mapa de Ubicaciones ({locations.length})
+                  Mapa de Ubicaciones
                 </CardTitle>
               </CardHeader>
               <CardContent>
