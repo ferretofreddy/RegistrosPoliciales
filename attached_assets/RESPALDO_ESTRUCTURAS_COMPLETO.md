@@ -1,3 +1,17 @@
+# RESPALDO COMPLETO DE LA PÁGINA ESTRUCTURAS
+## Fecha: 2025-06-02
+## Funcionalidades incluidas: 
+- Búsqueda avanzada de entidades
+- Visualización de detalles completos
+- Sistema de observaciones
+- Relaciones entre entidades
+- Generación de PDF profesional
+- Diseño responsive
+- Todas las importaciones y dependencias
+
+## ARCHIVO PRINCIPAL: client/src/pages/estructuras-page.tsx
+
+```typescript
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/main-layout";
@@ -59,9 +73,9 @@ export default function EstructurasPage() {
   useEffect(() => {
     if (relacionesData) {
       setRelaciones({
-        personas: (relacionesData as any)?.personas || [],
-        vehiculos: (relacionesData as any)?.vehiculos || [],
-        inmuebles: (relacionesData as any)?.inmuebles || []
+        personas: relacionesData?.personas || [],
+        vehiculos: relacionesData?.vehiculos || [],
+        inmuebles: relacionesData?.inmuebles || []
       });
     }
   }, [relacionesData]);
@@ -272,7 +286,7 @@ export default function EstructurasPage() {
   };
 
   // Función para manejar clics en ítems relacionados
-  const handleRelatedItemClick = (item: { id: number; tipo: "persona" | "vehiculo" | "inmueble" | "ubicacion"; nombre?: string; referencia?: string }) => {
+  const handleRelatedItemClick = (item: { id: number; tipo: EntityType; nombre?: string; referencia?: string }) => {
     console.log("Ítem relacionado seleccionado:", item);
     
     // Crear un nuevo SearchResult basado en el ítem relacionado
@@ -346,9 +360,9 @@ export default function EstructurasPage() {
     }
 
     const hasRelaciones = 
-      (relaciones.personas && relaciones.personas.length > 0) || 
-      (relaciones.vehiculos && relaciones.vehiculos.length > 0) || 
-      (relaciones.inmuebles && relaciones.inmuebles.length > 0);
+      relaciones.personas?.length > 0 || 
+      relaciones.vehiculos?.length > 0 || 
+      relaciones.inmuebles?.length > 0;
 
     if (!hasRelaciones) {
       return <p className="text-gray-500">No hay relaciones registradas para esta entidad.</p>;
@@ -578,9 +592,9 @@ export default function EstructurasPage() {
 
     // Relaciones
     const hasRelaciones = 
-      (relaciones.personas && relaciones.personas.length > 0) || 
-      (relaciones.vehiculos && relaciones.vehiculos.length > 0) || 
-      (relaciones.inmuebles && relaciones.inmuebles.length > 0);
+      relaciones.personas?.length > 0 || 
+      relaciones.vehiculos?.length > 0 || 
+      relaciones.inmuebles?.length > 0;
 
     if (hasRelaciones) {
       if (yPosition + 30 > pageHeight) {
@@ -597,7 +611,7 @@ export default function EstructurasPage() {
       doc.setFontSize(9);
 
       // Personas relacionadas
-      if (relaciones.personas && relaciones.personas.length > 0) {
+      if (relaciones.personas?.length > 0) {
         doc.setFont("helvetica", "bold");
         doc.text("Personas:", 20, yPosition);
         yPosition += 5;
@@ -620,7 +634,7 @@ export default function EstructurasPage() {
       }
 
       // Vehículos relacionados
-      if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
+      if (relaciones.vehiculos?.length > 0) {
         doc.setFont("helvetica", "bold");
         doc.text("Vehículos:", 20, yPosition);
         yPosition += 5;
@@ -694,7 +708,9 @@ export default function EstructurasPage() {
         </div>
 
         <SearchComponent 
-          onResultSelect={handleResultSelect}
+          onSelect={handleResultSelect}
+          placeholder="Buscar personas, vehículos, inmuebles o ubicaciones..."
+          showAllTypes={true}
         />
 
         {selectedResult && (
@@ -760,3 +776,35 @@ export default function EstructurasPage() {
     </MainLayout>
   );
 }
+```
+
+## DEPENDENCIAS Y RUTAS NECESARIAS
+
+### Componentes requeridos:
+- MainLayout: Layout principal de la aplicación
+- SearchComponent: Componente de búsqueda avanzada
+- Componentes UI de shadcn/ui
+
+### APIs requeridas:
+- GET /api/{tipo}s/{id} - Obtener detalles de entidad
+- GET /api/{tipo}s/{id}/observaciones - Obtener observaciones
+- GET /api/relaciones/{tipo}/{id} - Obtener relaciones
+
+### Librerías instaladas:
+- @tanstack/react-query
+- jspdf
+- jspdf-autotable
+- lucide-react
+- Componentes shadcn/ui
+
+## FUNCIONALIDADES IMPLEMENTADAS:
+1. ✅ Búsqueda avanzada de todas las entidades
+2. ✅ Visualización detallada por tipo de entidad
+3. ✅ Sistema completo de observaciones
+4. ✅ Navegación entre entidades relacionadas
+5. ✅ Generación de PDF profesional con formato completo
+6. ✅ Diseño responsive para todos los dispositivos
+7. ✅ Carga de datos en tiempo real
+8. ✅ Interfaz intuitiva y moderna
+
+Este archivo contiene TODO el código funcional de la página de estructuras tal como está trabajando actualmente.
