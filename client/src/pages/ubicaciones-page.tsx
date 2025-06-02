@@ -206,17 +206,24 @@ export default function UbicacionesPage() {
               const vehiculoRelResponse = await fetch(`/api/relaciones/vehiculo/${vehiculoRelacionado.id}`);
               if (vehiculoRelResponse.ok) {
                 const vehiculoRelData = await vehiculoRelResponse.json();
-                if (vehiculoRelData.ubicaciones) {
+                if (vehiculoRelData.ubicaciones && vehiculoRelData.ubicaciones.length > 0) {
                   const ubicacionesVehiculoRel = vehiculoRelData.ubicaciones.filter(
                     (ubicacion: UbicacionEntity) => ubicacion.tipo !== "Domicilio" && ubicacion.tipo !== "Inmueble"
                   );
-                  const ubicacionesConvertidas = convertToLocationData(ubicacionesVehiculoRel, "ubicacion", "related");
-                  const ubicacionesFormateadas = ubicacionesConvertidas.map(loc => ({
-                    ...loc,
-                    title: "Avistamiento",
-                    description: `Ubicación de vehículo ${vehiculoRelacionado.marca} ${vehiculoRelacionado.modelo} (${vehiculoRelacionado.placa})`
+                  console.log(`Ubicaciones de vehículo ${vehiculoRelacionado.placa}:`, ubicacionesVehiculoRel);
+                  
+                  const ubicacionesVehiculo = ubicacionesVehiculoRel.map((ubicacion: UbicacionEntity) => ({
+                    id: ubicacion.id,
+                    lat: ubicacion.latitud,
+                    lng: ubicacion.longitud,
+                    title: ubicacion.tipo || "Avistamiento",
+                    description: ubicacion.observaciones || `Ubicación de vehículo ${vehiculoRelacionado.marca} ${vehiculoRelacionado.modelo} (${vehiculoRelacionado.placa})`,
+                    type: "vehiculo" as EntityType,
+                    relation: "related" as const,
+                    entityId: vehiculoRelacionado.id
                   }));
-                  relatedLocations = [...relatedLocations, ...ubicacionesFormateadas];
+                  relatedLocations = [...relatedLocations, ...ubicacionesVehiculo];
+                  console.log(`Agregadas ${ubicacionesVehiculo.length} ubicaciones de vehículo relacionado ${vehiculoRelacionado.placa}`);
                 }
               }
             } catch (error) {
