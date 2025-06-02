@@ -461,7 +461,12 @@ export default function UbicacionesPage() {
   const handleResultSelect = (result: SearchResult) => {
     setSelectedEntity(result);
     
-    processEntityLocations(result).then(entityLocations => {
+    // Cargar relaciones y ubicaciones
+    const loadData = async () => {
+      const relations = await fetchRelations(result.tipo as EntityType, result.id);
+      setRelationData(relations);
+      
+      const entityLocations = await processEntityLocations(result);
       setLocations(entityLocations);
       
       if (entityLocations.length > 0) {
@@ -470,7 +475,9 @@ export default function UbicacionesPage() {
         const avgLng = entityLocations.reduce((sum, loc) => sum + loc.lng, 0) / entityLocations.length;
         setMapCenter([avgLat, avgLng]);
       }
-    });
+    };
+    
+    loadData();
   };
 
   const handleLocationClick = (location: LocationData) => {
@@ -494,6 +501,21 @@ export default function UbicacionesPage() {
     
     // Usar handleResultSelect para cargar todos los datos correctamente
     handleResultSelect(newResult);
+  };
+
+  const getEntityIcon = (tipo: string) => {
+    switch (tipo) {
+      case "persona":
+        return <User className="h-4 w-4" />;
+      case "vehiculo":
+        return <Car className="h-4 w-4" />;
+      case "inmueble":
+        return <Building className="h-4 w-4" />;
+      case "ubicacion":
+        return <MapPin className="h-4 w-4" />;
+      default:
+        return <Search className="h-4 w-4" />;
+    }
   };
 
   const exportToPDF = async () => {
@@ -563,94 +585,220 @@ export default function UbicacionesPage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow-sm rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Ubicaciones</h1>
-            
-            {selectedEntity && locations.length > 0 && (
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2" 
-                onClick={exportToPDF}
-              >
-                <FileText className="h-4 w-4" />
-                <span>Exportar PDF</span>
-              </Button>
-            )}
-          </div>
-          
-          <div className="mb-6">
-            <SearchComponent onResultSelect={handleResultSelect} />
-          </div>
-          
-          {!selectedEntity ? (
-            <div className="border rounded-md p-4 min-h-[200px] flex flex-col items-center justify-center text-gray-500">
-              <MapPin className="h-12 w-12 mb-4 text-gray-400" />
-              <p className="mb-2">Seleccione una entidad para ver sus ubicaciones</p>
-              <p className="text-sm text-center">Use el buscador para encontrar personas, vehículos, inmuebles o ubicaciones</p>
-            </div>
-          ) : (
-            <div className="mt-6">
-              <div className="flex items-center mb-4">
-                <h2 className="text-xl font-bold">
-                  {selectedEntity.nombre}
-                  <span className="ml-2 text-sm font-medium px-2 py-1 rounded bg-blue-100 text-blue-800">
-                    {selectedEntity.tipo === 'persona' && 'Persona'}
-                    {selectedEntity.tipo === 'vehiculo' && 'Vehículo'}
-                    {selectedEntity.tipo === 'inmueble' && 'Inmueble'}
-                    {selectedEntity.tipo === 'ubicacion' && 'Ubicación'}
-                  </span>
-                </h2>
-              </div>
-              
-              {locations.length > 0 ? (
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
-                        <span>Mapa de Ubicaciones</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="border rounded-lg overflow-hidden">
-                        <div className="h-[350px] md:h-[450px] w-full">
-                          <LocationMap 
-                            markers={locations} 
-                            center={mapCenter}
-                            zoom={15}
-                          />
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <MapPin className="h-6 w-6 text-blue-600" />
+          <h1 className="text-2xl font-bold">Ubicaciones</h1>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Panel de búsqueda */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Buscar Entidad
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SearchComponent
+                  onResultSelect={handleResultSelect}
+                />
+                
+                {selectedEntity && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getEntityIcon(selectedEntity.tipo)}
+                      <span className="font-medium text-sm text-gray-700">
+                        {selectedEntity.tipo.charAt(0).toUpperCase() + selectedEntity.tipo.slice(1)} seleccionado:
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium">{selectedEntity.nombre}</p>
+                    <p className="text-xs text-gray-600">{selectedEntity.referencia}</p>
+                  </div>
+                )}
+
+                {relationData && (
+                  <div className="mt-4 space-y-3 max-h-96 overflow-y-auto">
+                    {relationData.personas && relationData.personas.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm text-gray-700">Personas ({relationData.personas.length})</h4>
+                        <div className="space-y-1">
+                          {relationData.personas.map((persona: PersonaEntity) => (
+                            <div 
+                              key={persona.id} 
+                              className="p-2 bg-blue-50 rounded text-xs cursor-pointer hover:bg-blue-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: persona.id, 
+                                tipo: 'persona' as EntityType,
+                                nombre: persona.nombre,
+                                referencia: persona.identificacion || ''
+                              })}
+                            >
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3 text-blue-600" />
+                                <span className="font-medium text-blue-700 hover:text-blue-800">{persona.nombre}</span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                  
+                    )}
+
+                    {relationData.vehiculos && relationData.vehiculos.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm text-gray-700">Vehículos ({relationData.vehiculos.length})</h4>
+                        <div className="space-y-1">
+                          {relationData.vehiculos.map((vehiculo: VehiculoEntity) => (
+                            <div 
+                              key={vehiculo.id} 
+                              className="p-2 bg-green-50 rounded text-xs cursor-pointer hover:bg-green-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: vehiculo.id, 
+                                tipo: 'vehiculo' as EntityType,
+                                nombre: `${vehiculo.marca} ${vehiculo.modelo}`,
+                                referencia: vehiculo.placa
+                              })}
+                            >
+                              <div className="flex items-center gap-1">
+                                <Car className="h-3 w-3 text-green-600" />
+                                <span className="font-medium text-green-700 hover:text-green-800">{vehiculo.marca} {vehiculo.modelo}</span>
+                              </div>
+                              <div className="text-gray-600">{vehiculo.placa}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {relationData.inmuebles && relationData.inmuebles.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm text-gray-700">Inmuebles ({relationData.inmuebles.length})</h4>
+                        <div className="space-y-1">
+                          {relationData.inmuebles.map((inmueble: InmuebleEntity) => (
+                            <div 
+                              key={inmueble.id} 
+                              className="p-2 bg-orange-50 rounded text-xs cursor-pointer hover:bg-orange-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: inmueble.id, 
+                                tipo: 'inmueble' as EntityType,
+                                nombre: inmueble.tipo || 'Inmueble',
+                                referencia: inmueble.direccion
+                              })}
+                            >
+                              <div className="flex items-center gap-1">
+                                <Building className="h-3 w-3 text-orange-600" />
+                                <span className="font-medium text-orange-700 hover:text-orange-800">{inmueble.tipo}</span>
+                              </div>
+                              <div className="text-gray-600">{inmueble.direccion}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {relationData.ubicaciones && relationData.ubicaciones.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-sm text-gray-700 mb-2">Ubicaciones ({relationData.ubicaciones.length})</h4>
+                        <div className="space-y-2">
+                          {relationData.ubicaciones.map((ubicacion: UbicacionEntity) => (
+                            <div 
+                              key={ubicacion.id} 
+                              className="p-2 bg-purple-50 rounded text-xs cursor-pointer hover:bg-purple-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: ubicacion.id, 
+                                tipo: 'ubicacion' as EntityType,
+                                nombre: ubicacion.tipo || 'Ubicación',
+                                referencia: ubicacion.observaciones || 'Sin observaciones'
+                              })}
+                            >
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-purple-600" />
+                                <span className="font-medium text-purple-700 hover:text-purple-800">{ubicacion.tipo}</span>
+                              </div>
+                              <div className="text-gray-600">{ubicacion.observaciones}</div>
+                              <div className="text-gray-500 text-xs">
+                                {ubicacion.latitud.toFixed(6)}, {ubicacion.longitud.toFixed(6)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Panel principal de contenido */}
+          <div className="lg:col-span-2">
+            {!selectedEntity ? (
+              <Card className="h-96">
+                <CardContent className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <MapPin className="h-16 w-16 mb-4 text-gray-300" />
+                  <h3 className="text-lg font-medium mb-2">Sin entidad seleccionada</h3>
+                  <p className="text-center">Busque una entidad en el panel izquierdo para ver sus ubicaciones en el mapa</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getEntityIcon(selectedEntity.tipo)}
+                    <h2 className="text-xl font-bold">
+                      {selectedEntity.nombre}
+                    </h2>
+                    <span className="text-sm px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                      {selectedEntity.tipo}
+                    </span>
+                  </div>
+                  {locations.length > 0 && (
+                    <Button onClick={exportToPDF} variant="outline" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Exportar PDF
+                    </Button>
+                  )}
+                </div>
+
+                {locations.length > 0 ? (
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Mapa de ubicaciones</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-96 border rounded-lg overflow-hidden">
+                          <LocationMap markers={locations} center={mapCenter} zoom={15} />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Detalles de ubicaciones</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <LocationsTable 
+                          locations={locations} 
+                          onLocationClick={handleLocationClick}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        <span>Detalles de Ubicaciones</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <LocationsTable 
-                        locations={locations} 
-                        onLocationClick={handleLocationClick}
-                        onRelatedItemClick={handleRelatedItemClick}
-                      />
+                    <CardContent className="flex flex-col items-center justify-center h-64 text-gray-500">
+                      <MapPin className="h-12 w-12 mb-4 text-gray-300" />
+                      <h3 className="text-lg font-medium mb-2">Sin ubicaciones</h3>
+                      <p className="text-center">No se encontraron ubicaciones para esta entidad</p>
                     </CardContent>
                   </Card>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-gray-500 py-12">
-                  <MapPin className="h-12 w-12 mb-4 text-gray-400" />
-                  <p className="mb-1 text-lg">No hay ubicaciones registradas</p>
-                  <p className="text-sm text-center">No se encontraron coordenadas para esta entidad</p>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </MainLayout>
