@@ -19,9 +19,11 @@ interface MapMarker {
 
 // Tipos para las propiedades
 interface LocationMapProps {
-  markers: MapMarker[];
+  locations?: MapMarker[];
+  markers?: MapMarker[];
   center?: [number, number];
   zoom?: number;
+  onLocationClick?: (location: MapMarker) => void;
 }
 
 // Componente para ajustar automáticamente el mapa para mostrar todos los marcadores
@@ -57,20 +59,23 @@ function MapBoundsAdjuster({ markers }: { markers: MapMarker[] }) {
   return null;
 }
 
-export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom = 10 }: LocationMapProps) {
+export default function LocationMap({ locations, markers, center = [9.9281, -84.0907], zoom = 10, onLocationClick }: LocationMapProps) {
   const [mapLoaded, setMapLoaded] = useState(false);
+  
+  // Usar locations o markers dependiendo de cuál esté disponible
+  const mapMarkers = locations || markers || [];
 
   // Asegurarse de que los íconos se carguen correctamente en el cliente
   useEffect(() => {
     setMapLoaded(true);
-    console.log("Marcadores recibidos en el mapa:", markers);
-  }, [markers]);
+    console.log("Marcadores recibidos en el mapa:", mapMarkers);
+  }, [mapMarkers]);
 
   if (!mapLoaded) {
     return <div className="w-full h-96 bg-gray-100 flex items-center justify-center">Cargando mapa...</div>;
   }
   
-  if (markers.length === 0) {
+  if (!mapMarkers || mapMarkers.length === 0) {
     return (
       <div className="w-full h-96 bg-gray-100 flex items-center justify-center flex-col">
         <p className="mb-2">No hay ubicaciones para mostrar</p>
@@ -132,7 +137,7 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
   };
 
   // Organizar los marcadores por tipo para la leyenda
-  const markerTypes = Array.from(new Set(markers.map(marker => marker.type)));
+  const markerTypes = Array.from(new Set(mapMarkers.map(marker => marker.type)));
 
   return (
     <div className="border rounded-md overflow-hidden" style={{ height: '400px' }}>
@@ -141,9 +146,9 @@ export default function LocationMap({ markers, center = [9.9281, -84.0907], zoom
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {markers.length > 0 && <MapBoundsAdjuster markers={markers} />}
+        {mapMarkers.length > 0 && <MapBoundsAdjuster markers={mapMarkers} />}
         
-        {markers.map((marker) => (
+        {mapMarkers.map((marker) => (
           <Marker 
             key={`${marker.type}-${marker.id}-${marker.relation}`}
             position={[marker.lat, marker.lng]}
