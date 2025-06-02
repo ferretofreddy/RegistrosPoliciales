@@ -967,19 +967,20 @@ export default function EstructurasPage() {
                 yPos = 30;
               }
 
-              const ubicacionLines = doc.splitTextToSize(`   • ${ubicacion.tipo || 'Ubicación'}`, textWidth - 5);
-              doc.text(ubicacionLines, margin + 5, yPos, { align: 'justify', maxWidth: textWidth - 5 });
+              // Título de ubicación con sangría
+              const ubicacionLines = doc.splitTextToSize(`• ${ubicacion.tipo || 'Ubicación'}`, textWidth - 15);
+              doc.text(ubicacionLines, margin + 10, yPos, { align: 'left', maxWidth: textWidth - 15 });
               yPos += ubicacionLines.length * 5 + 3;
 
               if (ubicacion.latitud && ubicacion.longitud) {
-                const coordenadasLines = doc.splitTextToSize(`     Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}`, textWidth - 10);
-                doc.text(coordenadasLines, margin + 10, yPos, { maxWidth: textWidth - 10 });
+                const coordenadasLines = doc.splitTextToSize(`Coordenadas: ${ubicacion.latitud.toFixed(6)}, ${ubicacion.longitud.toFixed(6)}`, textWidth - 25);
+                doc.text(coordenadasLines, margin + 20, yPos, { align: 'justify', maxWidth: textWidth - 25 });
                 yPos += coordenadasLines.length * 5 + 2;
               }
 
               if (ubicacion.fecha) {
-                const fechaLines = doc.splitTextToSize(`     Fecha: ${new Date(ubicacion.fecha).toLocaleDateString()}`, textWidth - 10);
-                doc.text(fechaLines, margin + 10, yPos, { maxWidth: textWidth - 10 });
+                const fechaLines = doc.splitTextToSize(`Fecha: ${new Date(ubicacion.fecha).toLocaleDateString()}`, textWidth - 25);
+                doc.text(fechaLines, margin + 20, yPos, { align: 'justify', maxWidth: textWidth - 25 });
                 yPos += fechaLines.length * 5 + 2;
               }
               
@@ -997,20 +998,44 @@ export default function EstructurasPage() {
                   doc.setFont("helvetica", "normal");
                   doc.setFontSize(8);
                   
-                  for (const obs of obsUbicacion.slice(0, 3)) {
+                  obsUbicacion.slice(0, 3).forEach((obs: any, index: number) => {
                     if (yPos + 15 > pageHeight - 30) {
                       doc.addPage();
                       yPos = 30;
                     }
                     
-                    const obsText = `       - ${obs.detalle || 'Sin detalle'} (${obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F'})`;
-                    const obsLines = doc.splitTextToSize(obsText, textWidth - 15);
-                    doc.text(obsLines, margin + 15, yPos, { maxWidth: textWidth - 15 });
-                    yPos += obsLines.length * 4 + 2;
-                  }
+                    // Formato consistente: Fecha - Usuario - Detalle
+                    const fechaObs = obs.fecha ? new Date(obs.fecha).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    }) : 'S/F';
+                    
+                    const usuarioObs = obs.usuario || 'Sistema';
+                    
+                    // Header con numeración, fecha y usuario - sangría apropiada
+                    doc.setFont("helvetica", "italic");
+                    doc.setFontSize(8);
+                    const headerObs = `${index + 1}. ${fechaObs} - ${usuarioObs}:`;
+                    doc.text(headerObs, margin + 25, yPos);
+                    yPos += 4;
+                    
+                    // Detalle de la observación con sangría justificada
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    const detalleText = obs.detalle || 'Sin detalle especificado';
+                    const detalleLines = doc.splitTextToSize(detalleText, textWidth - 35);
+                    doc.text(detalleLines, margin + 30, yPos, { 
+                      align: 'justify', 
+                      maxWidth: textWidth - 35 
+                    });
+                    yPos += detalleLines.length * 4 + 3;
+                  });
                   
                   if (obsUbicacion.length > 3) {
-                    doc.text(`       ... y ${obsUbicacion.length - 3} observaciones más`, margin + 15, yPos);
+                    doc.setFont("helvetica", "italic");
+                    doc.setFontSize(8);
+                    doc.text(`... y ${obsUbicacion.length - 3} observaciones más`, margin + 25, yPos);
                     yPos += 5;
                   }
                 }
