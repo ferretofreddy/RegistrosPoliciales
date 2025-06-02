@@ -82,7 +82,7 @@ export default function EstructurasPage() {
 
   // Cargar datos de ubicaciones cuando cambia el resultado seleccionado
   useEffect(() => {
-    if (selectedResult && entity) {
+    if (selectedResult && entity && relacionesData) {
       loadLocationData();
     } else {
       setLocations([]);
