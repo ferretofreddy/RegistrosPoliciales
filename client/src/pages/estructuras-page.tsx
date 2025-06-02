@@ -16,9 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { jsPDF } from "jspdf";
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+import { useToast } from "@/hooks/use-toast";
 
 export default function EstructurasPage() {
+  const { toast } = useToast();
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [observaciones, setObservaciones] = useState<any[]>([]);
   const [relaciones, setRelaciones] = useState<{
@@ -704,6 +706,179 @@ export default function EstructurasPage() {
       });
       
       yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Ahora agregar las observaciones de cada entidad relacionada
+      
+      // Observaciones de personas relacionadas
+      if (relaciones.personas && relaciones.personas.length > 0) {
+        for (const persona of relaciones.personas) {
+          try {
+            const observacionesPersona = await fetch(`/api/personas/${persona.id}/observaciones`);
+            const obsPersonaData = await observacionesPersona.json();
+            
+            if (obsPersonaData && obsPersonaData.length > 0) {
+              if (yPos > pageHeight - 50) {
+                doc.addPage();
+                yPos = 20;
+              }
+              
+              doc.setFontSize(11);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(25, 25, 112);
+              doc.text(`OBSERVACIONES - ${persona.nombre}`, margin, yPos);
+              yPos += 10;
+              
+              const obsPersonaTable = obsPersonaData.map((obs: any) => [
+                obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F',
+                obs.detalle || 'Sin detalle',
+                obs.usuario || 'Sistema'
+              ]);
+
+              autoTable(doc, {
+                head: [['Fecha', 'Detalle', 'Usuario']],
+                body: obsPersonaTable,
+                startY: yPos,
+                styles: { 
+                  fontSize: 8,
+                  cellPadding: 2,
+                  lineColor: [200, 200, 200],
+                  lineWidth: 0.5
+                },
+                headStyles: { 
+                  fillColor: [52, 152, 219],
+                  textColor: [255, 255, 255],
+                  fontStyle: 'bold',
+                  fontSize: 9
+                },
+                alternateRowStyles: {
+                  fillColor: [248, 249, 250]
+                },
+                tableLineColor: [200, 200, 200],
+                tableLineWidth: 0.5,
+                margin: { left: margin + 10, right: margin }
+              });
+              
+              yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+          } catch (error) {
+            console.error(`Error obteniendo observaciones de persona ${persona.id}:`, error);
+          }
+        }
+      }
+      
+      // Observaciones de vehículos relacionados
+      if (relaciones.vehiculos && relaciones.vehiculos.length > 0) {
+        for (const vehiculo of relaciones.vehiculos) {
+          try {
+            const observacionesVehiculo = await fetch(`/api/vehiculos/${vehiculo.id}/observaciones`);
+            const obsVehiculoData = await observacionesVehiculo.json();
+            
+            if (obsVehiculoData && obsVehiculoData.length > 0) {
+              if (yPos > pageHeight - 50) {
+                doc.addPage();
+                yPos = 20;
+              }
+              
+              doc.setFontSize(11);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(25, 25, 112);
+              doc.text(`OBSERVACIONES - ${vehiculo.marca} ${vehiculo.modelo}`, margin, yPos);
+              yPos += 10;
+              
+              const obsVehiculoTable = obsVehiculoData.map((obs: any) => [
+                obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F',
+                obs.detalle || 'Sin detalle',
+                obs.usuario || 'Sistema'
+              ]);
+
+              autoTable(doc, {
+                head: [['Fecha', 'Detalle', 'Usuario']],
+                body: obsVehiculoTable,
+                startY: yPos,
+                styles: { 
+                  fontSize: 8,
+                  cellPadding: 2,
+                  lineColor: [200, 200, 200],
+                  lineWidth: 0.5
+                },
+                headStyles: { 
+                  fillColor: [155, 89, 182],
+                  textColor: [255, 255, 255],
+                  fontStyle: 'bold',
+                  fontSize: 9
+                },
+                alternateRowStyles: {
+                  fillColor: [248, 249, 250]
+                },
+                tableLineColor: [200, 200, 200],
+                tableLineWidth: 0.5,
+                margin: { left: margin + 10, right: margin }
+              });
+              
+              yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+          } catch (error) {
+            console.error(`Error obteniendo observaciones de vehículo ${vehiculo.id}:`, error);
+          }
+        }
+      }
+      
+      // Observaciones de inmuebles relacionados
+      if (relaciones.inmuebles && relaciones.inmuebles.length > 0) {
+        for (const inmueble of relaciones.inmuebles) {
+          try {
+            const observacionesInmueble = await fetch(`/api/inmuebles/${inmueble.id}/observaciones`);
+            const obsInmuebleData = await observacionesInmueble.json();
+            
+            if (obsInmuebleData && obsInmuebleData.length > 0) {
+              if (yPos > pageHeight - 50) {
+                doc.addPage();
+                yPos = 20;
+              }
+              
+              doc.setFontSize(11);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(25, 25, 112);
+              doc.text(`OBSERVACIONES - ${inmueble.tipo}`, margin, yPos);
+              yPos += 10;
+              
+              const obsInmuebleTable = obsInmuebleData.map((obs: any) => [
+                obs.fecha ? new Date(obs.fecha).toLocaleDateString() : 'S/F',
+                obs.detalle || 'Sin detalle',
+                obs.usuario || 'Sistema'
+              ]);
+
+              autoTable(doc, {
+                head: [['Fecha', 'Detalle', 'Usuario']],
+                body: obsInmuebleTable,
+                startY: yPos,
+                styles: { 
+                  fontSize: 8,
+                  cellPadding: 2,
+                  lineColor: [200, 200, 200],
+                  lineWidth: 0.5
+                },
+                headStyles: { 
+                  fillColor: [46, 125, 50],
+                  textColor: [255, 255, 255],
+                  fontStyle: 'bold',
+                  fontSize: 9
+                },
+                alternateRowStyles: {
+                  fillColor: [248, 249, 250]
+                },
+                tableLineColor: [200, 200, 200],
+                tableLineWidth: 0.5,
+                margin: { left: margin + 10, right: margin }
+              });
+              
+              yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+          } catch (error) {
+            console.error(`Error obteniendo observaciones de inmueble ${inmueble.id}:`, error);
+          }
+        }
+      }
     }
 
     // Pie de páginas
