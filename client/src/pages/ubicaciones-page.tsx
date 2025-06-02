@@ -17,392 +17,75 @@ import html2canvas from "html2canvas";
 const DEFAULT_CENTER: [number, number] = [9.9281, -84.0907];
 const DEFAULT_ZOOM = 7;
 
-// Tipos de entidades
-type EntityType = "persona" | "vehiculo" | "inmueble" | "ubicacion";
-
-// Interfaz para ubicaciones
-interface UbicacionEntidad {
-  id: number;
-  latitud: number;
-  longitud: number;
-  tipo?: string;
-  observaciones?: string;
-}
-
-// Interfaces para respuestas de API
-interface PersonaEntity {
-  id: number;
-  nombre: string;
-  // otros campos...
-}
-
-interface VehiculoEntity {
-  id: number;
-  marca: string;
-  modelo: string;
-  placa: string;
-  // otros campos...
-}
-
-interface InmuebleEntity {
-  id: number;
-  direccion: string;
-  tipo?: string;
-  // otros campos...
-}
-
-interface UbicacionEntity {
-  id: number;
-  tipo?: string;
-  latitud: number;
-  longitud: number;
-  observaciones?: string;
-  // otros campos...
-}
-
-interface RelacionesResponse {
-  personas?: PersonaEntity[];
-  vehiculos?: VehiculoEntity[];
-  inmuebles?: InmuebleEntity[];
-  ubicaciones?: UbicacionEntity[];
-  [key: string]: any; // Para permitir otras propiedades que puedan venir en la respuesta
-}
-
-
-
 export default function UbicacionesPage() {
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [entityData, setEntityData] = useState<any>(null);
+  const [relationData, setRelationData] = useState<any>(null);
+  const [ubicacionesData, setUbicacionesData] = useState<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  // Obtener todas las ubicaciones de la página ubicaciones
-  const { data: ubicacionesData, isLoading: ubicacionesLoading } = useQuery<{
-    ubicacionesDirectas: any[];
-    ubicacionesRelacionadas: any[];
-  }>({
-    queryKey: ['api/ubicaciones'],
+  // Query para obtener ubicaciones directamente desde el endpoint /api/ubicaciones
+  const {
+    data: ubicacionesList,
+    isLoading: isLoadingUbicaciones,
+    error: ubicacionesError
+  } = useQuery({
+    queryKey: ['/api/ubicaciones'],
+    queryFn: async () => {
+      const response = await fetch('/api/ubicaciones');
+      if (!response.ok) {
+        throw new Error('Error al cargar ubicaciones');
+      }
+      return response.json();
+    },
     enabled: !selectedResult // Solo cargar cuando no hay entidad seleccionada
   });
 
-  // Obtener datos de la entidad seleccionada
-  const { data: entityData } = useQuery<any>({
-    queryKey: [selectedResult ? `api/${selectedResult.tipo === "ubicacion" ? "ubicaciones" : selectedResult.tipo + "s"}/${selectedResult.id}` : null],
-    enabled: !!selectedResult
-  });
-
-  // Obtener relaciones para buscar ubicaciones
-  const { data: relationData } = useQuery<RelacionesResponse>({
-    queryKey: [selectedResult ? `api/relaciones/${selectedResult.tipo}/${selectedResult.id}` : null],
-    enabled: !!selectedResult
-  });
-
-  // Función para generar informe PDF de ubicaciones
-  const generarInformePDF = async () => {
-    if (!selectedResult || locations.length === 0) {
-      toast({
-        title: "No se puede generar el informe",
-        description: "Selecciona una entidad con ubicaciones para generar el informe",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      // Primero verificamos si podemos capturar el mapa
-      let mapImageUrl: string | null = null;
-      if (mapContainerRef.current && locations.length > 0) {
-        try {
-          const canvas = await html2canvas(mapContainerRef.current, {
-            useCORS: true,
-            allowTaint: true,
-            scrollX: 0,
-            scrollY: 0,
-            scale: 1,
-            backgroundColor: null,
-            logging: false
-          });
-          
-          mapImageUrl = canvas.toDataURL('image/png');
-          console.log("Mapa capturado como imagen");
-        } catch (e) {
-          console.error("Error al capturar el mapa:", e);
-        }
-      }
-
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.width;
-      const pageHeight = doc.internal.pageSize.height;
-      const fecha = new Date().toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit', 
-        year: 'numeric'
-      });
-
-      // Configurar encabezado azul con título
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, 210, 30, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('INFORME DE UBICACIONES', 105, 20, { align: 'center' });
-
-      // Información de la entidad
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      
-      switch (selectedResult.tipo) {
-        case 'persona':
-          doc.text('INFORMACIÓN DE UBICACIÓN DE PERSONA', 20, 45);
-          break;
-        case 'vehiculo':
-          doc.text('INFORMACIÓN DE UBICACIÓN DE VEHÍCULO', 20, 45);
-          break;
-        case 'inmueble':
-          doc.text('INFORMACIÓN DE UBICACIÓN DE INMUEBLE', 20, 45);
-          break;
-        case 'ubicacion':
-          doc.text('INFORMACIÓN DE UBICACIÓN', 20, 45);
-          break;
-      }
-
-      doc.setDrawColor(59, 130, 246);
-      doc.setLineWidth(0.5);
-      doc.line(20, 48, 190, 48);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      let yPos = 58;
-
-      switch (selectedResult.tipo) {
-        case 'persona':
-          doc.text(`Nombre: ${selectedResult.nombre || selectedResult.referencia || 'N/A'}`, 20, yPos);
-          if (entityData && entityData.identificacion) {
-            doc.text(`Identificación: ${entityData.identificacion}`, 20, yPos + 6);
-            yPos += 6;
-          }
-          break;
-        case 'vehiculo':
-          doc.text(`Marca: ${selectedResult.marca || 'N/A'}`, 20, yPos);
-          doc.text(`Modelo: ${selectedResult.modelo || 'N/A'}`, 20, yPos + 6);
-          doc.text(`Placa: ${selectedResult.placa || 'Sin placa'}`, 20, yPos + 12);
-          yPos += 6;
-          break;
-        case 'inmueble':
-          doc.text(`Tipo de inmueble: ${(selectedResult as any).tipo_inmueble || selectedResult.referencia || 'N/A'}`, 20, yPos);
-          doc.text(`Dirección: ${selectedResult.direccion || 'N/A'}`, 20, yPos + 6);
-          yPos += 6;
-          break;
-        case 'ubicacion':
-          doc.text(`Tipo de ubicación: ${(selectedResult as any).tipo_ubicacion || selectedResult.referencia || 'N/A'}`, 20, yPos);
-          if ((selectedResult as any).observaciones) {
-            doc.text(`Observaciones: ${(selectedResult as any).observaciones}`, 20, yPos + 6);
-            yPos += 6;
-          }
-          break;
-      }
-
-      doc.text(`Fecha de generación: ${fecha}`, 20, yPos + 12);
-      doc.text(`Total de ubicaciones: ${locations.length}`, 20, yPos + 18);
-
-      yPos += 35;
-
-      // Incluir mapa si está disponible
-      if (mapImageUrl) {
-        try {
-          if (yPos > 150) {
-            doc.addPage();
-            yPos = 30;
-          }
-
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(12);
-          doc.text('MAPA DE UBICACIONES', 20, yPos);
-          yPos += 10;
-
-          const maxWidth = pageWidth - 40;
-          let imgWidth = maxWidth;
-          let imgHeight = imgWidth * (9 / 16);
-          
-          const maxHeight = 100;
-          if (imgHeight > maxHeight) {
-            imgHeight = maxHeight;
-            imgWidth = imgHeight * (16 / 9);
-          }
-          
-          const xOffset = (pageWidth - imgWidth) / 2;
-          
-          doc.addImage(mapImageUrl, 'PNG', xOffset, yPos, imgWidth, imgHeight);
-          yPos += imgHeight + 15;
-          
-          doc.setFontSize(8);
-          doc.text("Vista del mapa con las ubicaciones relacionadas", pageWidth / 2, yPos, { align: "center" });
-          yPos += 15;
-        } catch (e) {
-          console.error("Error al añadir imagen del mapa al PDF:", e);
-        }
-      }
-
-      // Tablas de ubicaciones
-      const ubicacionesDirectas = locations.filter(loc => loc.relation === 'direct');
-      const ubicacionesRelacionadas = locations.filter(loc => loc.relation === 'related');
-
-      if (ubicacionesDirectas.length > 0) {
-        if (yPos > 200) {
-          doc.addPage();
-          yPos = 30;
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text('UBICACIONES DIRECTAS', 20, yPos);
-        yPos += 10;
-
-        const columnasDirectas = [
-          { header: 'Tipo', dataKey: 'tipo' },
-          { header: 'Descripción', dataKey: 'descripcion' },
-          { header: 'Latitud', dataKey: 'latitud' },
-          { header: 'Longitud', dataKey: 'longitud' }
-        ];
-
-        const datosDirectas = ubicacionesDirectas.map(loc => ({
-          tipo: loc.title,
-          descripcion: loc.description,
-          latitud: loc.lat.toFixed(6),
-          longitud: loc.lng.toFixed(6)
-        }));
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [columnasDirectas.map(col => col.header)],
-          body: datosDirectas.map(row => columnasDirectas.map(col => row[col.dataKey as keyof typeof row])),
-          theme: 'grid',
-          headStyles: { 
-            fillColor: [59, 130, 246],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
-          },
-          styles: {
-            fontSize: 9,
-            cellPadding: 3,
-            cellWidth: 'wrap'
-          },
-          columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 75 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 30 }
-          },
-          margin: { left: 20, right: 20 },
-          tableWidth: 'wrap'
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 15;
-      }
-
-      if (ubicacionesRelacionadas.length > 0) {
-        if (yPos > 200) {
-          doc.addPage();
-          yPos = 30;
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text('UBICACIONES RELACIONADAS', 20, yPos);
-        yPos += 10;
-
-        const columnasRelacionadas = [
-          { header: 'Tipo', dataKey: 'tipo' },
-          { header: 'Descripción', dataKey: 'descripcion' },
-          { header: 'Latitud', dataKey: 'latitud' },
-          { header: 'Longitud', dataKey: 'longitud' }
-        ];
-
-        const datosRelacionadas = ubicacionesRelacionadas.map(loc => ({
-          tipo: loc.title,
-          descripcion: loc.description,
-          latitud: loc.lat.toFixed(6),
-          longitud: loc.lng.toFixed(6)
-        }));
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [columnasRelacionadas.map(col => col.header)],
-          body: datosRelacionadas.map(row => columnasRelacionadas.map(col => row[col.dataKey as keyof typeof row])),
-          theme: 'grid',
-          headStyles: { 
-            fillColor: [59, 130, 246],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
-          },
-          styles: {
-            fontSize: 9,
-            cellPadding: 3,
-            cellWidth: 'wrap'
-          },
-          columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 75 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 30 }
-          },
-          margin: { left: 20, right: 20 },
-          tableWidth: 'wrap'
-        });
-      }
-
-      // Pie de página
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        
-        const pageText = `Página ${i} de ${totalPages}`;
-        doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
-        doc.text("INFORME CONFIDENCIAL", 20, pageHeight - 10);
-      }
-
-      const nombreArchivo = `informe_ubicaciones_${selectedResult.tipo}_${selectedResult.id}_${fecha.replace(/\//g, '-')}.pdf`;
-      doc.save(nombreArchivo);
-
-      toast({
-        title: "Informe generado exitosamente",
-        description: `Se ha descargado el archivo: ${nombreArchivo}`
-      });
-
-    } catch (error) {
-      console.error('Error al generar el informe PDF:', error);
-      toast({
-        title: "Error al generar informe",
-        description: "No se pudo generar el informe PDF. Inténtalo de nuevo.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Manejar la selección de un resultado de búsqueda
-  const handleResultSelect = (result: SearchResult) => {
+  // Función para manejar la selección de resultado y cargar datos relacionados
+  const handleResultSelect = async (result: SearchResult) => {
+    console.log("[UBICACIONES] Resultado seleccionado:", result);
     setSelectedResult(result);
-    console.log("Resultado seleccionado:", result);
-    setLocations([]);
+    setIsLoading(true);
+    
+    try {
+      // Obtener datos de la entidad
+      const entityResponse = await fetch(`/api/${result.tipo}s/${result.id}`);
+      if (entityResponse.ok) {
+        const entData = await entityResponse.json();
+        setEntityData(entData);
+      }
+      
+      // Obtener relaciones de la entidad
+      const relationResponse = await fetch(`/api/relaciones/${result.tipo}/${result.id}`);
+      if (relationResponse.ok) {
+        const relData = await relationResponse.json();
+        setRelationData(relData);
+      }
+    } catch (error) {
+      console.error("[UBICACIONES] Error cargando datos:", error);
+      toast({
+        title: "Error",
+        description: "Error al cargar los datos de la entidad",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Manejar clic en una ubicación de la tabla
-  const handleLocationClick = (location: LocationData) => {
-    setMapCenter([location.lat, location.lng]);
-  };
-
-  // Procesar ubicaciones cuando tengamos datos
+  // Efecto para procesar ubicaciones cuando cambien los datos
   useEffect(() => {
     const cargarUbicaciones = async () => {
+      if (!selectedResult) return;
+      
       setIsLoading(true);
-      const ubicacionesEncontradas: LocationData[] = [];
+      let ubicacionesEncontradas: LocationData[] = [];
       let hasCenteredMap = false;
+      let enteredMap = false;
 
       try {
         // Caso 1: Si no hay entidad seleccionada, mostrar todas las ubicaciones de la página
@@ -410,7 +93,7 @@ export default function UbicacionesPage() {
           console.log("[UBICACIONES] Cargando todas las ubicaciones de la página");
           console.log("[UBICACIONES] Datos recibidos:", ubicacionesData);
           
-          // Procesar ubicaciones directas
+          // Procesar ubicaciones directas usando coordenadas reales de la base de datos
           if (ubicacionesData.ubicacionesDirectas && ubicacionesData.ubicacionesDirectas.length > 0) {
             for (const ubicacion of ubicacionesData.ubicacionesDirectas) {
               const lat = parseFloat(String(ubicacion.latitud));
@@ -431,7 +114,7 @@ export default function UbicacionesPage() {
             }
           }
           
-          // Procesar ubicaciones relacionadas
+          // Procesar ubicaciones relacionadas usando coordenadas reales de la base de datos
           if (ubicacionesData.ubicacionesRelacionadas && ubicacionesData.ubicacionesRelacionadas.length > 0) {
             for (const ubicacion of ubicacionesData.ubicacionesRelacionadas) {
               const lat = parseFloat(String(ubicacion.latitud));
@@ -498,7 +181,7 @@ export default function UbicacionesPage() {
             }
           }
         
-          // Procesar ubicaciones directas según el tipo de entidad
+          // Procesar ubicaciones directas según el tipo de entidad usando coordenadas reales
           if (relationData) {
             // 1. Ubicaciones directas (domicilios para personas, coordenadas para inmuebles, etc.)
             if (relationData.ubicaciones && relationData.ubicaciones.length > 0) {
@@ -531,9 +214,10 @@ export default function UbicacionesPage() {
                     entityType = "vehiculo";
                     break;
                   default:
-                    title = ubicacion.tipo || "Ubicación directa";
+                    title = ubicacion.tipo || "Ubicación";
                     description = ubicacion.observaciones || "Ubicación directa";
                     entityType = "ubicacion";
+                    break;
                 }
                 
                 ubicacionesEncontradas.push({
@@ -541,7 +225,7 @@ export default function UbicacionesPage() {
                   lat,
                   lng,
                   title,
-                  description: ubicacion.observaciones || description,
+                  description,
                   type: entityType,
                   relation: "direct",
                   entityId: selectedResult.id
@@ -555,11 +239,9 @@ export default function UbicacionesPage() {
             }
           }
           
-          // 2. Otras ubicaciones (avistamientos, ubicaciones relacionadas)
-          if (relationData.otrasUbicaciones && relationData.otrasUbicaciones.length > 0) {
-            console.log("[UBICACIONES] Procesando otras ubicaciones:", relationData.otrasUbicaciones.length);
-            
-            for (const ubicacion of relationData.otrasUbicaciones) {
+          // 2. Avistamientos o ubicaciones específicas según el tipo usando coordenadas reales
+          if (relationData.ubicaciones && selectedResult.tipo === "vehiculo") {
+            for (const ubicacion of relationData.ubicaciones) {
               const lat = parseFloat(String(ubicacion.latitud));
               const lng = parseFloat(String(ubicacion.longitud));
               
@@ -583,7 +265,7 @@ export default function UbicacionesPage() {
             }
           }
           
-          // 3. Ubicaciones de entidades relacionadas
+          // 3. Ubicaciones de entidades relacionadas usando coordenadas reales
           // Personas relacionadas
           if (relationData.personas && relationData.personas.length > 0) {
             console.log("[UBICACIONES] Procesando personas relacionadas:", relationData.personas.length);
@@ -594,7 +276,7 @@ export default function UbicacionesPage() {
                 if (response.ok) {
                   const personaData = await response.json();
                   
-                  // Domicilios de personas relacionadas
+                  // Domicilios de personas relacionadas usando coordenadas reales
                   if (personaData.ubicaciones) {
                     for (const ubicacion of personaData.ubicaciones) {
                       const lat = parseFloat(String(ubicacion.latitud));
@@ -614,71 +296,14 @@ export default function UbicacionesPage() {
                       }
                     }
                   }
-                  
-                  // Otras ubicaciones de personas relacionadas
-                  if (personaData.otrasUbicaciones) {
-                    for (const ubicacion of personaData.otrasUbicaciones) {
-                      const lat = parseFloat(String(ubicacion.latitud));
-                      const lng = parseFloat(String(ubicacion.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        ubicacionesEncontradas.push({
-                          id: ubicacion.id,
-                          lat,
-                          lng,
-                          title: `${ubicacion.tipo || "Avistamiento"} de ${persona.nombre}`,
-                          description: `${ubicacion.tipo || "Avistamiento"} de ${persona.nombre} (persona relacionada)`,
-                          type: "persona",
-                          relation: "related",
-                          entityId: persona.id
-                        });
-                      }
-                    }
-                  }
                 }
               } catch (error) {
-                console.error("[UBICACIONES] Error al obtener ubicaciones de persona relacionada:", error);
+                console.error("[UBICACIONES] Error al obtener ubicaciones de persona:", error);
               }
             }
           }
           
-          // Inmuebles relacionados
-          if (relationData.inmuebles && relationData.inmuebles.length > 0) {
-            console.log("[UBICACIONES] Procesando inmuebles relacionados:", relationData.inmuebles.length);
-            
-            for (const inmueble of relationData.inmuebles) {
-              try {
-                const response = await fetch(`/api/relaciones/inmueble/${inmueble.id}`);
-                if (response.ok) {
-                  const inmuebleData = await response.json();
-                  
-                  if (inmuebleData.ubicaciones) {
-                    for (const ubicacion of inmuebleData.ubicaciones) {
-                      const lat = parseFloat(String(ubicacion.latitud));
-                      const lng = parseFloat(String(ubicacion.longitud));
-                      
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        ubicacionesEncontradas.push({
-                          id: ubicacion.id,
-                          lat,
-                          lng,
-                          title: `${inmueble.tipo || "Inmueble"} relacionado`,
-                          description: `${inmueble.tipo || "Inmueble"} en ${inmueble.direccion} (relacionado)`,
-                          type: "inmueble",
-                          relation: "related",
-                          entityId: inmueble.id
-                        });
-                      }
-                    }
-                  }
-                }
-              } catch (error) {
-                console.error("[UBICACIONES] Error al obtener ubicaciones del inmueble:", error);
-              }
-            }
-          }
-          
-          // Vehículos relacionados
+          // Vehículos relacionados usando coordenadas reales
           if (relationData.vehiculos && relationData.vehiculos.length > 0) {
             console.log("[UBICACIONES] Procesando vehículos relacionados:", relationData.vehiculos.length);
             
@@ -688,8 +313,9 @@ export default function UbicacionesPage() {
                 if (response.ok) {
                   const vehiculoData = await response.json();
                   
-                  if (vehiculoData.otrasUbicaciones) {
-                    for (const ubicacion of vehiculoData.otrasUbicaciones) {
+                  // Avistamientos de vehículos relacionados usando coordenadas reales
+                  if (vehiculoData.ubicaciones) {
+                    for (const ubicacion of vehiculoData.ubicaciones) {
                       const lat = parseFloat(String(ubicacion.latitud));
                       const lng = parseFloat(String(ubicacion.longitud));
                       
@@ -712,6 +338,7 @@ export default function UbicacionesPage() {
                 console.error("[UBICACIONES] Error al obtener ubicaciones del vehículo:", error);
               }
             }
+          }
           }
         }
         
@@ -743,117 +370,269 @@ export default function UbicacionesPage() {
     cargarUbicaciones();
   }, [selectedResult, entityData, relationData, toast]);
 
+  // Función para manejar clics en ubicaciones de la tabla
+  const handleLocationClick = (location: LocationData) => {
+    setMapCenter([location.lat, location.lng]);
+  };
+
+  // Función para generar PDF
+  const generatePDF = async () => {
+    if (!selectedResult || locations.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Selecciona una entidad con ubicaciones para generar el PDF",
+        variant: "default"
+      });
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      const fecha = new Date().toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+
+      // Configurar encabezado azul con título
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, 210, 30, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('INFORME DE UBICACIONES', 105, 20, { align: 'center' });
+
+      // Información de la entidad
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      
+      switch (selectedResult.tipo) {
+        case 'persona':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE PERSONA', 20, 45);
+          break;
+        case 'vehiculo':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE VEHÍCULO', 20, 45);
+          break;
+        case 'inmueble':
+          doc.text('INFORMACIÓN DE UBICACIÓN DE INMUEBLE', 20, 45);
+          break;
+        default:
+          doc.text('INFORMACIÓN DE UBICACIÓN', 20, 45);
+      }
+
+      // Detalles de la entidad
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      let yPos = 60;
+      
+      doc.text(`Nombre/Identificación: ${selectedResult.nombre || selectedResult.placa || selectedResult.referencia}`, 20, yPos);
+      yPos += 8;
+      
+      if (selectedResult.tipo === 'vehiculo' && selectedResult.marca && selectedResult.modelo) {
+        doc.text(`Vehículo: ${selectedResult.marca} ${selectedResult.modelo}`, 20, yPos);
+        yPos += 8;
+      }
+      
+      if (selectedResult.direccion) {
+        doc.text(`Dirección: ${selectedResult.direccion}`, 20, yPos);
+        yPos += 8;
+      }
+      
+      doc.text(`Fecha de generación: ${fecha}`, 20, yPos);
+      yPos += 15;
+
+      // Tabla de ubicaciones
+      const tableData = locations.map(loc => [
+        loc.title,
+        loc.description,
+        `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`,
+        loc.relation === 'direct' ? 'Directa' : 'Relacionada'
+      ]);
+
+      autoTable(doc, {
+        head: [['Tipo', 'Descripción', 'Coordenadas', 'Relación']],
+        body: tableData,
+        startY: yPos,
+        styles: { 
+          fontSize: 10,
+          cellPadding: 3
+        },
+        headStyles: { 
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
+      });
+
+      // Capturar imagen del mapa
+      const mapElement = mapContainerRef.current;
+      if (mapElement) {
+        try {
+          const canvas = await html2canvas(mapElement);
+          const imgData = canvas.toDataURL('image/png');
+          
+          // Agregar nueva página para el mapa
+          doc.addPage();
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(14);
+          doc.text('MAPA DE UBICACIONES', 20, 30);
+          
+          // Calcular dimensiones para ajustar el mapa
+          const imgWidth = 170;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          doc.addImage(imgData, 'PNG', 20, 40, imgWidth, imgHeight);
+        } catch (error) {
+          console.error('Error capturando mapa:', error);
+        }
+      }
+      
+      // Guardar PDF
+      doc.save(`ubicaciones-${selectedResult.nombre || selectedResult.placa || selectedResult.referencia}-${fecha.replace(/\//g, '-')}.pdf`);
+      
+      toast({
+        title: "Éxito",
+        description: "PDF generado correctamente",
+      });
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      toast({
+        title: "Error",
+        description: "Error al generar el PDF",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white shadow-sm rounded-lg p-6">
           <h1 className="text-2xl font-bold mb-6 text-gray-800">Ubicaciones</h1>
           
+          {/* Barra de búsqueda */}
           <div className="mb-6">
-            <SearchComponent onResultSelect={handleResultSelect} />
-          </div>
-          
-          {selectedResult ? (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <h2 className="text-xl font-bold">
-                  Ubicaciones de{' '}
-                  {selectedResult.tipo === 'persona' && selectedResult.nombre}
-                  {selectedResult.tipo === 'vehiculo' && `${selectedResult.marca || ''} ${selectedResult.modelo || ''} - Placa: ${selectedResult.placa || 'Sin placa'}`}
-                  {selectedResult.tipo === 'inmueble' && `${selectedResult.referencia || 'Inmueble'} en ${selectedResult.direccion || 'ubicación desconocida'}`}
-                  {selectedResult.tipo === 'ubicacion' && `${selectedResult.referencia || 'Ubicación'}`}
-                  <span className="ml-2 text-sm bg-primary-100 text-primary-800 px-2 py-1 rounded">
-                    {selectedResult.tipo === 'persona' && 'Persona'}
-                    {selectedResult.tipo === 'vehiculo' && 'Vehículo'}
-                    {selectedResult.tipo === 'inmueble' && 'Inmueble'}
-                    {selectedResult.tipo === 'ubicacion' && 'Ubicación'}
-                  </span>
-                </h2>
-                
-                <Button 
-                  onClick={generarInformePDF}
-                  disabled={locations.length === 0 || isLoading}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generar Informe PDF
-                </Button>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex-1 mr-4">
+                <SearchComponent 
+                  onResultSelect={handleResultSelect}
+                />
               </div>
+              <div className="flex gap-2">
+                {selectedResult && locations.length > 0 && (
+                  <Button onClick={generatePDF} variant="outline">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar a PDF
+                  </Button>
+                )}
+              </div>
+            </div>
 
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  <span className="ml-3">Cargando ubicaciones...</span>
-                </div>
-              ) : (
-                <>
-                  {/* Mapa */}
-                  <Card>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span className="ml-3">Cargando ubicaciones...</span>
+              </div>
+            ) : (
+              <>
+                {/* Mapa */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <MapPin className="h-5 w-5 mr-2 text-red-500" />
+                      Mapa de Ubicaciones ({locations.length} ubicaciones)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div ref={mapContainerRef} className="h-96 w-full rounded-lg overflow-hidden border">
+                      <LocationMap 
+                        markers={locations} 
+                        center={mapCenter}
+                        zoom={locations.length === 1 ? 15 : 10}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Tabla de ubicaciones */}
+                {locations.length > 0 && (
+                  <Card className="mt-6">
                     <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-2 text-red-500" />
-                        Mapa de Ubicaciones ({locations.length} ubicaciones)
+                      <CardTitle>Detalle de Ubicaciones</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <LocationsTable 
+                        locations={locations} 
+                        onLocationClick={handleLocationClick}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Información de la entidad seleccionada */}
+                {selectedResult && (
+                  <Card className="mt-6">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        {selectedResult.tipo === "persona" && <User className="h-5 w-5" />}
+                        {selectedResult.tipo === "vehiculo" && <Car className="h-5 w-5" />}
+                        {selectedResult.tipo === "inmueble" && <Building className="h-5 w-5" />}
+                        {selectedResult.tipo === "ubicacion" && <MapPin className="h-5 w-5" />}
+                        Información de la Entidad
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div ref={mapContainerRef} className="h-96 w-full rounded-lg overflow-hidden border">
-                        <LocationMap 
-                          markers={locations} 
-                          center={mapCenter}
-                          zoom={locations.length === 1 ? 15 : 10}
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">
+                            {selectedResult.nombre || selectedResult.placa || selectedResult.referencia}
+                          </h3>
+                          <p className="text-sm text-gray-600 capitalize">
+                            Tipo: {selectedResult.tipo}
+                          </p>
+                          
+                          {selectedResult.placa && (
+                            <p className="text-sm text-gray-600">
+                              Placa: {selectedResult.placa}
+                            </p>
+                          )}
+                          
+                          {selectedResult.direccion && (
+                            <p className="text-sm text-gray-600">
+                              Dirección: {selectedResult.direccion}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium mb-2">Estadísticas de Ubicaciones</h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span>Total:</span>
+                              <span className="font-medium">{locations.length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Directas:</span>
+                              <span className="font-medium">{locations.filter(l => l.relation === 'direct').length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Relacionadas:</span>
+                              <span className="font-medium">{locations.filter(l => l.relation === 'related').length}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
-
-                  {/* Tablas de ubicaciones */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Ubicaciones Directas */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <MapPin className="h-5 w-5 mr-2 text-green-500" />
-                          Ubicaciones Directas ({locations.filter(loc => loc.relation === 'direct').length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <LocationsTable 
-                          locations={locations.filter(loc => loc.relation === 'direct')}
-                          onLocationClick={handleLocationClick}
-                        />
-                      </CardContent>
-                    </Card>
-
-                    {/* Ubicaciones Relacionadas */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <MapPin className="h-5 w-5 mr-2 text-blue-500" />
-                          Ubicaciones Relacionadas ({locations.filter(loc => loc.relation === 'related').length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <LocationsTable 
-                          locations={locations.filter(loc => loc.relation === 'related')}
-                          onLocationClick={handleLocationClick}
-                        />
-                      </CardContent>
-                    </Card>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Buscar ubicaciones
-              </h3>
-              <p className="text-gray-500">
-                Selecciona una persona, vehículo, inmueble o ubicación para ver sus ubicaciones en el mapa
-              </p>
-            </div>
-          )}
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </MainLayout>
