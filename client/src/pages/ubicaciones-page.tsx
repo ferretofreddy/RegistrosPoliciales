@@ -463,7 +463,7 @@ export default function UbicacionesPage() {
     
     // Actualizar la entidad seleccionada y cargar sus datos
     setSelectedEntity(newResult);
-    loadLocationData(newResult);
+    processEntityLocations(newResult);
     fetchRelations(newResult.tipo, newResult.id);
   };
 
@@ -761,7 +761,6 @@ export default function UbicacionesPage() {
               <CardContent>
                 <SearchComponent
                   onResultSelect={handleResultSelect}
-                  placeholder="Buscar persona, vehículo, inmueble o ubicación..."
                 />
                 
                 {selectedEntity && (
