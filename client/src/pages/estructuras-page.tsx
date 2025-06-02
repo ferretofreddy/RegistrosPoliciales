@@ -293,8 +293,24 @@ export default function EstructurasPage() {
 
   // Componente para mostrar observaciones de una entidad relacionada
   const RelatedEntityObservations = ({ entityId, entityType }: { entityId: number; entityType: string }) => {
+    // Crear el endpoint correcto según el tipo de entidad
+    const getObservacionesEndpoint = (type: string, id: number) => {
+      switch (type) {
+        case 'ubicacion':
+          return `/api/ubicacions/${id}/observaciones`;
+        case 'persona':
+          return `/api/personas/${id}/observaciones`;
+        case 'vehiculo':
+          return `/api/vehiculos/${id}/observaciones`;
+        case 'inmueble':
+          return `/api/inmuebles/${id}/observaciones`;
+        default:
+          return `/api/${type}s/${id}/observaciones`;
+      }
+    };
+
     const { data: observacionesRelacionadas, isLoading } = useQuery({
-      queryKey: [`/api/${entityType}s/${entityId}/observaciones`],
+      queryKey: [getObservacionesEndpoint(entityType, entityId)],
       enabled: !!entityId
     });
 
