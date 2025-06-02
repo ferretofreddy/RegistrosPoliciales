@@ -1771,9 +1771,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const ubicaciones = ubicacionesResult.rows || [];
         console.log(`[DEBUG] Ubicaciones de vehículo encontradas (routes): ${ubicaciones.length}`);
         
-        // Asignar ubicaciones directas para vehículos
-        relaciones.ubicaciones = ubicaciones;
-        relaciones.otrasUbicaciones = [];
+        // Asignar solo ubicaciones relacionadas que NO sean domicilios ni inmuebles
+        relaciones.ubicaciones = ubicaciones.filter(u => 
+          !(u.tipo && (u.tipo.toLowerCase().includes('domicilio') || u.tipo.toLowerCase().includes('inmueble')))
+        );
+        relaciones.ubicacionesDirectas = ubicaciones.filter(u => 
+          u.tipo && (u.tipo.toLowerCase().includes('domicilio') || u.tipo.toLowerCase().includes('inmueble'))
+        );
       }
       else if (tipo === "inmueble") {
         // Personas relacionadas con este inmueble - usando SQL directo
@@ -1847,11 +1851,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const otrasUbicaciones = otrasUbicacionesResult.rows || [];
         console.log(`[DEBUG] Otras ubicaciones relacionadas encontradas (routes): ${otrasUbicaciones.length}`);
         
-        // Asignar solo las ubicaciones de tipo "inmueble" como directas
-        relaciones.ubicaciones = ubicacionesDirectas;
+        // Asignar solo las otras ubicaciones (avistamientos, etc.) NO ubicaciones directas
+        relaciones.ubicaciones = otrasUbicaciones;
         
-        // Asignar las otras ubicaciones a una propiedad separada
-        relaciones.otrasUbicaciones = otrasUbicaciones;
+        // Las ubicaciones directas del inmueble se manejan por separado en el frontend
+        relaciones.ubicacionesDirectas = ubicacionesDirectas;
       }
       else if (tipo === "ubicacion") {
         // Personas relacionadas con esta ubicación - usando SQL directo
