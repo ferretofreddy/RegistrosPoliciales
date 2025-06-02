@@ -332,7 +332,7 @@ export default function EstructurasPage() {
                 </span>
                 <span className="text-gray-500">{obs.usuario || 'Sistema'}</span>
               </div>
-              <p className="text-gray-800 leading-relaxed">
+              <p className="text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
                 {obs.detalle || 'Sin detalle'}
               </p>
             </div>
