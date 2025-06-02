@@ -33,6 +33,7 @@ interface UbicacionEntidad {
 interface PersonaEntity {
   id: number;
   nombre: string;
+  identificacion?: string;
 }
 
 interface VehiculoEntity {
@@ -449,6 +450,23 @@ export default function UbicacionesPage() {
     });
   };
 
+  const handleRelatedItemClick = (item: { id: number; tipo: EntityType; nombre?: string; referencia?: string }) => {
+    console.log("Ítem relacionado seleccionado:", item);
+    
+    // Crear un nuevo SearchResult basado en el ítem relacionado
+    const newResult: SearchResult = {
+      id: item.id,
+      tipo: item.tipo,
+      nombre: item.nombre || '',
+      referencia: item.referencia || ''
+    };
+    
+    // Actualizar la entidad seleccionada y cargar sus datos
+    setSelectedEntity(newResult);
+    loadLocationData(newResult);
+    fetchRelations(newResult.tipo, newResult.id);
+  };
+
   const exportToPDF = async () => {
     if (locations.length === 0) {
       toast({
@@ -766,10 +784,19 @@ export default function UbicacionesPage() {
                         <h4 className="font-medium text-sm text-gray-700">Personas ({relationData.personas.length})</h4>
                         <div className="space-y-1">
                           {relationData.personas.map((persona: PersonaEntity) => (
-                            <div key={persona.id} className="p-2 bg-blue-50 rounded text-xs">
+                            <div 
+                              key={persona.id} 
+                              className="p-2 bg-blue-50 rounded text-xs cursor-pointer hover:bg-blue-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: persona.id, 
+                                tipo: 'persona' as EntityType,
+                                nombre: persona.nombre,
+                                referencia: persona.identificacion || ''
+                              })}
+                            >
                               <div className="flex items-center gap-1">
                                 <User className="h-3 w-3 text-blue-600" />
-                                <span className="font-medium">{persona.nombre}</span>
+                                <span className="font-medium text-blue-700 hover:text-blue-800">{persona.nombre}</span>
                               </div>
                             </div>
                           ))}
@@ -782,10 +809,19 @@ export default function UbicacionesPage() {
                         <h4 className="font-medium text-sm text-gray-700">Vehículos ({relationData.vehiculos.length})</h4>
                         <div className="space-y-1">
                           {relationData.vehiculos.map((vehiculo: VehiculoEntity) => (
-                            <div key={vehiculo.id} className="p-2 bg-green-50 rounded text-xs">
+                            <div 
+                              key={vehiculo.id} 
+                              className="p-2 bg-green-50 rounded text-xs cursor-pointer hover:bg-green-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: vehiculo.id, 
+                                tipo: 'vehiculo' as EntityType,
+                                nombre: `${vehiculo.marca} ${vehiculo.modelo}`,
+                                referencia: vehiculo.placa
+                              })}
+                            >
                               <div className="flex items-center gap-1">
                                 <Car className="h-3 w-3 text-green-600" />
-                                <span className="font-medium">{vehiculo.marca} {vehiculo.modelo}</span>
+                                <span className="font-medium text-green-700 hover:text-green-800">{vehiculo.marca} {vehiculo.modelo}</span>
                               </div>
                               <div className="text-gray-600">{vehiculo.placa}</div>
                             </div>
@@ -799,10 +835,19 @@ export default function UbicacionesPage() {
                         <h4 className="font-medium text-sm text-gray-700">Inmuebles ({relationData.inmuebles.length})</h4>
                         <div className="space-y-1">
                           {relationData.inmuebles.map((inmueble: InmuebleEntity) => (
-                            <div key={inmueble.id} className="p-2 bg-orange-50 rounded text-xs">
+                            <div 
+                              key={inmueble.id} 
+                              className="p-2 bg-orange-50 rounded text-xs cursor-pointer hover:bg-orange-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: inmueble.id, 
+                                tipo: 'inmueble' as EntityType,
+                                nombre: inmueble.tipo || 'Inmueble',
+                                referencia: inmueble.direccion
+                              })}
+                            >
                               <div className="flex items-center gap-1">
                                 <Building className="h-3 w-3 text-orange-600" />
-                                <span className="font-medium">{inmueble.tipo}</span>
+                                <span className="font-medium text-orange-700 hover:text-orange-800">{inmueble.tipo}</span>
                               </div>
                               <div className="text-gray-600">{inmueble.direccion}</div>
                             </div>
@@ -816,10 +861,19 @@ export default function UbicacionesPage() {
                         <h4 className="font-medium text-sm text-gray-700 mb-2">Ubicaciones ({relationData.ubicaciones.length})</h4>
                         <div className="space-y-2">
                           {relationData.ubicaciones.map((ubicacion: UbicacionEntity) => (
-                            <div key={ubicacion.id} className="p-2 bg-purple-50 rounded text-xs">
+                            <div 
+                              key={ubicacion.id} 
+                              className="p-2 bg-purple-50 rounded text-xs cursor-pointer hover:bg-purple-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: ubicacion.id, 
+                                tipo: 'ubicacion' as EntityType,
+                                nombre: ubicacion.tipo || 'Ubicación',
+                                referencia: ubicacion.observaciones || 'Sin observaciones'
+                              })}
+                            >
                               <div className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3 text-purple-600" />
-                                <span className="font-medium">{ubicacion.tipo}</span>
+                                <span className="font-medium text-purple-700 hover:text-purple-800">{ubicacion.tipo}</span>
                               </div>
                               <div className="text-gray-600">{ubicacion.observaciones}</div>
                               <div className="text-gray-500 text-xs">
@@ -836,10 +890,19 @@ export default function UbicacionesPage() {
                         <h4 className="font-medium text-sm text-gray-700 mb-2">Otras Ubicaciones ({relationData.otrasUbicaciones.length})</h4>
                         <div className="space-y-2">
                           {relationData.otrasUbicaciones.map((ubicacion: UbicacionEntity) => (
-                            <div key={ubicacion.id} className="p-2 bg-gray-50 rounded text-xs">
+                            <div 
+                              key={ubicacion.id} 
+                              className="p-2 bg-gray-50 rounded text-xs cursor-pointer hover:bg-gray-100 transition-colors"
+                              onClick={() => handleRelatedItemClick({ 
+                                id: ubicacion.id, 
+                                tipo: 'ubicacion' as EntityType,
+                                nombre: ubicacion.tipo || 'Ubicación',
+                                referencia: ubicacion.observaciones || 'Sin observaciones'
+                              })}
+                            >
                               <div className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3 text-gray-600" />
-                                <span className="font-medium">{ubicacion.tipo}</span>
+                                <span className="font-medium text-gray-700 hover:text-gray-800">{ubicacion.tipo}</span>
                               </div>
                               <div className="text-gray-600">{ubicacion.observaciones}</div>
                               <div className="text-gray-500 text-xs">
