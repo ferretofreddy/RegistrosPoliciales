@@ -153,12 +153,9 @@ export default function UbicacionesPage() {
               const ubicacionesRelResponse = await fetch(`/api/relaciones/persona/${personaRelacionada.id}`);
               if (ubicacionesRelResponse.ok) {
                 const ubicacionesRelData = await ubicacionesRelResponse.json();
-                if (ubicacionesRelData.ubicaciones) {
-                  const domiciliosRel = ubicacionesRelData.ubicaciones.filter((ubicacion: UbicacionEntity) =>
-                    ubicacion.tipo === "Domicilio" || !ubicacion.tipo
-                  );
-                  
-                  const domiciliosRelacionados = domiciliosRel.map((ubicacion: UbicacionEntity) => ({
+                // Buscar en domicilios específicos
+                if (ubicacionesRelData.domicilios && ubicacionesRelData.domicilios.length > 0) {
+                  const domiciliosRelacionados = ubicacionesRelData.domicilios.map((ubicacion: UbicacionEntity) => ({
                     id: ubicacion.id,
                     lat: ubicacion.latitud,
                     lng: ubicacion.longitud,
@@ -169,6 +166,7 @@ export default function UbicacionesPage() {
                     entityId: personaRelacionada.id
                   }));
                   relatedLocations = [...relatedLocations, ...domiciliosRelacionados];
+                  console.log(`Agregados ${domiciliosRelacionados.length} domicilios de persona relacionada ${personaRelacionada.nombre}`);
                 }
               }
             } catch (error) {
