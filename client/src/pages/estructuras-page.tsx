@@ -360,13 +360,13 @@ export default function EstructurasPage() {
       case "persona":
         return (
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Nombre:</h3>
-              <p>{entityData.nombre}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Nombre:</h3>
+              <p className="text-sm sm:text-base">{entityData.nombre}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Identificación:</h3>
-              <p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Identificación:</h3>
+              <p className="text-sm sm:text-base">
                 {entityData.tipoIdentificacion && (
                   <span className="text-gray-600 mr-2">({entityData.tipoIdentificacion})</span>
                 )}
@@ -374,33 +374,39 @@ export default function EstructurasPage() {
               </p>
             </div>
             {entityData.posicionEstructura && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Posición en la Estructura:</h3>
-                <Badge variant="secondary" className="font-medium">{entityData.posicionEstructura}</Badge>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Posición en la Estructura:</h3>
+                <Badge variant="secondary" className="font-medium text-xs sm:text-sm w-fit">{entityData.posicionEstructura}</Badge>
               </div>
             )}
             {entityData.alias && entityData.alias.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <h3 className="font-semibold">Alias:</h3>
-                {entityData.alias.map((alias: string, index: number) => (
-                  <Badge key={index} variant="outline">{alias}</Badge>
-                ))}
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Alias:</h3>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {entityData.alias.map((alias: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs sm:text-sm">{alias}</Badge>
+                  ))}
+                </div>
               </div>
             )}
             {entityData.telefonos && entityData.telefonos.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <h3 className="font-semibold">Teléfonos:</h3>
-                {entityData.telefonos.map((telefono: string, index: number) => (
-                  <Badge key={index} variant="outline">{telefono}</Badge>
-                ))}
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Teléfonos:</h3>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {entityData.telefonos.map((telefono: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs sm:text-sm">{telefono}</Badge>
+                  ))}
+                </div>
               </div>
             )}
             {entityData.domicilios && entityData.domicilios.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <h3 className="font-semibold">Domicilios:</h3>
-                {entityData.domicilios.map((domicilio: string, index: number) => (
-                  <Badge key={index} variant="outline">{domicilio}</Badge>
-                ))}
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Domicilios:</h3>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {entityData.domicilios.map((domicilio: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs sm:text-sm">{domicilio}</Badge>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -408,32 +414,32 @@ export default function EstructurasPage() {
       case "vehiculo":
         return (
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Placa:</h3>
-              <p>{entityData.placa}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Placa:</h3>
+              <p className="text-sm sm:text-base">{entityData.placa}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Marca:</h3>
-              <p>{entityData.marca}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Marca:</h3>
+              <p className="text-sm sm:text-base">{entityData.marca}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Modelo:</h3>
-              <p>{entityData.modelo}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Modelo:</h3>
+              <p className="text-sm sm:text-base">{entityData.modelo}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Color:</h3>
-              <p>{entityData.color}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Color:</h3>
+              <p className="text-sm sm:text-base">{entityData.color}</p>
             </div>
             {entityData.tipo && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Tipo:</h3>
-                <p>{entityData.tipo}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Tipo:</h3>
+                <p className="text-sm sm:text-base">{entityData.tipo}</p>
               </div>
             )}
             {entityData.observaciones && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Observaciones generales:</h3>
-                <p>{entityData.observaciones}</p>
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Observaciones generales:</h3>
+                <p className="text-sm sm:text-base break-words">{entityData.observaciones}</p>
               </div>
             )}
           </div>
@@ -441,24 +447,24 @@ export default function EstructurasPage() {
       case "inmueble":
         return (
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Tipo:</h3>
-              <p>{entityData.tipo}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Tipo:</h3>
+              <p className="text-sm sm:text-base">{entityData.tipo}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">Dirección:</h3>
-              <p>{entityData.direccion}</p>
+            <div className="flex flex-col gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Dirección:</h3>
+              <p className="text-sm sm:text-base break-words">{entityData.direccion}</p>
             </div>
             {entityData.propietario && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Propietario:</h3>
-                <p>{entityData.propietario}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Propietario:</h3>
+                <p className="text-sm sm:text-base">{entityData.propietario}</p>
               </div>
             )}
             {entityData.observaciones && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Observaciones generales:</h3>
-                <p>{entityData.observaciones}</p>
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Observaciones generales:</h3>
+                <p className="text-sm sm:text-base break-words">{entityData.observaciones}</p>
               </div>
             )}
           </div>
@@ -467,27 +473,27 @@ export default function EstructurasPage() {
         return (
           <div className="space-y-3">
             {entityData.tipo && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Tipo:</h3>
-                <p>{entityData.tipo}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Tipo:</h3>
+                <p className="text-sm sm:text-base">{entityData.tipo}</p>
               </div>
             )}
             {entityData.latitud && entityData.longitud && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Coordenadas:</h3>
-                <p>Lat: {entityData.latitud.toFixed(6)}, Lng: {entityData.longitud.toFixed(6)}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Coordenadas:</h3>
+                <p className="text-sm sm:text-base font-mono">Lat: {entityData.latitud.toFixed(6)}, Lng: {entityData.longitud.toFixed(6)}</p>
               </div>
             )}
             {entityData.fecha && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Fecha:</h3>
-                <p>{new Date(entityData.fecha).toLocaleDateString()}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Fecha:</h3>
+                <p className="text-sm sm:text-base">{new Date(entityData.fecha).toLocaleDateString()}</p>
               </div>
             )}
             {entityData.observaciones && (
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold">Observaciones generales:</h3>
-                <p>{entityData.observaciones}</p>
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-sm sm:text-base">Observaciones generales:</h3>
+                <p className="text-sm sm:text-base break-words">{entityData.observaciones}</p>
               </div>
             )}
           </div>
@@ -1313,36 +1319,35 @@ export default function EstructurasPage() {
               </div>
               
               <div className="space-y-8 print:space-y-4">
-                {/* Bloque de Información Detallada */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:gap-3">
-                  <Card className="w-full">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <User className="h-5 w-5" />
-                        <span>Información Detallada</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="p-2">
-                        {renderEntityDetails()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="w-full">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <Calendar className="h-5 w-5" />
-                        <span>Observaciones</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="p-1">
-                        {renderObservaciones()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                {/* Bloque de Información Detallada - Ancho completo en desktop y móvil */}
+                <Card className="w-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <User className="h-5 w-5" />
+                      <span>Información Detallada</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="p-2">
+                      {renderEntityDetails()}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Bloque de Observaciones - Ancho completo, debajo de información detallada */}
+                <Card className="w-full">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calendar className="h-5 w-5" />
+                      <span>Observaciones</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="p-1">
+                      {renderObservaciones()}
+                    </div>
+                  </CardContent>
+                </Card>
                 
                 {/* Bloque de Relaciones */}
                 <Card className="w-full">
