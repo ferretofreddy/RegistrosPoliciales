@@ -42,10 +42,7 @@ type Persona = {
   tipo_identificacion_nombre?: string;
 };
 
-const formSchema = insertCelulaSchema.omit({ 
-  fechaCreacion: true, 
-  fechaModificacion: true 
-});
+const formSchema = insertCelulaSchema;
 
 type FormData = z.infer<typeof formSchema>;
 
