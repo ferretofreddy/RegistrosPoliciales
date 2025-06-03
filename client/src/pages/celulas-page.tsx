@@ -202,10 +202,7 @@ export default function CelulasPage() {
 
   const addPersonaMutation = useMutation({
     mutationFn: ({ celulaId, personaId }: { celulaId: number; personaId: number }) =>
-      apiRequest(`/api/celulas/${celulaId}/personas`, {
-        method: "POST",
-        body: JSON.stringify({ personaId })
-      }),
+      apiRequest("POST", `/api/celulas/${celulaId}/personas`, { personaId }),
     onSuccess: () => {
       if (selectedCelula) {
         queryClient.invalidateQueries({ queryKey: ["/api/celulas", selectedCelula] });
@@ -224,9 +221,7 @@ export default function CelulasPage() {
 
   const removePersonaMutation = useMutation({
     mutationFn: ({ celulaId, personaId }: { celulaId: number; personaId: number }) =>
-      apiRequest(`/api/celulas/${celulaId}/personas/${personaId}`, {
-        method: "DELETE"
-      }),
+      apiRequest("DELETE", `/api/celulas/${celulaId}/personas/${personaId}`),
     onSuccess: () => {
       if (selectedCelula) {
         queryClient.invalidateQueries({ queryKey: ["/api/celulas", selectedCelula] });
