@@ -234,8 +234,45 @@ export default function CelulasPage() {
     }
   });
 
-  const handleCreate = (data: FormData) => {
-    createMutation.mutate(data);
+  const handleCreate = async (data: FormData) => {
+    try {
+      // Crear la célula primero
+      const response = await fetch("/api/celulas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al crear la célula");
+      }
+
+      const nuevaCelula = await response.json();
+
+      // Si hay personas seleccionadas, agregarlas a la célula
+      if (selectedPersonas.length > 0) {
+        for (const persona of selectedPersonas) {
+          await fetch(`/api/celulas/${nuevaCelula.id}/personas`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ personaId: persona.id })
+          });
+        }
+      }
+
+      // Limpiar formulario y selecciones
+      queryClient.invalidateQueries({ queryKey: ["/api/celulas"] });
+      setShowCreateDialog(false);
+      form.reset();
+      clearSelections();
+      toast({ description: "Célula creada exitosamente con personas asignadas" });
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        description: error.message || "Error al crear la célula"
+      });
+    }
   };
 
   const handleEdit = (celula: Celula) => {
@@ -515,6 +552,91 @@ export default function CelulasPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Sección para buscar y agregar personas */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Buscar Personas para Agregar</Label>
+                  <div className="relative mt-2">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Buscar por nombre o identificación..."
+                      value={searchPersona}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  {/* Resultados de búsqueda */}
+                  {searchResults.length > 0 && (
+                    <div className="mt-2 max-h-40 overflow-y-auto border rounded-md bg-white shadow-sm">
+                      {searchResults.map((persona) => (
+                        <div
+                          key={persona.id}
+                          className="p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                          onClick={() => addSelectedPersona(persona)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium">{persona.nombre}</span>
+                              <span className="text-sm text-gray-500 ml-2">
+                                {persona.identificacion}
+                              </span>
+                              {persona.posicion_estructura && (
+                                <Badge variant="outline" className="ml-2 text-xs">
+                                  {persona.posicion_estructura}
+                                </Badge>
+                              )}
+                            </div>
+                            <Plus className="w-4 h-4 text-gray-400" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Personas seleccionadas */}
+                {selectedPersonas.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium">Personas Seleccionadas ({selectedPersonas.length})</Label>
+                    <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                      {selectedPersonas.map((persona) => (
+                        <div key={persona.id} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
+                          <div>
+                            <span className="font-medium">{persona.nombre}</span>
+                            <span className="text-sm text-gray-500 ml-2">
+                              {persona.identificacion}
+                            </span>
+                            {persona.posicion_estructura && (
+                              <Badge variant="outline" className="ml-2 text-xs">
+                                {persona.posicion_estructura}
+                              </Badge>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSelectedPersona(persona.id)}
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearSelections}
+                      className="mt-2"
+                    >
+                      Limpiar selección
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               <div className="flex justify-end gap-2">
                 <Button
