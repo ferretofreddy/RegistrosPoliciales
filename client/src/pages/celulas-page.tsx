@@ -80,6 +80,13 @@ export default function CelulasPage() {
 
   const { data: celulaDetalle, isLoading: loadingDetalle } = useQuery({
     queryKey: ["/api/celulas", selectedCelula],
+    queryFn: async () => {
+      const response = await fetch(`/api/celulas/${selectedCelula}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar detalles de la célula');
+      }
+      return response.json();
+    },
     enabled: !!selectedCelula
   });
 
