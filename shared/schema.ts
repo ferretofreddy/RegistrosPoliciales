@@ -422,6 +422,18 @@ export const insertCelulaPersonaSchema = createInsertSchema(celulasPersonas).pic
   personaId: true,
 });
 
+// Tabla de niveles de células
+export const nivelesCelula = pgTable("niveles_celula", {
+  id: serial("id").primaryKey(),
+  nivel: integer("nivel").notNull(),
+  posiciones: text("posiciones").array().notNull(),
+});
+
+export const insertNivelCelulaSchema = createInsertSchema(nivelesCelula).pick({
+  nivel: true,
+  posiciones: true,
+});
+
 // Tipos para las nuevas relaciones
 export type VehiculoInmueble = typeof vehiculosInmuebles.$inferSelect;
 export type VehiculoVehiculo = typeof vehiculosVehiculos.$inferSelect;
@@ -439,3 +451,5 @@ export type Celula = typeof celulas.$inferSelect;
 export type InsertCelula = z.infer<typeof insertCelulaSchema>;
 export type CelulaPersona = typeof celulasPersonas.$inferSelect;
 export type InsertCelulaPersona = z.infer<typeof insertCelulaPersonaSchema>;
+export type NivelCelula = typeof nivelesCelula.$inferSelect;
+export type InsertNivelCelula = z.infer<typeof insertNivelCelulaSchema>;
