@@ -580,7 +580,7 @@ export default function EstructurasPage() {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
-      doc.text("INFORME DE ESTRUCTURAS CRIMINALES", pageWidth / 2, 15, { align: "center" });
+      doc.text("INFORME DE RELACIONES DE ENTIDADES", pageWidth / 2, 15, { align: "center" });
       
       // Subtítulo con tipo y nombre de entidad
       if (selectedResult) {
@@ -596,7 +596,7 @@ export default function EstructurasPage() {
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 45, { align: "right" });
-      doc.text(`Sistema de Gestión de Estructuras`, margin, 45);
+      doc.text(`Sistema de Gestión de Relaciones entre Entidades`, margin, 45);
       
       // Línea separadora elegante
       doc.setDrawColor(25, 25, 112);
@@ -1035,15 +1035,15 @@ export default function EstructurasPage() {
         doc.text(pageText, pageWidth / 2, pageHeight - 10, { align: "center" });
         
         // Texto confidencial a la izquierda
-        doc.text("INFORME CONFIDENCIAL - ESTRUCTURAS", margin, pageHeight - 10);
+        doc.text("INFORME CONFIDENCIAL - RELACIONES", margin, pageHeight - 10);
       }
 
       // Guardar el PDF
-      let nombre = selectedResult?.nombre || "estructura";
+      let nombre = selectedResult?.nombre || "relacion";
       nombre = nombre.replace(/[^a-zA-Z0-9]/g, "_");
       nombre = nombre.substring(0, 20);
       
-      const fileName = `Informe_Estructura_${nombre}.pdf`;
+      const fileName = `Informe_Relacion_${nombre}.pdf`;
       doc.save(fileName);
       
       toast({
