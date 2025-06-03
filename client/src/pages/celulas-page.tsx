@@ -9,7 +9,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Users, Eye, Edit, Trash2, UserPlus, UserMinus, Search, MapPin } from "lucide-react";
+import { Plus, Users, Eye, Edit, Trash2, UserPlus, UserMinus, Search, MapPin, FileText } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useAuth } from "@/hooks/use-auth";
 import { insertCelulaSchema } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -331,6 +333,194 @@ export default function CelulasPage() {
     }
   };
 
+  const generatePDF = () => {
+    if (!selectedCelula || !celulaDetalle) {
+      toast({
+        variant: "destructive",
+        description: "Seleccione una célula para generar el informe"
+      });
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+
+      // Encabezado profesional con fondo
+      doc.setFillColor(25, 25, 112); // Azul oscuro
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Título principal en blanco
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("INFORME DE CÉLULA", pageWidth / 2, 15, { align: "center" });
+      
+      // Subtítulo con nombre de célula
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${celulaDetalle.celula.nombreCelula}`, pageWidth / 2, 25, { align: "center" });
+      
+      // Resetear color de texto
+      doc.setTextColor(0, 0, 0);
+      
+      // Información del documento
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - margin, 45, { align: "right" });
+      doc.text(`Sistema de Gestión de Células`, margin, 45);
+      
+      // Línea separadora elegante
+      doc.setDrawColor(25, 25, 112);
+      doc.setLineWidth(1);
+      doc.line(margin, 50, pageWidth - margin, 50);
+      
+      // Información de la célula
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(25, 25, 112);
+      doc.text("INFORMACIÓN DE CÉLULA", margin, 65);
+      
+      let yPos = 75;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+      
+      doc.text(`• Nombre: ${celulaDetalle.celula.nombreCelula}`, margin + 5, yPos);
+      yPos += 8;
+      doc.text(`• Zona: ${celulaDetalle.celula.zona}`, margin + 5, yPos);
+      yPos += 8;
+      
+      if (celulaDetalle.celula.detalle) {
+        doc.text(`• Detalle: ${celulaDetalle.celula.detalle}`, margin + 5, yPos);
+        yPos += 8;
+      }
+      
+      yPos += 15;
+
+      // Estructura de la célula
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(25, 25, 112);
+      doc.text("ESTRUCTURA DE LA CÉLULA", margin, yPos);
+      yPos += 15;
+
+      // Generar mapa conceptual jerárquico
+      if (celulaDetalle.niveles && celulaDetalle.niveles.length > 0) {
+        for (const nivel of celulaDetalle.niveles) {
+          // Verificar si necesitamos nueva página
+          if (yPos + 40 > pageHeight - 30) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          // Título del nivel
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(25, 25, 112);
+          doc.text(`NIVEL ${nivel.nivel}: ${nivel.nombre}`, margin, yPos);
+          yPos += 8;
+
+          if (nivel.descripcion) {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(100, 100, 100);
+            doc.text(nivel.descripcion, margin + 5, yPos);
+            yPos += 8;
+          }
+
+          // Personas en este nivel
+          const personasNivel = celulaDetalle.organigrama[nivel.nivel] || [];
+          
+          if (personasNivel.length > 0) {
+            // Crear tabla para las personas del nivel
+            const tableData = personasNivel.map((persona: any) => [
+              persona.nombre,
+              persona.tipo_identificacion_nombre || "N/A",
+              persona.identificacion,
+              persona.posicion_estructura_nombre || "N/A"
+            ]);
+
+            autoTable(doc, {
+              startY: yPos,
+              head: [['Nombre', 'Tipo ID', 'Identificación', 'Posición']],
+              body: tableData,
+              theme: 'striped',
+              headStyles: {
+                fillColor: [25, 25, 112],
+                textColor: 255,
+                fontSize: 9,
+                fontStyle: 'bold'
+              },
+              bodyStyles: {
+                fontSize: 8,
+                textColor: 0
+              },
+              alternateRowStyles: {
+                fillColor: [240, 240, 240]
+              },
+              margin: { left: margin + 10, right: margin },
+              tableWidth: 'auto',
+              columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { cellWidth: 25 },
+                2: { cellWidth: 30 },
+                3: { cellWidth: 'auto' }
+              }
+            });
+
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+          } else {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(150, 150, 150);
+            doc.text("Sin personas asignadas", margin + 10, yPos);
+            yPos += 15;
+          }
+
+          // Espacio entre niveles
+          yPos += 5;
+        }
+      }
+
+      // Pie de página
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        
+        // Línea del pie de página
+        doc.setDrawColor(25, 25, 112);
+        doc.setLineWidth(0.5);
+        doc.line(margin, pageHeight - 25, pageWidth - margin, pageHeight - 25);
+        
+        // Texto del pie de página
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Sistema de Gestión de Células - Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 15, { align: "center" });
+        doc.text(`Informe generado el ${new Date().toLocaleDateString()}`, margin, pageHeight - 15);
+        doc.text("Documento confidencial", pageWidth - margin, pageHeight - 15, { align: "right" });
+      }
+
+      // Guardar el PDF
+      const fileName = `Informe_Celula_${celulaDetalle.celula.nombreCelula.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+      toast({
+        description: `Informe PDF generado: ${fileName}`
+      });
+
+    } catch (error) {
+      console.error("Error generando PDF:", error);
+      toast({
+        variant: "destructive",
+        description: "Error al generar el informe PDF"
+      });
+    }
+  };
+
   if (loadingCelulas) {
     return <div className="flex justify-center p-8">Cargando células...</div>;
   }
@@ -488,16 +678,28 @@ export default function CelulasPage() {
                 {/* Header del Organigrama */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <h2 className="text-lg sm:text-xl font-semibold">Organigrama de Célula</h2>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddPersonDialog(true)}
-                    className="w-full sm:w-auto"
-                    size="sm"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Agregar Persona</span>
-                    <span className="sm:hidden">Agregar</span>
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      onClick={generatePDF}
+                      className="w-full sm:w-auto text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                      size="sm"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      <span className="hidden sm:inline">Generar PDF</span>
+                      <span className="sm:hidden">PDF</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddPersonDialog(true)}
+                      className="w-full sm:w-auto"
+                      size="sm"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      <span className="hidden sm:inline">Agregar Persona</span>
+                      <span className="sm:hidden">Agregar</span>
+                    </Button>
+                  </div>
                 </div>
 
                 {loadingDetalle ? (
