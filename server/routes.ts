@@ -16,7 +16,9 @@ import {
   vehiculosUbicaciones, inmueblesUbicaciones, vehiculosInmuebles, vehiculosVehiculos,
   inmueblesInmuebles, ubicacionesUbicaciones,
   tiposInmuebles, tiposUbicaciones, posicionesEstructura,
-  insertTipoInmuebleSchema, insertTipoUbicacionSchema, insertPosicionEstructuraSchema
+  insertTipoInmuebleSchema, insertTipoUbicacionSchema, insertPosicionEstructuraSchema,
+  celulas, insertCelulaSchema, celulasPersonas, insertCelulaPersonaSchema,
+  nivelesCelula, insertNivelCelulaSchema
 } from "@shared/schema";
 import { registerChatRoutes } from "./routes-chat";
 
@@ -2646,6 +2648,195 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al eliminar tipo de identificación:", error);
       res.status(500).json({ message: "Error al eliminar tipo de identificación" });
+    }
+  });
+
+  // === CÉLULAS ===
+  // Obtener todas las células
+  app.get("/api/celulas", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const celulas = await storage.getAllCelulas();
+      res.json(celulas);
+    } catch (error) {
+      console.error("Error al obtener células:", error);
+      res.status(500).json({ message: "Error al obtener células" });
+    }
+  });
+
+  // Obtener una célula específica con organigrama
+  app.get("/api/celulas/:id", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const celulaData = await storage.getCelulaWithPersonas(id);
+      
+      if (!celulaData) {
+        return res.status(404).json({ message: "Célula no encontrada" });
+      }
+      
+      res.json(celulaData);
+    } catch (error) {
+      console.error("Error al obtener célula:", error);
+      res.status(500).json({ message: "Error al obtener célula" });
+    }
+  });
+
+  // Crear nueva célula
+  app.post("/api/celulas", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const userData = req.user as User;
+      const { nombreCelula, zona, detalle, personaIds } = req.body;
+      
+      // Validar datos requeridos
+      if (!nombreCelula || !zona) {
+        return res.status(400).json({ message: "Nombre de célula y zona son obligatorios" });
+      }
+      
+      // Crear la célula
+      const nuevaCelula = await storage.createCelula({
+        nombreCelula,
+        zona,
+        detalle,
+        usuario: userData.nombre || userData.email
+      });
+      
+      // Agregar personas si se proporcionan
+      if (personaIds && Array.isArray(personaIds) && personaIds.length > 0) {
+        for (const personaId of personaIds) {
+          await storage.addPersonaToCelula(nuevaCelula.id, personaId);
+        }
+      }
+      
+      // Obtener la célula completa con personas
+      const celulaCompleta = await storage.getCelulaWithPersonas(nuevaCelula.id);
+      res.status(201).json(celulaCompleta);
+    } catch (error) {
+      console.error("Error al crear célula:", error);
+      res.status(500).json({ message: "Error al crear célula" });
+    }
+  });
+
+  // Actualizar célula
+  app.put("/api/celulas/:id", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { nombreCelula, zona, detalle } = req.body;
+      
+      const celulaActualizada = await storage.updateCelula(id, {
+        nombreCelula,
+        zona,
+        detalle
+      });
+      
+      if (!celulaActualizada) {
+        return res.status(404).json({ message: "Célula no encontrada" });
+      }
+      
+      res.json(celulaActualizada);
+    } catch (error) {
+      console.error("Error al actualizar célula:", error);
+      res.status(500).json({ message: "Error al actualizar célula" });
+    }
+  });
+
+  // Eliminar célula
+  app.delete("/api/celulas/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      const success = await storage.deleteCelula(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Célula no encontrada" });
+      }
+      
+      res.json({ message: "Célula eliminada correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar célula:", error);
+      res.status(500).json({ message: "Error al eliminar célula" });
+    }
+  });
+
+  // Agregar persona a célula
+  app.post("/api/celulas/:id/personas", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const celulaId = parseInt(req.params.id);
+      const { personaId } = req.body;
+      
+      if (!personaId) {
+        return res.status(400).json({ message: "ID de persona es obligatorio" });
+      }
+      
+      const relacion = await storage.addPersonaToCelula(celulaId, personaId);
+      res.status(201).json(relacion);
+    } catch (error) {
+      console.error("Error al agregar persona a célula:", error);
+      res.status(500).json({ message: "Error al agregar persona a célula" });
+    }
+  });
+
+  // Remover persona de célula
+  app.delete("/api/celulas/:celulaId/personas/:personaId", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const celulaId = parseInt(req.params.celulaId);
+      const personaId = parseInt(req.params.personaId);
+      
+      const success = await storage.removePersonaFromCelula(celulaId, personaId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Relación no encontrada" });
+      }
+      
+      res.json({ message: "Persona removida de la célula correctamente" });
+    } catch (error) {
+      console.error("Error al remover persona de célula:", error);
+      res.status(500).json({ message: "Error al remover persona de célula" });
+    }
+  });
+
+  // Obtener personas de una célula
+  app.get("/api/celulas/:id/personas", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const celulaId = parseInt(req.params.id);
+      const personas = await storage.getPersonasCelula(celulaId);
+      res.json(personas);
+    } catch (error) {
+      console.error("Error al obtener personas de célula:", error);
+      res.status(500).json({ message: "Error al obtener personas de célula" });
+    }
+  });
+
+  // === NIVELES DE CÉLULA ===
+  // Obtener todos los niveles de célula
+  app.get("/api/niveles-celula", requireRole(["admin", "investigador"]), async (req, res) => {
+    try {
+      const niveles = await storage.getAllNivelesCelula();
+      res.json(niveles);
+    } catch (error) {
+      console.error("Error al obtener niveles de célula:", error);
+      res.status(500).json({ message: "Error al obtener niveles de célula" });
+    }
+  });
+
+  // Actualizar un nivel de célula (solo admin)
+  app.put("/api/niveles-celula/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { posiciones } = req.body;
+      
+      if (!Array.isArray(posiciones)) {
+        return res.status(400).json({ message: "Las posiciones deben ser un array" });
+      }
+      
+      const nivelActualizado = await storage.updateNivelCelula(id, posiciones);
+      
+      if (!nivelActualizado) {
+        return res.status(404).json({ message: "Nivel de célula no encontrado" });
+      }
+      
+      res.json(nivelActualizado);
+    } catch (error) {
+      console.error("Error al actualizar nivel de célula:", error);
+      res.status(500).json({ message: "Error al actualizar nivel de célula" });
     }
   });
   

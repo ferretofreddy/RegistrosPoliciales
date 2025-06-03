@@ -10,7 +10,9 @@ import {
   users, tiposInmuebles, TipoInmueble, InsertTipoInmueble,
   tiposUbicaciones, TipoUbicacion, InsertTipoUbicacion, tiposIdentificacion,
   TipoIdentificacion, InsertTipoIdentificacion, posicionesEstructura,
-  PosicionEstructura, InsertPosicionEstructura
+  PosicionEstructura, InsertPosicionEstructura, celulas, Celula, InsertCelula,
+  celulasPersonas, CelulaPersona, InsertCelulaPersona, nivelesCelula,
+  NivelCelula, InsertNivelCelula
 } from '@shared/schema';
 import { sql, eq, and, or, like } from 'drizzle-orm';
 import { db } from './db';
@@ -2355,6 +2357,151 @@ export class DatabaseStorage {
         ubicaciones: []
       };
     }
+  }
+
+  // CÉLULAS METHODS
+  async getAllCelulas(): Promise<Celula[]> {
+    return await db.select().from(celulas).orderBy(celulas.nombreCelula);
+  }
+
+  async getCelula(id: number): Promise<Celula | undefined> {
+    const [celula] = await db.select().from(celulas).where(eq(celulas.id, id));
+    return celula;
+  }
+
+  async createCelula(insertCelula: InsertCelula): Promise<Celula> {
+    const [celula] = await db
+      .insert(celulas)
+      .values({
+        ...insertCelula,
+        fechaCreacion: new Date(),
+        fechaModificacion: new Date()
+      })
+      .returning();
+    return celula;
+  }
+
+  async updateCelula(id: number, updateData: Partial<InsertCelula>): Promise<Celula | undefined> {
+    const [celula] = await db
+      .update(celulas)
+      .set({
+        ...updateData,
+        fechaModificacion: new Date()
+      })
+      .where(eq(celulas.id, id))
+      .returning();
+    return celula;
+  }
+
+  async deleteCelula(id: number): Promise<boolean> {
+    try {
+      // Primero eliminar las relaciones con personas
+      await db.delete(celulasPersonas).where(eq(celulasPersonas.celulaId, id));
+      
+      // Luego eliminar la célula
+      const result = await db.delete(celulas).where(eq(celulas.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting celula:', error);
+      return false;
+    }
+  }
+
+  async getCelulaWithPersonas(id: number): Promise<any> {
+    try {
+      // Obtener la célula
+      const celula = await this.getCelula(id);
+      if (!celula) return null;
+
+      // Obtener niveles de célula
+      const niveles = await db.select().from(nivelesCelula).orderBy(nivelesCelula.nivel);
+
+      // Obtener personas relacionadas con posición de estructura
+      const personasResult = await db.execute(
+        sql`SELECT p.*, pe.nombre as posicion_estructura_nombre, ti.tipo as tipo_identificacion_nombre
+            FROM personas p
+            JOIN celulas_personas cp ON p.id = cp.persona_id
+            LEFT JOIN posiciones_estructura pe ON p.posicion_estructura = pe.nombre
+            LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+            WHERE cp.celula_id = ${id}`
+      );
+
+      const personas = personasResult.rows || [];
+
+      // Organizar personas por nivel según su posición
+      const organigrama: { [key: number]: any[] } = {};
+      
+      for (const nivel of niveles) {
+        organigrama[nivel.nivel] = personas.filter(p => 
+          nivel.posiciones.includes(p.posicion_estructura || '')
+        );
+      }
+
+      return {
+        celula,
+        organigrama,
+        niveles,
+        personas
+      };
+    } catch (error) {
+      console.error('Error getting celula with personas:', error);
+      return null;
+    }
+  }
+
+  async addPersonaToCelula(celulaId: number, personaId: number): Promise<CelulaPersona> {
+    const [relacion] = await db
+      .insert(celulasPersonas)
+      .values({ celulaId, personaId })
+      .returning();
+    return relacion;
+  }
+
+  async removePersonaFromCelula(celulaId: number, personaId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(celulasPersonas)
+        .where(and(
+          eq(celulasPersonas.celulaId, celulaId),
+          eq(celulasPersonas.personaId, personaId)
+        ));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error removing persona from celula:', error);
+      return false;
+    }
+  }
+
+  async getPersonasCelula(celulaId: number): Promise<any[]> {
+    const result = await db.execute(
+      sql`SELECT p.*, pe.nombre as posicion_estructura_nombre, ti.tipo as tipo_identificacion_nombre
+          FROM personas p
+          JOIN celulas_personas cp ON p.id = cp.persona_id
+          LEFT JOIN posiciones_estructura pe ON p.posicion_estructura = pe.nombre
+          LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
+          WHERE cp.celula_id = ${celulaId}
+          ORDER BY p.nombre`
+    );
+    return result.rows || [];
+  }
+
+  // NIVELES CÉLULA METHODS
+  async getAllNivelesCelula(): Promise<NivelCelula[]> {
+    return await db.select().from(nivelesCelula).orderBy(nivelesCelula.nivel);
+  }
+
+  async getNivelCelula(id: number): Promise<NivelCelula | undefined> {
+    const [nivel] = await db.select().from(nivelesCelula).where(eq(nivelesCelula.id, id));
+    return nivel;
+  }
+
+  async updateNivelCelula(id: number, posiciones: string[]): Promise<NivelCelula | undefined> {
+    const [nivel] = await db
+      .update(nivelesCelula)
+      .set({ posiciones })
+      .where(eq(nivelesCelula.id, id))
+      .returning();
+    return nivel;
   }
 }
 

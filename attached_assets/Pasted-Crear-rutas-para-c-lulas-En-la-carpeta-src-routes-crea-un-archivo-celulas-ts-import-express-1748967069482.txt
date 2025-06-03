@@ -1,0 +1,165 @@
+Crear rutas para células:
+
+
+
+
+
+En la carpeta src/routes, crea un archivo celulas.ts:
+
+import express, { Request, Response } from 'express';
+import pool from '../db';
+
+const router = express.Router();
+
+interface Celula {
+  id: number;
+  nombre_celula: string;
+  zona: string;
+  detalle?: string;
+  creado_por: string;
+  fecha_creacion: string;
+  fecha_modificacion: string;
+}
+
+interface Persona {
+  id: number;
+  nombre: string;
+  pocision_estructura: string;
+}
+
+interface Nivel {
+  nivel: number;
+  posiciones: string[];
+}
+
+// Crear una nueva célula
+router.post('/', async (req: Request, res: Response) => {
+  const { nombre_celula, zona, detalle, creado_por, persona_ids } = req.body as {
+    nombre_celula: string;
+    zona: string;
+    detalle?: string;
+    creado_por: string;
+    persona_ids: number[];
+  };
+  try {
+    const celulaResult = await pool.query(
+      'INSERT INTO celula (nombre_celula, zona, detalle, creado_por) VALUES ($1, $2, $3, $4) RETURNING *',
+      [nombre_celula, zona, detalle, creado_por]
+    );
+    const celula: Celula = celulaResult.rows[0];
+
+    if (persona_ids && persona_ids.length > 0) {
+      for (const persona_id of persona_ids) {
+        await pool.query(
+          'INSERT INTO celulas_personas (celula_id, persona_id) VALUES ($1, $2)',
+          [celula.id, persona_id]
+        );
+      }
+    }
+    res.json(celula);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// Obtener todas las células
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM celula ORDER BY nombre_celula');
+    const celulas: Celula[] = result.rows;
+    res.json(celulas);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// Obtener detalles de una célula y su organigrama
+router.get('/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const celulaResult = await pool.query('SELECT * FROM celula WHERE id = $1', [id]);
+    const celula: Celula = celulaResult.rows[0];
+
+    const nivelesResult = await pool.query('SELECT nivel, posiciones FROM niveles_celula ORDER BY nivel');
+    const niveles: Nivel[] = nivelesResult.rows;
+
+    const personasResult = await pool.query(
+      'SELECT p.*, pe.nombre AS pocision_estructura ' +
+      'FROM personas p ' +
+      'JOIN celulas_personas cp ON p.id = cp.persona_id ' +
+      'JOIN pocisiones_estructura pe ON p.pocision_estructura = pe.id ' +
+      'WHERE cp.celula_id = $1',
+      [id]
+    );
+    const personas: Persona[] = personasResult.rows;
+
+    const organigrama: { [key: number]: Persona[] } = {};
+    for (const nivel of niveles) {
+      organigrama[nivel.nivel] = personas.filter(p => nivel.posiciones.includes(p.pocision_estructura));
+    }
+
+    res.json({ celula, organigrama });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+export default router;
+
+
+
+Crear rutas para niveles:
+
+
+
+
+
+En src/routes, crea un archivo niveles.ts:
+
+import express, { Request, Response } from 'express';
+import pool from '../db';
+
+const router = express.Router();
+
+// Obtener todos los niveles
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM niveles_celula ORDER BY nivel');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// Actualizar un nivel
+router.put('/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { posiciones } = req.body as { posiciones: string[] };
+  try {
+    await pool.query(
+      'UPDATE niveles_celula SET posiciones = $1 WHERE id = $2',
+      [posiciones, id]
+    );
+    res.json({ message: 'Nivel actualizado correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+export default router;
+
+
+
+Integrar las rutas:
+
+
+
+
+
+En src/index.ts, asegúrate de incluir las nuevas rutas:
+
+import celulasRouter from './routes/celulas';
+import nivelesRouter from './routes/niveles';
+
+app.use('/celulas', celulasRouter);
+app.use('/configuracion/niveles', nivelesRouter);
