@@ -95,6 +95,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       >
                         Relaciones
                       </Link>
+                      <Link
+                        href="/celulas"
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          location === "/celulas"
+                            ? "bg-primary-900 text-white"
+                            : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                        }`}
+                      >
+                        Células
+                      </Link>
                     </>
                   )}
                   
@@ -226,6 +236,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Relaciones
+                  </Link>
+                  
+                  <Link
+                    href="/celulas"
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      location === "/celulas"
+                        ? "bg-primary-900 text-white"
+                        : "text-gray-300 hover:bg-primary-600 hover:text-white"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Células
                   </Link>
                 </>
               )}

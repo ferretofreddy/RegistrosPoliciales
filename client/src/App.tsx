@@ -9,6 +9,7 @@ import ConfiguracionPage from "@/pages/configuracion-page";
 import ConsultasPage from "@/pages/consultas-page";
 import UbicacionesPage from "@/pages/ubicaciones-page";
 import EstructurasPage from "@/pages/estructuras-page";
+import CelulasPage from "@/pages/celulas-page";
 import MiPerfilPage from "@/pages/mi-perfil-page";
 import ChatPage from "@/pages/chat-page";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -22,6 +23,7 @@ function Router() {
       <ProtectedRoute path="/registros" component={RegistrosPage} roles={["admin", "investigador"]} />
       <ProtectedRoute path="/ubicaciones" component={UbicacionesPage} roles={["admin", "investigador"]} />
       <ProtectedRoute path="/relaciones" component={EstructurasPage} roles={["admin", "investigador"]} />
+      <ProtectedRoute path="/celulas" component={CelulasPage} roles={["admin", "investigador"]} />
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
       <ProtectedRoute path="/configuracion" component={ConfiguracionPage} roles={["admin"]} />
       <ProtectedRoute path="/mi-perfil" component={MiPerfilPage} />
