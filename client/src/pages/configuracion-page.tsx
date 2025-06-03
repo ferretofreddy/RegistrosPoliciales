@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { TipoInmueble, TipoUbicacion, PosicionEstructura, TipoIdentificacion } from "@shared/schema";
+import { TipoInmueble, TipoUbicacion, PosicionEstructura, TipoIdentificacion, NivelCelula } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/main-layout";
@@ -41,6 +41,14 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Pencil, Trash2, Plus, Save, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Esquema para el formulario de tipo de inmueble
 const tipoInmuebleFormSchema = z.object({
@@ -87,6 +95,10 @@ export default function ConfiguracionPage() {
   const [editingTipoUbicacionId, setEditingTipoUbicacionId] = useState<number | null>(null);
   const [editingPosicionEstructuraId, setEditingPosicionEstructuraId] = useState<number | null>(null);
   const [editingTipoIdentificacionId, setEditingTipoIdentificacionId] = useState<number | null>(null);
+  
+  // Estado para niveles de célula
+  const [editingNivelId, setEditingNivelId] = useState<number | null>(null);
+  const [selectedPosiciones, setSelectedPosiciones] = useState<{[nivelId: number]: string[]}>({});
 
   // Formulario para tipos de inmuebles
   const inmuebleForm = useForm<TipoInmuebleFormValues>({
@@ -177,6 +189,20 @@ export default function ConfiguracionPage() {
     queryFn: async () => {
       const res = await fetch("/api/tipos-identificacion-admin");
       if (!res.ok) throw new Error("Error al cargar tipos de identificación");
+      return res.json();
+    },
+  });
+
+  // Consulta para obtener todos los niveles de célula
+  const {
+    data: nivelesCelula,
+    isLoading: loadingNivelesCelula,
+    refetch: refetchNivelesCelula,
+  } = useQuery({
+    queryKey: ["/api/niveles-celula"],
+    queryFn: async () => {
+      const res = await fetch("/api/niveles-celula");
+      if (!res.ok) throw new Error("Error al cargar niveles de célula");
       return res.json();
     },
   });
@@ -736,6 +762,7 @@ export default function ConfiguracionPage() {
               <TabsTrigger value="ubicaciones">Tipos de Ubicaciones</TabsTrigger>
               <TabsTrigger value="posiciones">Posiciones Estructura</TabsTrigger>
               <TabsTrigger value="identificacion">Tipos de Identificación</TabsTrigger>
+              <TabsTrigger value="niveles-celula">Niveles Célula</TabsTrigger>
             </TabsList>
         
         {/* Contenido para Tipos de Inmuebles */}

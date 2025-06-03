@@ -1,0 +1,77 @@
+<div id="niveles-celula">
+    <h2>Niveles Célula</h2>
+    <div id="niveles-list"></div>
+</div>
+
+<script>
+    async function cargarNiveles() {
+        const response = await fetch('/configuracion/niveles');
+        const niveles = await response.json();
+        const posicionesResponse = await fetch('/pocisiones_estructura');
+        const posiciones = await posicionesResponse.json();
+        const lista = document.getElementById('niveles-list');
+        lista.innerHTML = niveles.map(n => `
+            <div>
+                <h3>Nivel ${n.nivel}</h3>
+                <select multiple id="posiciones-${n.id}">
+                    ${posiciones.map(p => `
+                        <option value="${p.nombre}" ${n.posiciones.includes(p.nombre) ? 'selected' : ''}>
+                            ${p.nombre}
+                        </option>
+                    `).join('')}
+                </select>
+                <button onclick="actualizarNivel(${n.id})">Guardar</button>
+            </div>
+        `).join('');
+    }
+
+    async function actualizarNivel(id) {
+        const posiciones = Array.from(document.getElementById(`posiciones-${id}`).selectedOptions)
+            .map(option => option.value);
+        await fetch(`/configuracion/niveles/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ posiciones })
+        });
+        cargarNiveles();
+    }
+
+    cargarNiveles();
+</script>
+
+
+
+Asegurar la ruta para el buscador de personas:
+
+
+
+
+
+Si no tienes una ruta para buscar personas, crea src/routes/personas.ts:
+
+import express, { Request, Response } from 'express';
+import pool from '../db';
+
+const router = express.Router();
+
+router.get('/', async (req: Request, res: Response) => {
+  const { search } = req.query;
+  try {
+    const result = await pool.query(
+      'SELECT id, nombre FROM personas WHERE nombre ILIKE $1',
+      [`%${search}%`]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+export default router;
+
+
+
+Asegúrate de incluir esta ruta en src/index.ts:
+
+import personasRouter from './routes/personas';
+app.use('/personas', personasRouter);
