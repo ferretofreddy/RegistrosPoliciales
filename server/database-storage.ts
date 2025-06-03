@@ -2496,9 +2496,19 @@ export class DatabaseStorage {
   }
 
   async updateNivelCelula(id: number, posiciones: string[]): Promise<NivelCelula | undefined> {
+    // Validar que todas las posiciones existan en la tabla posiciones_estructura
+    const posicionesValidas = await db.select().from(posicionesEstructura);
+    const nombresValidos = posicionesValidas.map(p => p.nombre);
+    
+    // Filtrar solo las posiciones que existen en la tabla
+    const posicionesFiltradas = posiciones.filter(posicion => nombresValidos.includes(posicion));
+    
+    console.log(`Actualizando nivel ${id} con posiciones válidas:`, posicionesFiltradas);
+    console.log(`Posiciones rechazadas (no válidas):`, posiciones.filter(p => !nombresValidos.includes(p)));
+    
     const [nivel] = await db
       .update(nivelesCelula)
-      .set({ posiciones })
+      .set({ posiciones: posicionesFiltradas })
       .where(eq(nivelesCelula.id, id))
       .returning();
     return nivel;
