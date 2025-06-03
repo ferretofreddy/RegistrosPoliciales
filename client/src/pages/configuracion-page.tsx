@@ -1434,7 +1434,7 @@ export default function ConfiguracionPage() {
                 ) : (
                   <div className="space-y-6">
                     {nivelesCelula?.map((nivel: NivelCelula) => {
-                      const posicionesActuales = nivel.posiciones ? JSON.parse(nivel.posiciones) : [];
+                      const posicionesActuales = Array.isArray(nivel.posiciones) ? nivel.posiciones : [];
                       const posicionesSeleccionadas = selectedPosiciones[nivel.id] || posicionesActuales;
                       const isEditing = editingNivelId === nivel.id;
                       

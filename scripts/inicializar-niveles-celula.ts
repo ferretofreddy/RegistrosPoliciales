@@ -21,18 +21,26 @@ async function inicializarNivelesCelula() {
     const nivelesData = [
       {
         nivel: 1,
+        nombre: "Liderazgo",
+        descripcion: "Nivel superior de liderazgo y toma de decisiones",
         posiciones: ["lider"]
       },
       {
         nivel: 2,
+        nombre: "Apoyo Directo",
+        descripcion: "Personal de apoyo directo al liderazgo",
         posiciones: ["familiar", "asistente"]
       },
       {
         nivel: 3,
+        nombre: "Operativo",
+        descripcion: "Personal operativo y de gestión",
         posiciones: ["transportista", "campana", "logistica"]
       },
       {
         nivel: 4,
+        nombre: "Colaboradores",
+        descripcion: "Colaboradores y personal de apoyo",
         posiciones: ["colaborador"]
       }
     ];
