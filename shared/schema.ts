@@ -433,8 +433,13 @@ export const nivelesCelula = pgTable("niveles_celula", {
 
 export const insertNivelCelulaSchema = createInsertSchema(nivelesCelula).pick({
   nivel: true,
+  nombre: true,
+  descripcion: true,
   posiciones: true,
 });
+
+export type NivelCelula = typeof nivelesCelula.$inferSelect;
+export type InsertNivelCelula = z.infer<typeof insertNivelCelulaSchema>;
 
 // Tipos para las nuevas relaciones
 export type VehiculoInmueble = typeof vehiculosInmuebles.$inferSelect;

@@ -776,7 +776,7 @@ export default function ConfiguracionPage() {
   // === FUNCIONES DE MANEJO PARA NIVELES DE CÉLULA ===
   const handleEditNivel = (nivel: NivelCelula) => {
     setEditingNivelId(nivel.id);
-    const posicionesArray = nivel.posiciones ? JSON.parse(nivel.posiciones) : [];
+    const posicionesArray = Array.isArray(nivel.posiciones) ? nivel.posiciones : [];
     setSelectedPosiciones(prev => ({
       ...prev,
       [nivel.id]: posicionesArray
