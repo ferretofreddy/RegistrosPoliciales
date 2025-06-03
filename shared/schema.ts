@@ -392,6 +392,36 @@ export const insertArchivoAdjuntoSchema = createInsertSchema(archivosAdjuntos).p
   tamanoArchivo: true,
 });
 
+// Tabla de células
+export const celulas = pgTable("celulas", {
+  id: serial("id").primaryKey(),
+  nombreCelula: text("nombre_celula").notNull(),
+  zona: text("zona").notNull(),
+  detalle: text("detalle"),
+  usuario: text("usuario").notNull(),
+  fechaCreacion: timestamp("fecha_creacion").notNull().defaultNow(),
+  fechaModificacion: timestamp("fecha_modificacion").notNull().defaultNow(),
+});
+
+export const insertCelulaSchema = createInsertSchema(celulas).pick({
+  nombreCelula: true,
+  zona: true,
+  detalle: true,
+  usuario: true,
+});
+
+// Tabla de relación células-personas
+export const celulasPersonas = pgTable("celulas_personas", {
+  id: serial("id").primaryKey(),
+  celulaId: integer("celula_id").notNull().references(() => celulas.id),
+  personaId: integer("persona_id").notNull().references(() => personas.id),
+});
+
+export const insertCelulaPersonaSchema = createInsertSchema(celulasPersonas).pick({
+  celulaId: true,
+  personaId: true,
+});
+
 // Tipos para las nuevas relaciones
 export type VehiculoInmueble = typeof vehiculosInmuebles.$inferSelect;
 export type VehiculoVehiculo = typeof vehiculosVehiculos.$inferSelect;
@@ -403,3 +433,9 @@ export type Mensaje = typeof mensajes.$inferSelect;
 export type InsertMensaje = z.infer<typeof insertMensajeSchema>;
 export type ArchivoAdjunto = typeof archivosAdjuntos.$inferSelect;
 export type InsertArchivoAdjunto = z.infer<typeof insertArchivoAdjuntoSchema>;
+
+// Tipos para células
+export type Celula = typeof celulas.$inferSelect;
+export type InsertCelula = z.infer<typeof insertCelulaSchema>;
+export type CelulaPersona = typeof celulasPersonas.$inferSelect;
+export type InsertCelulaPersona = z.infer<typeof insertCelulaPersonaSchema>;
