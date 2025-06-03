@@ -337,175 +337,262 @@ export default function CelulasPage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Gestión de Células</h1>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Célula
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Lista de Células */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Células Registradas</h2>
-          {celulas.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center text-gray-500">
-                No hay células registradas
-              </CardContent>
-            </Card>
-          ) : (
-            celulas.map((celula: Celula) => (
-              <Card 
-                key={celula.id} 
-                className={`cursor-pointer transition-colors hover:bg-gray-50 ${
-                  selectedCelula === celula.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedCelula(celula.id)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{celula.nombreCelula}</CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
-                        <MapPin className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">{celula.zona}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCelula(celula.id);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(celula);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      {user?.rol === "admin" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(celula.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                {celula.detalle && (
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-gray-600">{celula.detalle}</p>
-                  </CardContent>
-                )}
-              </Card>
-            ))
-          )}
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Células</h1>
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Célula
+          </Button>
         </div>
 
-        {/* Detalle de Célula Seleccionada */}
-        <div>
-          {selectedCelula && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Organigrama de Célula</h2>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAddPersonDialog(true)}
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Agregar Persona
-                </Button>
-              </div>
-
-              {loadingDetalle ? (
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    Cargando organigrama...
-                  </CardContent>
-                </Card>
-              ) : celulaDetalle ? (
-                <div className="space-y-4">
-                  {celulaDetalle.niveles?.map((nivel: any) => (
-                    <Card key={nivel.id}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Badge className={getNivelColor(nivel.nivel)}>
-                            Nivel {nivel.nivel}
-                          </Badge>
-                          {nivel.nombre}
-                        </CardTitle>
-                        <p className="text-sm text-gray-600">{nivel.descripcion}</p>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {celulaDetalle.organigrama[nivel.nivel]?.length > 0 ? (
-                            celulaDetalle.organigrama[nivel.nivel].map((persona: any) => (
-                              <div key={persona.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                <div>
-                                  <span className="font-medium">{persona.nombre}</span>
-                                  <span className="text-sm text-gray-500 ml-2">
-                                    {persona.tipo_identificacion_nombre}: {persona.identificacion}
-                                  </span>
-                                  {persona.posicion_estructura_nombre && (
-                                    <Badge variant="outline" className="ml-2 text-xs">
-                                      {persona.posicion_estructura_nombre}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemovePersona(persona.id)}
-                                >
-                                  <UserMinus className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-gray-500 italic">
-                              No hay personas asignadas a este nivel
-                            </p>
-                          )}
+        {/* Responsive Layout */}
+        <div className="flex flex-col xl:flex-row gap-4 xl:gap-6">
+          {/* Lista de Células - Mobile: full width, Desktop: 20% */}
+          <div className="w-full xl:w-1/5 space-y-4">
+            <h2 className="text-lg sm:text-xl font-semibold hidden xl:block">Células Registradas</h2>
+            <h2 className="text-lg font-semibold xl:hidden">Células ({celulas.length})</h2>
+            
+            {celulas.length === 0 ? (
+              <Card className="xl:min-h-[200px]">
+                <CardContent className="p-4 sm:p-6 text-center text-gray-500">
+                  <div className="hidden sm:block">No hay células registradas</div>
+                  <div className="sm:hidden">Sin células</div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2 xl:space-y-3">
+                {celulas.map((celula: Celula) => (
+                  <Card 
+                    key={celula.id} 
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      selectedCelula === celula.id ? 'ring-2 ring-primary shadow-md' : 'hover:bg-gray-50'
+                    }`}
+                    onClick={() => setSelectedCelula(celula.id)}
+                  >
+                    {/* Mobile Layout - Solo nombre */}
+                    <div className="block xl:hidden">
+                      <CardHeader className="p-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-sm font-medium truncate">
+                              {celula.nombreCelula}
+                            </CardTitle>
+                            <div className="flex items-center gap-1 mt-1">
+                              <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              <span className="text-xs text-gray-500 truncate">{celula.zona}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(celula);
+                              }}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            {user?.rol === "admin" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(celula.id);
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </CardHeader>
+                    </div>
+
+                    {/* Desktop Layout - Información completa */}
+                    <div className="hidden xl:block">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base leading-tight">
+                              {celula.nombreCelula}
+                            </CardTitle>
+                            <div className="flex items-center gap-2 mt-1">
+                              <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                              <span className="text-xs text-gray-600 truncate">{celula.zona}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCelula(celula.id);
+                              }}
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(celula);
+                              }}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            {user?.rol === "admin" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(celula.id);
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      {celula.detalle && (
+                        <CardContent className="pt-0 pb-3">
+                          <p className="text-xs text-gray-600 line-clamp-2">{celula.detalle}</p>
+                        </CardContent>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Área de Contenido Principal - Mobile: full width, Desktop: 80% */}
+          <div className="w-full xl:w-4/5 flex-1">
+            {selectedCelula ? (
+              <div className="space-y-4">
+                {/* Header del Organigrama */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <h2 className="text-lg sm:text-xl font-semibold">Organigrama de Célula</h2>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAddPersonDialog(true)}
+                    className="w-full sm:w-auto"
+                    size="sm"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Agregar Persona</span>
+                    <span className="sm:hidden">Agregar</span>
+                  </Button>
                 </div>
-              ) : (
-                <Card>
-                  <CardContent className="p-6 text-center text-gray-500">
-                    Seleccione una célula para ver su organigrama
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
+
+                {loadingDetalle ? (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6 text-center">
+                      <div className="hidden sm:block">Cargando organigrama...</div>
+                      <div className="sm:hidden">Cargando...</div>
+                    </CardContent>
+                  </Card>
+                ) : celulaDetalle ? (
+                  <div className="space-y-3 sm:space-y-4">
+                    {celulaDetalle.niveles?.map((nivel: any) => (
+                      <Card key={nivel.id} className="overflow-hidden">
+                        <CardHeader className="pb-3 p-3 sm:p-6 sm:pb-3">
+                          <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-2">
+                            <Badge className={`${getNivelColor(nivel.nivel)} w-fit`}>
+                              Nivel {nivel.nivel}
+                            </Badge>
+                            <span className="text-sm sm:text-lg">{nivel.nombre}</span>
+                          </CardTitle>
+                          {nivel.descripcion && (
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1">{nivel.descripcion}</p>
+                          )}
+                        </CardHeader>
+                        <CardContent className="p-3 sm:p-6 pt-0">
+                          <div className="space-y-2">
+                            {celulaDetalle.organigrama[nivel.nivel]?.length > 0 ? (
+                              celulaDetalle.organigrama[nivel.nivel].map((persona: any) => (
+                                <div key={persona.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm sm:text-base truncate">{persona.nombre}</div>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
+                                      <span className="text-xs sm:text-sm text-gray-500">
+                                        {persona.tipo_identificacion_nombre}: {persona.identificacion}
+                                      </span>
+                                      {persona.posicion_estructura_nombre && (
+                                        <Badge variant="outline" className="text-xs w-fit">
+                                          {persona.posicion_estructura_nombre}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemovePersona(persona.id)}
+                                    className="self-end sm:self-center h-8 w-8 p-0"
+                                  >
+                                    <UserMinus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs sm:text-sm text-gray-500 italic text-center py-4">
+                                <span className="hidden sm:inline">No hay personas asignadas a este nivel</span>
+                                <span className="sm:hidden">Sin personas asignadas</span>
+                              </p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="h-64 sm:h-96">
+                    <CardContent className="p-4 sm:p-6 text-center text-gray-500 flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="text-4xl sm:text-6xl mb-4 opacity-20">📋</div>
+                        <div className="hidden sm:block">Seleccione una célula para ver su organigrama</div>
+                        <div className="sm:hidden text-sm">Seleccione una célula</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            ) : (
+              <Card className="h-64 sm:h-96">
+                <CardContent className="p-4 sm:p-6 text-center text-gray-500 flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="text-4xl sm:text-6xl mb-4 opacity-20">🔍</div>
+                    <div className="hidden sm:block">Seleccione una célula de la lista para ver su organigrama</div>
+                    <div className="sm:hidden text-sm">Seleccione una célula</div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Dialog para crear célula */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear Nueva Célula</DialogTitle>
+        <DialogContent className="w-full max-w-md sm:max-w-lg md:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="px-1 sm:px-0">
+            <DialogTitle className="text-lg sm:text-xl">Crear Nueva Célula</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
@@ -780,7 +867,6 @@ export default function CelulasPage() {
           </div>
         </DialogContent>
       </Dialog>
-      </div>
     </MainLayout>
   );
 }
