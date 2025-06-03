@@ -21,7 +21,7 @@ function Router() {
       <ProtectedRoute path="/consultas" component={ConsultasPage} />
       <ProtectedRoute path="/registros" component={RegistrosPage} roles={["admin", "investigador"]} />
       <ProtectedRoute path="/ubicaciones" component={UbicacionesPage} roles={["admin", "investigador"]} />
-      <ProtectedRoute path="/estructuras" component={EstructurasPage} roles={["admin", "investigador"]} />
+      <ProtectedRoute path="/relaciones" component={EstructurasPage} roles={["admin", "investigador"]} />
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
       <ProtectedRoute path="/configuracion" component={ConfiguracionPage} roles={["admin"]} />
       <ProtectedRoute path="/mi-perfil" component={MiPerfilPage} />

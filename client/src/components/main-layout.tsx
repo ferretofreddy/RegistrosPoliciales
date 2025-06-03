@@ -86,14 +86,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         Ubicaciones
                       </Link>
                       <Link
-                        href="/estructuras"
+                        href="/relaciones"
                         className={`px-3 py-2 rounded-md text-sm font-medium ${
-                          location === "/estructuras"
+                          location === "/relaciones"
                             ? "bg-primary-900 text-white"
                             : "text-gray-300 hover:bg-primary-600 hover:text-white"
                         }`}
                       >
-                        Estructuras
+                        Relaciones
                       </Link>
                     </>
                   )}
@@ -217,15 +217,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </Link>
                   
                   <Link
-                    href="/estructuras"
+                    href="/relaciones"
                     className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      location === "/estructuras"
+                      location === "/relaciones"
                         ? "bg-primary-900 text-white"
                         : "text-gray-300 hover:bg-primary-600 hover:text-white"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Estructuras
+                    Relaciones
                   </Link>
                 </>
               )}

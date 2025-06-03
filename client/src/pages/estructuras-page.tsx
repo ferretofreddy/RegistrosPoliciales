@@ -1067,7 +1067,7 @@ export default function EstructurasPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2">
             <Building2Icon className="h-6 w-6 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Estructuras</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Relaciones</h1>
           </div>
           {selectedResult && (
             <Button onClick={generatePDF} className="flex items-center gap-2">
