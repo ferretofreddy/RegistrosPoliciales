@@ -426,6 +426,8 @@ export const insertCelulaPersonaSchema = createInsertSchema(celulasPersonas).pic
 export const nivelesCelula = pgTable("niveles_celula", {
   id: serial("id").primaryKey(),
   nivel: integer("nivel").notNull(),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion"),
   posiciones: text("posiciones").array().notNull(),
 });
 
