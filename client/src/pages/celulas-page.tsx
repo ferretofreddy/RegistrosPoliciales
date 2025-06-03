@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
+import MainLayout from "@/components/main-layout";
 
 type Celula = {
   id: number;
@@ -251,7 +252,8 @@ export default function CelulasPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <MainLayout>
+      <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Gestión de Células</h1>
         <Button onClick={() => setShowCreateDialog(true)}>
@@ -609,6 +611,7 @@ export default function CelulasPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
