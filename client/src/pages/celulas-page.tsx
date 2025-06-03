@@ -236,38 +236,39 @@ export default function CelulasPage() {
 
   const handleCreate = async (data: FormData) => {
     try {
-      // Crear la célula primero
+      // Agregar IDs de personas seleccionadas al payload
+      const payload = {
+        ...data,
+        personaIds: selectedPersonas.map(p => p.id)
+      };
+
+      console.log("Creando célula con payload:", payload);
+
       const response = await fetch("/api/celulas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        throw new Error("Error al crear la célula");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al crear la célula");
       }
 
       const nuevaCelula = await response.json();
-
-      // Si hay personas seleccionadas, agregarlas a la célula
-      if (selectedPersonas.length > 0) {
-        for (const persona of selectedPersonas) {
-          await fetch(`/api/celulas/${nuevaCelula.id}/personas`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ personaId: persona.id })
-          });
-        }
-      }
+      console.log("Célula creada:", nuevaCelula);
 
       // Limpiar formulario y selecciones
       queryClient.invalidateQueries({ queryKey: ["/api/celulas"] });
       setShowCreateDialog(false);
       form.reset();
       clearSelections();
-      toast({ description: "Célula creada exitosamente con personas asignadas" });
+      toast({ 
+        description: `Célula creada exitosamente${selectedPersonas.length > 0 ? ` con ${selectedPersonas.length} personas asignadas` : ''}`
+      });
 
     } catch (error: any) {
+      console.error("Error al crear célula:", error);
       toast({
         variant: "destructive",
         description: error.message || "Error al crear la célula"
