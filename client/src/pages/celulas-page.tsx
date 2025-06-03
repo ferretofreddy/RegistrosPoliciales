@@ -184,9 +184,7 @@ export default function CelulasPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/celulas/${id}`, {
-      method: "DELETE"
-    }),
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/celulas/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/celulas"] });
       setSelectedCelula(null);
