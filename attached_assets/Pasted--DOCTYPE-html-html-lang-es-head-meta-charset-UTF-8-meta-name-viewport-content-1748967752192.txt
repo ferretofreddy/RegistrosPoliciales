@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Células</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; }
+        #celulas-list { width: 30%; border-right: 1px solid #ccc; padding: 10px; }
+        #celula-detalle { width: 70%; padding: 10px; }
+        .celula-item { cursor: pointer; padding: 5px; }
+        .celula-item:hover { background-color: #f0f0f0; }
+        #organigrama { margin-top: 20px; }
+        .nivel { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div id="celulas-list">
+        <button onclick="mostrarFormulario()">Crear Célula</button>
+        <h3>Células</h3>
+        <div id="lista"></div>
+    </div>
+    <div id="celula-detalle">
+        <div id="formulario" style="display: none;">
+            <h2>Crear Célula</h2>
+            <div>
+                <label for="nombre_celula">Nombre:</label>
+                <input type="text" id="nombre_celula" required>
+                <label for="zona">Zona:</label>
+                <input type="text" id="zona" required>
+                <label for="detalle">Detalle:</label>
+                <textarea id="detalle"></textarea>
+                <label for="personas">Personas:</label>
+                <input type="text" id="buscador-personas" placeholder="Buscar personas...">
+                <ul id="personas-list"></ul>
+                <button onclick="crearCelula()">Guardar</button>
+            </div>
+        </div>
+        <div id="detalle"></div>
+    </div>
+
+    <script>
+        async function cargarCelulas() {
+            const response = await fetch('/celulas');
+            const celulas = await response.json();
+            const lista = document.getElementById('lista');
+            lista.innerHTML = '';
+            celulas.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'celula-item';
+                div.textContent = c.nombre_celula;
+                div.onclick = () => cargarDetalle(c.id);
+                lista.appendChild(div);
+            });
+        }
+
+        async function cargarDetalle(id) {
+            const response = await fetch(`/celulas/${id}`);
+            const { celula, organigrama } = await response.json();
+            const detalle = document.getElementById('detalle');
+            detalle.innerHTML = `
+                <h2>${celula.nombre_celula}</h2>
+                <p>${celula.detalle || ''}</p>
+                <p><strong>Zona:</strong> ${celula.zona}</p>
+                <div id="organigrama">
+                    <h3>Organigrama</h3>
+                    ${Object.entries(organigrama).map(([nivel, personas]) => `
+                        <div class="nivel">
+                            <strong>Nivel ${nivel}:</strong>
+                            <ul>${personas.map(p => `<li>${p.nombre} (${p.pocision_estructura})</li>`).join('')}</ul>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('formulario').style.display = 'none';
+        }
+
+        function mostrarFormulario() {
+            document.getElementById('formulario').style.display = 'block';
+            document.getElementById('detalle').innerHTML = '';
+        }
+
+        async function crearCelula() {
+            const nombre_celula = document.getElementById('nombre_celula').value;
+            const zona = document.getElementById('zona').value;
+            const detalle = document.getElementById('detalle').value;
+            const persona_ids = Array.from(document.querySelectorAll('#personas-list input:checked'))
+                .map(input => parseInt(input.value));
+
+            await fetch('/celulas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre_celula, zona, detalle, creado_por: 'usuario_actual', persona_ids })
+            });
+            cargarCelulas();
+            document.getElementById('formulario').style.display = 'none';
+        }
+
+        document.getElementById('buscador-personas').addEventListener('input', async (e) => {
+            const query = e.target.value;
+            const response = await fetch(`/personas?search=${query}`);
+            const personas = await response.json();
+            const lista = document.getElementById('personas-list');
+            lista.innerHTML = personas.map(p => `
+                <li><input type="checkbox" value="${p.id}"> ${p.nombre}</li>
+            `).join('');
+        });
+
+        cargarCelulas();
+    </script>
+</body>
+</html>
