@@ -627,6 +627,29 @@ export default function ConfiguracionPage() {
     retry: 0
   });
 
+  // Mutación para actualizar un nivel de célula
+  const updateNivelCelulaMutation = useMutation({
+    mutationFn: async ({ id, posiciones }: { id: number, posiciones: string[] }) => {
+      const res = await apiRequest("PUT", `/api/niveles-celula/${id}`, { posiciones });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Éxito",
+        description: "Nivel de célula actualizado correctamente",
+      });
+      refetchNivelesCelula();
+      queryClient.invalidateQueries({ queryKey: ["/api/niveles-celula"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Error al actualizar nivel de célula: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Función para manejar la edición de un tipo de inmueble
   const handleEditTipoInmueble = (tipo: TipoInmueble) => {
     setEditingTipoInmuebleId(tipo.id);
@@ -748,6 +771,45 @@ export default function ConfiguracionPage() {
     } else {
       createTipoIdentificacionMutation.mutate(values);
     }
+  };
+
+  // === FUNCIONES DE MANEJO PARA NIVELES DE CÉLULA ===
+  const handleEditNivel = (nivel: NivelCelula) => {
+    setEditingNivelId(nivel.id);
+    const posicionesArray = nivel.posiciones ? JSON.parse(nivel.posiciones) : [];
+    setSelectedPosiciones(prev => ({
+      ...prev,
+      [nivel.id]: posicionesArray
+    }));
+  };
+
+  const handleSaveNivel = (nivelId: number) => {
+    const posiciones = selectedPosiciones[nivelId] || [];
+    updateNivelCelulaMutation.mutate({ id: nivelId, posiciones });
+    setEditingNivelId(null);
+  };
+
+  const handleCancelEditNivel = () => {
+    setEditingNivelId(null);
+    setSelectedPosiciones({});
+  };
+
+  const handlePosicionChange = (nivelId: number, posicion: string, checked: boolean) => {
+    setSelectedPosiciones(prev => {
+      const current = prev[nivelId] || [];
+      if (checked && !current.includes(posicion)) {
+        return {
+          ...prev,
+          [nivelId]: [...current, posicion]
+        };
+      } else if (!checked && current.includes(posicion)) {
+        return {
+          ...prev,
+          [nivelId]: current.filter(p => p !== posicion)
+        };
+      }
+      return prev;
+    });
   };
 
   return (
@@ -1348,6 +1410,150 @@ export default function ConfiguracionPage() {
                       )}
                     </TableBody>
                   </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Contenido para Niveles Célula */}
+        <TabsContent value="niveles-celula">
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Niveles de Célula</CardTitle>
+                <CardDescription>
+                  Configure las posiciones disponibles para cada nivel de la estructura jerárquica de células
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingNivelesCelula ? (
+                  <div className="flex justify-center items-center h-32">
+                    <div className="text-sm text-muted-foreground">Cargando niveles...</div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {nivelesCelula?.map((nivel: NivelCelula) => {
+                      const posicionesActuales = nivel.posiciones ? JSON.parse(nivel.posiciones) : [];
+                      const posicionesSeleccionadas = selectedPosiciones[nivel.id] || posicionesActuales;
+                      const isEditing = editingNivelId === nivel.id;
+                      
+                      return (
+                        <Card key={nivel.id} className="border-l-4 border-l-primary">
+                          <CardHeader className="pb-3">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <CardTitle className="text-lg">{nivel.nombre}</CardTitle>
+                                {nivel.descripcion && (
+                                  <CardDescription className="mt-1">
+                                    {nivel.descripcion}
+                                  </CardDescription>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                {!isEditing ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditNivel(nivel)}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Configurar
+                                  </Button>
+                                ) : (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleSaveNivel(nivel.id)}
+                                      disabled={updateNivelCelulaMutation.isPending}
+                                    >
+                                      <Save className="h-4 w-4 mr-2" />
+                                      Guardar
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={handleCancelEditNivel}
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            {!isEditing ? (
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  Posiciones asignadas:
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {posicionesActuales.length > 0 ? (
+                                    posicionesActuales.map((posicion: string) => (
+                                      <span
+                                        key={posicion}
+                                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                      >
+                                        {posicion}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground italic">
+                                      No hay posiciones asignadas
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-sm font-medium mb-3">
+                                  Seleccione las posiciones para este nivel:
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {posicionesEstructura?.map((posicion: PosicionEstructura) => (
+                                    <div key={posicion.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`posicion-${nivel.id}-${posicion.id}`}
+                                        checked={posicionesSeleccionadas.includes(posicion.nombre)}
+                                        onCheckedChange={(checked) =>
+                                          handlePosicionChange(nivel.id, posicion.nombre, checked as boolean)
+                                        }
+                                      />
+                                      <label
+                                        htmlFor={`posicion-${nivel.id}-${posicion.id}`}
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                      >
+                                        {posicion.nombre}
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                                {(!posicionesEstructura || posicionesEstructura.length === 0) && (
+                                  <p className="text-sm text-muted-foreground italic">
+                                    No hay posiciones de estructura disponibles. 
+                                    Configure las posiciones en la pestaña "Posiciones Estructura" primero.
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                    {(!nivelesCelula || nivelesCelula.length === 0) && (
+                      <Card>
+                        <CardContent className="text-center py-8">
+                          <p className="text-muted-foreground">
+                            No hay niveles de célula configurados. 
+                            Los niveles se inicializan automáticamente cuando se ejecuta el script de inicialización.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
