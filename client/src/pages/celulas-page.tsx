@@ -58,6 +58,8 @@ export default function CelulasPage() {
   const [editingCelula, setEditingCelula] = useState<Celula | null>(null);
   const [showAddPersonDialog, setShowAddPersonDialog] = useState(false);
   const [searchPersona, setSearchPersona] = useState("");
+  const [selectedPersonas, setSelectedPersonas] = useState<Persona[]>([]);
+  const [searchResults, setSearchResults] = useState<Persona[]>([]);
   
   // Form para crear/editar célula
   const form = useForm<FormData>({
@@ -85,6 +87,50 @@ export default function CelulasPage() {
     queryKey: ["/api/personas"],
     enabled: showAddPersonDialog
   });
+
+  // Buscar personas con debounce
+  const searchPersonas = async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/personas/search?search=${encodeURIComponent(searchTerm)}`);
+      const results = await response.json();
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Error al buscar personas:", error);
+      setSearchResults([]);
+    }
+  };
+
+  // Manejar cambios en el campo de búsqueda
+  const handleSearchChange = (value: string) => {
+    setSearchPersona(value);
+    searchPersonas(value);
+  };
+
+  // Agregar persona seleccionada
+  const addSelectedPersona = (persona: Persona) => {
+    if (!selectedPersonas.find(p => p.id === persona.id)) {
+      setSelectedPersonas([...selectedPersonas, persona]);
+    }
+    setSearchPersona("");
+    setSearchResults([]);
+  };
+
+  // Remover persona seleccionada
+  const removeSelectedPersona = (personaId: number) => {
+    setSelectedPersonas(selectedPersonas.filter(p => p.id !== personaId));
+  };
+
+  // Limpiar selecciones
+  const clearSelections = () => {
+    setSelectedPersonas([]);
+    setSearchPersona("");
+    setSearchResults([]);
+  };
 
   // Mutations
   const createMutation = useMutation({

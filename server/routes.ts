@@ -121,6 +121,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al obtener personas" });
     }
   });
+
+  // Endpoint para buscar personas por nombre o identificación
+  app.get("/api/personas/search", async (req, res) => {
+    try {
+      const { search = "" } = req.query;
+      
+      if (typeof search !== 'string' || search.trim().length < 2) {
+        return res.json([]);
+      }
+      
+      const searchPattern = `%${search.trim()}%`;
+      
+      const result = await db.execute(
+        sql`SELECT id, nombre, identificacion, posicion_estructura
+            FROM personas 
+            WHERE LOWER(nombre) LIKE LOWER(${searchPattern})
+               OR identificacion LIKE ${searchPattern}
+            ORDER BY nombre ASC
+            LIMIT 20`
+      );
+      
+      res.json(result.rows || []);
+    } catch (error) {
+      console.error("Error al buscar personas:", error);
+      res.status(500).json({ message: "Error al buscar personas" });
+    }
+  });
   
   // Obtener vehículos relacionados con una persona
   app.get("/api/personas/:id/vehiculos", async (req, res) => {
