@@ -2496,22 +2496,63 @@ export class DatabaseStorage {
   }
 
   async updateNivelCelula(id: number, posiciones: string[]): Promise<NivelCelula | undefined> {
-    // Validar que todas las posiciones existan en la tabla posiciones_estructura
+    // 1. Obtener todas las posiciones válidas de la tabla posiciones_estructura
     const posicionesValidas = await db.select().from(posicionesEstructura);
-    const nombresValidos = posicionesValidas.map(p => p.nombre);
+    const nombresValidos = new Set(posicionesValidas.map(p => p.nombre));
     
-    // Filtrar solo las posiciones que existen en la tabla
-    const posicionesFiltradas = posiciones.filter(posicion => nombresValidos.includes(posicion));
+    // 2. Filtrar SOLO las posiciones que existen actualmente en la tabla
+    const posicionesFiltradas = posiciones.filter(posicion => nombresValidos.has(posicion));
     
+    // 3. Log para debugging y transparencia
+    const posicionesRechazadas = posiciones.filter(p => !nombresValidos.has(p));
+    if (posicionesRechazadas.length > 0) {
+      console.warn(`Posiciones rechazadas para nivel ${id} (no existen en posiciones_estructura):`, posicionesRechazadas);
+    }
     console.log(`Actualizando nivel ${id} con posiciones válidas:`, posicionesFiltradas);
-    console.log(`Posiciones rechazadas (no válidas):`, posiciones.filter(p => !nombresValidos.includes(p)));
     
+    // 4. REEMPLAZAR COMPLETAMENTE el array de posiciones (borrar previos, insertar nuevos)
     const [nivel] = await db
       .update(nivelesCelula)
-      .set({ posiciones: posicionesFiltradas })
+      .set({ posiciones: posicionesFiltradas }) // Esto reemplaza el array completo
       .where(eq(nivelesCelula.id, id))
       .returning();
+    
+    // 5. Verificación adicional post-actualización
+    if (nivel) {
+      console.log(`Nivel ${id} actualizado. Posiciones finales:`, nivel.posiciones);
+    }
+    
     return nivel;
+  }
+
+  // Función de mantenimiento para limpiar referencias inválidas
+  async cleanupInvalidPosicionesInNiveles(): Promise<void> {
+    console.log('Iniciando limpieza de posiciones inválidas en niveles_celula...');
+    
+    // Obtener todas las posiciones válidas actuales
+    const posicionesValidas = await db.select().from(posicionesEstructura);
+    const nombresValidos = new Set(posicionesValidas.map(p => p.nombre));
+    
+    // Obtener todos los niveles
+    const niveles = await db.select().from(nivelesCelula);
+    
+    for (const nivel of niveles) {
+      // Filtrar posiciones válidas para este nivel
+      const posicionesLimpias = nivel.posiciones.filter(posicion => nombresValidos.has(posicion));
+      
+      // Si hay diferencias, actualizar
+      if (posicionesLimpias.length !== nivel.posiciones.length) {
+        const posicionesInvalidas = nivel.posiciones.filter(p => !nombresValidos.has(p));
+        console.log(`Limpiando nivel ${nivel.id}: removiendo posiciones inválidas:`, posicionesInvalidas);
+        
+        await db
+          .update(nivelesCelula)
+          .set({ posiciones: posicionesLimpias })
+          .where(eq(nivelesCelula.id, nivel.id));
+      }
+    }
+    
+    console.log('Limpieza de posiciones inválidas completada.');
   }
 }
 
