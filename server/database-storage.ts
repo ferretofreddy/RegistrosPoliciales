@@ -2395,12 +2395,33 @@ export class DatabaseStorage {
 
   async deleteCelula(id: number): Promise<boolean> {
     try {
+      console.log(`Iniciando eliminación de célula ID: ${id}`);
+      
+      // Verificar cuántas relaciones existen antes de eliminar
+      const relacionesExistentes = await db
+        .select()
+        .from(celulasPersonas)
+        .where(eq(celulasPersonas.celulaId, id));
+      
+      console.log(`Encontradas ${relacionesExistentes.length} relaciones persona-célula para eliminar`);
+      
       // Primero eliminar las relaciones con personas
-      await db.delete(celulasPersonas).where(eq(celulasPersonas.celulaId, id));
+      const deleteRelationsResult = await db
+        .delete(celulasPersonas)
+        .where(eq(celulasPersonas.celulaId, id));
+      
+      console.log(`Relaciones eliminadas: ${deleteRelationsResult.rowCount}`);
       
       // Luego eliminar la célula
       const result = await db.delete(celulas).where(eq(celulas.id, id));
-      return result.rowCount > 0;
+      
+      if (result.rowCount > 0) {
+        console.log(`Célula ID ${id} eliminada exitosamente con todas sus relaciones`);
+        return true;
+      } else {
+        console.log(`No se encontró célula con ID ${id} para eliminar`);
+        return false;
+      }
     } catch (error) {
       console.error('Error deleting celula:', error);
       return false;
