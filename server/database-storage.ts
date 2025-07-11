@@ -355,44 +355,6 @@ export class DatabaseStorage {
     }
   }
 
-  // TIPOS DE IDENTIFICACIÓN METHODS
-  async getAllTiposIdentificacion(): Promise<TipoIdentificacion[]> {
-    return await db.select().from(tiposIdentificacion)
-      .where(eq(tiposIdentificacion.activo, "true"))
-      .orderBy(tiposIdentificacion.tipo);
-  }
-
-  async getTipoIdentificacion(id: number): Promise<TipoIdentificacion | undefined> {
-    const [tipoIdentificacion] = await db.select().from(tiposIdentificacion).where(eq(tiposIdentificacion.id, id));
-    return tipoIdentificacion;
-  }
-
-  async createTipoIdentificacion(tipoIdentificacion: InsertTipoIdentificacion): Promise<TipoIdentificacion> {
-    const [nuevoTipoIdentificacion] = await db.insert(tiposIdentificacion).values(tipoIdentificacion).returning();
-    return nuevoTipoIdentificacion;
-  }
-
-  async updateTipoIdentificacion(id: number, tipoIdentificacion: Partial<InsertTipoIdentificacion>): Promise<TipoIdentificacion | undefined> {
-    const [tipoActualizado] = await db.update(tiposIdentificacion)
-      .set(tipoIdentificacion)
-      .where(eq(tiposIdentificacion.id, id))
-      .returning();
-    return tipoActualizado;
-  }
-
-  async deleteTipoIdentificacion(id: number): Promise<boolean> {
-    try {
-      // Solo marcar como inactivo en lugar de eliminar físicamente
-      await db.update(tiposIdentificacion)
-        .set({ activo: "false" })
-        .where(eq(tiposIdentificacion.id, id));
-      return true;
-    } catch (error) {
-      console.error('Error al eliminar tipo de identificación:', error);
-      return false;
-    }
-  }
-
   // UBICACIONES METHODS
   async getAllUbicaciones(): Promise<Ubicacion[]> {
     return await db.select().from(ubicaciones);
