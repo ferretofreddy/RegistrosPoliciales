@@ -1,15 +1,17 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
+import * as schema from './schema.js';
 
-neonConfig.webSocketConstructor = ws;
+// Detecta si estás en el entorno de producción (Heroku)
+const isProduction = process.env.NODE_ENV === 'production';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Crea el pool de conexiones usando el driver 'pg'
+const pool = new pg.Pool({
+  // Heroku proveerá esta variable de entorno automáticamente
+  connectionString: process.env.DATABASE_URL,
+  // SSL es requerido para conexiones en Heroku, pero puede causar errores en desarrollo local
+  ssl: isProduction ? { rejectUnauthorized: false } : undefined,
+});
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Crea la instancia de Drizzle usando el pool
 export const db = drizzle(pool, { schema });
