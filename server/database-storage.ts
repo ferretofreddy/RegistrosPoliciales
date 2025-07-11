@@ -1,24 +1,66 @@
-import { 
-  User, personas, vehiculos, inmuebles, ubicaciones, InsertUser, 
-  InsertPersona, Persona, InsertVehiculo, Vehiculo, InsertInmueble, Inmueble,
-  InsertUbicacion, Ubicacion, personasObservaciones, InsertPersonaObservacion, PersonaObservacion,
-  vehiculosObservaciones, InsertVehiculoObservacion, VehiculoObservacion,
-  inmueblesObservaciones, InsertInmuebleObservacion, InmuebleObservacion,
-  ubicacionesObservaciones, InsertUbicacionObservacion, UbicacionObservacion,
-  personasVehiculos, personasInmuebles, personasUbicaciones, vehiculosInmuebles,
-  vehiculosUbicaciones, inmueblesUbicaciones, personasPersonas, vehiculosVehiculos,
-  users, tiposInmuebles, TipoInmueble, InsertTipoInmueble,
-  tiposUbicaciones, TipoUbicacion, InsertTipoUbicacion, tiposIdentificacion,
-  TipoIdentificacion, InsertTipoIdentificacion, posicionesEstructura,
-  PosicionEstructura, InsertPosicionEstructura, celulas, Celula, InsertCelula,
-  celulasPersonas, CelulaPersona, InsertCelulaPersona, nivelesCelula,
-  NivelCelula, InsertNivelCelula
-} from '@shared/schema';
 import { sql, eq, and, or, like } from 'drizzle-orm';
-import { db } from './db';
+import { db, pool } from './db';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
-import { pool } from './db';
+import { 
+  users, 
+  personas, 
+  vehiculos, 
+  inmuebles, 
+  ubicaciones, 
+  tiposInmuebles, 
+  tiposUbicaciones, 
+  tiposIdentificacion, 
+  posicionesEstructura, 
+  celulas, 
+  celulasPersonas, 
+  nivelesCelula,
+  personasObservaciones,
+  vehiculosObservaciones,
+  inmueblesObservaciones,
+  ubicacionesObservaciones,
+  personasVehiculos,
+  personasInmuebles,
+  personasUbicaciones,
+  vehiculosInmuebles,
+  vehiculosUbicaciones,
+  inmueblesUbicaciones,
+  inmueblesInmuebles,
+  personasPersonas,
+  vehiculosVehiculos,
+  User, 
+  Persona, 
+  Vehiculo, 
+  Inmueble, 
+  Ubicacion, 
+  TipoInmueble, 
+  TipoUbicacion, 
+  TipoIdentificacion,
+  PosicionEstructura,
+  Celula,
+  NivelCelula,
+  InsertUser, 
+  InsertPersona, 
+  InsertVehiculo, 
+  InsertInmueble,
+  InsertUbicacion,
+  InsertTipoInmueble,
+  InsertTipoUbicacion,
+  InsertTipoIdentificacion,
+  InsertPosicionEstructura,
+  InsertCelula,
+  InsertNivelCelula,
+  InsertPersonaObservacion,
+  PersonaObservacion,
+  InsertVehiculoObservacion,
+  VehiculoObservacion,
+  InsertInmuebleObservacion,
+  InmuebleObservacion,
+  InsertUbicacionObservacion,
+  UbicacionObservacion,
+  CelulaPersona,
+  InsertCelulaPersona
+} from '../shared/schema';
 
 const PostgresSessionStore = connectPg(session);
 
@@ -26,9 +68,9 @@ export class DatabaseStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
     });
   }
 
@@ -48,89 +90,58 @@ export class DatabaseStorage {
     return user;
   }
 
-  // PERSONAS METHODS
+  // PERSONAS METHODS (REFACTORIZADOS A DRIZZLE)
   async getAllPersonas(): Promise<any[]> {
-    const result = await pool.query(`
-      SELECT 
-        p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
-        p.foto, p.posicion_estructura, p.tipo_identificacion_id,
-        ti.tipo as tipo_identificacion
-      FROM personas p 
-      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id
-      ORDER BY p.id
-    `);
+    const result = await db.select({
+        id: personas.id,
+        nombre: personas.nombre,
+        identificacion: personas.identificacion,
+        alias: personas.alias,
+        telefonos: personas.telefonos,
+        domicilios: personas.domicilios,
+        foto: personas.foto,
+        posicionEstructura: personas.posicionEstructura,
+        tipoIdentificacionId: personas.tipoIdentificacionId,
+        tipoIdentificacion: tiposIdentificacion.tipo
+      })
+      .from(personas)
+      .leftJoin(tiposIdentificacion, eq(personas.tipoIdentificacionId, tiposIdentificacion.id))
+      .orderBy(personas.id);
     
-    return result.rows.map(persona => ({
-      ...persona,
-      alias: persona.alias || [],
-      telefonos: persona.telefonos || [],
-      domicilios: persona.domicilios || [],
-      posicionEstructura: persona.posicion_estructura,
-      tipoIdentificacionId: persona.tipo_identificacion_id,
-      tipoIdentificacion: persona.tipo_identificacion
-    }));
+    return result;
   }
 
-  async getPersona(id: number): Promise<any> {
-    console.log('[DEBUG] getPersona llamado con ID:', id);
-    
-    const result = await pool.query(`
-      SELECT 
-        p.id, p.nombre, p.identificacion, p.alias, p.telefonos, p.domicilios, 
-        p.foto, p.posicion_estructura, p.tipo_identificacion_id,
-        ti.tipo as tipo_identificacion
-      FROM personas p 
-      LEFT JOIN tipos_identificacion ti ON p.tipo_identificacion_id = ti.id 
-      WHERE p.id = $1
-    `, [id]);
-    
-    console.log('[DEBUG] Resultado SQL:', result.rows[0]);
-    
-    if (result.rows.length === 0) return undefined;
-    
-    const persona = result.rows[0];
-    
-    // Mapear nombres de campos de la base de datos
-    const resultado = {
-      id: persona.id,
-      nombre: persona.nombre,
-      identificacion: persona.identificacion,
-      alias: persona.alias || [],
-      telefonos: persona.telefonos || [],
-      domicilios: persona.domicilios || [],
-      foto: persona.foto,
-      posicionEstructura: persona.posicion_estructura,
-      tipoIdentificacionId: persona.tipo_identificacion_id,
-      tipoIdentificacion: persona.tipo_identificacion
-    };
-    
-    console.log('[DEBUG] Resultado final:', resultado);
-    return resultado;
+  async getPersona(id: number): Promise<any | undefined> {
+    const [persona] = await db.select({
+        id: personas.id,
+        nombre: personas.nombre,
+        identificacion: personas.identificacion,
+        alias: personas.alias,
+        telefonos: personas.telefonos,
+        domicilios: personas.domicilios,
+        foto: personas.foto,
+        posicionEstructura: personas.posicionEstructura,
+        tipoIdentificacionId: personas.tipoIdentificacionId,
+        tipoIdentificacion: tiposIdentificacion.tipo
+      })
+      .from(personas)
+      .leftJoin(tiposIdentificacion, eq(personas.tipoIdentificacionId, tiposIdentificacion.id))
+      .where(eq(personas.id, id));
+
+    return persona;
   }
 
   async checkPersonaIdentificacionExists(identificacion: string): Promise<boolean> {
-    const [existing] = await db.select().from(personas).where(eq(personas.identificacion, identificacion));
-    return !!existing;
+    const [existing] = await db.select({ count: sql<number>`count(*)` }).from(personas).where(eq(personas.identificacion, identificacion));
+    return existing.count > 0;
   }
 
   async createPersona(insertPersona: InsertPersona): Promise<Persona> {
-    // Validar unicidad del número de identificación
     const identificacionExists = await this.checkPersonaIdentificacionExists(insertPersona.identificacion);
     if (identificacionExists) {
       throw new Error("El número de identificación que intentas guardar ya se encuentra registrado");
     }
-
-    // Fix para arrays
-    const datosPersona = { 
-      ...insertPersona,
-      alias: insertPersona.alias || [],
-      telefonos: insertPersona.telefonos || [], 
-      domicilios: insertPersona.domicilios || []
-    };
-    
-    console.log("DEBUG - Datos a insertar en database-storage:", datosPersona);
-    
-    const [persona] = await db.insert(personas).values(datosPersona).returning();
+    const [persona] = await db.insert(personas).values(insertPersona).returning();
     return persona;
   }
 
@@ -150,12 +161,10 @@ export class DatabaseStorage {
   }
 
   async createVehiculo(insertVehiculo: InsertVehiculo): Promise<Vehiculo> {
-    // Validar unicidad de la placa
     const placaExists = await this.checkVehiculoPlacaExists(insertVehiculo.placa);
     if (placaExists) {
       throw new Error("El número de placa que intentas guardar ya se encuentra registrado");
     }
-
     const [vehiculo] = await db.insert(vehiculos).values(insertVehiculo).returning();
     return vehiculo;
   }
@@ -187,7 +196,6 @@ export class DatabaseStorage {
 
   async deleteTipoInmueble(id: number): Promise<boolean> {
     try {
-      // Comprobamos si hay inmuebles usando este tipo
       const relatedInmuebles = await db.select().from(inmuebles).where(
         or(
           eq(inmuebles.tipo, String(id)),
@@ -196,12 +204,10 @@ export class DatabaseStorage {
       );
       
       if (relatedInmuebles.length > 0) {
-        // Si hay inmuebles usando este tipo, no eliminar físicamente, solo marcar como inactivo
         await db.update(tiposInmuebles)
           .set({ activo: false })
           .where(eq(tiposInmuebles.id, id));
       } else {
-        // Si no hay inmuebles usando este tipo, podemos eliminarlo físicamente
         await db.delete(tiposInmuebles).where(eq(tiposInmuebles.id, id));
       }
       return true;
@@ -253,7 +259,6 @@ export class DatabaseStorage {
 
   async deleteTipoUbicacion(id: number): Promise<boolean> {
     try {
-      // Comprobamos si hay ubicaciones usando este tipo
       const relatedUbicaciones = await db.select().from(ubicaciones).where(
         or(
           eq(ubicaciones.tipo, String(id)),
@@ -262,12 +267,10 @@ export class DatabaseStorage {
       );
       
       if (relatedUbicaciones.length > 0) {
-        // Si hay ubicaciones usando este tipo, no eliminar físicamente, solo marcar como inactivo
         await db.update(tiposUbicaciones)
           .set({ activo: false })
           .where(eq(tiposUbicaciones.id, id));
       } else {
-        // Si no hay ubicaciones usando este tipo, podemos eliminarlo físicamente
         await db.delete(tiposUbicaciones).where(eq(tiposUbicaciones.id, id));
       }
       return true;
@@ -302,11 +305,10 @@ export class DatabaseStorage {
 
   async deletePosicionEstructura(id: number): Promise<boolean> {
     try {
-      // Verificar si hay personas usando esta posición
       const personasConPosicion = await db.select().from(personas).where(eq(personas.posicionEstructura, String(id)));
       
       if (personasConPosicion.length > 0) {
-        return false; // No se puede eliminar si hay personas usando esta posición
+        return false;
       }
       
       await db.delete(posicionesEstructura).where(eq(posicionesEstructura.id, id));
@@ -344,7 +346,6 @@ export class DatabaseStorage {
 
   async deleteTipoIdentificacion(id: number): Promise<boolean> {
     try {
-      // Solo marcar como inactivo en lugar de eliminar físicamente
       await db.update(tiposIdentificacion)
         .set({ activo: "false" })
         .where(eq(tiposIdentificacion.id, id));
@@ -370,19 +371,12 @@ export class DatabaseStorage {
     return ubicacion;
   }
   
-  // Método para crear una ubicación específicamente para un inmueble
   async createUbicacionForInmueble(insertUbicacion: InsertUbicacion, inmuebleId: number): Promise<Ubicacion> {
-    // Crear primero la ubicación
     const [ubicacion] = await db.insert(ubicaciones).values(insertUbicacion).returning();
-    
-    // Luego crear la relación entre inmueble y ubicación
     await db.insert(inmueblesUbicaciones).values({
       inmuebleId: inmuebleId,
       ubicacionId: ubicacion.id
     });
-    
-    console.log(`Creada relación entre inmueble ID ${inmuebleId} y ubicación ID ${ubicacion.id}`);
-    
     return ubicacion;
   }
 
